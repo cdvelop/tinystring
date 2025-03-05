@@ -1,18 +1,5 @@
 package tinytext
 
-// Text struct to store the content of the text
-type Text struct {
-	content   string
-	words     [][]rune // words split into runes eg: "hello world" -> [][]rune{{'h','e','l','l','o'}, {'w','o','r','l','d'}}
-	separator string   // eg "_" "-"
-}
-
-// struct to store mappings to remove accents and diacritics
-type charMapping struct {
-	from rune
-	to   rune
-}
-
 // Slice of mappings to remove accents and diacritics
 var accentMappings = []charMapping{
 	{'á', 'a'}, {'à', 'a'}, {'ã', 'a'}, {'â', 'a'}, {'ä', 'a'},

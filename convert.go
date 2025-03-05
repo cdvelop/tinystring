@@ -1,11 +1,23 @@
 package tinytext
 
+// Text struct to store the content of the text
+type Text struct {
+	content   string
+	words     [][]rune // words split into runes eg: "hello world" -> [][]rune{{'h','e','l','l','o'}, {'w','o','r','l','d'}}
+	separator string   // eg "_" "-"
+}
+
+// struct to store mappings to remove accents and diacritics
+type charMapping struct {
+	from rune
+	to   rune
+}
+
 type wordTransform int
 
 const (
 	toLower wordTransform = iota
 	toUpper
-	keepCase
 )
 
 // initialize the text struct
@@ -44,12 +56,12 @@ func (t *Text) ToUpper() *Text {
 
 // converts text to camelCase (first word lowercase) eg: "Hello world" -> "helloWorld"
 func (t *Text) CamelCaseLower() *Text {
-	return t.toCaseTransform(true)
+	return t.toCaseTransform(true, "")
 }
 
 // converts text to PascalCase (all words capitalized) eg: "hello world" -> "HelloWorld"
 func (t *Text) CamelCaseUpper() *Text {
-	return t.toCaseTransform(false)
+	return t.toCaseTransform(false, "")
 }
 
 // snakeCase converts a string to snake_case format with optional separator.
@@ -60,33 +72,23 @@ func (t *Text) CamelCaseUpper() *Text {
 //	Input: "PascalCase", "-" -> Output: "pascal-case"
 //	Input: "APIResponse" -> Output: "api_response"
 //	Input: "user123Name", "." -> Output: "user123.name"
-func (t *Text) ToSnakeCase(sep ...string) *Text {
-	separator := "_"
+//
+// ToSnakeCaseLower converts text to snake_case format
+func (t *Text) ToSnakeCaseLower(sep ...string) *Text {
+	return t.toCaseTransform(true, t.separatorCase(sep...))
+}
+
+// ToSnakeCaseUpper converts text to Snake_Case format
+func (t *Text) ToSnakeCaseUpper(sep ...string) *Text {
+	return t.toCaseTransform(false, t.separatorCase(sep...))
+}
+
+func (t *Text) separatorCase(sep ...string) string {
+	t.separator = "_" // underscore default
 	if len(sep) > 0 {
-		separator = sep[0]
+		t.separator = sep[0]
 	}
-
-	runes := []rune(t.content)
-	var result []rune
-
-	for i, r := range runes {
-		if r == ' ' {
-			// Replace space with separator
-			result = append(result, []rune(separator)...)
-			continue
-		}
-
-		// Check if we need to add separator for uppercase letters
-		if i > 0 && t.isUpperOrDigit(r) && t.isLowerOrDigit(runes[i-1]) {
-			result = append(result, []rune(separator)...)
-		}
-
-		// Convert to lowercase
-		result = append(result, t.transformWord([]rune{r}, toLower)...)
-	}
-
-	t.content = string(result)
-	return t
+	return t.separator
 }
 
 // String method to return the content of the text
@@ -127,57 +129,6 @@ func (t *Text) splitIntoWords() {
 	}
 }
 
-func (t *Text) toCaseTransform(firstWordLower bool) *Text {
-	t.splitIntoWords()
-	if len(t.words) == 0 {
-		return t
-	}
-
-	var result []rune
-
-	// Process first word
-	firstWord := t.words[0]
-	if len(firstWord) > 0 {
-		transform := toUpper
-		if firstWordLower {
-			transform = toLower
-		}
-		// Procesar carácter por carácter para manejar números
-		for i, r := range firstWord {
-			if i == 0 {
-				result = append(result, t.transformWord([]rune{r}, transform)...)
-			} else if i > 0 && isDigit(firstWord[i-1]) {
-				// Si viene después de un número, mantener mayúscula
-				result = append(result, t.transformWord([]rune{r}, toUpper)...)
-			} else {
-				result = append(result, t.transformWord([]rune{r}, toLower)...)
-			}
-		}
-	}
-
-	// Process remaining words (always capitalize first letter)
-	for _, word := range t.words[1:] {
-		if len(word) > 0 {
-			// Procesar carácter por carácter
-			for i, r := range word {
-				if i == 0 {
-					// Primera letra siempre mayúscula
-					result = append(result, t.transformWord([]rune{r}, toUpper)...)
-				} else if i > 0 && isDigit(word[i-1]) {
-					// Si viene después de un número, mantener mayúscula
-					result = append(result, t.transformWord([]rune{r}, toUpper)...)
-				} else {
-					// En otro caso, minúscula
-					result = append(result, t.transformWord([]rune{r}, toLower)...)
-				}
-			}
-		}
-	}
-
-	t.content = string(result)
-	return t
-}
-
 func (t *Text) transformWord(word []rune, transform wordTransform) []rune {
 	if len(word) == 0 {
 		return word
@@ -210,25 +161,81 @@ func (t *Text) transformWord(word []rune, transform wordTransform) []rune {
 	return result
 }
 
-func (t *Text) isUpperOrDigit(r rune) bool {
-	for _, mapping := range upperMappings {
-		if r == mapping.from {
-			return true
-		}
-	}
-	return isDigit(r)
-}
-
-func (t *Text) isLowerOrDigit(r rune) bool {
-	for _, mapping := range lowerMappings {
-		if r == mapping.from {
-			return true
-		}
-	}
-	return isDigit(r)
-}
-
 // Helper function to check if a rune is a digit
 func isDigit(r rune) bool {
 	return r >= '0' && r <= '9'
+}
+
+func isLetter(r rune) bool {
+	return (r >= 'a' && r <= 'z') || (r >= 'A' && r <= 'Z') ||
+		(r >= 'À' && r <= 'ÿ' && r != '×' && r != '÷')
+}
+
+func (t *Text) toCaseTransform(firstWordLower bool, separator string) *Text {
+
+	t.splitIntoWords()
+	if len(t.words) == 0 {
+		return t
+	}
+
+	var result []rune
+	var prevIsDigit bool
+	var prevIsSeparator bool
+
+	for i, word := range t.words {
+		if len(word) == 0 {
+			continue
+		}
+
+		// Add separator if needed
+		if i > 0 && separator != "" {
+			result = append(result, rune(separator[0]))
+			prevIsSeparator = true
+		}
+
+		// Process each character in the word
+		for j, r := range word {
+			transform := toLower
+			currIsDigit := isDigit(r)
+			currIsLetter := isLetter(r)
+
+			// Determine case transform
+			if i == 0 && j == 0 {
+				// First letter of first word
+				if !firstWordLower {
+					transform = toUpper
+				}
+			} else if i > 0 && j == 0 && separator == "" { // Start of new word in camelCase
+				transform = toUpper
+			} else if prevIsDigit && currIsLetter { // Letter after digit
+				if firstWordLower {
+					transform = toLower
+				} else {
+					transform = toUpper
+				}
+			} else if prevIsSeparator && currIsLetter { // Letter after separator
+				if separator != "" && !firstWordLower {
+					transform = toUpper
+				}
+			}
+
+			// Add underscore for number to letter transition in snake_case
+			if separator != "" && prevIsDigit && currIsLetter {
+				result = append(result, rune(separator[0]))
+			}
+
+			// Only transform letters, leave other characters as-is
+			if currIsLetter {
+				result = append(result, t.transformWord([]rune{r}, transform)...)
+			} else {
+				result = append(result, r)
+			}
+
+			prevIsDigit = currIsDigit
+			prevIsSeparator = false
+		}
+	}
+
+	t.content = string(result)
+	return t
 }

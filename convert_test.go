@@ -1,4 +1,4 @@
-package tinygotext_test
+package tinytext_test
 
 import (
 	"testing"
@@ -26,7 +26,7 @@ func TestConversions(t *testing.T) {
 			function: (*Text).RemoveTilde,
 		},
 		{
-			name:  "Convert to camelCase",
+			name:  "CamelCaseLower",
 			input: "hello world example",
 			want:  "helloWorldExample",
 			function: func(t *Text) *Text {
@@ -112,7 +112,7 @@ func TestConversions(t *testing.T) {
 			},
 		},
 		{
-			name:  "Various cases to camelCase",
+			name:  "CamelCaseLower",
 			input: "hello world example",
 			want:  "helloWorldExample",
 			function: func(t *Text) *Text {
@@ -120,7 +120,7 @@ func TestConversions(t *testing.T) {
 			},
 		},
 		{
-			name:  "Various cases to PascalCase",
+			name:  "CamelCaseUpper",
 			input: "hello world example",
 			want:  "HelloWorldExample",
 			function: func(t *Text) *Text {
@@ -128,17 +128,17 @@ func TestConversions(t *testing.T) {
 			},
 		},
 		{
-			name:  "snake_case",
+			name:  "ToSnakeCaseLower",
 			input: "hello world example",
 			want:  "hello_world_example",
 			function: func(t *Text) *Text {
-				return t.ToSnakeCase()
+				return t.ToSnakeCaseLower()
 			},
 		},
 		{
 			name:  "Mixed case with numbers to CamelCaseLower",
 			input: "User123Name",
-			want:  "user123Name",
+			want:  "user123name",
 			function: func(t *Text) *Text {
 				return t.CamelCaseLower()
 			},
@@ -152,11 +152,11 @@ func TestConversions(t *testing.T) {
 			},
 		},
 		{
-			name:  "Mixed case with numbers to ToSnakeCase",
+			name:  "Mixed case with numbers to ToSnakeCaseLower",
 			input: "User123Name",
 			want:  "user123_name",
 			function: func(t *Text) *Text {
-				return t.ToSnakeCase()
+				return t.ToSnakeCaseLower()
 			},
 		},
 		{
@@ -180,7 +180,15 @@ func TestConversions(t *testing.T) {
 			input: "Él Múrcielago Rápido",
 			want:  "el_murcielago_rapido",
 			function: func(t *Text) *Text {
-				return t.RemoveTilde().ToSnakeCase()
+				return t.RemoveTilde().ToSnakeCaseLower()
+			},
+		},
+		{
+			name:  "Accented text to snake-case",
+			input: "Él Múrcielago Rápido",
+			want:  "el-murcielago-rapido",
+			function: func(t *Text) *Text {
+				return t.RemoveTilde().ToSnakeCaseLower("-")
 			},
 		},
 	}
@@ -189,7 +197,7 @@ func TestConversions(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			got := tt.function(Convert(tt.input)).String()
 			if got != tt.want {
-				t.Fatalf("\nTest: %q\n   got: %q\n  want: %q", tt.name, got, tt.want)
+				t.Fatalf("\n🎯Test: %q\ninput: %q\n   got: %q\n  want: %q", tt.name, tt.input, got, tt.want)
 			}
 		})
 	}
