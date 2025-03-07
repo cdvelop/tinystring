@@ -43,6 +43,7 @@ text := tinystring.Convert("Él Múrcielago Rápido")
 - `ToSnakeCaseLower()`: Converts to snake_case (e.g. "hello world" -> "hello_world"), With  Other Params: `ToSnakeCaseLower("-")` -> "hello-world" 
 - `ToSnakeCaseUpper()`: Convert to SNAKE_CASE (e.g. "hello world" -> "HELLO_WORLD"), With Other Params: `ToSnakeCaseUpper("-")` -> "HELLO-WORLD"
 - `Split(data, separator string)`: Divides a string by a separator and returns a slice of substrings
+- `ParseKeyValue(input string, delimiter string)`: Extracts the value from a key:value string format (e.g. `ParseKeyValue("name:John")` -> `"John", nil`)
 - `Replace(old, new string)`: Replaces all occurrences of a substring (e.g. "hello world" -> "hello universe")
 - `TrimPrefix(prefix string)`: Removes a specified prefix from the beginning of a string (e.g. "prefix-content" -> "content")
 - `TrimSuffix(suffix string)`: Removes a specified suffix from the end of a string (e.g. "file.txt" -> "file")
@@ -71,6 +72,22 @@ tinystring.Convert("HÓLA MÚNDO")
 // Split a string by separator
 result := tinystring.Split("apple,banana,cherry", ",")
 // Result: []string{"apple", "banana", "cherry"}
+
+// Parse key-value string
+value, err := tinystring.ParseKeyValue("user:admin")
+// Result: value = "admin", err = nil
+
+// Parse with custom delimiter
+value, err := tinystring.ParseKeyValue("count=42", "=")
+// Result: value = "42", err = nil
+
+// Multiple values with same delimiter
+value, err := tinystring.ParseKeyValue("path:usr:local:bin")
+// Result: value = "usr:local:bin", err = nil
+
+// Handle error when delimiter is not found
+value, err := tinystring.ParseKeyValue("invalidstring")
+// Result: value = "", err = error("delimiter ':' not found in string invalidstring")
 
 // Replace text
 tinystring.Convert("hello world").Replace("world", "universe").String()
