@@ -42,7 +42,7 @@ text := tinystring.Convert("Él Múrcielago Rápido")
 - `CamelCaseUpper()`: Convert to UpperCase (e.g. "hello world" -> "HelloWorld")
 - `ToSnakeCaseLower()`: Converts to snake_case (e.g. "hello world" -> "hello_world"), With  Other Params: `ToSnakeCaseLower("-")` -> "hello-world" 
 - `ToSnakeCaseUpper()`: Convert to SNAKE_CASE (e.g. "hello world" -> "HELLO_WORLD"), With Other Params: `ToSnakeCaseUpper("-")` -> "HELLO-WORLD"
-
+- `Split(data, separator string)`: Divides a string by a separator and returns a slice of substrings
 
 ### Examples
 
@@ -61,6 +61,10 @@ tinystring.Convert("HÓLA MÚNDO")
     .ToLower()
     .String()
 // Result: "hola mundo"
+
+// Split a string by separator
+result := tinystring.Split("apple,banana,cherry", ",")
+// Result: []string{"apple", "banana", "cherry"}
 ```
 
 ## Contributing
