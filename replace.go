@@ -1,6 +1,7 @@
 package tinystring
 
 // Replace replaces all occurrences of old with new in the text content
+// eg: "hello world" with old "world" and new "universe" will return "hello universe"
 func (t *Text) Replace(old, newStr string) *Text {
 	if len(old) == 0 || t.content == "" {
 		return t
@@ -25,6 +26,7 @@ func (t *Text) Replace(old, newStr string) *Text {
 }
 
 // TrimSuffix removes the specified suffix from the text content if it exists
+// eg: "hello.txt" with suffix ".txt" will return "hello"
 func (t *Text) TrimSuffix(suffix string) *Text {
 	if len(t.content) < len(suffix) || t.content[len(t.content)-len(suffix):] != suffix {
 		return t
@@ -34,6 +36,7 @@ func (t *Text) TrimSuffix(suffix string) *Text {
 }
 
 // Trim removes spaces at the beginning and end of the text content
+// eg: "  hello world  " will return "hello world"
 func (t *Text) Trim() *Text {
 	if t.content == "" {
 		return t
@@ -62,5 +65,3 @@ func (t *Text) Trim() *Text {
 	t.content = t.content[start : end+1]
 	return t
 }
-
-// The helper functions have been removed to keep the API clean
