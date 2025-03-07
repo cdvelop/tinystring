@@ -1,6 +1,6 @@
-# TinyText
+# TinyString
 
-TinyText is a lightweight Go library that provides text manipulation with a fluid API, without external dependencies or standard library dependencies.
+TinyString is a lightweight Go library that provides text manipulation with a fluid API, without external dependencies or standard library dependencies.
 
 ## Features
 
@@ -13,20 +13,20 @@ TinyText is a lightweight Go library that provides text manipulation with a flui
 ## Installation
 
 ```bash
-go get github.com/cdvelop/tinytext
+go get github.com/cdvelop/tinystring
 ```
 
 ## Usage
 
 ```go
-import "github.com/cdvelop/tinytext"
+import "github.com/cdvelop/tinystring"
 
 // Basic example
-text := tinytext.Convert("MÍ téxtO").RemoveTilde().String()
+text := tinystring.Convert("MÍ téxtO").RemoveTilde().String()
 // Result: "MI textO"
 
 // Chaining operations
-text := tinytext.Convert("Él Múrcielago Rápido")
+text := tinystring.Convert("Él Múrcielago Rápido")
     .RemoveTilde()
     .CamelCaseLower()
     .String()
@@ -48,15 +48,15 @@ text := tinytext.Convert("Él Múrcielago Rápido")
 
 ```go
 // Remove accents
-tinytext.Convert("áéíóú").RemoveTilde().String()
+tinystring.Convert("áéíóú").RemoveTilde().String()
 // Result: "aeiou"
 
 // Convert to camelCase
-tinytext.Convert("hello world").CamelCaseLower().String()
+tinystring.Convert("hello world").CamelCaseLower().String()
 // Result: "helloWorld"
 
 // Combining operations
-tinytext.Convert("HÓLA MÚNDO")
+tinystring.Convert("HÓLA MÚNDO")
     .RemoveTilde()
     .ToLower()
     .String()

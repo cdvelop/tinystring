@@ -1,9 +1,9 @@
-package tinytext_test
+package tinystring_test
 
 import (
 	"testing"
 
-	. "github.com/cdvelop/tinytext"
+	. "github.com/cdvelop/tinystring"
 )
 
 func TestConversions(t *testing.T) {

@@ -1,4 +1,4 @@
-package tinytext
+package tinystring
 
 // Text struct to store the content of the text
 type Text struct {

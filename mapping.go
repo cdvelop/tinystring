@@ -1,4 +1,4 @@
-package tinytext
+package tinystring
 
 // Slice of mappings to remove accents and diacritics
 var accentMappings = []charMapping{
