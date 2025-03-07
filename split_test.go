@@ -3,7 +3,7 @@ package tinystring_test
 import (
 	"testing"
 
-	"github.com/cdvelop/tinystring"
+	. "github.com/cdvelop/tinystring"
 )
 
 func TestStringSplit(t *testing.T) {
@@ -35,7 +35,7 @@ func TestStringSplit(t *testing.T) {
 	}
 
 	for _, tc := range testCases {
-		result := tinystring.Split(tc.data, tc.separator)
+		result := Split(tc.data, tc.separator)
 
 		if !areStringSlicesEqual(result, tc.expected) {
 			t.Errorf("StringSplit(%q, %q) = %v; expected %v", tc.data, tc.separator, result, tc.expected)

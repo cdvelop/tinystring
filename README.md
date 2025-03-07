@@ -43,6 +43,9 @@ text := tinystring.Convert("Él Múrcielago Rápido")
 - `ToSnakeCaseLower()`: Converts to snake_case (e.g. "hello world" -> "hello_world"), With  Other Params: `ToSnakeCaseLower("-")` -> "hello-world" 
 - `ToSnakeCaseUpper()`: Convert to SNAKE_CASE (e.g. "hello world" -> "HELLO_WORLD"), With Other Params: `ToSnakeCaseUpper("-")` -> "HELLO-WORLD"
 - `Split(data, separator string)`: Divides a string by a separator and returns a slice of substrings
+- `Replace(old, new string)`: Replaces all occurrences of a substring (e.g. "hello world" -> "hello universe")
+- `TrimSuffix(suffix string)`: Removes a specified suffix from the end of a string (e.g. "file.txt" -> "file")
+- `Trim()`: Removes spaces from the beginning and end of a string (e.g. "  hello  " -> "hello")
 
 ### Examples
 
@@ -65,6 +68,22 @@ tinystring.Convert("HÓLA MÚNDO")
 // Split a string by separator
 result := tinystring.Split("apple,banana,cherry", ",")
 // Result: []string{"apple", "banana", "cherry"}
+
+// Replace text
+tinystring.Convert("hello world").Replace("world", "universe").String()
+// Result: "hello universe"
+
+// Trim spaces and remove file extension
+tinystring.Convert("  file.txt  ").Trim().TrimSuffix(".txt").String()
+// Result: "file"
+
+// Chain multiple operations
+text := tinystring.Convert(" User Name ")
+    .Trim()
+    .Replace(" ", "_")
+    .ToLower()
+    .String()
+// Result: "user_name"
 ```
 
 ## Contributing
