@@ -46,6 +46,8 @@ text := tinystring.Convert("Él Múrcielago Rápido")
 - `Replace(old, new string)`: Replaces all occurrences of a substring (e.g. "hello world" -> "hello universe")
 - `TrimSuffix(suffix string)`: Removes a specified suffix from the end of a string (e.g. "file.txt" -> "file")
 - `Trim()`: Removes spaces from the beginning and end of a string (e.g. "  hello  " -> "hello")
+- `Contains(text, search string)`: Checks if a string contains another, returns boolean (e.g. `Contains("hello world", "world")` -> `true`)
+- `CountOccurrences(text, search string)`: Counts how many times a string appears in another (e.g. `CountOccurrences("hello hello world", "hello")` -> `2`)
 
 ### Examples
 
@@ -84,6 +86,15 @@ text := tinystring.Convert(" User Name ")
     .ToLower()
     .String()
 // Result: "user_name"
+
+// Search examples
+// Check if a string contains another
+result := tinystring.Contains("hello world", "world")
+// Result: true
+
+// Count occurrences
+count := tinystring.CountOccurrences("abracadabra", "abra")
+// Result: 2
 ```
 
 ## Contributing
