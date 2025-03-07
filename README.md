@@ -44,6 +44,7 @@ text := tinystring.Convert("Él Múrcielago Rápido")
 - `ToSnakeCaseUpper()`: Convert to SNAKE_CASE (e.g. "hello world" -> "HELLO_WORLD"), With Other Params: `ToSnakeCaseUpper("-")` -> "HELLO-WORLD"
 - `Split(data, separator string)`: Divides a string by a separator and returns a slice of substrings
 - `Replace(old, new string)`: Replaces all occurrences of a substring (e.g. "hello world" -> "hello universe")
+- `TrimPrefix(prefix string)`: Removes a specified prefix from the beginning of a string (e.g. "prefix-content" -> "content")
 - `TrimSuffix(suffix string)`: Removes a specified suffix from the end of a string (e.g. "file.txt" -> "file")
 - `Trim()`: Removes spaces from the beginning and end of a string (e.g. "  hello  " -> "hello")
 - `Contains(text, search string)`: Checks if a string contains another, returns boolean (e.g. `Contains("hello world", "world")` -> `true`)
@@ -74,6 +75,10 @@ result := tinystring.Split("apple,banana,cherry", ",")
 // Replace text
 tinystring.Convert("hello world").Replace("world", "universe").String()
 // Result: "hello universe"
+
+// Trim prefix and suffix
+tinystring.Convert("prefix-content.txt").TrimPrefix("prefix-").TrimSuffix(".txt").String()
+// Result: "content"
 
 // Trim spaces and remove file extension
 tinystring.Convert("  file.txt  ").Trim().TrimSuffix(".txt").String()

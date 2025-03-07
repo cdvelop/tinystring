@@ -37,12 +37,32 @@ func TestStringOperations(t *testing.T) {
 			{"file.txt.txt", ".txt", "file.txt"},
 			{"", "", ""},
 			{"abc", "xyz", "abc"},
+			{"mi_directorio\\cmd", "\\cmd", "mi_directorio"},
 		}
 
 		for _, test := range tests {
 			result := Convert(test.input).TrimSuffix(test.suffix).String()
 			if result != test.expected {
 				t.Errorf("Para input '%s', suffix '%s', esperado '%s', pero obtenido '%s'", test.input, test.suffix, test.expected, result)
+			}
+		}
+	})
+
+	t.Run("TrimPrefix", func(t *testing.T) {
+		tests := []struct {
+			input, prefix, expected string
+		}{
+			{"prefix-hello", "prefix-", "hello"},
+			{"example", "123", "example"},
+			{"txt.file", "txt.", "file"},
+			{"", "", ""},
+			{"abc", "xyz", "abc"},
+		}
+
+		for _, test := range tests {
+			result := Convert(test.input).TrimPrefix(test.prefix).String()
+			if result != test.expected {
+				t.Errorf("Para input '%s', prefix '%s', esperado '%s', pero obtenido '%s'", test.input, test.prefix, test.expected, result)
 			}
 		}
 	})
@@ -113,6 +133,14 @@ func TestStringOperations(t *testing.T) {
 						Replace("words", "terms").
 						Replace("text", "content").
 						String()
+				},
+			},
+			{
+				name:     "TrimPrefix and TrimSuffix",
+				input:    "prefix-content.suffix",
+				expected: "content",
+				chain: func(input string) string {
+					return Convert(input).TrimPrefix("prefix-").TrimSuffix(".suffix").String()
 				},
 			},
 		}

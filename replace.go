@@ -35,6 +35,16 @@ func (t *Text) TrimSuffix(suffix string) *Text {
 	return t
 }
 
+// TrimPrefix removes the specified prefix from the text content if it exists
+// eg: "prefix-hello" with prefix "prefix-" will return "hello"
+func (t *Text) TrimPrefix(prefix string) *Text {
+	if len(t.content) < len(prefix) || t.content[:len(prefix)] != prefix {
+		return t
+	}
+	t.content = t.content[len(prefix):]
+	return t
+}
+
 // Trim removes spaces at the beginning and end of the text content
 // eg: "  hello world  " will return "hello world"
 func (t *Text) Trim() *Text {
