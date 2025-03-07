@@ -38,6 +38,7 @@ text := tinystring.Convert("Él Múrcielago Rápido")
 - `RemoveTilde()`: Removes accents and diacritics (e.g. "café" -> "cafe")
 - `ToLower()`: Converts to lowercase (e.g. "HELLO" -> "hello")
 - `ToUpper()`: Converts to uppercase (e.g. "hello" -> "HELLO")
+- `Capitalize()`: Capitalizes the first letter of each word (e.g. "hello world" -> "Hello World")
 - `CamelCaseLower()`: Converts to camelCase (e.g. "hello world" -> "helloWorld")
 - `CamelCaseUpper()`: Convert to UpperCase (e.g. "hello world" -> "HelloWorld")
 - `ToSnakeCaseLower()`: Converts to snake_case (e.g. "hello world" -> "hello_world"), With  Other Params: `ToSnakeCaseLower("-")` -> "hello-world" 
@@ -117,6 +118,17 @@ result := tinystring.Contains("hello world", "world")
 // Count occurrences
 count := tinystring.CountOccurrences("abracadabra", "abra")
 // Result: 2
+
+// Capitalize each word
+tinystring.Convert("hello world").Capitalize().String()
+// Result: "Hello World"
+
+// Capitalize with accent removal
+tinystring.Convert("hólá múndo")
+    .RemoveTilde()
+    .Capitalize()
+    .String()
+// Result: "Hola Mundo"
 ```
 
 ## Contributing
