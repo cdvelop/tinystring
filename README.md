@@ -51,6 +51,8 @@ text := tinystring.Convert("Él Múrcielago Rápido")
 - `Trim()`: Removes spaces from the beginning and end of a string (e.g. "  hello  " -> "hello")
 - `Contains(text, search string)`: Checks if a string contains another, returns boolean (e.g. `Contains("hello world", "world")` -> `true`)
 - `CountOccurrences(text, search string)`: Counts how many times a string appears in another (e.g. `CountOccurrences("hello hello world", "hello")` -> `2`)
+- `Repeat(n int)`: Repeats the string n times (e.g. "abc".Repeat(3) -> "abcabcabc")
+- `Truncate(maxWidth, reservedChars int)`: Truncates text to a specific width, adding ellipsis if necessary and padding with spaces if text is shorter (e.g. "Hello, World!".Truncate(10, 0) -> "Hello, ...")
 
 ### Examples
 
@@ -129,6 +131,47 @@ tinystring.Convert("hólá múndo")
     .Capitalize()
     .String()
 // Result: "Hola Mundo"
+
+// Repeat a string multiple times
+tinystring.Convert("hello ").Repeat(3).String()
+// Result: "hello hello hello "
+
+// Repeat with other transformations
+tinystring.Convert("test")
+    .ToUpper()
+    .Repeat(2)
+    .String()
+// Result: "TESTTEST"
+
+// Zero or negative repetitions returns an empty string
+tinystring.Convert("test").Repeat(0).String()
+// Result: ""
+
+// Truncate a long string to specific width
+tinystring.Convert("Hello, World!").Truncate(10, 0).String()
+// Result: "Hello, ..."
+
+// Truncate with reserved characters
+tinystring.Convert("Hello, World!").Truncate(10, 3).String()
+// Result: "Hell..."
+
+// Pad a short string with spaces
+tinystring.Convert("Hello").Truncate(10, 0).String()
+// Result: "Hello     "
+
+// Truncate and transform
+tinystring.Convert("hello world")
+    .ToUpper()
+    .Truncate(8, 0)
+    .String()
+// Result: "HELLO..."
+
+// Chaining truncate and repeat
+tinystring.Convert("hello")
+    .Truncate(6, 0)
+    .Repeat(2)
+    .String()
+// Result: "hello hello "
 ```
 
 ## Contributing
