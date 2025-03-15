@@ -39,6 +39,13 @@ func TestTruncate(t *testing.T) {
 			expected:      "He",
 		},
 		{
+			name:          "maxWith is zero",
+			input:         "Test",
+			maxWidth:      0,
+			reservedChars: 0,
+			expected:      "Test",
+		},
+		{
 			name:          "Empty string",
 			input:         "",
 			maxWidth:      5,

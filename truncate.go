@@ -7,6 +7,12 @@ package tinystring
 // eg: Convert("Hello, World!").Truncate(10, 3) => "Hel..."
 func (t *Text) Truncate(maxWidth int, reservedChars int) *Text {
 	text := t.content
+
+	if maxWidth == 0 {
+		// Do not truncate
+		return t
+	}
+
 	actualWidth := maxWidth - reservedChars
 
 	if len(text) > actualWidth {
@@ -21,7 +27,7 @@ func (t *Text) Truncate(maxWidth int, reservedChars int) *Text {
 	} else {
 		// Pad with spaces
 		padding := ""
-		for i := 0; i < maxWidth-len(text); i++ {
+		for range maxWidth - len(text) {
 			padding += " "
 		}
 		t.content = text + padding
