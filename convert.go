@@ -20,9 +20,10 @@ const (
 	toUpper
 )
 
-// initialize the text struct
-func Convert(s string) *Text {
-	return &Text{content: s}
+// initialize the text struct with any type of value
+// supports string, int, float, bool and their variants
+func Convert(v any) *Text {
+	return &Text{content: anyToString(v)}
 }
 
 func (t *Text) transformWithMapping(mappings []charMapping) *Text {

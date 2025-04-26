@@ -9,6 +9,7 @@ TinyString is a lightweight Go library that provides text manipulation with a fl
 - 🧵 Concurrency safe
 - 📦 No external dependencies
 - 🎯 Easily extensible
+- 🔄 Support for converting any data type to string
 
 ## Installation
 
@@ -21,9 +22,19 @@ go get github.com/cdvelop/tinystring
 ```go
 import "github.com/cdvelop/tinystring"
 
-// Basic example
+// Basic example with string
 text := tinystring.Convert("MÍ téxtO").RemoveTilde().String()
 // Result: "MI textO"
+
+// Examples with other data types
+numText := tinystring.Convert(42).String()
+// Result: "42"
+
+boolText := tinystring.Convert(true).ToUpper().String()
+// Result: "TRUE"
+
+floatText := tinystring.Convert(3.14).String()
+// Result: "3.14"
 
 // Chaining operations
 text := tinystring.Convert("Él Múrcielago Rápido")
@@ -35,7 +46,8 @@ text := tinystring.Convert("Él Múrcielago Rápido")
 
 ### Available Operations
 
-- `RemoveTilde()`: Removes accents and diacritics (e.g. "café" -> "cafe")
+- `Convert(v any)`: Initialize text processing with any data type (string, int, float, bool, etc.)
+- `RemoveTilde()`: Removes accents and diacritics (e.g. "café" -> "cafe") 
 - `ToLower()`: Converts to lowercase (e.g. "HELLO" -> "hello")
 - `ToUpper()`: Converts to uppercase (e.g. "hello" -> "HELLO")
 - `Capitalize()`: Capitalizes the first letter of each word (e.g. "hello world" -> "Hello World")
@@ -71,6 +83,23 @@ tinystring.Convert("HÓLA MÚNDO")
     .ToLower()
     .String()
 // Result: "hola mundo"
+
+// Converting different data types
+tinystring.Convert(123).String()
+// Result: "123"
+
+tinystring.Convert(45.67).String()
+// Result: "45.67"
+
+tinystring.Convert(true).String()
+// Result: "true"
+
+// Convert and transform other data types
+tinystring.Convert(456).CamelCaseUpper().String()
+// Result: "456"
+
+tinystring.Convert(false).ToUpper().String()
+// Result: "FALSE"
 
 // Split a string by separator
 result := tinystring.Split("apple,banana,cherry", ",")
