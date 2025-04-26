@@ -4,42 +4,70 @@ package tinystring
 // If the text is longer, it truncates it and adds "..." if there is space.
 // If the text is shorter, it pads it with spaces until the width is reached.
 // The reservedChars parameter indicates how many characters should be reserved for suffixes.
+// This parameter is optional - if not provided, no characters are reserved (equivalent to passing 0).
+// eg: Convert("Hello, World!").Truncate(10) => "Hello, ..."
 // eg: Convert("Hello, World!").Truncate(10, 3) => "Hel..."
-func (t *Text) Truncate(maxWidth int, reservedChars int) *Text {
+func (t *Text) Truncate(maxWidth any, reservedChars ...any) *Text {
 	text := t.content
+	originalLength := len(text)
 
-	if maxWidth == 0 {
-		// Do not truncate
-		return t
+	// Convert maxWidth to integer using the toInt utility function
+	maxWidthInt, ok := toInt(maxWidth)
+	if !ok || maxWidthInt <= 0 {
+		return t // Return original if maxWidth is invalid
 	}
 
-	actualWidth := maxWidth - reservedChars
+	if originalLength > maxWidthInt {
+		// --- Truncation Logic ---
+		ellipsis := "..."
+		ellipsisLen := len(ellipsis)
+		canFitEllipsisInMaxWidth := maxWidthInt >= ellipsisLen
 
-	if len(text) > actualWidth {
-		// Truncate the text
-		if actualWidth > 3 {
-			// There is enough space for the truncated text and the ellipsis
-			t.content = text[:actualWidth-3] + "..."
+		reservedCharsInt := 0
+		if len(reservedChars) > 0 {
+			if val, ok := toInt(reservedChars[0]); ok && val >= 0 {
+				reservedCharsInt = val
+			}
+		}
+		if reservedCharsInt > maxWidthInt {
+			reservedCharsInt = maxWidthInt
+		}
+
+		effectiveWidth := max(maxWidthInt-reservedCharsInt, 0)
+
+		canFitEllipsisInEffectiveWidth := effectiveWidth >= ellipsisLen
+
+		if canFitEllipsisInMaxWidth && canFitEllipsisInEffectiveWidth {
+			// Use ellipsis
+			charsToKeep := max(effectiveWidth-ellipsisLen, 0)
+			// Ensure slicing doesn't exceed original text length
+			if charsToKeep > originalLength { // Added safety check
+				charsToKeep = originalLength
+			}
+			t.content = text[:charsToKeep] + ellipsis
 		} else {
-			// Not enough space for an ellipsis
-			t.content = text[:max(1, actualWidth)]
+			// No ellipsis, just truncate to maxWidth
+			// Ensure slicing doesn't exceed original text length
+			charsToKeep := maxWidthInt
+			if charsToKeep > originalLength { // Added safety check
+				charsToKeep = originalLength
+			}
+			t.content = text[:charsToKeep]
 		}
+		// Truncation happened, no padding needed.
+
 	} else {
-		// Pad with spaces
-		padding := ""
-		for range maxWidth - len(text) {
-			padding += " "
+		// --- Padding Logic (only if originalLength <= maxWidthInt) ---
+		currentLength := len(t.content) // Should be originalLength here
+		if currentLength < maxWidthInt {
+			paddingCount := maxWidthInt - currentLength
+			padding := ""
+			for range paddingCount {
+				padding += " "
+			}
+			t.content = t.content + padding
 		}
-		t.content = text + padding
 	}
 
 	return t
-}
-
-// max returns the maximum of two integers.
-func max(a, b int) int {
-	if a > b {
-		return a
-	}
-	return b
 }

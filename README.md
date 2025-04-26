@@ -65,7 +65,7 @@ text := tinystring.Convert("Él Múrcielago Rápido")
 - `Contains(text, search string)`: Checks if a string contains another, returns boolean (e.g. `Contains("hello world", "world")` -> `true`)
 - `CountOccurrences(text, search string)`: Counts how many times a string appears in another (e.g. `CountOccurrences("hello hello world", "hello")` -> `2`)
 - `Repeat(n int)`: Repeats the string n times (e.g. "abc".Repeat(3) -> "abcabcabc")
-- `Truncate(maxWidth, reservedChars int)`: Truncates text to a specific width, adding ellipsis if necessary and padding with spaces if text is shorter (e.g. "Hello, World!".Truncate(10, 0) -> "Hello, ...")
+- `Truncate(maxWidth any, reservedChars ...any)`: Truncates text to a specific width, adding ellipsis if necessary and padding with spaces if text is shorter. The maxWidth parameter accepts any numeric type. The reservedChars parameter is optional and also accepts any numeric type. (e.g. "Hello, World!".Truncate(10) -> "Hello, ..." or "Hello, World!".Truncate(10, 3) -> "Hell...")
 - `RoundDecimals(decimals int)`: Rounds a numeric value to the specified number of decimal places (e.g. `Convert(3.12221).RoundDecimals(2).String()` -> `"3.12"`)
 - `FormatNumber()`: Formats a number with thousand separators and removes trailing zeros after the decimal point (e.g. `Convert(2189009.00).FormatNumber().String()` -> `"2.189.009"`)
 
@@ -189,27 +189,31 @@ tinystring.Convert("test").Repeat(0).String()
 // Result: ""
 
 // Truncate a long string to specific width
-tinystring.Convert("Hello, World!").Truncate(10, 0).String()
+tinystring.Convert("Hello, World!").Truncate(10).String()
 // Result: "Hello, ..."
 
-// Truncate with reserved characters
+// Truncate with reserved characters (explicitly provided)
 tinystring.Convert("Hello, World!").Truncate(10, 3).String()
 // Result: "Hell..."
 
 // Pad a short string with spaces
-tinystring.Convert("Hello").Truncate(10, 0).String()
+tinystring.Convert("Hello").Truncate(10).String()
 // Result: "Hello     "
 
 // Truncate and transform
 tinystring.Convert("hello world")
     .ToUpper()
-    .Truncate(8, 0)
+    .Truncate(8)
     .String()
 // Result: "HELLO..."
 
+// Truncate with different numeric types
+tinystring.Convert("Hello, World!").Truncate(uint8(10), float64(3)).String()
+// Result: "Hell..."
+
 // Chaining truncate and repeat
 tinystring.Convert("hello")
-    .Truncate(6, 0)
+    .Truncate(6)
     .Repeat(2)
     .String()
 // Result: "hello hello "

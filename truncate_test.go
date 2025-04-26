@@ -6,60 +6,98 @@ func TestTruncate(t *testing.T) {
 	tests := []struct {
 		name          string
 		input         string
-		maxWidth      int
-		reservedChars int
+		maxWidth      any
+		reservedChars any
+		useReserved   bool
 		expected      string
 	}{
 		{
-			name:          "Text shorter than max width",
-			input:         "Hello",
-			maxWidth:      10,
-			reservedChars: 0,
-			expected:      "Hello     ",
+			name:        "Text shorter than max width",
+			input:       "Hello",
+			maxWidth:    10,
+			useReserved: false,
+			expected:    "Hello     ",
 		},
 		{
-			name:          "Text longer than max width with ellipsis",
-			input:         "Hello, World!",
-			maxWidth:      10,
-			reservedChars: 0,
-			expected:      "Hello, ...",
+			name:        "Text longer than max width with ellipsis",
+			input:       "Hello, World!",
+			maxWidth:    10,
+			useReserved: false,
+			expected:    "Hello, ...",
 		},
 		{
 			name:          "Text longer with reserved chars",
 			input:         "Hello, World!",
 			maxWidth:      10,
 			reservedChars: 3,
+			useReserved:   true,
 			expected:      "Hell...",
 		},
 		{
-			name:          "Very short max width",
-			input:         "Hello",
-			maxWidth:      2,
-			reservedChars: 0,
-			expected:      "He",
+			name:        "Very short max width",
+			input:       "Hello",
+			maxWidth:    2,
+			useReserved: false,
+			expected:    "He",
 		},
 		{
-			name:          "maxWith is zero",
-			input:         "Test",
-			maxWidth:      0,
-			reservedChars: 0,
-			expected:      "Test",
+			name:        "maxWith is zero",
+			input:       "Test",
+			maxWidth:    0,
+			useReserved: false,
+			expected:    "Test",
 		},
 		{
-			name:          "Empty string",
-			input:         "",
-			maxWidth:      5,
-			reservedChars: 0,
-			expected:      "     ",
+			name:        "Empty string",
+			input:       "",
+			maxWidth:    5,
+			useReserved: false,
+			expected:    "     ",
+		},
+		{
+			name:        "With uint8 maxWidth",
+			input:       "Hello",
+			maxWidth:    uint8(8),
+			useReserved: false,
+			expected:    "Hello   ",
+		},
+		{
+			name:          "With uint16 maxWidth and uint8 reservedChars",
+			input:         "Hello, World!",
+			maxWidth:      uint16(10),
+			reservedChars: uint8(3),
+			useReserved:   true,
+			expected:      "Hell...",
+		},
+		{
+			name:          "With float32 maxWidth and int64 reservedChars",
+			input:         "Hello, World!",
+			maxWidth:      float32(10.5), // Should truncate to 10
+			reservedChars: int64(2),
+			useReserved:   true,
+			expected:      "Hello...",
+		},
+		{
+			name:        "With float64 maxWidth",
+			input:       "Testing",
+			maxWidth:    float64(9.9), // Should truncate to 9
+			useReserved: false,
+			expected:    "Testing  ",
 		},
 	}
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			result := Convert(tt.input).Truncate(tt.maxWidth, tt.reservedChars).String()
+			var result string
+			if tt.useReserved {
+				result = Convert(tt.input).Truncate(tt.maxWidth, tt.reservedChars).String()
+			} else {
+				result = Convert(tt.input).Truncate(tt.maxWidth).String()
+			}
+
 			if result != tt.expected {
-				t.Errorf("Convert(%q).Truncate(%d, %d) = %q, want %q",
-					tt.input, tt.maxWidth, tt.reservedChars, result, tt.expected)
+				t.Errorf("Convert(%q).Truncate() = %q, want %q",
+					tt.input, result, tt.expected)
 			}
 		})
 	}
@@ -78,7 +116,7 @@ func TestTruncateChain(t *testing.T) {
 			input: "hello world",
 			want:  "HELLO W...",
 			function: func(t *Text) *Text {
-				return t.ToUpper().Truncate(10, 0)
+				return t.ToUpper().Truncate(10)
 			},
 		},
 		{
@@ -86,7 +124,7 @@ func TestTruncateChain(t *testing.T) {
 			input: "HELLO WORLD",
 			want:  "hello...",
 			function: func(t *Text) *Text {
-				return t.ToLower().Truncate(8, 0)
+				return t.ToLower().Truncate(8)
 			},
 		},
 		{
@@ -94,7 +132,7 @@ func TestTruncateChain(t *testing.T) {
 			input: "Ñandú está corriendo",
 			want:  "Nandu esta ...",
 			function: func(t *Text) *Text {
-				return t.RemoveTilde().Truncate(14, 0)
+				return t.RemoveTilde().Truncate(14)
 			},
 		},
 		{
@@ -102,7 +140,7 @@ func TestTruncateChain(t *testing.T) {
 			input: "hello world example",
 			want:  "helloWorld...",
 			function: func(t *Text) *Text {
-				return t.CamelCaseLower().Truncate(13, 0)
+				return t.CamelCaseLower().Truncate(13)
 			},
 		},
 		{
@@ -110,7 +148,7 @@ func TestTruncateChain(t *testing.T) {
 			input: "hello",
 			want:  "hello hello ",
 			function: func(t *Text) *Text {
-				return t.Truncate(6, 0).Repeat(2)
+				return t.Truncate(6).Repeat(2)
 			},
 		},
 		{
@@ -118,7 +156,7 @@ func TestTruncateChain(t *testing.T) {
 			input: "Hello World Example",
 			want:  "hello_world_...",
 			function: func(t *Text) *Text {
-				return t.ToSnakeCaseLower().Truncate(15, 0)
+				return t.ToSnakeCaseLower().Truncate(15)
 			},
 		},
 		{
@@ -126,7 +164,7 @@ func TestTruncateChain(t *testing.T) {
 			input: "Hello World Example",
 			want:  "hello-world-ex...",
 			function: func(t *Text) *Text {
-				return t.ToSnakeCaseLower("-").Truncate(17, 0)
+				return t.ToSnakeCaseLower("-").Truncate(17)
 			},
 		},
 		{
@@ -134,7 +172,23 @@ func TestTruncateChain(t *testing.T) {
 			input: "Él Múrcielago Rápido",
 			want:  "ELMURC...",
 			function: func(t *Text) *Text {
-				return t.RemoveTilde().CamelCaseLower().ToUpper().Truncate(9, 0)
+				return t.RemoveTilde().CamelCaseLower().ToUpper().Truncate(9)
+			},
+		},
+		{
+			name:  "Using explicit reserved chars",
+			input: "Hello, World!",
+			want:  "Hell...",
+			function: func(t *Text) *Text {
+				return t.Truncate(10, 3)
+			},
+		},
+		{
+			name:  "Using different numeric types",
+			input: "Testing different types",
+			want:  "Testing...",
+			function: func(t *Text) *Text {
+				return t.Truncate(uint8(12), float64(2))
 			},
 		},
 	}
