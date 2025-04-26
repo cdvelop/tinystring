@@ -39,19 +39,12 @@ func (t *Text) Truncate(maxWidth any, reservedChars ...any) *Text {
 
 		if canFitEllipsisInMaxWidth && canFitEllipsisInEffectiveWidth {
 			// Use ellipsis
-			charsToKeep := max(effectiveWidth-ellipsisLen, 0)
-			// Ensure slicing doesn't exceed original text length
-			if charsToKeep > originalLength { // Added safety check
-				charsToKeep = originalLength
-			}
+			charsToKeep := min(max(effectiveWidth-ellipsisLen, 0), originalLength)
 			t.content = text[:charsToKeep] + ellipsis
 		} else {
 			// No ellipsis, just truncate to maxWidth
 			// Ensure slicing doesn't exceed original text length
-			charsToKeep := maxWidthInt
-			if charsToKeep > originalLength { // Added safety check
-				charsToKeep = originalLength
-			}
+			charsToKeep := min(maxWidthInt, originalLength)
 			t.content = text[:charsToKeep]
 		}
 		// Truncation happened, no padding needed.
