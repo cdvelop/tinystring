@@ -8,8 +8,9 @@ TinyString is a lightweight Go library that provides text manipulation with a fl
 - 🔄 Common text transformations
 - 🧵 Concurrency safe
 - 📦 No external dependencies
-- 🎯 Easily extensible
+- 🎯 Easily extensible TinyGo Compatible
 - 🔄 Support for converting any data type to string
+
 
 ## Installation
 
@@ -65,6 +66,8 @@ text := tinystring.Convert("Él Múrcielago Rápido")
 - `CountOccurrences(text, search string)`: Counts how many times a string appears in another (e.g. `CountOccurrences("hello hello world", "hello")` -> `2`)
 - `Repeat(n int)`: Repeats the string n times (e.g. "abc".Repeat(3) -> "abcabcabc")
 - `Truncate(maxWidth, reservedChars int)`: Truncates text to a specific width, adding ellipsis if necessary and padding with spaces if text is shorter (e.g. "Hello, World!".Truncate(10, 0) -> "Hello, ...")
+- `RoundDecimals(decimals int)`: Rounds a numeric value to the specified number of decimal places (e.g. `Convert(3.12221).RoundDecimals(2).String()` -> `"3.12"`)
+- `FormatNumber()`: Formats a number with thousand separators and removes trailing zeros after the decimal point (e.g. `Convert(2189009.00).FormatNumber().String()` -> `"2.189.009"`)
 
 ### Examples
 
@@ -99,6 +102,15 @@ tinystring.Convert(456).CamelCaseUpper().String()
 // Result: "456"
 
 tinystring.Convert(false).ToUpper().String()
+// Result: "FALSE"
+
+// Format number with decimal places
+tinystring.Convert(3.12221).RoundDecimals(2).String()
+// Result: "3.12"
+
+// Format number with thousand separators
+tinystring.Convert(2189009.00).FormatNumber().String()
+// Result: "2.189.009"
 // Result: "FALSE"
 
 // Split a string by separator
