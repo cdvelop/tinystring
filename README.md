@@ -57,6 +57,7 @@ text := tinystring.Convert("Él Múrcielago Rápido")
 - `ToSnakeCaseLower()`: Converts to snake_case (e.g. "hello world" -> "hello_world"), With  Other Params: `ToSnakeCaseLower("-")` -> "hello-world" 
 - `ToSnakeCaseUpper()`: Convert to SNAKE_CASE (e.g. "hello world" -> "HELLO_WORLD"), With Other Params: `ToSnakeCaseUpper("-")` -> "HELLO-WORLD"
 - `Split(data, separator string)`: Divides a string by a separator and returns a slice of substrings
+- `Join(sep ...string)`: Joins elements of a string slice with a specified separator (default: space). (e.g. `Convert([]string{"Hello", "World"}).Join()` -> `"Hello World"` or `Convert([]string{"Hello", "World"}).Join("-")` -> `"Hello-World"`)
 - `ParseKeyValue(input string, delimiter string)`: Extracts the value from a key:value string format (e.g. `ParseKeyValue("name:John")` -> `"John", nil`)
 - `Replace(old, new string)`: Replaces all occurrences of a substring (e.g. "hello world" -> "hello universe")
 - `TrimPrefix(prefix string)`: Removes a specified prefix from the beginning of a string (e.g. "prefix-content" -> "content")
@@ -141,6 +142,18 @@ value, err := tinystring.ParseKeyValue("path:usr:local:bin")
 // Handle error when delimiter is not found
 value, err := tinystring.ParseKeyValue("invalidstring")
 // Result: value = "", err = error("delimiter ':' not found in string invalidstring")
+
+// Join string slices with default space separator
+result := tinystring.Convert([]string{"Hello", "World"}).Join().String()
+// Result: "Hello World" 
+
+// Join with custom separator
+result := tinystring.Convert([]string{"apple", "banana", "orange"}).Join("-").String()
+// Result: "apple-banana-orange"
+
+// Join and chain with other transformations
+result := tinystring.Convert([]string{"hello", "world"}).Join().ToUpper().String()
+// Result: "HELLO WORLD"
 
 // Replace text
 tinystring.Convert("hello world").Replace("world", "universe").String()

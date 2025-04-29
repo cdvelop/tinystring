@@ -109,9 +109,8 @@ func (t *Text) TruncateName(maxCharsPerWord, maxWidth any) *Text {
 			processedWords[i] = word
 		}
 	}
-
 	// Step 2: Check if the processed result fits within maxTotal
-	result := JoinWithSpace(processedWords)
+	result := Convert(processedWords).Join().String()
 	if len(result) <= maxTotal {
 		t.content = result
 		return t
