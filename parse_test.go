@@ -1,7 +1,6 @@
 package tinystring_test
 
 import (
-	"strings"
 	"testing"
 
 	. "github.com/cdvelop/tinystring"
@@ -101,7 +100,7 @@ func TestParseKeyValue(t *testing.T) {
 			} else {
 				if gotErr == nil {
 					t.Errorf("ParseKeyValue() error = nil, want error containing %q", tc.wantErrText)
-				} else if !strings.Contains(gotErr.Error(), tc.wantErrText) {
+				} else if !Contains(gotErr.Error(), tc.wantErrText) {
 					t.Errorf("ParseKeyValue() error = %v, want error containing %q", gotErr, tc.wantErrText)
 				}
 			}

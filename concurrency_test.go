@@ -2,7 +2,6 @@ package tinystring
 
 import (
 	"fmt"
-	"strings"
 	"sync"
 	"testing"
 	"time"
@@ -62,7 +61,7 @@ func TestConcurrentConvert(t *testing.T) {
 	select {
 	case <-done:
 		if counter.count > 0 {
-			t.Errorf("Failed with %d errors:\n%s", counter.count, strings.Join(counter.errs, "\n"))
+			t.Errorf("Failed with %d errors:\n%s", counter.count, Convert(counter.errs).Join("\n").String())
 		}
 	case <-time.After(5 * time.Second):
 		t.Fatal("Test timed out after 5 seconds")
@@ -154,7 +153,7 @@ func TestConcurrentUtilityFunctions(t *testing.T) {
 			select {
 			case <-done:
 				if counter.count > 0 {
-					t.Errorf("Failed with %d errors:\n%s", counter.count, strings.Join(counter.errs, "\n"))
+					t.Errorf("Failed with %d errors:\n%s", counter.count, Convert(counter.errs).Join("\n").String())
 				}
 			case <-time.After(5 * time.Second):
 				t.Fatal("Test timed out after 5 seconds")
@@ -242,7 +241,7 @@ func TestConcurrentStringManipulation(t *testing.T) {
 			select {
 			case <-done:
 				if counter.count > 0 {
-					t.Errorf("Failed with %d errors:\n%s", counter.count, strings.Join(counter.errs, "\n"))
+					t.Errorf("Failed with %d errors:\n%s", counter.count, Convert(counter.errs).Join("\n").String())
 				}
 			case <-time.After(5 * time.Second):
 				t.Fatal("Test timed out after 5 seconds")
