@@ -16,7 +16,7 @@ func TestTruncate(t *testing.T) {
 			input:       "Hello",
 			maxWidth:    10,
 			useReserved: false,
-			expected:    "Hello",
+			expected:    "Hello", // No padding expected
 		},
 		{
 			name:        "Text longer than max width with ellipsis",
@@ -52,14 +52,14 @@ func TestTruncate(t *testing.T) {
 			input:       "",
 			maxWidth:    5,
 			useReserved: false,
-			expected:    "     ",
+			expected:    "", // No padding expected
 		},
 		{
 			name:        "With uint8 maxWidth",
 			input:       "Hello",
 			maxWidth:    uint8(8),
 			useReserved: false,
-			expected:    "Hello   ",
+			expected:    "Hello", // No padding expected
 		},
 		{
 			name:          "With uint16 maxWidth and uint8 reservedChars",
@@ -82,7 +82,7 @@ func TestTruncate(t *testing.T) {
 			input:       "Testing",
 			maxWidth:    float64(9.9), // Should truncate to 9
 			useReserved: false,
-			expected:    "Testing  ",
+			expected:    "Testing", // No padding expected
 		},
 	}
 
@@ -146,7 +146,7 @@ func TestTruncateChain(t *testing.T) {
 		{
 			name:  "Truncate and repeat",
 			input: "hello",
-			want:  "hello hello ",
+			want:  "hellohello", // No padding expected before repeat
 			function: func(t *Text) *Text {
 				return t.Truncate(6).Repeat(2)
 			},
