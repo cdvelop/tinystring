@@ -66,6 +66,7 @@ text := tinystring.Convert("Él Múrcielago Rápido")
 - `CountOccurrences(text, search string)`: Counts how many times a string appears in another (e.g. `CountOccurrences("hello hello world", "hello")` -> `2`)
 - `Repeat(n int)`: Repeats the string n times (e.g. "abc".Repeat(3) -> "abcabcabc")
 - `Truncate(maxWidth any, reservedChars ...any)`: Truncates text to a specific width, adding ellipsis if necessary and padding with spaces if text is shorter. The maxWidth parameter accepts any numeric type. The reservedChars parameter is optional and also accepts any numeric type. (e.g. "Hello, World!".Truncate(10) -> "Hello, ..." or "Hello, World!".Truncate(10, 3) -> "Hell...")
+- `TruncateName(maxCharsPerWord any, maxWidth any, text string)`: Truncates names and surnames in a user-friendly way for displaying in limited spaces like chart labels. It adds abbreviation dots where appropriate and handles the first word specially when there are more than 2 words. Parameters: maxCharsPerWord (maximum characters per word), maxWidth (maximum total length), and text (the string to process). (e.g. Convert("").TruncateName(3, 15, "Jeronimo Dominguez") -> "Jer. Dom...")
 - `RoundDecimals(decimals int)`: Rounds a numeric value to the specified number of decimal places (e.g. `Convert(3.12221).RoundDecimals(2).String()` -> `"3.12"`)
 - `FormatNumber()`: Formats a number with thousand separators and removes trailing zeros after the decimal point (e.g. `Convert(2189009.00).FormatNumber().String()` -> `"2.189.009"`)
 
@@ -199,6 +200,18 @@ tinystring.Convert("Hello, World!").Truncate(10, 3).String()
 // Pad a short string with spaces
 tinystring.Convert("Hello").Truncate(10).String()
 // Result: "Hello     "
+
+// Truncate names and surnames for display in charts or limited spaces
+tinystring.Convert("").TruncateName(3, 15, "Jeronimo Dominguez").String()
+// Result: "Jer. Dom..."
+
+// Truncate multiple names and surnames with total length limit
+tinystring.Convert("").TruncateName(2, 10, "Ana Maria Rodriguez").String()
+// Result: "An. Ma..."
+
+// Handle first word specially when more than 2 words
+tinystring.Convert("").TruncateName(3, 20, "Juan Carlos Rodriguez").String()
+// Result: "Jua. Car. Rod..."
 
 // Truncate and transform
 tinystring.Convert("hello world")

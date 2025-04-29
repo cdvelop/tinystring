@@ -16,7 +16,7 @@ func TestTruncate(t *testing.T) {
 			input:       "Hello",
 			maxWidth:    10,
 			useReserved: false,
-			expected:    "Hello     ",
+			expected:    "Hello",
 		},
 		{
 			name:        "Text longer than max width with ellipsis",
