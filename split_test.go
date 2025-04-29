@@ -7,7 +7,8 @@ import (
 )
 
 func TestStringSplit(t *testing.T) {
-	testCases := []struct {
+	// Test cases with explicit separator
+	testCasesWithSeparator := []struct {
 		data      string
 		separator string
 		expected  []string
@@ -20,7 +21,7 @@ func TestStringSplit(t *testing.T) {
 		{"hello. world", ".", []string{"hello", " world"}},
 		{"h.", ".", []string{"h."}},
 
-		// New test cases for edge conditions
+		// Edge condition test cases
 		{"", ",", []string{""}},                                   // Empty string
 		{"abc", "", []string{"a", "b", "c"}},                      // Empty separator
 		{"ab", ",", []string{"ab"}},                               // String shorter than 3 chars
@@ -34,11 +35,38 @@ func TestStringSplit(t *testing.T) {
 		{"abc:::def:::ghi", ":::", []string{"abc", "def", "ghi"}}, // Multi-char separator
 	}
 
-	for _, tc := range testCases {
+	// Test cases for whitespace splitting (no explicit separator)
+	testCasesWhitespace := []struct {
+		data     string
+		expected []string
+	}{
+		{"hello world", []string{"hello", "world"}},
+		{"  hello  world  ", []string{"hello", "world"}},
+		{"hello\tworld", []string{"hello", "world"}},
+		{"hello\nworld", []string{"hello", "world"}},
+		{"hello\rworld", []string{"hello", "world"}},
+		{"hello world  test", []string{"hello", "world", "test"}},
+		{"", []string{}},                               // Empty string
+		{"hello", []string{"hello"}},                   // Single word
+		{"   ", []string{}},                            // Only whitespace
+		{"hello\n\tworld", []string{"hello", "world"}}, // Mixed whitespace
+	}
+
+	// Test with explicit separator
+	for _, tc := range testCasesWithSeparator {
 		result := Split(tc.data, tc.separator)
 
 		if !areStringSlicesEqual(result, tc.expected) {
-			t.Errorf("StringSplit(%q, %q) = %v; expected %v", tc.data, tc.separator, result, tc.expected)
+			t.Errorf("Split(%q, %q) = %v; expected %v", tc.data, tc.separator, result, tc.expected)
+		}
+	}
+
+	// Test with default whitespace separator
+	for _, tc := range testCasesWhitespace {
+		result := Split(tc.data)
+
+		if !areStringSlicesEqual(result, tc.expected) {
+			t.Errorf("Split(%q) = %v; expected %v", tc.data, result, tc.expected)
 		}
 	}
 }

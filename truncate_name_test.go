@@ -29,7 +29,7 @@ func TestTruncateName(t *testing.T) {
 			input:           "Ana Maria Rodriguez Sanchez",
 			maxCharsPerWord: 2,
 			maxWidth:        20,
-			expected:        "An. Ma. Rodriguez...",
+			expected:        "An. Ma. Ro. Sanchez",
 		},
 		{
 			name:            "With total length constraint",
@@ -50,7 +50,7 @@ func TestTruncateName(t *testing.T) {
 			input:           "Bob Alexandrovich",
 			maxCharsPerWord: 4,
 			maxWidth:        15,
-			expected:        "Bob Alex.",
+			expected:        "Bob Alexandr...",
 		},
 		{
 			name:            "Very short max chars",
@@ -118,21 +118,21 @@ func TestTruncateNameChain(t *testing.T) {
 	}{{
 		name:  "Uppercase and truncate name",
 		input: "carlos mendez",
-		want:  "CARLOS MENDEZ", // No truncation needed within maxWidth 15
+		want:  "CAR. MENDEZ", // only truncation first word
 		function: func(t *Text) *Text {
 			return t.ToUpper().TruncateName(3, 15)
 		},
 	}, {
 		name:  "Remove tilde and truncate name",
 		input: "José Martínez",
-		want:  "Jose Martinez", // No truncation needed within maxWidth 15
+		want:  "Jose Martinez", // No truncation (4) needed within maxWidth 15
 		function: func(t *Text) *Text {
-			return t.RemoveTilde().TruncateName(3, 15)
+			return t.RemoveTilde().TruncateName(4, 15)
 		},
 	}, {
 		name:  "Complex chaining",
 		input: "MARÍA del carmen GARCÍA",
-		want:  "maria del carmen garcia", // No truncation needed within maxWidth 25
+		want:  "mar. del car. garcía", // truncation per word needed within maxWidth 25
 		function: func(t *Text) *Text {
 			return t.ToLower().TruncateName(3, 25)
 		},
