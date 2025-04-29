@@ -65,7 +65,7 @@ text := tinystring.Convert("Él Múrcielago Rápido")
 - `Contains(text, search string)`: Checks if a string contains another, returns boolean (e.g. `Contains("hello world", "world")` -> `true`)
 - `CountOccurrences(text, search string)`: Counts how many times a string appears in another (e.g. `CountOccurrences("hello hello world", "hello")` -> `2`)
 - `Repeat(n int)`: Repeats the string n times (e.g. "abc".Repeat(3) -> "abcabcabc")
-- `Truncate(maxWidth any, reservedChars ...any)`: Truncates text to a specific width, adding ellipsis if necessary and padding with spaces if text is shorter. The maxWidth parameter accepts any numeric type. The reservedChars parameter is optional and also accepts any numeric type. (e.g. "Hello, World!".Truncate(10) -> "Hello, ..." or "Hello, World!".Truncate(10, 3) -> "Hell...")
+- `Truncate(maxWidth any, reservedChars ...any)`: Truncates text so that it does not exceed the specified width, adding ellipsis if necessary. If the text is shorter or equal, it remains unchanged. The maxWidth parameter accepts any numeric type. The reservedChars parameter is optional and also accepts any numeric type. (e.g. "Hello, World!".Truncate(10) -> "Hello, ..." or "Hello, World!".Truncate(10, 3) -> "Hell...")
 - `TruncateName(maxCharsPerWord any, maxWidth any, text string)`: Truncates names and surnames in a user-friendly way for displaying in limited spaces like chart labels. It adds abbreviation dots where appropriate and handles the first word specially when there are more than 2 words. Parameters: maxCharsPerWord (maximum characters per word), maxWidth (maximum total length), and text (the string to process). (e.g. Convert("").TruncateName(3, 15, "Jeronimo Dominguez") -> "Jer. Dom...")
 - `RoundDecimals(decimals int)`: Rounds a numeric value to the specified number of decimal places (e.g. `Convert(3.12221).RoundDecimals(2).String()` -> `"3.12"`)
 - `FormatNumber()`: Formats a number with thousand separators and removes trailing zeros after the decimal point (e.g. `Convert(2189009.00).FormatNumber().String()` -> `"2.189.009"`)
@@ -197,9 +197,9 @@ tinystring.Convert("Hello, World!").Truncate(10).String()
 tinystring.Convert("Hello, World!").Truncate(10, 3).String()
 // Result: "Hell..."
 
-// Pad a short string with spaces
+// Text shorter than max width remains unchanged
 tinystring.Convert("Hello").Truncate(10).String()
-// Result: "Hello     "
+// Result: "Hello"
 
 // Truncate names and surnames for display in charts or limited spaces
 tinystring.Convert("").TruncateName(3, 15, "Jeronimo Dominguez").String()
@@ -226,10 +226,10 @@ tinystring.Convert("Hello, World!").Truncate(uint8(10), float64(3)).String()
 
 // Chaining truncate and repeat
 tinystring.Convert("hello")
-    .Truncate(6)
+    .Truncate(6) // Truncate(6) doesn't change "hello"
     .Repeat(2)
     .String()
-// Result: "hello hello "
+// Result: "hellohello"
 ```
 
 ## Contributing

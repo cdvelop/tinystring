@@ -7,14 +7,13 @@ package tinystring
 // Parameters:
 //   - maxCharsPerWord: maximum number of characters to keep per word (any numeric type)
 //   - maxWidth: maximum total length for the final string (any numeric type)
-//   - text: the text to truncate (string)
 //
 // Examples:
-//   - Convert("").TruncateName(3, 15, "Jeronimo Dominguez") => "Jer. Dominguez"
-//   - Convert("").TruncateName(2, 10, "Ana Maria Rodriguez") => "An. Mar..."
-//   - Convert("").TruncateName(3, 5, "Juan") => "Juan"
-func (t *Text) TruncateName(maxCharsPerWord, maxWidth any, inputText string) *Text {
-	if inputText == "" {
+//   - Convert("Jeronimo Dominguez").TruncateName(3, 15) => "Jer. Dominguez"
+//   - Convert("Ana Maria Rodriguez").TruncateName(2, 10) => "An. Mar..."
+//   - Convert("Juan").TruncateName(3, 5) => "Juan"
+func (t *Text) TruncateName(maxCharsPerWord, maxWidth any) *Text {
+	if t.content == "" {
 		return t
 	}
 
@@ -33,7 +32,7 @@ func (t *Text) TruncateName(maxCharsPerWord, maxWidth any, inputText string) *Te
 	// Default suffix
 	suffixStr := "..."
 	// Split by spaces to get individual words
-	words := SplitBySpace(inputText)
+	words := SplitBySpace(t.content)
 	result := make([]string, 0, len(words))
 	// Special processing - first word gets truncated if there are more than 2 words
 	// Calculate total length before applying any truncation

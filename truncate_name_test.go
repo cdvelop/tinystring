@@ -98,16 +98,11 @@ func TestTruncateName(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			result := Convert("").TruncateName(tt.maxCharsPerWord, tt.maxWidth, tt.input).String()
+			result := Convert(tt.input).TruncateName(tt.maxCharsPerWord, tt.maxWidth).String()
 
 			if result != tt.expected {
-				t.Errorf("TruncateName(%v, %v, %q) = %q, want %q",
-					tt.maxCharsPerWord, tt.maxWidth, tt.input, result, tt.expected)
-			}
-
-			if result != tt.expected {
-				t.Errorf("Convert(%q).TruncateName() = %q, want %q",
-					tt.input, result, tt.expected)
+				t.Errorf("Convert(%q).TruncateName(%v, %v) = %q, want %q",
+					tt.input, tt.maxCharsPerWord, tt.maxWidth, result, tt.expected)
 			}
 		})
 	}
@@ -120,41 +115,35 @@ func TestTruncateNameChain(t *testing.T) {
 		input    string
 		want     string
 		function func(*Text) *Text
-	}{
-		{
-			name:  "Uppercase and truncate name",
-			input: "carlos mendez",
-			want:  "CARLOS MENDEZ", // No truncation needed within maxWidth 15
-			function: func(t *Text) *Text {
-				return t.ToUpper().TruncateName(3, 15, t.content)
-			},
+	}{{
+		name:  "Uppercase and truncate name",
+		input: "carlos mendez",
+		want:  "CARLOS MENDEZ", // No truncation needed within maxWidth 15
+		function: func(t *Text) *Text {
+			return t.ToUpper().TruncateName(3, 15)
 		},
-		{
-			name:  "Remove tilde and truncate name",
-			input: "José Martínez",
-			want:  "Jose Martinez", // No truncation needed within maxWidth 15
-			function: func(t *Text) *Text {
-				txt := t.RemoveTilde().content
-				return t.TruncateName(3, 15, txt)
-			},
+	}, {
+		name:  "Remove tilde and truncate name",
+		input: "José Martínez",
+		want:  "Jose Martinez", // No truncation needed within maxWidth 15
+		function: func(t *Text) *Text {
+			return t.RemoveTilde().TruncateName(3, 15)
 		},
-		{
-			name:  "Complex chaining",
-			input: "MARÍA del carmen GARCÍA",
-			want:  "maria del carmen garcia", // No truncation needed within maxWidth 25
-			function: func(t *Text) *Text {
-				txt := t.ToLower().content
-				return t.TruncateName(3, 25, txt)
-			},
+	}, {
+		name:  "Complex chaining",
+		input: "MARÍA del carmen GARCÍA",
+		want:  "maria del carmen garcia", // No truncation needed within maxWidth 25
+		function: func(t *Text) *Text {
+			return t.ToLower().TruncateName(3, 25)
 		},
-		{
-			name:  "With total length limit",
-			input: "Roberto Carlos Fernandez",
-			want:  "Rob. Car...", // Truncation needed at maxWidth 11
-			function: func(t *Text) *Text {
-				return t.TruncateName(3, 11, t.content)
-			},
+	}, {
+		name:  "With total length limit",
+		input: "Roberto Carlos Fernandez",
+		want:  "Rob. Car...", // Truncation needed at maxWidth 11
+		function: func(t *Text) *Text {
+			return t.TruncateName(3, 11)
 		},
+	},
 	}
 
 	for _, tt := range tests {
