@@ -1,20 +1,34 @@
 package tinystring
 
-// Replace replaces all occurrences of old with new in the text content
+// Replace replaces up to n occurrences of old with new in the text content
+// If n < 0, there is no limit on the number of replacements
 // eg: "hello world" with old "world" and new "universe" will return "hello universe"
-func (t *Text) Replace(old, newStr string) *Text {
+// Old and new can be any type, they will be converted to string using anyToString
+func (t *Text) Replace(oldAny, newAny any, n ...int) *Text {
+	old := anyToString(oldAny)
+	newStr := anyToString(newAny)
+
 	if len(old) == 0 || t.content == "" {
 		return t
 	}
 
+	// Default behavior: replace all occurrences (n = -1)
+	maxReplacements := -1
+	if len(n) > 0 {
+		maxReplacements = n[0]
+	}
+
 	var result string
+	replacements := 0
 	for i := 0; i < len(t.content); i++ {
-		// Check for occurrence of old in the text
-		if i+len(old) <= len(t.content) && t.content[i:i+len(old)] == old {
+		// Check for occurrence of old in the text and if we haven't reached the maximum replacements
+		if i+len(old) <= len(t.content) && t.content[i:i+len(old)] == old && (maxReplacements < 0 || replacements < maxReplacements) {
 			// Add the new word to the result
 			result += newStr
 			// Skip the length of the old word in the original text
 			i += len(old) - 1
+			// Increment replacement counter
+			replacements++
 		} else {
 			// Add the current character to the result
 			result += string(t.content[i])

@@ -9,21 +9,40 @@ import (
 func TestStringOperations(t *testing.T) {
 	t.Run("Replace", func(t *testing.T) {
 		tests := []struct {
-			input, old, newStr, expected string
+			input    string
+			old      any
+			newStr   any
+			n        int
+			expected string
 		}{
-			{"Este es un ejemplo de texto de prueba.", "ejemplo", "cambio", "Este es un cambio de texto de prueba."},
-			{"Hola mundo!", "mundo", "Gophers", "Hola Gophers!"},
-			{"abc abc abc", "abc", "123", "123 123 123"},
-			{"abc", "xyz", "123", "abc"},
-			{"", "", "123", ""},
-			{"abcdabcdabcd", "cd", "12", "ab12ab12ab12"},
-			{"palabra, punto,", ",", ".", "palabra. punto."},
+			{"Este es un ejemplo de texto de prueba.", "ejemplo", "cambio", -1, "Este es un cambio de texto de prueba."},
+			{"Hola mundo!", "mundo", "Gophers", -1, "Hola Gophers!"},
+			{"abc abc abc", "abc", "123", -1, "123 123 123"},
+			{"abc", "xyz", "123", -1, "abc"},
+			{"", "", "123", -1, ""},
+			{"abcdabcdabcd", "cd", "12", -1, "ab12ab12ab12"},
+			{"palabra, punto,", ",", ".", -1, "palabra. punto."},
+			// Pruebas con tipos diferentes de any
+			{"Test 123 value", 123, 456, -1, "Test 456 value"},
+			{"Boolean true in text", true, false, -1, "Boolean false in text"},
+			{"Pi is 3.14159", 3.14159, 3.142, -1, "Pi is 3.142"},
+			// Pruebas con límite de reemplazos
+			{"abc abc abc", "abc", "123", 1, "123 abc abc"},
+			{"abc abc abc", "abc", "123", 2, "123 123 abc"},
+			{"abc abc abc", "abc", "123", 0, "abc abc abc"},
 		}
 
 		for _, test := range tests {
-			result := Convert(test.input).Replace(test.old, test.newStr).String()
+			var result string
+			if test.n >= 0 {
+				result = Convert(test.input).Replace(test.old, test.newStr, test.n).String()
+			} else {
+				result = Convert(test.input).Replace(test.old, test.newStr).String()
+			}
+
 			if result != test.expected {
-				t.Errorf("Para input '%s', old '%s', new '%s', esperado '%s', pero obtenido '%s'", test.input, test.old, test.newStr, test.expected, result)
+				t.Errorf("Para input '%s', old '%v', new '%v', n '%d', esperado '%s', pero obtenido '%s'",
+					test.input, test.old, test.newStr, test.n, test.expected, result)
 			}
 		}
 	})

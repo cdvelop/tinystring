@@ -59,7 +59,7 @@ text := tinystring.Convert("Él Múrcielago Rápido")
 - `Split(data, separator string)`: Divides a string by a separator and returns a slice of substrings
 - `Join(sep ...string)`: Joins elements of a string slice with a specified separator (default: space). (e.g. `Convert([]string{"Hello", "World"}).Join()` -> `"Hello World"` or `Convert([]string{"Hello", "World"}).Join("-")` -> `"Hello-World"`)
 - `ParseKeyValue(input string, delimiter string)`: Extracts the value from a key:value string format (e.g. `ParseKeyValue("name:John")` -> `"John", nil`)
-- `Replace(old, new string)`: Replaces all occurrences of a substring (e.g. "hello world" -> "hello universe")
+- `Replace(old, new any, n ...int)`: Replaces occurrences of a substring. If n is provided, replaces up to n occurrences. If n < 0 or not provided, replaces all. The old and new parameters can be of any type (string, int, float, bool) and will be converted to string automatically. (e.g. "hello world" -> "hello universe" or "value 123 here" -> "value 456 here")
 - `TrimPrefix(prefix string)`: Removes a specified prefix from the beginning of a string (e.g. "prefix-content" -> "content")
 - `TrimSuffix(suffix string)`: Removes a specified suffix from the end of a string (e.g. "file.txt" -> "file")
 - `Trim()`: Removes spaces from the beginning and end of a string (e.g. "  hello  " -> "hello")
