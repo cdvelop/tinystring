@@ -43,11 +43,17 @@ text := tinystring.Convert("Él Múrcielago Rápido")
     .CamelCaseLower()
     .String()
 // Result: "elMurcielagoRapido"
+
+// Working with string pointers (avoids extra allocations)
+// This method reduces memory allocations by modifying the original string directly
+originalText := "Él Múrcielago Rápido"
+_ = tinystring.Convert(&originalText).RemoveTilde().CamelCaseLower().String()
+// originalText is now modified directly: "elMurcielagoRapido"
 ```
 
 ### Available Operations
 
-- `Convert(v any)`: Initialize text processing with any data type (string, int, float, bool, etc.)
+- `Convert(v any)`: Initialize text processing with any data type (string, *string, int, float, bool, etc.). When using a string pointer (*string), the original string will be modified directly, avoiding extra memory allocations.
 - `RemoveTilde()`: Removes accents and diacritics (e.g. "café" -> "cafe") 
 - `ToLower()`: Converts to lowercase (e.g. "HELLO" -> "hello")
 - `ToUpper()`: Converts to uppercase (e.g. "hello" -> "HELLO")
@@ -229,6 +235,33 @@ tinystring.Convert("Jeronimo Dominguez").TruncateName(3, 15).String()
 // Truncate multiple names and surnames with total length limit
 tinystring.Convert("Ana Maria Rodriguez").TruncateName(2, 10).String()
 // Result: "An. Mar..."
+
+### Working with String Pointers
+
+TinyString supports working directly with string pointers to avoid additional memory allocations. This can be especially useful in performance-critical applications or when processing large volumes of text.
+
+```go
+// Create a string variable
+text := "Él Múrcielago Rápido"
+
+// Modify it directly using string pointer
+// No need to reassign the result
+Convert(&text).RemoveTilde().ToLower().String()
+
+// The original variable is modified
+fmt.Println(text) // Output: "el murcielago rapido"
+
+// This approach can reduce memory pressure in high-performance scenarios
+// by avoiding temporary string allocations
+```
+
+Performance benchmarks show that using string pointers can reduce memory allocations when processing large volumes of text, which can be beneficial in high-throughput applications or systems with memory constraints.
+
+```
+// Sample benchmark results:
+BenchmarkMassiveProcessingWithoutPointer-16    110938 ops  11071 ns/op  4576 B/op  214 allocs/op
+BenchmarkMassiveProcessingWithPointer-16       107582 ops  10802 ns/op  4496 B/op  209 allocs/op
+```
 
 // Handle first word specially when more than 2 words
 tinystring.Convert("Juan Carlos Rodriguez").TruncateName(3, 20).String()

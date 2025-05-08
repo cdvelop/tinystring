@@ -6,6 +6,7 @@ type Text struct {
 	contentSlice []string // slice of strings for the Join method
 	words        [][]rune // words split into runes eg: "hello world" -> [][]rune{{'h','e','l','l','o'}, {'w','o','r','l','d'}}
 	separator    string   // eg "_" "-"
+	stringPtr    *string  // pointer to original string (if one was provided)
 }
 
 // struct to store mappings to remove accents and diacritics
@@ -22,11 +23,15 @@ const (
 )
 
 // initialize the text struct with any type of value
-// supports string, int, float, bool, []string and their variants
+// supports string, *string, int, float, bool, []string and their variants
 func Convert(v any) *Text {
 	switch val := v.(type) {
 	case []string:
 		return &Text{contentSlice: val}
+	case *string:
+		// Handle string pointer directly without creating a new allocation
+		// Store both the content and a reference to the original pointer
+		return &Text{content: *val, stringPtr: val}
 	default:
 		return &Text{content: anyToString(v)}
 	}
@@ -102,8 +107,14 @@ func (t *Text) separatorCase(sep ...string) string {
 func (t *Text) String() string {
 	// If contentSlice exists but not yet joined, join it with a space
 	if t.contentSlice != nil && t.content == "" {
-		return t.Join().content
+		t.content = t.Join().content
 	}
+
+	// If we have a string pointer, update it with the final content
+	if t.stringPtr != nil {
+		*t.stringPtr = t.content
+	}
+
 	return t.content
 }
 
