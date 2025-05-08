@@ -24,6 +24,13 @@ const (
 
 // initialize the text struct with any type of value
 // supports string, *string, int, float, bool, []string and their variants
+// use String() to get the final string value
+// or Apply() to update the original string pointer
+// eg:
+//     original := "hello world"
+//     Convert(&original).ToUpper().Apply()
+//     // or
+//     out :=  Convert("hello world").ToUpper().String()
 func Convert(v any) *Text {
 	switch val := v.(type) {
 	case []string:
