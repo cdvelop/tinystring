@@ -103,8 +103,10 @@ func (t *Text) separatorCase(sep ...string) string {
 	return t.separator
 }
 
-// String method to return the content of the text
-func (t *Text) String() string {
+// Apply updates the original string pointer with the current content.
+// This method should be used when you want to modify the original string directly
+// without additional allocations.
+func (t *Text) Apply() {
 	// If contentSlice exists but not yet joined, join it with a space
 	if t.contentSlice != nil && t.content == "" {
 		t.content = t.Join().content
@@ -113,6 +115,14 @@ func (t *Text) String() string {
 	// If we have a string pointer, update it with the final content
 	if t.stringPtr != nil {
 		*t.stringPtr = t.content
+	}
+}
+
+// String method to return the content of the text without modifying any original pointers
+func (t *Text) String() string {
+	// If contentSlice exists but not yet joined, join it with a space
+	if t.contentSlice != nil && t.content == "" {
+		t.content = t.Join().content
 	}
 
 	return t.content

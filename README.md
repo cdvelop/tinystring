@@ -47,13 +47,15 @@ text := tinystring.Convert("Él Múrcielago Rápido")
 // Working with string pointers (avoids extra allocations)
 // This method reduces memory allocations by modifying the original string directly
 originalText := "Él Múrcielago Rápido"
-_ = tinystring.Convert(&originalText).RemoveTilde().CamelCaseLower().String()
+tinystring.Convert(&originalText).RemoveTilde().CamelCaseLower().Apply()
 // originalText is now modified directly: "elMurcielagoRapido"
 ```
 
 ### Available Operations
 
-- `Convert(v any)`: Initialize text processing with any data type (string, *string, int, float, bool, etc.). When using a string pointer (*string), the original string will be modified directly, avoiding extra memory allocations.
+- `Convert(v any)`: Initialize text processing with any data type (string, *string, int, float, bool, etc.). When using a string pointer (*string) along with the `Apply()` method, the original string will be modified directly, avoiding extra memory allocations.
+- `Apply()`: Updates the original string pointer with the current content. This method should be used when you want to modify the original string directly without additional allocations.
+- `String()`: Returns the content of the text as a string without modifying any original pointers.
 - `RemoveTilde()`: Removes accents and diacritics (e.g. "café" -> "cafe") 
 - `ToLower()`: Converts to lowercase (e.g. "HELLO" -> "hello")
 - `ToUpper()`: Converts to uppercase (e.g. "hello" -> "HELLO")
@@ -236,33 +238,6 @@ tinystring.Convert("Jeronimo Dominguez").TruncateName(3, 15).String()
 tinystring.Convert("Ana Maria Rodriguez").TruncateName(2, 10).String()
 // Result: "An. Mar..."
 
-### Working with String Pointers
-
-TinyString supports working directly with string pointers to avoid additional memory allocations. This can be especially useful in performance-critical applications or when processing large volumes of text.
-
-```go
-// Create a string variable
-text := "Él Múrcielago Rápido"
-
-// Modify it directly using string pointer
-// No need to reassign the result
-Convert(&text).RemoveTilde().ToLower().String()
-
-// The original variable is modified
-fmt.Println(text) // Output: "el murcielago rapido"
-
-// This approach can reduce memory pressure in high-performance scenarios
-// by avoiding temporary string allocations
-```
-
-Performance benchmarks show that using string pointers can reduce memory allocations when processing large volumes of text, which can be beneficial in high-throughput applications or systems with memory constraints.
-
-```
-// Sample benchmark results:
-BenchmarkMassiveProcessingWithoutPointer-16    110938 ops  11071 ns/op  4576 B/op  214 allocs/op
-BenchmarkMassiveProcessingWithPointer-16       107582 ops  10802 ns/op  4496 B/op  209 allocs/op
-```
-
 // Handle first word specially when more than 2 words
 tinystring.Convert("Juan Carlos Rodriguez").TruncateName(3, 20).String()
 // Result: "Jua. Car. Rodriguez"
@@ -285,6 +260,52 @@ tinystring.Convert("hello")
     .String()
 // Result: "hellohello"
 ```
+
+
+### Working with String Pointers
+
+TinyString supports working directly with string pointers to avoid additional memory allocations. This can be especially useful in performance-critical applications or when processing large volumes of text.
+
+```go
+// Create a string variable
+text := "Él Múrcielago Rápido"
+
+// Modify it directly using string pointer and Apply()
+// No need to reassign the result
+Convert(&text).RemoveTilde().ToLower().Apply()
+
+// The original variable is modified
+fmt.Println(text) // Output: "el murcielago rapido"
+
+// This approach can reduce memory pressure in high-performance scenarios
+// by avoiding temporary string allocations
+```
+
+## String() vs Apply()
+
+The library offers two ways to finish a chain of operations:
+
+```go
+// 1. Using String() - Returns the result without modifying the original
+originalText := "Él Múrcielago Rápido"
+result := Convert(&originalText).RemoveTilde().ToLower().String()
+fmt.Println(result)        // Output: "el murcielago rapido"
+fmt.Println(originalText)  // Output: "Él Múrcielago Rápido" (unchanged)
+
+// 2. Using Apply() - Modifies the original string directly
+originalText = "Él Múrcielago Rápido"
+Convert(&originalText).RemoveTilde().ToLower().Apply()
+fmt.Println(originalText)  // Output: "el murcielago rapido" (modified)
+```
+
+Performance benchmarks show that using string pointers can reduce memory allocations when processing large volumes of text, which can be beneficial in high-throughput applications or systems with memory constraints.
+
+```go
+// Sample benchmark results:
+BenchmarkMassiveProcessingWithoutPointer-16    114458 ops  10689 ns/op  4576 B/op  214 allocs/op
+BenchmarkMassiveProcessingWithPointer-16       105290 ops  11434 ns/op  4496 B/op  209 allocs/op
+```
+
 
 ## Contributing
 

@@ -47,14 +47,13 @@ func TestStringPointer(t *testing.T) {
 			expectedValue: "elMurcielagoRapido",
 		},
 	}
-
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			// Create string pointer with initial value
 			originalPtr := tt.initialValue
 
-			// Convert using string pointer
-			_ = tt.transform(Convert(&originalPtr)).String()
+			// Convert using string pointer and apply changes
+			tt.transform(Convert(&originalPtr)).Apply()
 
 			// Check if original pointer was updated correctly
 			if originalPtr != tt.expectedValue {
@@ -70,8 +69,8 @@ func Example_stringPointerBasic() {
 	myText := "héllô wórld"
 
 	// En lugar de crear una nueva variable con el resultado,
-	// modificamos directamente la variable original
-	Convert(&myText).RemoveTilde().ToLower().String()
+	// modificamos directamente la variable original usando Apply()
+	Convert(&myText).RemoveTilde().ToLower().Apply()
 
 	// La variable original ha sido modificada
 	fmt.Println(myText)
@@ -83,7 +82,8 @@ func Example_stringPointerCamelCase() {
 	originalText := "Él Múrcielago Rápido"
 
 	// Las transformaciones modifican la variable original directamente
-	Convert(&originalText).RemoveTilde().CamelCaseLower().String()
+	// usando el método Apply() para actualizar el puntero
+	Convert(&originalText).RemoveTilde().CamelCaseLower().Apply()
 
 	fmt.Println(originalText)
 	// Output: elMurcielagoRapido
@@ -92,7 +92,6 @@ func Example_stringPointerCamelCase() {
 func Example_stringPointerEfficiency() {
 	// En aplicaciones de alto rendimiento, reducir asignaciones de memoria
 	// puede ser importante para evitar la presión sobre el garbage collector
-
 	// Método tradicional (crea nuevas asignaciones de memoria)
 	traditionalText := "Texto con ACENTOS"
 	processedText := Convert(traditionalText).RemoveTilde().ToLower().String()
@@ -100,7 +99,7 @@ func Example_stringPointerEfficiency() {
 
 	// Método con punteros (modifica directamente la variable original)
 	directText := "Otro TEXTO con ACENTOS"
-	Convert(&directText).RemoveTilde().ToLower().String()
+	Convert(&directText).RemoveTilde().ToLower().Apply()
 	fmt.Println(directText)
 
 	// Output:
@@ -120,7 +119,7 @@ func BenchmarkStringWithoutPointer(b *testing.B) {
 func BenchmarkStringWithPointer(b *testing.B) {
 	for i := 0; i < b.N; i++ {
 		text := "Él Múrcielago Rápido es VELOZ y Ágil"
-		Convert(&text).RemoveTilde().CamelCaseLower().ToSnakeCaseLower().String()
+		Convert(&text).RemoveTilde().CamelCaseLower().ToSnakeCaseLower().Apply()
 		_ = text
 	}
 }
@@ -158,9 +157,8 @@ func BenchmarkMassiveProcessingWithPointer(b *testing.B) {
 			"Rendimiento en APLICACIONES",
 			"Reducción de ASIGNACIONES",
 		}
-
 		for j := range texts {
-			Convert(&texts[j]).RemoveTilde().CamelCaseLower().String()
+			Convert(&texts[j]).RemoveTilde().CamelCaseLower().Apply()
 		}
 		_ = texts
 	}
