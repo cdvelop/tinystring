@@ -39,12 +39,22 @@ TinyString is specifically designed for environments where binary size matters. 
 ```bash
 # Traditional approach with standard library
 go build -o app-standard main.go     # ~2.1MB binary
-tinygo build -o app-standard.wasm -target wasm main.go  # ~500KB+ WebAssembly
+tinygo build -o app-standard.wasm -target wasm main.go  # 580.6KB WebAssembly
 
 # TinyString approach  
 go build -o app-tiny main.go         # ~1.2MB binary  
-tinygo build -o app-tiny.wasm -target wasm main.go      # ~180KB WebAssembly
+tinygo build -o app-tiny.wasm -target wasm main.go      # 229.5KB WebAssembly
 ```
+
+#### WebAssembly Optimization Comparison
+
+| Optimization Level | Standard Library | TinyString | Size Reduction |
+|-------------------|------------------|------------|----------------|
+| Default TinyGo optimization (-opt=z) | 580.6KB | 229.5KB | 60.5% |
+| Maximum size optimization | 141.1KB | 22.2KB | 84.3% |
+| Optimized for speed over size | 815.9KB | 321.3KB | 60.6% |
+| No optimization, best for debugging | 1.8MB | 664.3KB | 63.8% |
+
 
 ### Target Environments
 - **Embedded Systems**: Microcontrollers with limited flash memory
