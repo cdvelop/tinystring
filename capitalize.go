@@ -3,13 +3,14 @@ package tinystring
 // Capitalize transforms the first letter of each word to uppercase and the rest to lowercase.
 // For example: "hello world" -> "Hello World"
 func (t *Text) Capitalize() *Text {
-	t.splitIntoWords()
-	if len(t.words) == 0 {
+	// Use local variable instead of struct field to avoid persistent allocation
+	words := t.splitIntoWordsLocal()
+	if len(words) == 0 {
 		return t
 	}
 
 	var result []rune
-	for i, word := range t.words {
+	for i, word := range words {
 		if len(word) == 0 {
 			continue
 		}

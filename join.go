@@ -10,63 +10,58 @@ func (t *Text) Join(sep ...string) *Text {
 	if len(sep) > 0 {
 		separator = sep[0]
 	}
-
 	// Handle case when we've received a string slice directly
 	if t.contentSlice != nil {
 		if len(t.contentSlice) == 0 {
 			t.content = ""
 		} else {
-			// Manually join the elements with the separator
-			var totalLen int
+			// Use string builder for efficient concatenation
+			totalLen := len(t.contentSlice) * len(separator)
 			for _, s := range t.contentSlice {
 				totalLen += len(s)
 			}
-			// Add length for separators between elements
-			if len(t.contentSlice) > 1 {
-				totalLen += len(separator) * (len(t.contentSlice) - 1)
-			}
+			builder := newTinyStringBuilder(totalLen)
 
-			// Build the result
-			var result string
+			// Build the result efficiently
 			for i, s := range t.contentSlice {
-				result += s
+				builder.writeString(s)
 				if i < len(t.contentSlice)-1 {
-					result += separator
+					builder.writeString(separator)
 				}
 			}
-			t.content = result
+			t.content = builder.string()
 		}
 		return t
 	}
-
 	// If content is already a string, we split it and join it again with the new separator
 	if t.content != "" {
-		// Split content by whitespace
+		// Split content by whitespace using string builder for efficiency
 		var parts []string
-		var currentWord string
+		builder := newTinyStringBuilder(64)
+
 		for _, r := range t.content {
 			if r == ' ' || r == '\t' || r == '\n' || r == '\r' {
-				if currentWord != "" {
-					parts = append(parts, currentWord)
-					currentWord = ""
+				if builder.len() > 0 {
+					parts = append(parts, builder.string())
+					builder.reset()
 				}
 			} else {
-				currentWord += string(r)
+				builder.writeRune(r)
 			}
 		}
-		if currentWord != "" {
-			parts = append(parts, currentWord)
+		if builder.len() > 0 {
+			parts = append(parts, builder.string())
 		}
 
-		// Join parts with the separator
-		var result string
+		// Join parts with the separator using builder
+		builder.reset()
 		for i, part := range parts {
-			result += part
+			builder.writeString(part)
 			if i < len(parts)-1 {
-				result += separator
+				builder.writeString(separator)
 			}
 		}
-		t.content = result
+		t.content = builder.string()
 	}
 
 	return t

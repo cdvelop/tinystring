@@ -9,24 +9,24 @@ func (t *Text) ToInt(base ...int) (int, error) {
 	if t.err != nil {
 		return 0, t.err
 	}
-	
+
 	b := 10 // default base
 	if len(base) > 0 {
 		b = base[0]
 	}
-	
+
 	// First try to parse as int directly
 	val, err := stringToInt(t.content, b)
 	if err == nil {
 		return val, nil
 	}
-	
+
 	// If that fails, try to parse as float and then convert to int (for truncation)
 	floatVal, floatErr := stringToFloat(t.content)
 	if floatErr == nil {
 		return int(floatVal), nil
 	}
-	
+
 	// Return the original int parsing error
 	return 0, err
 }
@@ -36,18 +36,18 @@ func (t *Text) ToUint(base ...int) (uint, error) {
 	if t.err != nil {
 		return 0, t.err
 	}
-	
+
 	b := 10 // default base
 	if len(base) > 0 {
 		b = base[0]
 	}
-	
+
 	// First try to parse as uint directly
 	val, err := stringToUint(t.content, b)
 	if err == nil {
 		return uint(val), nil
 	}
-	
+
 	// If that fails, try to parse as float and then convert to uint (for truncation)
 	floatVal, floatErr := stringToFloat(t.content)
 	if floatErr == nil {
@@ -56,7 +56,7 @@ func (t *Text) ToUint(base ...int) (uint, error) {
 		}
 		return uint(floatVal), nil
 	}
-	
+
 	// Return the original uint parsing error
 	return 0, err
 }
@@ -223,17 +223,21 @@ func stringToNumberHelper(input string, base int) (uint64, error) {
 // uintToStringWithBase converts an unsigned integer to string with specified base
 func uintToStringWithBase(number uint64, base int) string {
 	if number == 0 {
-		return "0"
+		return "0" // Directly return "0" for zero value
 	}
 
-	const digitCharacters = "0123456789abcdefghijklmnopqrstuvwxyz"
-	var result []byte
+	// Max uint64 is 18446744073709551615, which has 20 digits.
+	// For base 2, uint64 needs up to 64 bits.
+	var buf [64]byte // Max buffer size for uint64 in base 2
+	i := len(buf)    // Start from the end of the buffer
+
+	const digitChars = "0123456789abcdefghijklmnopqrstuvwxyz"
 
 	for number > 0 {
-		remainder := number % uint64(base)
-		result = append([]byte{digitCharacters[remainder]}, result...)
+		i--
+		buf[i] = digitChars[number%uint64(base)]
 		number /= uint64(base)
 	}
 
-	return string(result)
+	return string(buf[i:]) // Convert the relevant part of the buffer to a string
 }

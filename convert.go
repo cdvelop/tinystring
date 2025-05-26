@@ -1,14 +1,15 @@
 package tinystring
 
-// Text struct to store the content of the text
+// Text struct to store the content of the text - optimized for memory efficiency
 type Text struct {
-	content      string
+	content   string  // main content string
+	stringPtr *string // pointer to original string (if one was provided)
+	err       error   // internal error for error handling
+	roundDown bool    // flag for down rounding in RoundDecimals
+
+	// Temporary fields - these should be cleared after use to avoid memory overhead
 	contentSlice []string // slice of strings for the Join method
-	words        [][]rune // words split into runes eg: "hello world" -> [][]rune{{'h','e','l','l','o'}, {'w','o','r','l','d'}}
-	separator    string   // eg "_" "-"
-	stringPtr    *string  // pointer to original string (if one was provided)
-	err          error    // internal error for error handling
-	roundDown    bool     // flag for down rounding in RoundDecimals
+	separator    string   // eg "_" "-" (temporary for case transforms)
 }
 
 // struct to store mappings to remove accents and diacritics
@@ -47,16 +48,25 @@ func Convert(v any) *Text {
 }
 
 func (t *Text) transformWithMapping(mappings []charMapping) *Text {
-	runes := []rune(t.content)
-	for i, r := range runes {
+	// Use a strings.Builder for efficient string construction
+	var builder tinyStringBuilder
+	// Pre-allocate builder with a reasonable estimate of the final string length
+	builder.grow(len(t.content))
+
+	for _, r := range t.content {
+		mapped := false
 		for _, mapping := range mappings {
 			if r == mapping.from {
-				runes[i] = mapping.to
+				builder.writeRune(mapping.to)
+				mapped = true
 				break
 			}
 		}
+		if !mapped {
+			builder.writeRune(r)
+		}
 	}
-	t.content = string(runes)
+	t.content = builder.string()
 	return t
 }
 
@@ -147,28 +157,21 @@ func (t *Text) StringError() (string, error) {
 	return t.content, t.err
 }
 
-// splitIntoWords splits the text content into a slice of words, where each word is represented
-// as a slice of runes. Words are separated by spaces, and empty spaces are ignored.
-//
-// Example:
-//
-//	text := NewText("hello world")
-//	words := text.splitIntoWords()
-//	// Returns: [][]rune{{'h','e','l','l','o'}, {'w','o','r','l','d'}}
-//
-//	text := NewText("  multiple   spaces  ")
-//	words := text.splitIntoWords()
-//	// Returns: [][]rune{{'m','u','l','t','i','p','l','e'}, {'s','p','a','c','e','s'}}
-func (t *Text) splitIntoWords() {
-	t.words = make([][]rune, 0)
-	var currentWord []rune
+// splitIntoWordsLocal returns words as local variable without storing in struct field
+// This avoids persistent memory allocation in the Text struct
+func (t *Text) splitIntoWordsLocal() [][]rune {
+	words := make([][]rune, 0)
+	currentWord := make([]rune, 0, 64) // Pre-allocate with reasonable capacity
 
 	// Iterate directly over the string instead of converting to []rune
 	for _, r := range t.content {
 		if r == ' ' {
 			if len(currentWord) > 0 {
-				t.words = append(t.words, currentWord)
-				currentWord = nil
+				// Create a copy of currentWord for words
+				wordCopy := make([]rune, len(currentWord))
+				copy(wordCopy, currentWord)
+				words = append(words, wordCopy)
+				currentWord = currentWord[:0] // Reset for reuse
 			}
 			continue
 		}
@@ -176,8 +179,13 @@ func (t *Text) splitIntoWords() {
 	}
 
 	if len(currentWord) > 0 {
-		t.words = append(t.words, currentWord)
+		// Create a copy of currentWord for words
+		wordCopy := make([]rune, len(currentWord))
+		copy(wordCopy, currentWord)
+		words = append(words, wordCopy)
 	}
+
+	return words
 }
 
 func (t *Text) transformWord(word []rune, transform wordTransform) []rune {
@@ -185,6 +193,7 @@ func (t *Text) transformWord(word []rune, transform wordTransform) []rune {
 		return word
 	}
 
+	// Create a copy to avoid modifying the original
 	result := make([]rune, len(word))
 	copy(result, word)
 
@@ -209,7 +218,10 @@ func (t *Text) transformWord(word []rune, transform wordTransform) []rune {
 		}
 	}
 
-	return result
+	// Create a copy to return
+	resultCopy := make([]rune, len(result))
+	copy(resultCopy, result)
+	return resultCopy
 }
 
 // Helper function to check if a rune is a digit
@@ -222,71 +234,115 @@ func isLetter(r rune) bool {
 		(r >= 'À' && r <= 'ÿ' && r != '×' && r != '÷')
 }
 
-func (t *Text) toCaseTransform(firstWordLower bool, separator string) *Text {
+// transformSingleRune applies a character mapping to a single rune.
+// It returns the transformed rune and true if a mapping was applied, otherwise the original rune and false.
+func transformSingleRune(r rune, mappings []charMapping) (rune, bool) {
+	for _, mapping := range mappings {
+		if r == mapping.from {
+			return mapping.to, true
+		}
+	}
+	return r, false
+}
 
-	t.splitIntoWords()
-	if len(t.words) == 0 {
+func (t *Text) toCaseTransform(firstWordLower bool, separator string) *Text {
+	// Use local variable instead of struct field to avoid persistent allocation
+	words := t.splitIntoWordsLocal()
+	if len(words) == 0 {
 		return t
 	}
 
-	var result []rune
+	// Use string builder for efficient string construction
+	estimatedLen := len(t.content) + len(words)*len(separator)
+	builder := newTinyStringBuilder(estimatedLen)
 	var prevIsDigit bool
 	var prevIsSeparator bool
 
-	for i, word := range t.words {
+	for i, word := range words {
 		if len(word) == 0 {
 			continue
 		}
 
 		// Add separator if needed
 		if i > 0 && separator != "" {
-			result = append(result, rune(separator[0]))
+			builder.writeByte(separator[0])
 			prevIsSeparator = true
 		}
 
 		// Process each character in the word
 		for j, r := range word {
-			transform := toLower
+			currentCaseTransform := toLower // Default to lower
 			currIsDigit := isDigit(r)
 			currIsLetter := isLetter(r)
 
 			// Determine case transform
-			if i == 0 && j == 0 {
-				// First letter of first word
+			if i == 0 && j == 0 { // First letter of first word
 				if !firstWordLower {
-					transform = toUpper
+					currentCaseTransform = toUpper
 				}
 			} else if i > 0 && j == 0 && separator == "" { // Start of new word in camelCase
-				transform = toUpper
+				currentCaseTransform = toUpper
 			} else if prevIsDigit && currIsLetter { // Letter after digit
-				if firstWordLower {
-					transform = toLower
-				} else {
-					transform = toUpper
+				// For snake_case with separator, this is handled by adding separator later
+				// For camelCase, new word starts, so apply upper if not firstWordLower
+				if separator == "" && !firstWordLower {
+					currentCaseTransform = toUpper
+				} else if separator == "" && firstWordLower {
+					// Maintain lower case if it's camelCaseLower and after a digit within the same "word" part
+					currentCaseTransform = toLower
+				} else if separator != "" && !firstWordLower { // Snake_Case_Upper
+					currentCaseTransform = toUpper
 				}
-			} else if prevIsSeparator && currIsLetter { // Letter after separator
-				if separator != "" && !firstWordLower {
-					transform = toUpper
+
+			} else if prevIsSeparator && currIsLetter { // Letter after separator (for snake_case)
+				if separator != "" && !firstWordLower { // Snake_Case_Upper
+					currentCaseTransform = toUpper
+				}
+				// Default toLower is fine for snake_case_lower
+			} else if currIsLetter && j > 0 { // Subsequent letters in a word part
+				// Maintain lower case unless it's an uppercase letter that should remain uppercase (e.g. in "APIResponse")
+				// This part is tricky without knowing the original casing or specific rules for acronyms.
+				// For now, default toLower is applied unless specific conditions for toUpper are met.
+				// If the global transform is toUpper (e.g. ToSnakeCaseUpper), this will be handled.
+				if separator != "" && !firstWordLower { // Snake_Case_Upper
+					// This condition might be too broad.
+					// We only want to uppercase the first letter after a separator.
+					// Let's rely on the j==0 condition for this.
+					// For subsequent letters in Snake_Case_Upper, they should be lower.
+					// So, if j > 0, it should be toLower for Snake_Case_Upper.
+					// This means the currentCaseTransform should be toLower here.
 				}
 			}
 
 			// Add underscore for number to letter transition in snake_case
 			if separator != "" && prevIsDigit && currIsLetter {
-				result = append(result, rune(separator[0]))
+				builder.writeByte(separator[0])
 			}
 
-			// Only transform letters, leave other characters as-is
 			if currIsLetter {
-				result = append(result, t.transformWord([]rune{r}, transform)...)
+				var transformedRune rune
+				var mapped bool
+				if currentCaseTransform == toLower {
+					transformedRune, mapped = transformSingleRune(r, lowerMappings)
+				} else { // toUpper
+					transformedRune, mapped = transformSingleRune(r, upperMappings)
+				}
+				if mapped {
+					builder.writeRune(transformedRune)
+				} else {
+					builder.writeRune(r) // Write original if no mapping found (e.g. already correct case)
+				}
 			} else {
-				result = append(result, r)
+				builder.writeRune(r)
 			}
 
 			prevIsDigit = currIsDigit
-			prevIsSeparator = false
+			prevIsSeparator = false // Reset after processing the character
 		}
 	}
 
-	t.content = string(result)
+	t.content = builder.string()
+	// Clear the separator field after use to avoid memory overhead
+	t.separator = ""
 	return t
 }

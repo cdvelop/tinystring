@@ -14,7 +14,8 @@ func Format(format string, args ...any) *Text {
 
 // sprintf formats the provided arguments according to the format specifier (integrated from tinyfmt)
 func sprintf(format string, arguments ...any) (string, error) {
-	var result []byte
+	buffer := make([]byte, 0, len(format)*2) // Estimate initial capacity
+
 	argIndex := 0
 
 	for i := 0; i < len(format); i++ {
@@ -36,9 +37,7 @@ func sprintf(format string, arguments ...any) (string, error) {
 							precision = precision*10 + int(format[j]-'0')
 						}
 					}
-				}
-
-				// Handle different format specifiers
+				} // Handle different format specifiers
 				switch format[i] {
 				case 'd':
 					if argIndex >= len(arguments) {
@@ -49,7 +48,7 @@ func sprintf(format string, arguments ...any) (string, error) {
 						return "", errors.New("argument for %d is not an int")
 					}
 					str := intToStringOptimized(int64(intVal))
-					result = append(result, []byte(str)...)
+					buffer = append(buffer, []byte(str)...)
 					argIndex++
 				case 'f':
 					if argIndex >= len(arguments) {
@@ -60,7 +59,7 @@ func sprintf(format string, arguments ...any) (string, error) {
 						return "", errors.New("argument for %f is not a float64")
 					}
 					str := formatFloatToString(floatVal, precision)
-					result = append(result, []byte(str)...)
+					buffer = append(buffer, []byte(str)...)
 					argIndex++
 				case 'b':
 					if argIndex >= len(arguments) {
@@ -71,7 +70,7 @@ func sprintf(format string, arguments ...any) (string, error) {
 						return "", errors.New("argument for %b is not an int")
 					}
 					str := intToStringWithBase(int64(intVal), 2)
-					result = append(result, []byte(str)...)
+					buffer = append(buffer, []byte(str)...)
 					argIndex++
 				case 'x':
 					if argIndex >= len(arguments) {
@@ -82,7 +81,7 @@ func sprintf(format string, arguments ...any) (string, error) {
 						return "", errors.New("argument for %x is not an int")
 					}
 					str := intToStringWithBase(int64(intVal), 16)
-					result = append(result, []byte(str)...)
+					buffer = append(buffer, []byte(str)...)
 					argIndex++
 				case 'o':
 					if argIndex >= len(arguments) {
@@ -93,14 +92,14 @@ func sprintf(format string, arguments ...any) (string, error) {
 						return "", errors.New("argument for %o is not an int")
 					}
 					str := intToStringWithBase(int64(intVal), 8)
-					result = append(result, []byte(str)...)
+					buffer = append(buffer, []byte(str)...)
 					argIndex++
 				case 'v':
 					if argIndex >= len(arguments) {
 						return "", errors.New("missing argument for %v")
 					}
 					str := formatValue(arguments[argIndex])
-					result = append(result, []byte(str)...)
+					buffer = append(buffer, []byte(str)...)
 					argIndex++
 				case 's':
 					if argIndex >= len(arguments) {
@@ -110,10 +109,10 @@ func sprintf(format string, arguments ...any) (string, error) {
 					if !ok {
 						return "", errors.New("argument for %s is not a string")
 					}
-					result = append(result, []byte(strVal)...)
+					buffer = append(buffer, []byte(strVal)...)
 					argIndex++
 				case '%':
-					result = append(result, '%')
+					buffer = append(buffer, '%')
 				default:
 					return "", errors.New("unsupported format specifier")
 				}
@@ -121,38 +120,47 @@ func sprintf(format string, arguments ...any) (string, error) {
 				return "", errors.New("incomplete format specifier at end of string")
 			}
 		} else {
-			result = append(result, format[i])
+			buffer = append(buffer, format[i])
 		}
 	}
 
-	return string(result), nil
+	return string(buffer), nil
 }
 
 // Helper function to convert integer to string with base support (integrated from tinystrconv)
 func intToStringWithBase(number int64, base int) string {
 	if number == 0 {
-		return "0"
+		return "0" // Directly return "0" for zero value to avoid allocations
 	}
+
+	// Buffer to store the string representation.
+	// Max int64 is -9223372036854775808, which has 19 digits + 1 for sign.
+	// Max uint64 is 18446744073709551615, which has 20 digits.
+	// For base 2, int64 needs up to 63 bits + 1 for sign.
+	var buf [64]byte // Max buffer size for int64 in base 2
+	i := len(buf)    // Start from the end of the buffer
 
 	isNegative := number < 0
 	if isNegative {
-		number = -number
+		number = -number // Make number positive for conversion
 	}
 
-	const digitCharacters = "0123456789abcdefghijklmnopqrstuvwxyz"
-	var result []byte
+	// Supported digits for bases up to 36
+	const digitChars = "0123456789abcdefghijklmnopqrstuvwxyz"
 
+	// Convert number to string representation, filling buffer from the end
 	for number > 0 {
-		remainder := number % int64(base)
-		result = append([]byte{digitCharacters[remainder]}, result...)
+		i--
+		buf[i] = digitChars[number%int64(base)]
 		number /= int64(base)
 	}
 
 	if isNegative {
-		result = append([]byte{'-'}, result...)
+		i--
+		buf[i] = '-'
 	}
 
-	return string(result)
+	return string(buf[i:]) // Convert the relevant part of the buffer to a string
 }
 
 // Helper function to format float to string with precision (integrated from tinystrconv)
@@ -307,7 +315,7 @@ func (t *Text) RoundDecimals(decimals int) *Text {
 				rounded = float64(int64(val*multiplier)-1) / multiplier
 			}
 		}
-	}	// Format the result with exact number of decimal places
+	} // Format the result with exact number of decimal places
 	result := floatToStringManual(rounded, decimals)
 	return &Text{content: result, err: nil, roundDown: t.roundDown} // Preserve the roundDown flag
 }
@@ -374,7 +382,7 @@ func (t *Text) FormatNumber() *Text {
 	if intVal, err := parseIntManual(t.content, 10); err == nil {
 		result := formatNumberWithCommas(intToStringOptimized(intVal))
 		return &Text{content: result, err: nil}
-	}	// Try to parse as float
+	} // Try to parse as float
 	if floatVal, err := parseFloatManual(t.content); err == nil {
 		// Split into integer and decimal parts
 		str := floatToStringManual(floatVal, -1)
@@ -439,7 +447,7 @@ func floatToStringManual(value float64, precision int) string {
 	isNegative := value < 0
 	if isNegative {
 		value = -value
-	}	// Auto precision: use a simple heuristic for common cases
+	} // Auto precision: use a simple heuristic for common cases
 	if precision == -1 {
 		// For auto precision, try to find a reasonable representation		// Handle common float values manually for better precision
 		if value == 3.14159 {
@@ -452,10 +460,10 @@ func floatToStringManual(value float64, precision int) string {
 			// Round to 9 decimal places first to handle floating point artifacts
 			rounded := int64(value*1000000000 + 0.5) // Round to 9 decimal places
 			tempValue := float64(rounded) / 1000000000
-			
+
 			integerPart := int64(tempValue)
 			fractionPart := tempValue - float64(integerPart)
-			
+
 			if fractionPart == 0 {
 				precision = 0
 			} else {
@@ -474,8 +482,9 @@ func floatToStringManual(value float64, precision int) string {
 				if precision == 0 && fractionPart > 0 {
 					precision = 1
 				}
-			}		}
-		
+			}
+		}
+
 		// Update value to the rounded version for consistency (if not handled manually)
 		if precision != 5 && precision != 3 {
 			// Round to 9 decimal places first to handle floating point artifacts
@@ -604,7 +613,7 @@ func removeTrailingZeros(s string) string {
 	if dotIndex == -1 {
 		return s // No decimal point, return as is
 	}
-	
+
 	// Find the last non-zero digit after decimal point
 	lastNonZero := len(s) - 1
 	for i := len(s) - 1; i > dotIndex; i-- {
@@ -613,11 +622,11 @@ func removeTrailingZeros(s string) string {
 			break
 		}
 	}
-	
+
 	// If all digits after decimal are zeros, remove decimal point too
 	if lastNonZero == dotIndex {
 		return s[:dotIndex]
 	}
-	
+
 	return s[:lastNonZero+1]
 }

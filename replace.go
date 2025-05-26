@@ -11,31 +11,33 @@ func (t *Text) Replace(oldAny, newAny any, n ...int) *Text {
 	if len(old) == 0 || t.content == "" {
 		return t
 	}
-
 	// Default behavior: replace all occurrences (n = -1)
 	maxReplacements := -1
 	if len(n) > 0 {
 		maxReplacements = n[0]
 	}
 
-	var result string
+	// Use string builder for efficient string construction
+	estimatedLen := len(t.content) + len(newStr)*10 // Conservative estimate
+	builder := newTinyStringBuilder(estimatedLen)
+
 	replacements := 0
 	for i := 0; i < len(t.content); i++ {
 		// Check for occurrence of old in the text and if we haven't reached the maximum replacements
 		if i+len(old) <= len(t.content) && t.content[i:i+len(old)] == old && (maxReplacements < 0 || replacements < maxReplacements) {
 			// Add the new word to the result
-			result += newStr
+			builder.writeString(newStr)
 			// Skip the length of the old word in the original text
 			i += len(old) - 1
 			// Increment replacement counter
 			replacements++
 		} else {
 			// Add the current character to the result
-			result += string(t.content[i])
+			builder.writeByte(t.content[i])
 		}
 	}
 
-	t.content = result
+	t.content = builder.string()
 	return t
 }
 
