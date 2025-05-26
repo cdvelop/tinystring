@@ -33,49 +33,7 @@ go get github.com/cdvelop/tinystring
 
 ## TinyGo Optimization
 
-TinyString is specifically designed for environments where binary size matters. Unlike other string libraries that import standard packages like `fmt`, `strings`, and `strconv`, TinyString implements all functionality manually to:
-
-### Binary Size Comparison
-
-*Last updated: 2025-05-26 17:29:19*
-
-### Default Optimization
-*Default TinyGo optimization (-opt=z)*
-
-| Platform | Standard Library | TinyString | Improvement |
-|----------|------------------|------------|-------------|
-| **Native** | 1.3 MB | 1.1 MB | **16.7% smaller** |
-| **WebAssembly** | 580.7 KB | 229.5 KB | **60.5% smaller** |
-
-### Ultra Optimization
-*Ultra size optimization*
-
-| Platform | Standard Library | TinyString | Improvement |
-|----------|------------------|------------|-------------|
-| **WebAssembly** | 141.1 KB | 22.2 KB | **84.3% smaller** |
-
-### Speed Optimization
-*Speed optimization*
-
-| Platform | Standard Library | TinyString | Improvement |
-|----------|------------------|------------|-------------|
-| **WebAssembly** | 816.0 KB | 321.3 KB | **60.6% smaller** |
-
-### Debug Optimization
-*Debug build*
-
-| Platform | Standard Library | TinyString | Improvement |
-|----------|------------------|------------|-------------|
-| **WebAssembly** | 1.8 MB | 664.3 KB | **63.8% smaller** |
-
-### Summary
-
-TinyString consistently produces smaller binaries across all optimization levels and platforms:
-
-- **Average binary size reduction: 16.7%**
-- Consistent improvements across all optimization levels
-- WebAssembly builds show similar or better improvements
-- Best results with ultra optimization settings
+TinyString is specifically designed for environments where binary size matters. Unlike other string libraries that import standard packages like `fmt`, `strings`, and `strconv`, TinyString implements all functionality manually to achieve significant binary size reductions and optimal WebAssembly compatibility.
 
 
 ## Technical Implementation
@@ -542,40 +500,63 @@ Performance benchmarks show that using string pointers can reduce memory allocat
 
 ## Binary Size Comparison
 
-### WebAssembly Optimization Comparison
+*Last updated: 2025-05-26 17:52:46*
 
-| Optimization Level | Standard Library | TinyString | Size Reduction |
-|-------------------|------------------|------------|----------------|
-| Default TinyGo optimization (-opt=z) | 580.7KB | 229.5KB | 60.5% |
-| Maximum size optimization | 141.1KB | 22.2KB | 84.3% |
-| Optimized for speed over size | 816.0KB | 321.3KB | 60.6% |
-| No optimization, best for debugging | 1.8MB | 664.3KB | 63.8% |
+### Default Optimization
+*Default TinyGo optimization (-opt=z)*
 
-### Native Binary Comparison
+| Platform | Standard Library | TinyString | Improvement |
+|----------|------------------|------------|-------------|
+| **Native** | 1.3 MB | 1.1 MB | **16.7% smaller** |
+| **WebAssembly** | 580.7 KB | 229.5 KB | **60.5% smaller** |
 
-| Implementation | Binary Size | Size Reduction |
-|---------------|-------------|----------------|
-| Standard Library | 1.3MB | - |
-| TinyString | 1.1MB | 16.7% |
+### Ultra Optimization
+*Ultra size optimization*
 
-The benchmarks demonstrate TinyString's effectiveness in reducing binary size across all optimization levels, with the most dramatic improvement of **84.3% size reduction** in ultra-optimized WebAssembly builds.
+| Platform | Standard Library | TinyString | Improvement |
+|----------|------------------|------------|-------------|
+| **WebAssembly** | 141.1 KB | 22.2 KB | **84.3% smaller** |
+
+### Speed Optimization
+*Speed optimization*
+
+| Platform | Standard Library | TinyString | Improvement |
+|----------|------------------|------------|-------------|
+| **WebAssembly** | 816.0 KB | 321.3 KB | **60.6% smaller** |
+
+### Debug Optimization
+*Debug build*
+
+| Platform | Standard Library | TinyString | Improvement |
+|----------|------------------|------------|-------------|
+| **WebAssembly** | 1.8 MB | 664.3 KB | **63.8% smaller** |
+
+### Summary
+
+TinyString consistently produces smaller binaries across all optimization levels and platforms:
+
+- **Average binary size reduction: 16.7%**
+- Consistent improvements across all optimization levels
+- WebAssembly builds show similar or better improvements
+- Best results with ultra optimization settings
+
 
 ## Memory Usage Comparison
 
-*Last updated: 2025-05-26 17:29:46*
+*Last updated: 2025-05-26 17:53:13*
 
 Performance benchmarks comparing memory allocation patterns:
 
 | Benchmark | Library | Bytes/Op | Allocs/Op | Time/Op | Memory Improvement | Alloc Improvement |
 |-----------|---------|----------|-----------|---------|-------------------|------------------|
-| **String Processing** | Standard | 1.2 KB | 48 | 3.3μs | - | - |
-| | TinyString | 7.0 KB | 331 | 16.4μs | **499.3% more** | **589.6% more** |
+| **String Processing** | Standard | 1.2 KB | 48 | 3.2μs | - | - |
+| | TinyString | 7.0 KB | 331 | 16.3μs | **499.3% more** | **589.6% more** |
 | **Number Processing** | Standard | 1.2 KB | 132 | 4.3μs | - | - |
-| | TinyString | 9.4 KB | 950 | 19.7μs | **705.3% more** | **619.7% more** |
+| | TinyString | 9.4 KB | 950 | 19.5μs | **705.3% more** | **619.7% more** |
 | **Mixed Operations** | Standard | 546 B | 44 | 2.2μs | - | - |
-| | TinyString | 3.9 KB | 304 | 9.2μs | **626.9% more** | **590.9% more** |
-| **String Processing (Pointer Optimization)** | Standard | 1.2 KB | 48 | 3.3μs | - | - |
-| | TinyString | 6.9 KB | 323 | 16.9μs | **488.7% more** | **572.9% more** |
+| | TinyString | 3.9 KB | 304 | 9.1μs | **626.9% more** | **590.9% more** |
+| **String Processing (Pointer Optimization)** | Standard | 1.2 KB | 48 | 3.2μs | - | - |
+| | TinyString | 6.9 KB | 323 | 16.2μs | **488.7% more** | **572.9% more** |
 
 ### Trade-offs Analysis
 
@@ -595,6 +576,7 @@ The benchmarks reveal important trade-offs between binary size and runtime perfo
 - Use TinyString for size-constrained environments (embedded, edge computing)
 - Consider standard library for memory-intensive runtime workloads
 - Evaluate based on specific deployment constraints
+
 
 ## Contributing
 
