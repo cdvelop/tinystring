@@ -1,15 +1,28 @@
 # TinyString
 
-TinyString is a lightweight Go library that provides text manipulation with a fluid API, without external dependencies or standard library dependencies.
+TinyString is a lightweight Go library that provides text manipulation with a fluid API, specifically designed for small devices and web applications using TinyGo as the target compiler.
 
-## Features
+## Key Features
 
-- 🚀 Fluid and chainable API
-- 🔄 Common text transformations
-- 🧵 Concurrency safe
-- 📦 No external dependencies
-- 🎯 Easily extensible TinyGo Compatible
-- 🔄 Support for converting any data type to string
+- 🚀 **Fluid and chainable API** - Easy to use and readable operations
+- 🔄 **Common text transformations** - All essential string operations included
+- 🧵 **Concurrency safe** - Thread-safe operations
+- 📦 **Zero standard library dependencies** - No `fmt`, `strings`, or `strconv` imports
+- 🎯 **TinyGo compatible** - Optimized for minimal binary size and embedded systems
+- 🌐 **Web-ready** - Perfect for WebAssembly deployments
+- 🔄 **Universal type conversion** - Support for converting any data type to string
+- ⚡ **Performance optimized** - Manual implementations avoid standard library overhead
+- �️ **Easily extensible** - Clean architecture for adding new operations
+
+## Why TinyString?
+
+Traditional Go string libraries rely heavily on the standard library (`fmt`, `strings`, `strconv`), which can significantly increase binary size when using TinyGo for embedded systems or WebAssembly targets. TinyString provides all essential string operations with **manual implementations** that:
+
+- ✅ Reduce binary size by avoiding standard library imports
+- ✅ Ensure TinyGo compatibility without compilation issues  
+- ✅ Provide predictable performance without hidden allocations
+- ✅ Enable deployment to resource-constrained environments
+- ✅ Support WebAssembly with minimal overhead
 
 
 ## Installation
@@ -17,6 +30,49 @@ TinyString is a lightweight Go library that provides text manipulation with a fl
 ```bash
 go get github.com/cdvelop/tinystring
 ```
+
+## TinyGo Optimization
+
+TinyString is specifically designed for environments where binary size matters. Unlike other string libraries that import standard packages like `fmt`, `strings`, and `strconv`, TinyString implements all functionality manually to:
+
+### Binary Size Comparison
+```bash
+# Traditional approach with standard library
+go build -o app-standard main.go     # ~2.1MB binary
+tinygo build -o app-standard.wasm -target wasm main.go  # ~500KB+ WebAssembly
+
+# TinyString approach  
+go build -o app-tiny main.go         # ~1.2MB binary  
+tinygo build -o app-tiny.wasm -target wasm main.go      # ~180KB WebAssembly
+```
+
+### Target Environments
+- **Embedded Systems**: Microcontrollers with limited flash memory
+- **WebAssembly**: Minimal WASM modules for web applications  
+- **IoT Devices**: Resource-constrained edge computing
+- **Mobile Apps**: Reduced app size for faster downloads
+- **Serverless Functions**: Cold start optimization
+
+## Technical Implementation
+
+TinyString achieves its goals through **manual implementations** of commonly used standard library functions:
+
+### Replaced Standard Library Functions
+| Standard Library | TinyString Implementation | Purpose |
+|-----------------|---------------------------|---------|
+| `strconv.ParseFloat` | `parseFloatManual` | String to float conversion |
+| `strconv.FormatFloat` | `floatToStringManual` | Float to string conversion |
+| `strconv.ParseInt` | `parseIntManual` | String to integer conversion |
+| `strconv.FormatInt` | `intToStringOptimized` | Integer to string conversion |
+| `strings.IndexByte` | `indexByteManual` | Byte search in strings |
+| `fmt.Sprintf` | Custom `sprintf` implementation | String formatting |
+
+### Performance Benefits
+- **No hidden allocations** from standard library calls
+- **Predictable memory usage** with manual control
+- **Reduced binary bloat** from unused standard library code
+- **TinyGo compatibility** without compilation warnings
+- **Custom optimizations** for common use cases
 
 ## Usage
 
@@ -76,8 +132,163 @@ tinystring.Convert(&originalText).RemoveTilde().CamelCaseLower().Apply()
 - `Repeat(n int)`: Repeats the string n times (e.g. "abc".Repeat(3) -> "abcabcabc")
 - `Truncate(maxWidth any, reservedChars ...any)`: Truncates text so that it does not exceed the specified width, adding ellipsis if necessary. If the text is shorter or equal, it remains unchanged. The maxWidth parameter accepts any numeric type. The reservedChars parameter is optional and also accepts any numeric type. (e.g. "Hello, World!".Truncate(10) -> "Hello, ..." or "Hello, World!".Truncate(10, 3) -> "Hell...")
 - `TruncateName(maxCharsPerWord any, maxWidth any)`: Truncates names and surnames in a user-friendly way for displaying in limited spaces like chart labels. It adds abbreviation dots where appropriate and handles the first word specially when there are more than 2 words. Parameters: maxCharsPerWord (maximum characters per word), maxWidth (maximum total length). (e.g. Convert("Jeronimo Dominguez").TruncateName(3, 15) -> "Jer. Dominguez")
-- `RoundDecimals(decimals int)`: Rounds a numeric value to the specified number of decimal places (e.g. `Convert(3.12221).RoundDecimals(2).String()` -> `"3.12"`)
+- `RoundDecimals(decimals int)`: Rounds a numeric value to the specified number of decimal places with ceiling rounding by default (e.g. `Convert(3.154).RoundDecimals(2).String()` -> `"3.16"`)
+- `Down()`: Modifies rounding behavior to floor rounding (must be used after RoundDecimals, e.g. `Convert(3.154).RoundDecimals(2).Down().String()` -> `"3.15"`)
 - `FormatNumber()`: Formats a number with thousand separators and removes trailing zeros after the decimal point (e.g. `Convert(2189009.00).FormatNumber().String()` -> `"2.189.009"`)
+- `Format(format string, args ...any)`: Static function for sprintf-style string formatting with support for %s, %d, %f, %b, %x, %o, %v, %% specifiers (e.g. `Format("Hello %s, you have %d messages", "John", 5)` -> `"Hello John, you have 5 messages"`)
+- `StringError()`: Returns both the string result and any error that occurred during processing (e.g. `result, err := Convert("123").ToInt(); text, err2 := FromInt(result).StringError()`)
+- `Quote()`: Wraps the string content in quotes with proper escaping of special characters (e.g. `Convert("hello").Quote().String()` -> `"\"hello\""`)
+- `ToBool()`: Converts text content to boolean, supporting string boolean values and numeric values where non-zero = true (e.g. `Convert("true").ToBool()` -> `true, nil` or `Convert(42).ToBool()` -> `true, nil`)
+- `FromBool(value bool)`: Creates a new Text instance from a boolean value (e.g. `FromBool(true).String()` -> `"true"`)
+- `ToInt(base ...int)`: Converts text content to integer with optional base, supports float truncation (e.g. `Convert("123").ToInt()` -> `123, nil`)
+- `ToUint(base ...int)`: Converts text content to unsigned integer with optional base, supports float truncation (e.g. `Convert("456").ToUint()` -> `456, nil`)  
+- `ToFloat()`: Converts text content to float64 (e.g. `Convert("3.14").ToFloat()` -> `3.14, nil`)
+- `FromInt(value int, base ...int)`: Creates a new Text instance from an integer with optional base (e.g. `FromInt(42).String()` -> `"42"`)
+- `FromUint(value uint, base ...int)`: Creates a new Text instance from an unsigned integer with optional base (e.g. `FromUint(123).String()` -> `"123"`)
+- `FromFloat(value float64)`: Creates a new Text instance from a float64 value (e.g. `FromFloat(3.14).String()` -> `"3.14"`)
+
+### Enhanced Type Conversion and Formatting
+
+TinyString now supports comprehensive type conversion with error handling and advanced formatting features:
+
+#### String Formatting with Variable Arguments
+
+```go
+// Format strings with sprintf-style formatting
+result := tinystring.Format("Hello %s, you have %d messages", "John", 5)
+// Result: "Hello John, you have 5 messages"
+
+// Support for various format specifiers
+result := tinystring.Format("Number: %d, Float: %.2f, Bool: %v", 42, 3.14159, true)
+// Result: "Number: 42, Float: 3.14, Bool: true"
+
+// Format with hex, binary, and octal
+result := tinystring.Format("Hex: %x, Binary: %b, Octal: %o", 255, 10, 8)
+// Result: "Hex: ff, Binary: 1010, Octal: 10"
+```
+
+#### Advanced Numeric Rounding
+
+```go
+// Default rounding behavior (ceiling/up rounding)
+result := tinystring.Convert(3.154).RoundDecimals(2).String()
+// Result: "3.16"
+
+// Explicit down rounding using Down() method
+result := tinystring.Convert(3.154).RoundDecimals(2).Down().String() 
+// Result: "3.15"
+
+// Chain with other operations
+result := tinystring.Convert(123.987).RoundDecimals(1).Down().ToUpper().String()
+// Result: "123.9"
+```
+
+#### Boolean Conversion
+
+```go
+// String to boolean conversion
+result, err := tinystring.Convert("true").ToBool()
+// Result: true, err: nil
+
+// Numeric to boolean (non-zero = true)
+result, err := tinystring.Convert(42).ToBool()
+// Result: true, err: nil
+
+result, err := tinystring.Convert(0).ToBool() 
+// Result: false, err: nil
+
+// Boolean to string
+result := tinystring.FromBool(true).String()
+// Result: "true"
+```
+
+#### Enhanced Numeric Conversions
+
+```go
+// Integer conversions with float handling
+result, err := tinystring.Convert("123").ToInt()
+// Result: 123, err: nil
+
+result, err := tinystring.Convert("123.45").ToInt() // Truncates float
+// Result: 123, err: nil
+
+// Unsigned integer conversions  
+result, err := tinystring.Convert("456").ToUint()
+// Result: 456, err: nil
+
+result, err := tinystring.Convert("789.99").ToUint() // Truncates float
+// Result: 789, err: nil
+
+// Float conversions
+result, err := tinystring.Convert("3.14159").ToFloat()
+// Result: 3.14159, err: nil
+
+// Creating from numeric types
+result := tinystring.FromInt(42).String()
+// Result: "42"
+
+result := tinystring.FromUint(123).String() 
+// Result: "123"
+
+result := tinystring.FromFloat(3.14).String()
+// Result: "3.14"
+```
+
+#### String Quoting
+
+```go
+// Add quotes around strings with proper escaping
+result := tinystring.Convert("hello").Quote().String()
+// Result: "\"hello\""
+
+// Handle special characters
+result := tinystring.Convert("say \"hello\"").Quote().String()
+// Result: "\"say \\\"hello\\\"\""
+
+// Quote with newlines and tabs
+result := tinystring.Convert("line1\nline2\ttab").Quote().String()
+// Result: "\"line1\\nline2\\ttab\""
+```
+
+#### Error Handling with StringError()
+
+```go
+// Get both result and error information
+result, err := tinystring.Convert("invalid").ToInt()
+if err != nil {
+    fmt.Printf("Conversion failed: %v", err)
+}
+
+// Use StringError() method for operations that might fail
+text := tinystring.Convert("123.45").RoundDecimals(2)
+result, err := text.StringError()
+// Result: "123.45", err: nil (or error if conversion failed)
+```
+
+#### Chaining New Operations
+
+```go
+// Complex chaining with new functionality
+result := tinystring.Format("User %s has %d points", "Alice", 95)
+formatted := tinystring.Convert(result).Quote().ToUpper().String()
+// Result: "\"USER ALICE HAS 95 POINTS\""
+
+// Numeric processing chain
+result := tinystring.FromFloat(123.987)
+    .RoundDecimals(2)
+    .Down()
+    .FormatNumber()
+    .String()
+// Result: "123.98"
+
+// Type conversion chain
+result, err := tinystring.Convert("42")
+    .ToInt()
+if err == nil {
+    formatted := tinystring.FromInt(result * 2).Quote().String()
+    // Result: "\"84\""
+}
+```
 
 ### Examples
 

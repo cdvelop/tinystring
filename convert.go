@@ -7,6 +7,8 @@ type Text struct {
 	words        [][]rune // words split into runes eg: "hello world" -> [][]rune{{'h','e','l','l','o'}, {'w','o','r','l','d'}}
 	separator    string   // eg "_" "-"
 	stringPtr    *string  // pointer to original string (if one was provided)
+	err          error    // internal error for error handling
+	roundDown    bool     // flag for down rounding in RoundDecimals
 }
 
 // struct to store mappings to remove accents and diacritics
@@ -133,6 +135,16 @@ func (t *Text) String() string {
 	}
 
 	return t.content
+}
+
+// StringError returns the content of the text along with any error that occurred during processing
+func (t *Text) StringError() (string, error) {
+	// If contentSlice exists but not yet joined, join it with a space
+	if t.contentSlice != nil && t.content == "" {
+		t.content = t.Join().content
+	}
+
+	return t.content, t.err
 }
 
 // splitIntoWords splits the text content into a slice of words, where each word is represented
