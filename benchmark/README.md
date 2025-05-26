@@ -1,34 +1,33 @@
-# TinyString Binary Size Benchmark
+# TinyString Benchmark Scripts
 
-This directory contains automated tools to measure and compare binary sizes between standard Go libraries and TinyString implementations.
+Automated benchmark tools to measure and compare binary sizes and memory allocations between standard Go libraries and TinyString implementations.
 
-## Overview
+## Quick Start
 
-The benchmark system creates two equivalent programs:
-- **Standard Library**: Uses `fmt`, `strings`, `strconv` packages
-- **TinyString**: Uses only the TinyString library
+### Run Complete Benchmark
 
-Both programs are compiled to:
-- Native binaries (using `go build`)  
-- WebAssembly modules (using `tinygo build`)
-
-## Directory Structure
-
+```bash
+# Run full benchmark (binary size + memory allocation)
+./build-and-measure.sh
 ```
-benchmark/
-├── examples/
-│   ├── standard-lib/          # Example using standard library
-│   │   ├── main.go           
-│   │   └── go.mod
-│   └── tinystring-lib/        # Example using TinyString
-│       ├── main.go
-│       └── go.mod
-├── scripts/
-│   ├── build-and-measure.sh   # Main benchmark script
-│   ├── clean.sh              # Clean generated files
-│   └── update-readme.sh      # Update README only
-├── benchmark.go              # Size analysis program
-└── README.md                # This file
+
+This script will:
+1. Build binaries with multiple TinyGo optimization levels
+2. Measure all binary sizes 
+3. Run memory allocation benchmarks
+4. Update the main README.md with results
+
+### Individual Scripts
+
+```bash
+# Clean all generated files
+./clean-all.sh
+
+# Update only README with existing data
+./update-readme.sh
+
+# Run specific benchmarks
+./run-all-benchmarks.sh
 ```
 
 ## Requirements
@@ -38,118 +37,86 @@ benchmark/
   - Install from: https://tinygo.org/getting-started/install/
   - If not installed, only native binaries will be measured
 
-## Usage
+## Directory Structure
 
-### Run Complete Benchmark
-
-```bash
-# Make scripts executable (Linux/macOS/WSL)
-chmod +x scripts/*.sh
-
-# Run full benchmark and update README
-./scripts/build-and-measure.sh
+```
+benchmark/
+├── analyzer.go               # Main analysis program
+├── common.go                # Shared utilities
+├── reporter.go              # README update logic
+├── build-and-measure.sh     # Main benchmark script
+├── memory-benchmark.sh      # Memory benchmarks
+├── clean-all.sh            # Cleanup script  
+├── update-readme.sh        # README updater
+├── run-all-benchmarks.sh   # Run all benchmarks
+├── bench-binary-size/      # Binary size test programs
+│   ├── standard-lib/       # Standard library example
+│   └── tinystring-lib/     # TinyString example
+└── bench-memory-alloc/     # Memory allocation benchmarks
+    ├── standard/           # Standard library memory tests
+    ├── tinystring/         # TinyString memory tests
+    └── pointer-comparison/ # Pointer optimization tests
 ```
 
-### Individual Operations
+## What the Scripts Do
 
-```bash
-# Clean previous builds
-./scripts/clean.sh
+### `build-and-measure.sh`
+- Compiles examples with multiple TinyGo optimization levels (-ultra, -speed, -debug)
+- Measures binary sizes for both native and WebAssembly targets
+- Runs memory allocation benchmarks
+- Updates the main project README.md with current results
 
-# Only update README (requires existing binaries)
-./scripts/update-readme.sh
+### `memory-benchmark.sh`
+- Executes Go memory benchmarks for standard library vs TinyString
+- Measures bytes/operation, allocations/operation, and execution time
+- Generates memory comparison data for README
 
-# Manual analysis
-go run benchmark.go
-```
+### `clean-all.sh`
+- Removes all generated binaries (.exe, .wasm files)
+- Cleans up temporary analysis files
 
-## What It Does
-
-1. **Builds Examples**: Compiles both standard and TinyString versions
-2. **Measures Sizes**: Gets exact file sizes of all generated binaries
-3. **Updates README**: Automatically replaces the "Binary Size Comparison" section with real data
-4. **Shows Results**: Displays size comparison in terminal
+### `update-readme.sh`
+- Updates only the benchmark sections in the main README
+- Uses existing binary files (doesn't rebuild)
 
 ## Example Output
 
 ```
 🚀 Starting binary size benchmark...
-✅ TinyGo found: tinygo version 0.30.0
+✅ TinyGo found: tinygo version 0.37.0
 🧹 Cleaning previous files...
-📦 Building standard library example...
-✅ Standard: Go binary and WebAssembly created
-📦 Building TinyString example...
-✅ TinyString: Go binary and WebAssembly created
+📦 Building standard library example with multiple optimizations...
+📦 Building TinyString example with multiple optimizations...
 📊 Analyzing sizes and updating README...
+🧠 Running memory allocation benchmarks...
+✅ Binary size analysis completed and README updated
+✅ Memory benchmarks completed and README updated
 
-📊 Binary Size Results:
-========================
-standard.exe         native   standard     2.1MB
-standard.wasm        wasm     standard     456.2KB
-tinystring.exe       native   tinystring   1.2MB
-tinystring.wasm      wasm     tinystring   187.4KB
-
-✅ README updated with real binary size data
 🎉 Benchmark completed successfully!
-```
 
-## How It Works
-
-### Example Programs
-
-Both examples perform identical operations:
-- Text case transformations (upper/lower)
-- Number to string conversions (int, float)
-- String formatting and manipulation
-- Text searching and replacement
-
-### Size Measurement
-
-The `benchmark.go` program:
-- Scans for generated binaries in `examples/` directories
-- Measures file sizes using `os.Stat()`
-- Formats sizes in human-readable format (KB, MB)
-- Updates the main README.md with real data
-
-### README Integration
-
-The script automatically finds and replaces this section in the main README:
-
-```markdown
-### Binary Size Comparison
-```bash
-# Traditional approach with standard library
-go build -o app-standard main.go     # [REAL SIZE] binary
-tinygo build -o app-standard.wasm -target wasm main.go  # [REAL SIZE] WebAssembly
-
-# TinyString approach  
-go build -o app-tiny main.go         # [REAL SIZE] binary  
-tinygo build -o app-tiny.wasm -target wasm main.go      # [REAL SIZE] WebAssembly
-```
+📁 Generated files:
+  standard: 1.3MiB
+  tinystring: 1.1MiB  
+  standard.wasm: 581KiB
+  tinystring.wasm: 230KiB
+  standard-ultra.wasm: 142KiB
+  tinystring-ultra.wasm: 23KiB
 ```
 
 ## Troubleshooting
 
-### TinyGo Not Found
-If TinyGo is not installed, the benchmark will only measure Go native binaries:
+**TinyGo Not Found:**
 ```
 ❌ TinyGo is not installed. Building only standard Go binaries.
-   Install TinyGo from: https://tinygo.org/getting-started/install/
+```
+Install TinyGo from: https://tinygo.org/getting-started/install/
+
+**Permission Issues (Linux/macOS/WSL):**
+```bash
+chmod +x *.sh
 ```
 
-### Build Failures
-- Ensure you're in the `benchmark/` directory when running scripts
-- Check that Go modules are properly initialized
+**Build Failures:**
+- Ensure you're in the `benchmark/` directory
 - Verify TinyString library is available in the parent directory
 
-### Permission Issues (Linux/macOS)
-```bash
-chmod +x scripts/*.sh
-```
-
-## Contributing
-
-To add new benchmark scenarios:
-1. Create additional example programs in `examples/`
-2. Update `benchmark.go` to include new directories
-3. Modify the README template in `generateBinarySizeSection()`

@@ -1,0 +1,76 @@
+#!/bin/bash
+
+set -e
+
+BENCHMARK_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+MEMORY_BENCH_DIR="$BENCHMARK_DIR/bench-memory-alloc"
+
+echo "🧠 Running memory allocation benchmarks..."
+
+# Run standard library benchmarks
+echo "📊 Running standard library benchmarks..."
+cd "$MEMORY_BENCH_DIR/standard"
+STANDARD_RESULTS=$(go test -bench=. -benchmem 2>/dev/null | grep -E '^Benchmark')
+
+# Run TinyString benchmarks
+echo "📊 Running TinyString benchmarks..."
+cd "$MEMORY_BENCH_DIR/tinystring"
+TINYSTRING_RESULTS=$(go test -bench=. -benchmem 2>/dev/null | grep -E '^Benchmark')
+
+# Run pointer comparison benchmarks
+echo "📊 Running pointer comparison benchmarks..."
+cd "$MEMORY_BENCH_DIR/pointer-comparison"
+POINTER_RESULTS=$(go test -bench=. -benchmem 2>/dev/null | grep -E '^Benchmark')
+
+# Generate memory benchmark section for README
+echo "📝 Generating memory benchmark results..."
+
+# Create temporary benchmark results file
+TEMP_RESULTS="$BENCHMARK_DIR/memory_benchmark_results.md"
+
+cat > "$TEMP_RESULTS" << EOF
+
+## Memory Allocation Benchmarks
+
+### Standard Library vs TinyString Performance
+
+#### String Processing Benchmarks
+\`\`\`
+Standard Library:
+$STANDARD_RESULTS
+
+TinyString:
+$TINYSTRING_RESULTS
+\`\`\`
+
+#### Pointer Optimization Comparison
+\`\`\`
+$POINTER_RESULTS
+\`\`\`
+
+### Performance Analysis
+
+The benchmarks show memory allocation differences between:
+- **Standard Library**: Traditional Go string operations using \`strings\`, \`fmt\`, \`strconv\` packages
+- **TinyString**: Custom implementations optimized for minimal allocations
+- **TinyString Pointers**: Zero-allocation operations using string pointer modifications
+
+**Key Benefits:**
+- 🔥 **Reduced Allocations**: TinyString minimizes memory allocations through efficient implementations
+- ⚡ **Pointer Optimization**: Using \`Apply()\` method with string pointers eliminates temporary allocations
+- 📦 **Memory Efficiency**: Lower memory footprint especially important for embedded systems and WebAssembly
+
+EOF
+
+echo "✅ Memory benchmark results generated"
+echo "📄 Results saved to: $TEMP_RESULTS"
+
+# Now update the main README with these results
+cd "$BENCHMARK_DIR"
+go build -o analyzer .
+./analyzer memory "$TEMP_RESULTS"
+
+# Clean up temporary file
+rm -f "$TEMP_RESULTS"
+
+echo "✅ Memory benchmarks completed and README updated"

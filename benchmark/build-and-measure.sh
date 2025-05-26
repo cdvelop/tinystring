@@ -3,8 +3,8 @@
 set -e
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
-BENCHMARK_DIR="$(dirname "$SCRIPT_DIR")"
-EXAMPLES_DIR="$BENCHMARK_DIR/examples"
+BENCHMARK_DIR="$SCRIPT_DIR"
+BINARY_SIZE_DIR="$BENCHMARK_DIR/bench-binary-size"
 
 echo "🚀 Starting binary size benchmark..."
 
@@ -20,10 +20,10 @@ fi
 
 # Clean previous files
 echo "🧹 Cleaning previous files..."
-find "$EXAMPLES_DIR" -name "*.exe" -delete 2>/dev/null || true
-find "$EXAMPLES_DIR" -name "*.wasm" -delete 2>/dev/null || true
-find "$EXAMPLES_DIR" -name "standard*" ! -name "*.go" ! -name "*.mod" -delete 2>/dev/null || true
-find "$EXAMPLES_DIR" -name "tinystring*" ! -name "*.go" ! -name "*.mod" -delete 2>/dev/null || true
+find "$BINARY_SIZE_DIR" -name "*.exe" -delete 2>/dev/null || true
+find "$BINARY_SIZE_DIR" -name "*.wasm" -delete 2>/dev/null || true
+find "$BINARY_SIZE_DIR" -name "standard*" ! -name "*.go" ! -name "*.mod" -delete 2>/dev/null || true
+find "$BINARY_SIZE_DIR" -name "tinystring*" ! -name "*.go" ! -name "*.mod" -delete 2>/dev/null || true
 
 # Define optimization configurations
 SUFFIXES=("" "-ultra" "-speed" "-debug")
@@ -42,7 +42,7 @@ declare -A OPT_DESCRIPTIONS=(
 
 # Build standard library example
 echo "📦 Building standard library example with multiple optimizations..."
-cd "$EXAMPLES_DIR/standard-lib"
+cd "$BINARY_SIZE_DIR/standard-lib"
 
 # Standard Go build (only default)
 go build -ldflags="-s -w" -o standard main.go
@@ -84,7 +84,7 @@ fi
 
 # Build TinyString example
 echo "📦 Building TinyString example with multiple optimizations..."
-cd "$EXAMPLES_DIR/tinystring-lib"
+cd "$BINARY_SIZE_DIR/tinystring-lib"
 go mod tidy
 
 # Standard Go build (only default)
@@ -128,13 +128,17 @@ fi
 # Run analysis and update
 echo "📊 Analyzing sizes and updating README..."
 cd "$BENCHMARK_DIR"
-go run benchmark.go
+go build -o analyzer . && ./analyzer binary
+
+# Run memory benchmarks
+echo "🧠 Running memory allocation benchmarks..."
+./memory-benchmark.sh
 
 echo ""
 echo "🎉 Benchmark completed successfully!"
 echo ""
 echo "📁 Generated files:"
-find "$EXAMPLES_DIR" -name "*.exe" -o -name "*.wasm" -o -name "standard" -o -name "tinystring" | while read file; do
+find "$BINARY_SIZE_DIR" -name "*.exe" -o -name "*.wasm" -o -name "standard" -o -name "tinystring" | while read file; do
     if [[ -f "$file" ]]; then
         if command -v numfmt &> /dev/null; then
             size=$(stat -c%s "$file" 2>/dev/null || stat -f%z "$file" 2>/dev/null || echo "0")

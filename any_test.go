@@ -47,28 +47,6 @@ func TestAnyToStringOptimized(t *testing.T) {
 	}
 }
 
-// Benchmark anyToString for different types
-func BenchmarkAnyToString(b *testing.B) {
-	benchmarks := []struct {
-		name  string
-		input any
-	}{
-		{"string", "hello world"},
-		{"int small", 42},
-		{"int large", 1234567890},
-		{"float64", 3.14159},
-		{"bool", true},
-	}
-
-	for _, bm := range benchmarks {
-		b.Run(bm.name, func(b *testing.B) {
-			for i := 0; i < b.N; i++ {
-				_ = anyToString(bm.input)
-			}
-		})
-	}
-}
-
 // Test to ensure that repeated conversions return the expected value
 func TestAnyToStringStringReuse(t *testing.T) {
 	// For small integers

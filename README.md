@@ -36,32 +36,47 @@ go get github.com/cdvelop/tinystring
 TinyString is specifically designed for environments where binary size matters. Unlike other string libraries that import standard packages like `fmt`, `strings`, and `strconv`, TinyString implements all functionality manually to:
 
 ### Binary Size Comparison
-```bash
-# Traditional approach with standard library
-go build -o app-standard main.go     # ~2.1MB binary
-tinygo build -o app-standard.wasm -target wasm main.go  # 580.6KB WebAssembly
 
-# TinyString approach  
-go build -o app-tiny main.go         # ~1.2MB binary  
-tinygo build -o app-tiny.wasm -target wasm main.go      # 229.5KB WebAssembly
-```
+*Last updated: 2025-05-26 17:29:19*
 
-#### WebAssembly Optimization Comparison
+### Default Optimization
+*Default TinyGo optimization (-opt=z)*
 
-| Optimization Level | Standard Library | TinyString | Size Reduction |
-|-------------------|------------------|------------|----------------|
-| Default TinyGo optimization (-opt=z) | 580.6KB | 229.5KB | 60.5% |
-| Maximum size optimization | 141.1KB | 22.2KB | 84.3% |
-| Optimized for speed over size | 815.9KB | 321.3KB | 60.6% |
-| No optimization, best for debugging | 1.8MB | 664.3KB | 63.8% |
+| Platform | Standard Library | TinyString | Improvement |
+|----------|------------------|------------|-------------|
+| **Native** | 1.3 MB | 1.1 MB | **16.7% smaller** |
+| **WebAssembly** | 580.7 KB | 229.5 KB | **60.5% smaller** |
 
+### Ultra Optimization
+*Ultra size optimization*
 
-### Target Environments
-- **Embedded Systems**: Microcontrollers with limited flash memory
-- **WebAssembly**: Minimal WASM modules for web applications  
-- **IoT Devices**: Resource-constrained edge computing
-- **Mobile Apps**: Reduced app size for faster downloads
-- **Serverless Functions**: Cold start optimization
+| Platform | Standard Library | TinyString | Improvement |
+|----------|------------------|------------|-------------|
+| **WebAssembly** | 141.1 KB | 22.2 KB | **84.3% smaller** |
+
+### Speed Optimization
+*Speed optimization*
+
+| Platform | Standard Library | TinyString | Improvement |
+|----------|------------------|------------|-------------|
+| **WebAssembly** | 816.0 KB | 321.3 KB | **60.6% smaller** |
+
+### Debug Optimization
+*Debug build*
+
+| Platform | Standard Library | TinyString | Improvement |
+|----------|------------------|------------|-------------|
+| **WebAssembly** | 1.8 MB | 664.3 KB | **63.8% smaller** |
+
+### Summary
+
+TinyString consistently produces smaller binaries across all optimization levels and platforms:
+
+- **Average binary size reduction: 16.7%**
+- Consistent improvements across all optimization levels
+- WebAssembly builds show similar or better improvements
+- Best results with ultra optimization settings
+
 
 ## Technical Implementation
 
@@ -523,10 +538,63 @@ Performance benchmarks show that using string pointers can reduce memory allocat
 
 ```go
 // Sample benchmark results:
-BenchmarkMassiveProcessingWithoutPointer-16    114458 ops  10689 ns/op  4576 B/op  214 allocs/op
-BenchmarkMassiveProcessingWithPointer-16       105290 ops  11434 ns/op  4496 B/op  209 allocs/op
 ```
 
+## Binary Size Comparison
+
+### WebAssembly Optimization Comparison
+
+| Optimization Level | Standard Library | TinyString | Size Reduction |
+|-------------------|------------------|------------|----------------|
+| Default TinyGo optimization (-opt=z) | 580.7KB | 229.5KB | 60.5% |
+| Maximum size optimization | 141.1KB | 22.2KB | 84.3% |
+| Optimized for speed over size | 816.0KB | 321.3KB | 60.6% |
+| No optimization, best for debugging | 1.8MB | 664.3KB | 63.8% |
+
+### Native Binary Comparison
+
+| Implementation | Binary Size | Size Reduction |
+|---------------|-------------|----------------|
+| Standard Library | 1.3MB | - |
+| TinyString | 1.1MB | 16.7% |
+
+The benchmarks demonstrate TinyString's effectiveness in reducing binary size across all optimization levels, with the most dramatic improvement of **84.3% size reduction** in ultra-optimized WebAssembly builds.
+
+## Memory Usage Comparison
+
+*Last updated: 2025-05-26 17:29:46*
+
+Performance benchmarks comparing memory allocation patterns:
+
+| Benchmark | Library | Bytes/Op | Allocs/Op | Time/Op | Memory Improvement | Alloc Improvement |
+|-----------|---------|----------|-----------|---------|-------------------|------------------|
+| **String Processing** | Standard | 1.2 KB | 48 | 3.3μs | - | - |
+| | TinyString | 7.0 KB | 331 | 16.4μs | **499.3% more** | **589.6% more** |
+| **Number Processing** | Standard | 1.2 KB | 132 | 4.3μs | - | - |
+| | TinyString | 9.4 KB | 950 | 19.7μs | **705.3% more** | **619.7% more** |
+| **Mixed Operations** | Standard | 546 B | 44 | 2.2μs | - | - |
+| | TinyString | 3.9 KB | 304 | 9.2μs | **626.9% more** | **590.9% more** |
+| **String Processing (Pointer Optimization)** | Standard | 1.2 KB | 48 | 3.3μs | - | - |
+| | TinyString | 6.9 KB | 323 | 16.9μs | **488.7% more** | **572.9% more** |
+
+### Trade-offs Analysis
+
+The benchmarks reveal important trade-offs between binary size and runtime performance:
+
+**Binary Size Benefits:**
+- Significantly smaller compiled binaries (16-84% reduction)
+- Better compression for WebAssembly targets
+- Reduced distribution and deployment overhead
+
+**Runtime Memory Considerations:**
+- Higher memory allocation overhead during execution
+- Increased GC pressure due to more allocations
+- Trade-off optimizes for storage/distribution size over runtime efficiency
+
+**Recommendation:**
+- Use TinyString for size-constrained environments (embedded, edge computing)
+- Consider standard library for memory-intensive runtime workloads
+- Evaluate based on specific deployment constraints
 
 ## Contributing
 
