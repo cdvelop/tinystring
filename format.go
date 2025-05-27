@@ -228,44 +228,51 @@ func formatUnsupported(value any) string {
 
 // Helper function to format struct (integrated from tinyfmt)
 func formatStruct(v reflect.Value) string {
-	result := "{"
-	for i := 0; i < v.NumField(); i++ {
+	var buffer []byte
+	buffer = append(buffer, '{')
+	for i := range v.NumField() {
 		if i > 0 {
-			result += " "
+			buffer = append(buffer, ' ')
 		}
 		field := v.Type().Field(i).Name
 		value := v.Field(i).Interface()
-		result += field + ":" + formatValue(value)
+		buffer = append(buffer, field...)
+		buffer = append(buffer, ':')
+		buffer = append(buffer, formatValue(value)...)
 	}
-	result += "}"
-	return result
+	buffer = append(buffer, '}')
+	return string(buffer)
 }
 
 // Helper function to format slice (integrated from tinyfmt)
 func formatSlice(v reflect.Value) string {
-	result := "["
+	var buffer []byte
+	buffer = append(buffer, '[')
 	for i := 0; i < v.Len(); i++ {
 		if i > 0 {
-			result += " "
+			buffer = append(buffer, ' ')
 		}
-		result += formatValue(v.Index(i).Interface())
+		buffer = append(buffer, formatValue(v.Index(i).Interface())...)
 	}
-	result += "]"
-	return result
+	buffer = append(buffer, ']')
+	return string(buffer)
 }
 
 // Helper function to format map (integrated from tinyfmt)
 func formatMap(v reflect.Value) string {
-	result := "{"
+	var buffer []byte
+	buffer = append(buffer, '{')
 	keys := v.MapKeys()
 	for i, key := range keys {
 		if i > 0 {
-			result += " "
+			buffer = append(buffer, ' ')
 		}
-		result += formatValue(key.Interface()) + ":" + formatValue(v.MapIndex(key).Interface())
+		buffer = append(buffer, formatValue(key.Interface())...)
+		buffer = append(buffer, ':')
+		buffer = append(buffer, formatValue(v.MapIndex(key).Interface())...)
 	}
-	result += "}"
-	return result
+	buffer = append(buffer, '}')
+	return string(buffer)
 }
 
 // RoundDecimals rounds a numeric value to the specified number of decimal places
@@ -349,7 +356,7 @@ func (t *Text) Down() *Text {
 	if decimalPlaces > 0 {
 		// For decimal values, subtract the smallest unit
 		unit := 1.0
-		for i := 0; i < decimalPlaces; i++ {
+		for range decimalPlaces {
 			unit /= 10.0
 		}
 		if val >= 0 {
@@ -557,7 +564,7 @@ func parseFloatManual(input string) (float64, error) {
 	integerPartStr := ""
 	fractionPartStr := ""
 	decimalPointSeen := false
-	for i := 0; i < len(input); i++ {
+	for i := range len(input) {
 		if input[i] == '.' {
 			if decimalPointSeen {
 				return 0, errors.New("invalid float string")
@@ -577,7 +584,7 @@ func parseFloatManual(input string) (float64, error) {
 
 	var fractionPart float64
 	fractionDivisor := 1.0
-	for i := 0; i < len(fractionPartStr); i++ {
+	for i := range len(fractionPartStr) {
 		fractionPart = fractionPart*10 + float64(fractionPartStr[i]-'0')
 		fractionDivisor *= 10
 	}
@@ -599,7 +606,7 @@ func parseIntManual(input string, base int) (int64, error) {
 
 // indexByteManual finds the first occurrence of byte c in s (manual implementation to replace strings.IndexByte)
 func indexByteManual(s string, c byte) int {
-	for i := 0; i < len(s); i++ {
+	for i := range len(s) {
 		if s[i] == c {
 			return i
 		}

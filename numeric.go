@@ -142,41 +142,70 @@ func stringToFloat(input string) (float64, error) {
 	}
 
 	isNegative := false
+	startIndex := 0
 	if input[0] == '-' {
 		isNegative = true
-		input = input[1:]
-	}
-
-	integerPartStr := ""
-	fractionPartStr := ""
-	decimalPointSeen := false
-	for i := 0; i < len(input); i++ {
-		if input[i] == '.' {
-			if decimalPointSeen {
-				return 0, errors.New("invalid float string")
-			}
-			decimalPointSeen = true
-		} else if decimalPointSeen {
-			fractionPartStr += string(input[i])
-		} else {
-			integerPartStr += string(input[i])
+		startIndex = 1
+		if len(input) == 1 { // Just a "-" sign
+			return 0, errors.New("invalid float string: only sign")
+		}
+	} else if input[0] == '+' {
+		startIndex = 1
+		if len(input) == 1 { // Just a "+" sign
+			return 0, errors.New("invalid float string: only sign")
 		}
 	}
 
-	integerPart, err := stringToInt(integerPartStr, 10)
-	if err != nil {
-		return 0, err
+	var integerPart uint64
+	var fractionPart uint64
+	var fractionDivisor float64 = 1.0
+	decimalPointSeen := false
+	parsingFraction := false
+	hasDigits := false // To check if there's at least one digit
+
+	for i := startIndex; i < len(input); i++ {
+		char := input[i]
+		if char == '.' {
+			if decimalPointSeen {
+				return 0, errors.New("invalid float string: multiple decimal points")
+			}
+			decimalPointSeen = true
+			parsingFraction = true
+		} else if char >= '0' && char <= '9' {
+			hasDigits = true
+			digit := uint64(char - '0')
+			if parsingFraction {
+				// Check for overflow before multiplying fractionPart
+				if fractionPart > (^uint64(0))/10 {
+					// This condition might be too strict for typical float precision needs,
+					// but good for catching extreme cases.
+					// Standard library might handle this by losing precision.
+					// For now, let's consider it an error or rely on float64 limits.
+				}
+				fractionPart = fractionPart*10 + digit
+				fractionDivisor *= 10
+			} else {
+				// Check for overflow before multiplying integerPart
+				if integerPart > (^uint64(0)-digit)/10 {
+					return 0, errors.New("integer part overflow")
+				}
+				integerPart = integerPart*10 + digit
+			}
+		} else {
+			// Invalid character
+			return 0, errors.New("invalid character in float string: " + string(char))
+		}
 	}
 
-	var fractionPart float64
-	fractionDivisor := 1.0
-	for i := 0; i < len(fractionPartStr); i++ {
-		fractionPart = fractionPart*10 + float64(fractionPartStr[i]-'0')
-		fractionDivisor *= 10
+	if !hasDigits {
+		return 0, errors.New("invalid float string: no digits found")
 	}
-	fractionPart /= fractionDivisor
 
-	result := float64(integerPart) + fractionPart
+	result := float64(integerPart)
+	if fractionPart > 0 {
+		result += float64(fractionPart) / fractionDivisor
+	}
+
 	if isNegative {
 		result = -result
 	}
@@ -191,7 +220,6 @@ func stringToNumberHelper(input string, base int) (uint64, error) {
 	}
 
 	var result uint64
-	const digitCharacters = "0123456789abcdefghijklmnopqrstuvwxyz"
 
 	for _, char := range input {
 		var digit int

@@ -54,11 +54,6 @@ func (tsb *tinyStringBuilder) len() int {
 	return len(tsb.buf)
 }
 
-// cap returns the capacity of the underlying buffer
-func (tsb *tinyStringBuilder) cap() int {
-	return cap(tsb.buf)
-}
-
 // grow increases the capacity of the buffer if needed
 func (tsb *tinyStringBuilder) grow(n int) {
 	if cap(tsb.buf)-len(tsb.buf) < n {
@@ -70,44 +65,4 @@ func (tsb *tinyStringBuilder) grow(n int) {
 		copy(newBuf, tsb.buf)
 		tsb.buf = newBuf
 	}
-}
-
-// estimateRuneCount estimates the number of runes in a string for pre-allocation
-func estimateRuneCount(s string) int {
-	// Quick estimate assuming mostly ASCII with some multibyte characters
-	// This is better than len(s) for UTF-8 but avoids expensive actual counting
-	byteLen := len(s)
-	if byteLen < 128 {
-		return byteLen // Likely mostly ASCII
-	}
-	// Conservative estimate for mixed content
-	return (byteLen * 3) / 4
-}
-
-// stringToRunes converts string to rune slice efficiently
-func stringToRunes(s string) []rune {
-	estimated := estimateRuneCount(s)
-	runes := make([]rune, 0, estimated)
-
-	for _, r := range s {
-		runes = append(runes, r)
-	}
-	return runes
-}
-
-// runesToString converts rune slice to string efficiently
-func runesToString(runes []rune) string {
-	if len(runes) == 0 {
-		return ""
-	}
-
-	// Estimate byte length (conservative estimate)
-	estimatedBytes := len(runes) * 4 // Max bytes per rune in UTF-8
-	builder := newTinyStringBuilder(estimatedBytes)
-
-	for _, r := range runes {
-		builder.writeRune(r)
-	}
-
-	return builder.string()
 }

@@ -158,16 +158,20 @@ El análisis del archivo `convert.go` ha revelado varias áreas potenciales para
     *   **Problema**: La función `toCaseTransform` actualmente llama a `transformWord([]rune{r}, transform)` para cada runa individual que necesita cambiar de caso. La función `transformWord` está diseñada para palabras completas y realiza múltiples asignaciones (crea copias de slices de runas). Esto es ineficiente para transformar runas individuales.
     *   **Solución Propuesta**: Modificar `toCaseTransform` para que maneje la transformación de mayúsculas/minúsculas de runas individuales directamente, sin llamar a `transformWord`. Esto implicará integrar la lógica de `lowerMappings` y `upperMappings` directamente o crear funciones auxiliares más ligeras para la transformación de una sola runa.
     *   **Objetivo**: Reducir significativamente las asignaciones generadas durante las transformaciones de caso.
+    *   **Estado**: **Completado**. Se introdujo `transformSingleRune` y `toCaseTransform` fue refactorizada.
+        *   **Impacto Observado (2025-05-26)**: Reducción muy significativa en Bytes/Op y Allocs/Op para "String Processing" (de 7.0KB/331 allocs a 3.7KB/95 allocs) y "Mixed Operations" (de 3.9KB/304 allocs a 2.6KB/191 allocs).
 
 2.  **Revisar `transformWord` en `convert.go`**:
-    *   **Problema**: Realiza dos copias de slices de runas, generando asignaciones.
-    *   **Solución Propuesta**: Una vez que `toCaseTransform` ya no llame a `transformWord` para runas individuales, evaluar si `transformWord` sigue siendo necesaria o si su uso restante (si lo hay) puede optimizarse, potencialmente eliminando copias innecesarias si los slices no provienen de un pool o no se reutilizan de forma conflictiva.
+    *   **Objetivo**: Entender sus usos restantes después de la refactorización de `toCaseTransform`.
+    *   **Acciones**:
+        *   Identificar todos los puntos de llamada a `transformWord`.
+        *   Evaluar si las asignaciones que realiza son significativas en esos contextos.
+        *   Optimizar o eliminar `transformWord` si es posible sin causar regresiones.
 
-3.  **Optimizar `splitIntoWordsLocal` en `convert.go`**:
-    *   **Problema**: Crea una nueva asignación (`wordCopy`) para cada palabra extraída.
-    *   **Solución Propuesta**: Investigar métodos para reducir estas asignaciones. Esto podría implicar un procesamiento más directo de la cadena original en `toCaseTransform` o el uso de un pool para los slices de palabras (aunque esto añade complejidad).
+3.  **Buffer Pooling (`sync.Pool`) Generalizado (Prioridad Media)**:
+    *   **Objetivo**: Reconsiderar el uso de `sync.Pool` para buffers temporales si se identifican nuevos puntos calientes de asignación de buffers que sean adecuados para este patrón.
+    *   **Acciones**: Mantener en observación durante futuras optimizaciones.
 
-**Estrategia General:**
-*   Continuar ejecutando `./benchmark/memory-benchmark.sh` después de cada cambio significativo para monitorear el progreso y detectar regresiones.
-*   Priorizar los cambios que se espera que tengan el mayor impacto en la reducción de `Bytes/Op` y `Allocs/Op`, especialmente en la categoría "String Processing" donde se observó una regresión en `Allocs/Op`.
-*   Documentar los cambios y sus impactos observados.
+4.  **Seguimiento Continuo con Benchmarks**:
+    *   **Objetivo**: Validar el impacto de cada cambio.
+    *   **Acciones**: Ejecutar `./memory-benchmark.sh` y analizar los resultados después de cada intento de optimización.
