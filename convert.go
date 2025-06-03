@@ -25,15 +25,41 @@ const (
 	toUpper
 )
 
-// initialize the text struct with any type of value
-// supports string, *string, int, float, bool, []string and their variants
-// use String() to get the final string value
-// or Apply() to update the original string pointer
-// eg:
+// Convert initializes a new Text struct with any type of value for string manipulation.
+//
+// Supported input types:
+//   - string: Direct string value
+//   - *string: Pointer to string (allows in-place modification with Apply())
+//   - []string: Slice of strings (use Join() to combine)
+//   - int, int8, int16, int32, int64: Integer types
+//   - uint, uint8, uint16, uint32, uint64: Unsigned integer types
+//   - float32, float64: Floating point types
+//   - bool: Boolean values (true/false)
+//   - any other type: Converted to string representation
+//
+// Usage patterns:
+//
+// 1. Basic string manipulation:
+//     result := Convert("hello world").ToUpper().String()
+//     // result: "HELLO WORLD"
+//
+// 2. In-place modification of string pointer:
 //     original := "hello world"
 //     Convert(&original).ToUpper().Apply()
-//     // or
-//     out :=  Convert("hello world").ToUpper().String()
+//     // original is now: "HELLO WORLD"
+//
+// 3. Working with slices:
+//     words := []string{"hello", "world"}
+//     result := Convert(words).Join(" ").ToUpper().String()
+//     // result: "HELLO WORLD"
+//
+// 4. Numeric conversions:
+//     result := Convert(42).String()
+//     // result: "42"
+//
+// The Convert function returns a *Text instance that supports method chaining
+// for various string transformations like case conversion, joining, parsing, etc.
+// Use String() to get the final result or Apply() to modify the original pointer.
 func Convert(v any) *Text {
 	switch val := v.(type) {
 	case []string:

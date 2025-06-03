@@ -4,7 +4,51 @@ import (
 	"errors"
 )
 
-// ToInt converts the text content to an integer with specified base
+// ToInt converts the text content to an integer with optional base specification.
+//
+// Parameters:
+//   - base (optional): The numeric base for conversion (2-36). Default is 10 (decimal).
+//     Common bases: 2 (binary), 8 (octal), 10 (decimal), 16 (hexadecimal)
+//
+// Returns:
+//   - int: The converted integer value
+//   - error: Any error that occurred during conversion
+//
+// Conversion behavior:
+//  1. First attempts direct integer parsing with the specified base
+//  2. If that fails, tries to parse as float and truncates to integer
+//  3. Returns error if both methods fail
+//
+// Supported input formats:
+//   - Integer strings: "123", "-456"
+//   - Float strings (truncated): "123.45" -> 123, "99.99" -> 99
+//   - Different bases: "1010" (base 2) -> 10, "FF" (base 16) -> 255
+//   - Negative numbers: Only supported for base 10
+//
+// Usage examples:
+//
+//	// Basic decimal conversion
+//	val, err := Convert("123").ToInt()
+//	// val: 123, err: nil
+//
+//	// Binary conversion
+//	val, err := Convert("1010").ToInt(2)
+//	// val: 10, err: nil
+//
+//	// Hexadecimal conversion
+//	val, err := Convert("FF").ToInt(16)
+//	// val: 255, err: nil
+//
+//	// Float truncation
+//	val, err := Convert("123.99").ToInt()
+//	// val: 123, err: nil
+//
+//	// Error handling
+//	val, err := Convert("invalid").ToInt()
+//	// val: 0, err: conversion error
+//
+// Note: Negative numbers are only supported for base 10. For other bases,
+// negative signs will result in an error.
 func (t *Text) ToInt(base ...int) (int, error) {
 	if t.err != nil {
 		return 0, t.err
@@ -31,7 +75,51 @@ func (t *Text) ToInt(base ...int) (int, error) {
 	return 0, err
 }
 
-// ToUint converts the text content to an unsigned integer with specified base
+// ToUint converts the text content to an unsigned integer with optional base specification.
+//
+// Parameters:
+//   - base (optional): The numeric base for conversion (2-36). Default is 10 (decimal).
+//     Common bases: 2 (binary), 8 (octal), 10 (decimal), 16 (hexadecimal)
+//
+// Returns:
+//   - uint: The converted unsigned integer value
+//   - error: Any error that occurred during conversion
+//
+// Conversion behavior:
+//  1. First attempts direct unsigned integer parsing with the specified base
+//  2. If that fails, tries to parse as float and truncates to unsigned integer
+//  3. Returns error if both methods fail or if the value is negative
+//
+// Supported input formats:
+//   - Positive integer strings: "123", "456"
+//   - Float strings (truncated): "123.45" -> 123, "99.99" -> 99
+//   - Different bases: "1010" (base 2) -> 10, "FF" (base 16) -> 255
+//   - Negative numbers: NOT supported, will return error
+//
+// Usage examples:
+//
+//	// Basic decimal conversion
+//	val, err := Convert("123").ToUint()
+//	// val: 123, err: nil
+//
+//	// Binary conversion
+//	val, err := Convert("1010").ToUint(2)
+//	// val: 10, err: nil
+//
+//	// Hexadecimal conversion
+//	val, err := Convert("FF").ToUint(16)
+//	// val: 255, err: nil
+//
+//	// Float truncation
+//	val, err := Convert("123.99").ToUint()
+//	// val: 123, err: nil
+//
+//	// Error with negative number
+//	val, err := Convert("-123").ToUint()
+//	// val: 0, err: "negative numbers are not supported for unsigned integers"
+//
+// Note: Negative numbers are never supported for unsigned integers and will
+// always result in an error, regardless of the base.
 func (t *Text) ToUint(base ...int) (uint, error) {
 	if t.err != nil {
 		return 0, t.err
@@ -61,12 +149,82 @@ func (t *Text) ToUint(base ...int) (uint, error) {
 	return 0, err
 }
 
-// ToFloat converts the text content to a float64
+// ToFloat converts the text content to a float64 (double precision floating point).
+//
+// Returns:
+//   - float64: The converted floating point value
+//   - error: Any error that occurred during conversion
+//
+// Conversion behavior:
+//   - Parses the string content as a floating point number
+//   - Supports both positive and negative numbers
+//   - Handles decimal points and scientific notation (if implemented)
+//   - Returns error for invalid number formats
+//
+// Supported input formats:
+//   - Integer strings: "123" -> 123.0, "-456" -> -456.0
+//   - Decimal numbers: "123.45", "-99.99", "0.001"
+//   - Numbers with leading signs: "+123.45", "-0.99"
+//   - Zero values: "0", "0.0", "0.000"
+//
+// Usage examples:
+//
+//	// Basic decimal conversion
+//	val, err := Convert("123.45").ToFloat()
+//	// val: 123.45, err: nil
+//
+//	// Integer to float
+//	val, err := Convert("42").ToFloat()
+//	// val: 42.0, err: nil
+//
+//	// Negative numbers
+//	val, err := Convert("-99.99").ToFloat()
+//	// val: -99.99, err: nil
+//
+//	// Error handling
+//	val, err := Convert("invalid").ToFloat()
+//	// val: 0.0, err: conversion error
+//
+// Note: This method uses a custom float parsing implementation that may have
+// different precision characteristics compared to the standard library.
 func (t *Text) ToFloat() (float64, error) {
 	return stringToFloat(t.content)
 }
 
-// FromInt creates a new Text instance from an integer with specified base
+// FromInt creates a new Text instance from an integer with optional base specification.
+//
+// Parameters:
+//   - value: The integer value to convert to Text
+//   - base (optional): The numeric base for string representation (2-36). Default is 10 (decimal).
+//     Common bases: 2 (binary), 8 (octal), 10 (decimal), 16 (hexadecimal)
+//
+// Returns:
+//   - *Text: A new Text instance containing the string representation of the integer
+//
+// Usage examples:
+//
+//	// Basic decimal conversion
+//	text := FromInt(123)
+//	result := text.String() // "123"
+//
+//	// Binary representation
+//	text := FromInt(10, 2)
+//	result := text.String() // "1010"
+//
+//	// Hexadecimal representation
+//	text := FromInt(255, 16)
+//	result := text.String() // "ff"
+//
+//	// Octal representation
+//	text := FromInt(64, 8)
+//	result := text.String() // "100"
+//
+//	// Negative numbers (only base 10)
+//	text := FromInt(-42)
+//	result := text.String() // "-42"
+//
+// Note: The resulting Text instance can be used for further string manipulations
+// like case conversion, joining, etc.
 func FromInt(value int, base ...int) *Text {
 	b := 10 // default base
 	if len(base) > 0 {
@@ -76,7 +234,40 @@ func FromInt(value int, base ...int) *Text {
 	return &Text{content: str}
 }
 
-// FromUint creates a new Text instance from an unsigned integer with specified base
+// FromUint creates a new Text instance from an unsigned integer with optional base specification.
+//
+// Parameters:
+//   - value: The unsigned integer value to convert to Text
+//   - base (optional): The numeric base for string representation (2-36). Default is 10 (decimal).
+//     Common bases: 2 (binary), 8 (octal), 10 (decimal), 16 (hexadecimal)
+//
+// Returns:
+//   - *Text: A new Text instance containing the string representation of the unsigned integer
+//
+// Usage examples:
+//
+//	// Basic decimal conversion
+//	text := FromUint(123)
+//	result := text.String() // "123"
+//
+//	// Binary representation
+//	text := FromUint(10, 2)
+//	result := text.String() // "1010"
+//
+//	// Hexadecimal representation
+//	text := FromUint(255, 16)
+//	result := text.String() // "ff"
+//
+//	// Large unsigned values
+//	text := FromUint(18446744073709551615) // max uint64
+//	result := text.String() // "18446744073709551615"
+//
+//	// Chain with other operations
+//	text := FromUint(255, 16).ToUpper()
+//	result := text.String() // "FF"
+//
+// Note: Unlike FromInt, this function only works with non-negative values.
+// The resulting Text instance can be used for further string manipulations.
 func FromUint(value uint, base ...int) *Text {
 	b := 10 // default base
 	if len(base) > 0 {
@@ -86,7 +277,44 @@ func FromUint(value uint, base ...int) *Text {
 	return &Text{content: str}
 }
 
-// FromFloat creates a new Text instance from a float with specified precision
+// FromFloat creates a new Text instance from a float64 with optional precision specification.
+//
+// Parameters:
+//   - value: The float64 value to convert to Text
+//   - precision (optional): Number of decimal places to include. Default is -1 (full precision).
+//     Use 0 for no decimal places, positive values for fixed decimal places.
+//
+// Returns:
+//   - *Text: A new Text instance containing the string representation of the float
+//
+// Usage examples:
+//
+//	// Full precision (default)
+//	text := FromFloat(123.456789)
+//	result := text.String() // "123.456789" (or full precision representation)
+//
+//	// No decimal places
+//	text := FromFloat(123.456, 0)
+//	result := text.String() // "123"
+//
+//	// Fixed decimal places
+//	text := FromFloat(123.456, 2)
+//	result := text.String() // "123.46" (rounded)
+//
+//	// Scientific notation values
+//	text := FromFloat(1.23e-4, 6)
+//	result := text.String() // "0.000123"
+//
+//	// Negative numbers
+//	text := FromFloat(-99.99, 1)
+//	result := text.String() // "-100.0"
+//
+//	// Chain with other operations
+//	text := FromFloat(123.456, 2).ToUpper()
+//	result := text.String() // "123.46" (case conversion doesn't affect numbers)
+//
+// Note: The precision parameter controls the number of digits after the decimal point.
+// The resulting Text instance can be used for further string manipulations.
 func FromFloat(value float64, precision ...int) *Text {
 	p := -1 // default precision (full precision)
 	if len(precision) > 0 {
@@ -96,7 +324,18 @@ func FromFloat(value float64, precision ...int) *Text {
 	return &Text{content: str}
 }
 
-// stringToInt converts a string to an integer with specified base (integrated from tinystrconv)
+// stringToInt converts a string to an integer with specified base.
+// This is an internal helper function integrated from tinystrconv.
+//
+// Parameters:
+//   - input: The string to convert
+//   - base: The numeric base (2-36)
+//
+// Returns:
+//   - int: The converted integer value
+//   - error: Any error that occurred during conversion
+//
+// Supports negative numbers only for base 10.
 func stringToInt(input string, base int) (int, error) {
 	if input == "" {
 		return 0, errors.New("empty string")
@@ -122,7 +361,18 @@ func stringToInt(input string, base int) (int, error) {
 	return int(number), nil
 }
 
-// stringToUint converts a string to an unsigned integer with specified base (integrated from tinystrconv)
+// stringToUint converts a string to an unsigned integer with specified base.
+// This is an internal helper function integrated from tinystrconv.
+//
+// Parameters:
+//   - input: The string to convert
+//   - base: The numeric base (2-36)
+//
+// Returns:
+//   - uint64: The converted unsigned integer value
+//   - error: Any error that occurred during conversion
+//
+// Does not support negative numbers.
 func stringToUint(input string, base int) (uint64, error) {
 	if input == "" {
 		return 0, errors.New("empty string")
@@ -135,7 +385,19 @@ func stringToUint(input string, base int) (uint64, error) {
 	return stringToNumberHelper(input, base)
 }
 
-// stringToFloat converts a string to a float64 (manual implementation, integrated from tinystrconv)
+// stringToFloat converts a string to a float64 using manual implementation.
+// This is an internal helper function integrated from tinystrconv.
+//
+// Parameters:
+//   - input: The string to convert to float64
+//
+// Returns:
+//   - float64: The converted floating point value
+//   - error: Any error that occurred during conversion
+//
+// Supports positive and negative numbers with decimal points.
+// Handles basic floating point formats but may have different precision
+// characteristics compared to the standard library.
 func stringToFloat(input string) (float64, error) {
 	if input == "" {
 		return 0, errors.New("empty string")
@@ -213,7 +475,19 @@ func stringToFloat(input string) (float64, error) {
 	return result, nil
 }
 
-// stringToNumberHelper converts a string to a number with specified base (integrated from tinystrconv)
+// stringToNumberHelper converts a string to a number with specified base.
+// This is an internal helper function integrated from tinystrconv.
+//
+// Parameters:
+//   - input: The string to convert (must contain only valid digits for the base)
+//   - base: The numeric base (must be between 2 and 36)
+//
+// Returns:
+//   - uint64: The converted number value
+//   - error: Any error that occurred during conversion
+//
+// Used internally by stringToInt and stringToUint functions.
+// Validates base range and character validity for the specified base.
 func stringToNumberHelper(input string, base int) (uint64, error) {
 	if base < 2 || base > 36 {
 		return 0, errors.New("base must be between 2 and 36")
@@ -248,7 +522,18 @@ func stringToNumberHelper(input string, base int) (uint64, error) {
 	return result, nil
 }
 
-// uintToStringWithBase converts an unsigned integer to string with specified base
+// uintToStringWithBase converts an unsigned integer to string with specified base.
+// This is an internal helper function used by FromInt and FromUint.
+//
+// Parameters:
+//   - number: The unsigned integer to convert
+//   - base: The numeric base for the string representation (2-36)
+//
+// Returns:
+//   - string: The string representation of the number in the specified base
+//
+// Uses lowercase letters (a-z) for digits above 9 in bases greater than 10.
+// For example, base 16 uses digits 0-9 and letters a-f.
 func uintToStringWithBase(number uint64, base int) string {
 	if number == 0 {
 		return "0" // Directly return "0" for zero value
