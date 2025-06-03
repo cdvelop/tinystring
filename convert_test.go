@@ -1,9 +1,7 @@
-package tinystring_test
+package tinystring
 
 import (
 	"testing"
-
-	. "github.com/cdvelop/tinystring"
 )
 
 func TestConversions(t *testing.T) {
@@ -11,25 +9,25 @@ func TestConversions(t *testing.T) {
 		name     string
 		input    string
 		want     string
-		function func(*Text) *Text
+		function func(*conv) *conv
 	}{
 		{
 			name:     "Remove tildes",
 			input:    "áéíóúÁÉÍÓÚ",
 			want:     "aeiouAEIOU",
-			function: (*Text).RemoveTilde,
+			function: (*conv).RemoveTilde,
 		},
 		{
-			name:     "Remove tildes with mixed text",
+			name:     "Remove tildes with mixed conv",
 			input:    "Hôlà Mündó",
 			want:     "Hola Mundo",
-			function: (*Text).RemoveTilde,
+			function: (*conv).RemoveTilde,
 		},
 		{
 			name:  "CamelCaseLower",
 			input: "hello world example",
 			want:  "helloWorldExample",
-			function: func(t *Text) *Text {
+			function: func(t *conv) *conv {
 				return t.CamelCaseLower()
 			},
 		},
@@ -37,7 +35,7 @@ func TestConversions(t *testing.T) {
 			name:  "Convert to lower with tildes",
 			input: "HÓLA MÚNDO",
 			want:  "hola mundo",
-			function: func(t *Text) *Text {
+			function: func(t *conv) *conv {
 				return t.RemoveTilde().ToLower()
 			},
 		},
@@ -45,7 +43,7 @@ func TestConversions(t *testing.T) {
 			name:  "Convert to upper with tildes",
 			input: "hóla múndo",
 			want:  "HOLA MUNDO",
-			function: func(t *Text) *Text {
+			function: func(t *conv) *conv {
 				return t.RemoveTilde().ToUpper()
 			},
 		},
@@ -53,13 +51,13 @@ func TestConversions(t *testing.T) {
 			name:     "Special characters",
 			input:    "ñÑàèìòùÀÈÌÒÙ",
 			want:     "nNaeiouAEIOU",
-			function: (*Text).RemoveTilde,
+			function: (*conv).RemoveTilde,
 		},
 		{
 			name:  "Complete transformation",
 			input: "Él Múrcielago Rápido",
 			want:  "elMurcielagoRapido",
-			function: func(t *Text) *Text {
+			function: func(t *conv) *conv {
 				return t.RemoveTilde().CamelCaseLower()
 			},
 		},
@@ -67,7 +65,7 @@ func TestConversions(t *testing.T) {
 			name:  "Empty string",
 			input: "",
 			want:  "",
-			function: func(t *Text) *Text {
+			function: func(t *conv) *conv {
 				return t.RemoveTilde().ToLower().ToUpper().CamelCaseLower()
 			},
 		},
@@ -75,7 +73,7 @@ func TestConversions(t *testing.T) {
 			name:  "Single character",
 			input: "A",
 			want:  "a",
-			function: func(t *Text) *Text {
+			function: func(t *conv) *conv {
 				return t.ToLower()
 			},
 		},
@@ -83,7 +81,7 @@ func TestConversions(t *testing.T) {
 			name:  "Multiple spaces in camelCase",
 			input: "hello    world    example",
 			want:  "helloWorldExample",
-			function: func(t *Text) *Text {
+			function: func(t *conv) *conv {
 				return t.CamelCaseLower()
 			},
 		},
@@ -91,7 +89,7 @@ func TestConversions(t *testing.T) {
 			name:  "Non-mappable characters",
 			input: "Hello! @#$%^ World 123",
 			want:  "hello!@#$%^World123",
-			function: func(t *Text) *Text {
+			function: func(t *conv) *conv {
 				return t.CamelCaseLower()
 			},
 		},
@@ -99,7 +97,7 @@ func TestConversions(t *testing.T) {
 			name:  "Mixed transformations",
 			input: "HÉLLÔ WórLD",
 			want:  "HELLO WORLD",
-			function: func(t *Text) *Text {
+			function: func(t *conv) *conv {
 				return t.RemoveTilde().ToUpper()
 			},
 		},
@@ -107,7 +105,7 @@ func TestConversions(t *testing.T) {
 			name:  "CamelCase with accents",
 			input: "él múrcielago RÁPIDO vuela",
 			want:  "elMurcielagoRapidoVuela",
-			function: func(t *Text) *Text {
+			function: func(t *conv) *conv {
 				return t.RemoveTilde().CamelCaseLower()
 			},
 		},
@@ -115,7 +113,7 @@ func TestConversions(t *testing.T) {
 			name:  "CamelCaseLower",
 			input: "hello world example",
 			want:  "helloWorldExample",
-			function: func(t *Text) *Text {
+			function: func(t *conv) *conv {
 				return t.CamelCaseLower()
 			},
 		},
@@ -123,7 +121,7 @@ func TestConversions(t *testing.T) {
 			name:  "CamelCaseUpper",
 			input: "hello world example",
 			want:  "HelloWorldExample",
-			function: func(t *Text) *Text {
+			function: func(t *conv) *conv {
 				return t.CamelCaseUpper()
 			},
 		},
@@ -131,7 +129,7 @@ func TestConversions(t *testing.T) {
 			name:  "ToSnakeCaseLower",
 			input: "hello world example",
 			want:  "hello_world_example",
-			function: func(t *Text) *Text {
+			function: func(t *conv) *conv {
 				return t.ToSnakeCaseLower()
 			},
 		},
@@ -139,7 +137,7 @@ func TestConversions(t *testing.T) {
 			name:  "Mixed case with numbers to CamelCaseLower",
 			input: "User123Name",
 			want:  "user123name",
-			function: func(t *Text) *Text {
+			function: func(t *conv) *conv {
 				return t.CamelCaseLower()
 			},
 		},
@@ -147,7 +145,7 @@ func TestConversions(t *testing.T) {
 			name:  "Mixed case with numbers to CamelCaseUpper",
 			input: "User123Name",
 			want:  "User123Name",
-			function: func(t *Text) *Text {
+			function: func(t *conv) *conv {
 				return t.CamelCaseUpper()
 			},
 		},
@@ -155,39 +153,39 @@ func TestConversions(t *testing.T) {
 			name:  "Mixed case with numbers to ToSnakeCaseLower",
 			input: "User123Name",
 			want:  "user123_name",
-			function: func(t *Text) *Text {
+			function: func(t *conv) *conv {
 				return t.ToSnakeCaseLower()
 			},
 		},
 		{
-			name:  "Accented text to camelCase",
+			name:  "Accented conv to camelCase",
 			input: "Él Múrcielago Rápido",
 			want:  "elMurcielagoRapido",
-			function: func(t *Text) *Text {
+			function: func(t *conv) *conv {
 				return t.RemoveTilde().CamelCaseLower()
 			},
 		},
 		{
-			name:  "Accented text to PascalCase",
+			name:  "Accented conv to PascalCase",
 			input: "Él Múrcielago Rápido",
 			want:  "ElMurcielagoRapido",
-			function: func(t *Text) *Text {
+			function: func(t *conv) *conv {
 				return t.RemoveTilde().CamelCaseUpper()
 			},
 		},
 		{
-			name:  "Accented text to snake_case",
+			name:  "Accented conv to snake_case",
 			input: "Él Múrcielago Rápido",
 			want:  "el_murcielago_rapido",
-			function: func(t *Text) *Text {
+			function: func(t *conv) *conv {
 				return t.RemoveTilde().ToSnakeCaseLower()
 			},
 		},
 		{
-			name:  "Accented text to snake-case",
+			name:  "Accented conv to snake-case",
 			input: "Él Múrcielago Rápido",
 			want:  "el-murcielago-rapido",
-			function: func(t *Text) *Text {
+			function: func(t *conv) *conv {
 				return t.RemoveTilde().ToSnakeCaseLower("-")
 			},
 		},

@@ -1,11 +1,11 @@
 # TinyString
 
-TinyString is a lightweight Go library that provides text manipulation with a fluid API, specifically designed for small devices and web applications using TinyGo as the target compiler.
+TinyString is a lightweight Go library that provides conv manipulation with a fluid API, specifically designed for small devices and web applications using TinyGo as the target compiler.
 
 ## Key Features
 
 - 🚀 **Fluid and chainable API** - Easy to use and readable operations
-- 🔄 **Common text transformations** - All essential string operations included
+- 🔄 **Common conv transformations** - All essential string operations included
 - 🧵 **Concurrency safe** - Thread-safe operations
 - 📦 **Zero standard library dependencies** - No `fmt`, `strings`, or `strconv` imports
 - 🎯 **TinyGo compatible** - Optimized for minimal binary size and embedded systems
@@ -63,7 +63,7 @@ TinyString achieves its goals through **manual implementations** of commonly use
 import "github.com/cdvelop/tinystring"
 
 // Basic example with string
-text := tinystring.Convert("MÍ téxtO").RemoveTilde().String()
+conv := tinystring.Convert("MÍ téxtO").RemoveTilde().String()
 // Result: "MI textO"
 
 // Examples with other data types
@@ -77,7 +77,7 @@ floatText := tinystring.Convert(3.14).String()
 // Result: "3.14"
 
 // Chaining operations
-text := tinystring.Convert("Él Múrcielago Rápido")
+conv := tinystring.Convert("Él Múrcielago Rápido")
     .RemoveTilde()
     .CamelCaseLower()
     .String()
@@ -92,9 +92,9 @@ tinystring.Convert(&originalText).RemoveTilde().CamelCaseLower().Apply()
 
 ### Available Operations
 
-- `Convert(v any)`: Initialize text processing with any data type (string, *string, int, float, bool, etc.). When using a string pointer (*string) along with the `Apply()` method, the original string will be modified directly, avoiding extra memory allocations.
+- `Convert(v any)`: Initialize conv processing with any data type (string, *string, int, float, bool, etc.). When using a string pointer (*string) along with the `Apply()` method, the original string will be modified directly, avoiding extra memory allocations.
 - `Apply()`: Updates the original string pointer with the current content. This method should be used when you want to modify the original string directly without additional allocations.
-- `String()`: Returns the content of the text as a string without modifying any original pointers.
+- `String()`: Returns the content of the conv as a string without modifying any original pointers.
 - `RemoveTilde()`: Removes accents and diacritics (e.g. "café" -> "cafe") 
 - `ToLower()`: Converts to lowercase (e.g. "HELLO" -> "hello")
 - `ToUpper()`: Converts to uppercase (e.g. "hello" -> "HELLO")
@@ -110,25 +110,22 @@ tinystring.Convert(&originalText).RemoveTilde().CamelCaseLower().Apply()
 - `TrimPrefix(prefix string)`: Removes a specified prefix from the beginning of a string (e.g. "prefix-content" -> "content")
 - `TrimSuffix(suffix string)`: Removes a specified suffix from the end of a string (e.g. "file.txt" -> "file")
 - `Trim()`: Removes spaces from the beginning and end of a string (e.g. "  hello  " -> "hello")
-- `Contains(text, search string)`: Checks if a string contains another, returns boolean (e.g. `Contains("hello world", "world")` -> `true`)
-- `CountOccurrences(text, search string)`: Counts how many times a string appears in another (e.g. `CountOccurrences("hello hello world", "hello")` -> `2`)
+- `Contains(conv, search string)`: Checks if a string contains another, returns boolean (e.g. `Contains("hello world", "world")` -> `true`)
+- `CountOccurrences(conv, search string)`: Counts how many times a string appears in another (e.g. `CountOccurrences("hello hello world", "hello")` -> `2`)
 - `Repeat(n int)`: Repeats the string n times (e.g. "abc".Repeat(3) -> "abcabcabc")
-- `Truncate(maxWidth any, reservedChars ...any)`: Truncates text so that it does not exceed the specified width, adding ellipsis if necessary. If the text is shorter or equal, it remains unchanged. The maxWidth parameter accepts any numeric type. The reservedChars parameter is optional and also accepts any numeric type. (e.g. "Hello, World!".Truncate(10) -> "Hello, ..." or "Hello, World!".Truncate(10, 3) -> "Hell...")
+- `Truncate(maxWidth any, reservedChars ...any)`: Truncates conv so that it does not exceed the specified width, adding ellipsis if necessary. If the conv is shorter or equal, it remains unchanged. The maxWidth parameter accepts any numeric type. The reservedChars parameter is optional and also accepts any numeric type. (e.g. "Hello, World!".Truncate(10) -> "Hello, ..." or "Hello, World!".Truncate(10, 3) -> "Hell...")
 - `TruncateName(maxCharsPerWord any, maxWidth any)`: Truncates names and surnames in a user-friendly way for displaying in limited spaces like chart labels. It adds abbreviation dots where appropriate and handles the first word specially when there are more than 2 words. Parameters: maxCharsPerWord (maximum characters per word), maxWidth (maximum total length). (e.g. Convert("Jeronimo Dominguez").TruncateName(3, 15) -> "Jer. Dominguez")
 - `RoundDecimals(decimals int)`: Rounds a numeric value to the specified number of decimal places with ceiling rounding by default (e.g. `Convert(3.154).RoundDecimals(2).String()` -> `"3.16"`)
 - `Down()`: Modifies rounding behavior to floor rounding (must be used after RoundDecimals, e.g. `Convert(3.154).RoundDecimals(2).Down().String()` -> `"3.15"`)
 - `FormatNumber()`: Formats a number with thousand separators and removes trailing zeros after the decimal point (e.g. `Convert(2189009.00).FormatNumber().String()` -> `"2.189.009"`)
 - `Format(format string, args ...any)`: Static function for sprintf-style string formatting with support for %s, %d, %f, %b, %x, %o, %v, %% specifiers (e.g. `Format("Hello %s, you have %d messages", "John", 5)` -> `"Hello John, you have 5 messages"`)
-- `StringError()`: Returns both the string result and any error that occurred during processing (e.g. `result, err := Convert("123").ToInt(); text, err2 := FromInt(result).StringError()`)
+- `StringError()`: Returns both the string result and any error that occurred during processing (e.g. `result, err := Convert("123").ToInt(); conv, err2 := Convert(result).StringError()`)
 - `Quote()`: Wraps the string content in quotes with proper escaping of special characters (e.g. `Convert("hello").Quote().String()` -> `"\"hello\""`)
-- `ToBool()`: Converts text content to boolean, supporting string boolean values and numeric values where non-zero = true (e.g. `Convert("true").ToBool()` -> `true, nil` or `Convert(42).ToBool()` -> `true, nil`)
-- `FromBool(value bool)`: Creates a new Text instance from a boolean value (e.g. `FromBool(true).String()` -> `"true"`)
-- `ToInt(base ...int)`: Converts text content to integer with optional base, supports float truncation (e.g. `Convert("123").ToInt()` -> `123, nil`)
-- `ToUint(base ...int)`: Converts text content to unsigned integer with optional base, supports float truncation (e.g. `Convert("456").ToUint()` -> `456, nil`)  
-- `ToFloat()`: Converts text content to float64 (e.g. `Convert("3.14").ToFloat()` -> `3.14, nil`)
-- `FromInt(value int, base ...int)`: Creates a new Text instance from an integer with optional base (e.g. `FromInt(42).String()` -> `"42"`)
-- `FromUint(value uint, base ...int)`: Creates a new Text instance from an unsigned integer with optional base (e.g. `FromUint(123).String()` -> `"123"`)
-- `FromFloat(value float64)`: Creates a new Text instance from a float64 value (e.g. `FromFloat(3.14).String()` -> `"3.14"`)
+- `ToBool()`: Converts conv content to boolean, supporting string boolean values and numeric values where non-zero = true (e.g. `Convert("true").ToBool()` -> `true, nil` or `Convert(42).ToBool()` -> `true, nil`)
+- `ToInt(base ...int)`: Converts conv content to integer with optional base, supports float truncation (e.g. `Convert("123").ToInt()` -> `123, nil`)
+- `ToUint(base ...int)`: Converts conv content to unsigned integer with optional base, supports float truncation (e.g. `Convert("456").ToUint()` -> `456, nil`)  
+- `ToFloat()`: Converts conv content to float64 (e.g. `Convert("3.14").ToFloat()` -> `3.14, nil`)
+
 
 ### Enhanced Type Conversion and Formatting
 
@@ -181,7 +178,7 @@ result, err := tinystring.Convert(0).ToBool()
 // Result: false, err: nil
 
 // Boolean to string
-result := tinystring.FromBool(true).String()
+result := tinystring.Convert(true).String()
 // Result: "true"
 ```
 
@@ -207,13 +204,13 @@ result, err := tinystring.Convert("3.14159").ToFloat()
 // Result: 3.14159, err: nil
 
 // Creating from numeric types
-result := tinystring.FromInt(42).String()
+result := tinystring.Convert(42).String()
 // Result: "42"
 
-result := tinystring.FromUint(123).String() 
+result := tinystring.Convert(123).String() 
 // Result: "123"
 
-result := tinystring.FromFloat(3.14).String()
+result := tinystring.Convert(3.14).String()
 // Result: "3.14"
 ```
 
@@ -243,8 +240,8 @@ if err != nil {
 }
 
 // Use StringError() method for operations that might fail
-text := tinystring.Convert("123.45").RoundDecimals(2)
-result, err := text.StringError()
+conv := tinystring.Convert("123.45").RoundDecimals(2)
+result, err := conv.StringError()
 // Result: "123.45", err: nil (or error if conversion failed)
 ```
 
@@ -257,7 +254,7 @@ formatted := tinystring.Convert(result).Quote().ToUpper().String()
 // Result: "\"USER ALICE HAS 95 POINTS\""
 
 // Numeric processing chain
-result := tinystring.FromFloat(123.987)
+result := tinystring.Convert(123.987)
     .RoundDecimals(2)
     .Down()
     .FormatNumber()
@@ -268,7 +265,7 @@ result := tinystring.FromFloat(123.987)
 result, err := tinystring.Convert("42")
     .ToInt()
 if err == nil {
-    formatted := tinystring.FromInt(result * 2).Quote().String()
+    formatted := tinystring.Convert(result * 2).Quote().String()
     // Result: "\"84\""
 }
 ```
@@ -357,7 +354,7 @@ result := tinystring.Convert([]string{"apple", "banana", "orange"}).Join("-").St
 result := tinystring.Convert([]string{"hello", "world"}).Join().ToUpper().String()
 // Result: "HELLO WORLD"
 
-// Replace text
+// Replace conv
 tinystring.Convert("hello world").Replace("world", "universe").String()
 // Result: "hello universe"
 
@@ -370,7 +367,7 @@ tinystring.Convert("  file.txt  ").Trim().TrimSuffix(".txt").String()
 // Result: "file"
 
 // Chain multiple operations
-text := tinystring.Convert(" User Name ")
+conv := tinystring.Convert(" User Name ")
     .Trim()
     .Replace(" ", "_")
     .ToLower()
@@ -420,7 +417,7 @@ tinystring.Convert("Hello, World!").Truncate(10).String()
 tinystring.Convert("Hello, World!").Truncate(10, 3).String()
 // Result: "Hell..."
 
-// Text shorter than max width remains unchanged
+// conv shorter than max width remains unchanged
 tinystring.Convert("Hello").Truncate(10).String()
 // Result: "Hello"
 
@@ -458,18 +455,18 @@ tinystring.Convert("hello")
 
 ### Working with String Pointers
 
-TinyString supports working directly with string pointers to avoid additional memory allocations. This can be especially useful in performance-critical applications or when processing large volumes of text.
+TinyString supports working directly with string pointers to avoid additional memory allocations. This can be especially useful in performance-critical applications or when processing large volumes of conv.
 
 ```go
 // Create a string variable
-text := "Él Múrcielago Rápido"
+conv := "Él Múrcielago Rápido"
 
 // Modify it directly using string pointer and Apply()
 // No need to reassign the result
-Convert(&text).RemoveTilde().ToLower().Apply()
+Convert(&conv).RemoveTilde().ToLower().Apply()
 
 // The original variable is modified
-fmt.Println(text) // Output: "el murcielago rapido"
+fmt.Println(conv) // Output: "el murcielago rapido"
 
 // This approach can reduce memory pressure in high-performance scenarios
 // by avoiding temporary string allocations
@@ -492,7 +489,7 @@ Convert(&originalText).RemoveTilde().ToLower().Apply()
 fmt.Println(originalText)  // Output: "el murcielago rapido" (modified)
 ```
 
-Performance benchmarks show that using string pointers can reduce memory allocations when processing large volumes of text, which can be beneficial in high-throughput applications or systems with memory constraints.
+Performance benchmarks show that using string pointers can reduce memory allocations when processing large volumes of conv, which can be beneficial in high-throughput applications or systems with memory constraints.
 
 ```go
 // Sample benchmark results:
@@ -500,7 +497,7 @@ Performance benchmarks show that using string pointers can reduce memory allocat
 
 ## Binary Size Comparison
 
-*Last updated: 2025-05-26 20:40:55*
+*Last updated: 2025-06-03 19:28:41*
 
 ### Default Optimization
 *Default TinyGo optimization (-opt=z)*
@@ -543,20 +540,20 @@ TinyString consistently produces smaller binaries across all optimization levels
 
 ## Memory Usage Comparison
 
-*Last updated: 2025-05-26 20:41:21*
+*Last updated: 2025-06-03 19:28:51*
 
 Performance benchmarks comparing memory allocation patterns:
 
 | Benchmark | Library | Bytes/Op | Allocs/Op | Time/Op | Memory Improvement | Alloc Improvement |
 |-----------|---------|----------|-----------|---------|-------------------|------------------|
-| **String Processing** | Standard | 1.2 KB | 48 | 3.1μs | - | - |
-| | TinyString | 3.7 KB | 95 | 10.8μs | **218.7% more** | **97.9% more** |
-| **Number Processing** | Standard | 1.2 KB | 132 | 4.0μs | - | - |
-| | TinyString | 7.2 KB | 682 | 14.1μs | **512.0% more** | **416.7% more** |
+| **String Processing** | Standard | 1.2 KB | 48 | 3.4μs | - | - |
+| | TinyString | 4.7 KB | 64 | 11.5μs | **302.0% more** | **33.3% more** |
+| **Number Processing** | Standard | 1.2 KB | 132 | 4.2μs | - | - |
+| | TinyString | 13.4 KB | 522 | 14.0μs | **1041.3% more** | **295.5% more** |
 | **Mixed Operations** | Standard | 546 B | 44 | 2.1μs | - | - |
-| | TinyString | 2.6 KB | 191 | 6.4μs | **380.8% more** | **334.1% more** |
-| **String Processing (Pointer Optimization)** | Standard | 1.2 KB | 48 | 3.1μs | - | - |
-| | TinyString | 3.6 KB | 87 | 10.6μs | **208.0% more** | **81.2% more** |
+| | TinyString | 4.5 KB | 143 | 6.6μs | **734.8% more** | **225.0% more** |
+| **String Processing (Pointer Optimization)** | Standard | 1.2 KB | 48 | 3.4μs | - | - |
+| | TinyString | 4.6 KB | 56 | 10.9μs | **291.3% more** | **16.7% more** |
 
 ### Trade-offs Analysis
 

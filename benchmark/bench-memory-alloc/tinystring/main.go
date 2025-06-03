@@ -4,12 +4,12 @@ import (
 	"github.com/cdvelop/tinystring"
 )
 
-// processTextWithTinyString simulates text processing using TinyString
+// processTextWithTinyString simulates conv processing using TinyString
 func processTextWithTinyString(texts []string) []string {
 	results := make([]string, len(texts))
-	for i, text := range texts {
+	for i, conv := range texts {
 		// Process using TinyString with chained operations
-		processed := tinystring.Convert(text).
+		processed := tinystring.Convert(conv).
 			RemoveTilde().
 			CamelCaseLower().
 			String()

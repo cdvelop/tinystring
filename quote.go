@@ -2,16 +2,18 @@ package tinystring
 
 // Quote wraps a string in double quotes and escapes any special characters
 // Example: Quote("hello \"world\"") returns "\"hello \\\"world\\\"\""
-func (t *Text) Quote() *Text {
-	t.content = quoteString(t.content)
+func (t *conv) Quote() *conv {
+	t.quoteString()
 	return t
 }
 
 // quoteString quotes a string by wrapping it in double quotes and escaping special characters
 // Integrated from tinystrconv QuoteString function
-func quoteString(input string) string {
+func (c *conv) quoteString() {
+	input := c.getString()
 	if input == "" {
-		return "\"\""
+		c.setString("\"\"")
+		return
 	}
 
 	result := "\""
@@ -32,5 +34,5 @@ func quoteString(input string) string {
 		}
 	}
 	result += "\""
-	return result
+	c.setString(result)
 }

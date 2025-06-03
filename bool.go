@@ -1,48 +1,64 @@
 package tinystring
 
-import "errors"
-
-// ToBool converts the text content to a boolean value
+// ToBool converts the conv content to a boolean value
 // Returns the boolean value and any error that occurred
-func (t *Text) ToBool() (bool, error) {
+func (t *conv) ToBool() (bool, error) {
 	if t.err != nil {
 		return false, t.err
 	}
-	
-	// Since Convert() stores the original value as string in content,
-	// we need to handle the original input type that was passed to Convert()
-	// For this, we'll parse the content and try to infer the type
-	return stringToBool(t.content)
-}
 
-// FromBool creates a new Text instance from a boolean value
-func FromBool(value bool) *Text {
-	return &Text{content: boolToString(value)}
-}
-
-// boolToString converts a boolean to its string representation (integrated from tinystrconv)
-func boolToString(value bool) string {
-	if value {
-		return "true"
+	switch t.valType {
+	case valTypeBool:
+		return t.boolVal, nil // Direct return for boolean values
+	case valTypeInt:
+		return t.intVal != 0, nil // Non-zero integers are true
+	case valTypeUint:
+		return t.uintVal != 0, nil // Non-zero unsigned integers are true
+	case valTypeFloat:
+		return t.floatVal != 0.0, nil // Non-zero floats are true
+	default:
+		// For string types, parse the string content
+		t.stringToBool()
+		if t.err != nil {
+			return false, t.err
+		}
+		return t.boolVal, nil
 	}
-	return "false"
 }
 
-// stringToBool converts a string to a boolean (integrated from tinystrconv)
-func stringToBool(input string) (bool, error) {
+// stringToBool converts string to bool and stores in conv struct.
+// This is an internal conv method that modifies the struct instead of returning values.
+func (t *conv) stringToBool() {
+	input := t.getString()
 	switch input {
 	case "true", "True", "TRUE", "1", "t", "T":
-		return true, nil
+		t.boolVal = true
+		t.valType = valTypeBool
+		return
 	case "false", "False", "FALSE", "0", "f", "F":
-		return false, nil
+		t.boolVal = false
+		t.valType = valTypeBool
+		return
 	default:
 		// Try to parse as numeric - non-zero numbers are true
-		if val, err := stringToInt(input, 10); err == nil {
-			return val != 0, nil
+		t.stringToInt(10)
+		if t.err == nil {
+			t.boolVal = t.intVal != 0
+			t.valType = valTypeBool
+			t.err = nil // Clear any errors since we successfully converted
+			return
 		}
-		if val, err := stringToFloat(input); err == nil {
-			return val != 0.0, nil
+
+		// Reset error and try float
+		t.err = nil
+		t.stringToFloat()
+		if t.err == nil {
+			t.boolVal = t.floatVal != 0.0
+			t.valType = valTypeBool
+			t.err = nil // Clear any errors since we successfully converted
+			return
 		}
-		return false, errors.New("invalid boolean string: " + input)
+
+		t.err = newInvalidNumberError(input)
 	}
 }

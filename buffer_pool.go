@@ -1,9 +1,37 @@
 package tinystring
 
-// Simple memory optimization without external pools
-// Using static buffers and manual buffer management for better performance
+import "unsafe"
 
-// Simple string builder that avoids unnecessary allocations
+// Optimized string builder using unsafe for minimal memory allocations
+// Based on Go's strings.Builder but with TinyGo compatibility and zero dependencies
+
+// unsafeString converts byte slice to string without allocation
+// This uses the same pattern as Go's strings.Builder.String() method
+func unsafeString(data []byte) string {
+	if len(data) == 0 {
+		return ""
+	}
+	// Convert []byte to string without copying by creating a string header
+	// that points to the same underlying data
+	return unsafe.String(&data[0], len(data))
+}
+
+// getBuilder returns a pooled string builder to minimize allocations
+func getBuilder() *tinyStringBuilder {
+	// Create new builder instead of using pool to avoid concurrency issues
+	// TODO: Implement proper thread-safe pooling
+	return &tinyStringBuilder{
+		buf: make([]byte, 0, 64), // Start with reasonable capacity
+	}
+}
+
+// putBuilder returns the builder to the pool for reuse
+func putBuilder(builder *tinyStringBuilder) {
+	// Temporarily disabled pooling to avoid concurrency issues
+	// TODO: Implement proper thread-safe pooling
+}
+
+// Optimized string builder with unsafe operations
 type tinyStringBuilder struct {
 	buf []byte
 }
@@ -39,9 +67,9 @@ func (tsb *tinyStringBuilder) writeRune(r rune) {
 	}
 }
 
-// string returns the accumulated string
+// string returns the accumulated string using unsafe conversion to avoid allocation
 func (tsb *tinyStringBuilder) string() string {
-	return string(tsb.buf)
+	return unsafeString(tsb.buf)
 }
 
 // reset clears the builder for reuse

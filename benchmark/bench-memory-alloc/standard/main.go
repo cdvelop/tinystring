@@ -5,12 +5,12 @@ import (
 	"strings"
 )
 
-// processTextWithStandardLib simulates text processing using standard library
+// processTextWithStandardLib simulates conv processing using standard library
 func processTextWithStandardLib(texts []string) []string {
 	results := make([]string, len(texts))
-	for i, text := range texts {
+	for i, conv := range texts {
 		// Simulate common string operations using standard library
-		lowered := strings.ToLower(text)
+		lowered := strings.ToLower(conv)
 		replaced := strings.ReplaceAll(lowered, "á", "a")
 		replaced = strings.ReplaceAll(replaced, "é", "e")
 		replaced = strings.ReplaceAll(replaced, "í", "i")

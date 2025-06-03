@@ -3,28 +3,52 @@ package main
 import "github.com/cdvelop/tinystring"
 
 func main() {
-	// Same operations using TinyString (no standard library imports)
-	text := "MÍ téxtO cön AcÉntos"
+	// Realistic complex operations using TinyString's chaining capabilities
+	conv := "MÍ téxtO cön AcÉntos Y MÁS TEXTO"
+	// Complex chained transformations (TinyString's strength)
+	processed := tinystring.Convert(conv).
+		ToLower().
+		RemoveTilde().
+		Replace(" ", "_").
+		CamelCaseLower().
+		Capitalize().
+		String()
 
-	// Text transformations using TinyString
-	ts := tinystring.Convert(text)
-	lower := ts.ToLower().String()
-	upper := ts.ToUpper().String()
+	// Number processing with chaining
+	prices := []any{1234.567, 9876.54, 42.0}
+	formattedPrices := make([]string, len(prices))
+	for i, price := range prices {
+		formattedPrices[i] = tinystring.Convert(price).
+			RoundDecimals(2).
+			FormatNumber().
+			String()
+	}
 
-	// Number conversions
-	intNum := 42
-	floatNum := 3.14159
-	intStr := tinystring.Convert(intNum).String()
-	floatStr := tinystring.Convert(floatNum).RoundDecimals(2).String()
+	// Complex string operations with chaining
+	userInput := "  Hello@World#2024!  "
+	cleaned := tinystring.Convert(userInput).
+		Trim().
+		Replace("@", "_at_").
+		Replace("#", "_hash_").
+		Replace("!", "").
+		ToLower().
+		String()
 
-	// String formatting using TinyString
-	formatted := tinystring.Format("Text: %s, Numbers: %s, %s", lower, intStr, floatStr)
+	// Advanced formatting and joining
+	priceList := tinystring.Convert(formattedPrices).Join(", ")
+	finalResult := tinystring.Format(
+		"Processed: %s | Cleaned: %s | Prices: %s",
+		processed, cleaned, priceList,
+	)
+	// Additional complex transformations
+	mixedText := "José María-González_2024"
+	normalized := tinystring.Convert(mixedText).
+		RemoveTilde().
+		Replace("-", "_").
+		ToSnakeCaseLower().
+		String()
 
-	// String manipulation
-	contains := tinystring.Contains(text, "tÉx")
-	replaced := tinystring.Convert(text).Replace("ö", "o").String()
-
-	// Simulate output without standard library
-	result := tinystring.Format("%s | %s | %t | %s", formatted, upper, contains, replaced)
+	// Final comprehensive result
+	result := tinystring.Format("%s | Normalized: %s", finalResult, normalized)
 	_ = result
 }

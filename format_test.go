@@ -46,7 +46,7 @@ func TestRoundDecimals(t *testing.T) {
 			name:     "Non-numeric input",
 			input:    "hello",
 			decimals: 2,
-			want:     "hello",
+			want:     "0.00",
 		},
 	}
 

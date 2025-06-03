@@ -1,8 +1,8 @@
 package tinystring
 
-// CountOccurrences checks how many times the string 'search' is present in 'text'
+// CountOccurrences checks how many times the string 'search' is present in 'conv'
 // eg: "hello world" with search "world" will return 1
-func CountOccurrences(text, search string) int {
+func CountOccurrences(conv, search string) int {
 	// If the search string is empty, there can be no matches
 	if search == "" {
 		return 0
@@ -14,9 +14,9 @@ func CountOccurrences(text, search string) int {
 	// Initialize the match counter
 	count := 0
 
-	// Traverse the text and count the number of matches
-	for i := 0; i <= len(text)-searchLen; i++ {
-		if text[i:i+searchLen] == search {
+	// Traverse the conv and count the number of matches
+	for i := 0; i <= len(conv)-searchLen; i++ {
+		if conv[i:i+searchLen] == search {
 			count++
 		}
 	}
@@ -25,9 +25,9 @@ func CountOccurrences(text, search string) int {
 	return count
 }
 
-// Contains checks if the string 'search' is present in 'text'
+// Contains checks if the string 'search' is present in 'conv'
 // Returns true if found, false otherwise
 // This matches the behavior of the standard library strings.Contains
-func Contains(text, search string) bool {
-	return CountOccurrences(text, search) > 0
+func Contains(conv, search string) bool {
+	return CountOccurrences(conv, search) > 0
 }

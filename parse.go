@@ -1,9 +1,5 @@
 package tinystring
 
-import (
-	"errors"
-)
-
 // ParseKeyValue extracts the value part from a "key:value" formatted string.
 // By default, it uses ":" as the delimiter but accepts an optional custom delimiter.
 // The function returns the value part and an error (nil if successful).
@@ -25,7 +21,7 @@ func ParseKeyValue(input string, delimiters ...string) (value string, err error)
 	// Check for a custom delimiter
 	if len(delimiters) > 0 {
 		if len(delimiters) > 1 {
-			return "", errors.New("only one delimiter is allowed")
+			return "", newError(errInvalidFormat, "only one delimiter is allowed")
 		}
 		if delimiters[0] != "" {
 			delimiter = delimiters[0]
@@ -40,7 +36,7 @@ func ParseKeyValue(input string, delimiters ...string) (value string, err error)
 	// Check if delimiter exists in the input
 	if !Contains(input, delimiter) {
 		errorMsg := "delimiter '" + delimiter + "' not found in string " + input
-		return "", errors.New(errorMsg)
+		return "", newError(errInvalidFormat, errorMsg)
 	}
 	// Extract value part (everything after the first occurrence of the delimiter)
 	// Find the position of the first delimiter

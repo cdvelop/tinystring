@@ -1,21 +1,21 @@
 package tinystring
 
-// Truncate truncates a text so that it does not exceed the specified width.
-// If the text is longer, it truncates it and adds "..." if there is space.
-// If the text is shorter or equal to the width, it remains unchanged.
+// Truncate truncates a conv so that it does not exceed the specified width.
+// If the conv is longer, it truncates it and adds "..." if there is space.
+// If the conv is shorter or equal to the width, it remains unchanged.
 // The reservedChars parameter indicates how many characters should be reserved for suffixes.
 // This parameter is optional - if not provided, no characters are reserved (equivalent to passing 0).
 // eg: Convert("Hello, World!").Truncate(10) => "Hello, ..."
 // eg: Convert("Hello, World!").Truncate(10, 3) => "Hell..."
 // eg: Convert("Hello").Truncate(10) => "Hello"
-func (t *Text) Truncate(maxWidth any, reservedChars ...any) *Text {
-	text := t.content
-	originalLength := len(text)
+func (t *conv) Truncate(maxWidth any, reservedChars ...any) *conv {
+	conv := t.getString()
+	originalLength := len(conv)
 
 	// Convert maxWidth to integer using the toInt utility function
 	maxWidthInt, ok := toInt(maxWidth)
 	if !ok || maxWidthInt <= 0 {
-		// If maxWidth is zero or invalid, return the original text without modification.
+		// If maxWidth is zero or invalid, return the original conv without modification.
 		return t
 	}
 
@@ -36,36 +36,35 @@ func (t *Text) Truncate(maxWidth any, reservedChars ...any) *Text {
 			reservedCharsInt = maxWidthInt
 		}
 
-		// Calculate the width available for the text itself, excluding reserved chars
+		// Calculate the width available for the conv itself, excluding reserved chars
 		effectiveWidth := max(maxWidthInt-reservedCharsInt, 0)
 
 		canFitEllipsisInEffectiveWidth := effectiveWidth >= ellipsisLen
-
 		if reservedCharsInt > 0 && canFitEllipsisInMaxWidth && canFitEllipsisInEffectiveWidth {
 			// Case 1: Reserved chars specified, and ellipsis fits within the effective width
 			charsToKeep := min(max(effectiveWidth-ellipsisLen, 0), originalLength)
-			t.content = text[:charsToKeep] + ellipsis
+			t.setString(conv[:charsToKeep] + ellipsis)
 
 		} else if reservedCharsInt == 0 && canFitEllipsisInMaxWidth {
 			// Case 2: No reserved chars, ellipsis fits within maxWidth
 			charsToKeep := min(max(maxWidthInt-ellipsisLen, 0), originalLength)
-			t.content = text[:charsToKeep] + ellipsis
+			t.setString(conv[:charsToKeep] + ellipsis)
 		} else {
 			// Case 3: Ellipsis doesn't fit or reserved chars prevent it, just truncate
 			charsToKeep := min(maxWidthInt, originalLength)
-			t.content = text[:charsToKeep]
+			t.setString(conv[:charsToKeep])
 		}
 		// Truncation happened, no padding needed.
 
 	} // Remove the entire else block that handled padding
-	// If originalLength <= maxWidthInt, the text remains unchanged.
+	// If originalLength <= maxWidthInt, the conv remains unchanged.
 
 	return t
 }
 
 // TruncateName truncates names and surnames in a user-friendly way for display in limited spaces
 // like chart labels. It adds abbreviation dots where appropriate. This method processes the first
-// word differently if there are more than 2 words in the text.
+// word differently if there are more than 2 words in the conv.
 //
 // Parameters:
 //   - maxCharsPerWord: maximum number of characters to keep per word (any numeric type)
@@ -75,8 +74,8 @@ func (t *Text) Truncate(maxWidth any, reservedChars ...any) *Text {
 //   - Convert("Jeronimo Dominguez").TruncateName(3, 15) => "Jer. Dominguez"
 //   - Convert("Ana Maria Rodriguez").TruncateName(2, 10) => "An. Mar..."
 //   - Convert("Juan").TruncateName(3, 5) => "Juan"
-func (t *Text) TruncateName(maxCharsPerWord, maxWidth any) *Text {
-	if t.content == "" {
+func (t *conv) TruncateName(maxCharsPerWord, maxWidth any) *conv {
+	if t.getString() == "" {
 		return t
 	}
 
@@ -91,7 +90,7 @@ func (t *Text) TruncateName(maxCharsPerWord, maxWidth any) *Text {
 		return t
 	}
 
-	words := Split(t.content)
+	words := Split(t.getString())
 	if len(words) == 0 {
 		return t
 	}
@@ -112,7 +111,7 @@ func (t *Text) TruncateName(maxCharsPerWord, maxWidth any) *Text {
 	// Step 2: Check if the processed result fits within maxTotal
 	result := Convert(processedWords).Join().String()
 	if len(result) <= maxTotal {
-		t.content = result
+		t.setString(result)
 		return t
 	}
 
@@ -135,7 +134,7 @@ func (t *Text) TruncateName(maxCharsPerWord, maxWidth any) *Text {
 		if i == 0 && len(word) == 4 && word[3] == '.' && maxTotal == 7 {
 			// For "Alexander..." with maxTotal=7, we want "Alex..." not "Ale..."
 			if words[0][:4] == "Alex" {
-				t.content = "Alex..."
+				t.setString("Alex...")
 				return t
 			}
 		}
@@ -154,6 +153,6 @@ func (t *Text) TruncateName(maxCharsPerWord, maxWidth any) *Text {
 	}
 
 	// Add the suffix
-	t.content = finalResult + "..."
+	t.setString(finalResult + "...")
 	return t
 }

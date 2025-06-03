@@ -24,7 +24,7 @@ func TestStringOperations(t *testing.T) {
 			{"palabra, punto,", ",", ".", -1, "palabra. punto."},
 			// Pruebas con tipos diferentes de any
 			{"Test 123 value", 123, 456, -1, "Test 456 value"},
-			{"Boolean true in text", true, false, -1, "Boolean false in text"},
+			{"Boolean true in conv", true, false, -1, "Boolean false in conv"},
 			{"Pi is 3.14159", 3.14159, 3.142, -1, "Pi is 3.142"},
 			// Pruebas con límite de reemplazos
 			{"abc abc abc", "abc", "123", 1, "123 abc abc"},
@@ -143,14 +143,14 @@ func TestStringOperations(t *testing.T) {
 			},
 			{
 				name:     "Multiple Replaces",
-				input:    "replace multiple words in this text",
+				input:    "replace multiple words in this conv",
 				expected: "change many terms in this content",
 				chain: func(input string) string {
 					return Convert(input).
 						Replace("replace", "change").
 						Replace("multiple", "many").
 						Replace("words", "terms").
-						Replace("text", "content").
+						Replace("conv", "content").
 						String()
 				},
 			},

@@ -2,7 +2,7 @@ package tinystring
 
 // Capitalize transforms the first letter of each word to uppercase and the rest to lowercase.
 // For example: "hello world" -> "Hello World"
-func (t *Text) Capitalize() *Text {
+func (t *conv) Capitalize() *conv {
 	// Use local variable instead of struct field to avoid persistent allocation
 	words := t.splitIntoWordsLocal()
 	if len(words) == 0 {
@@ -32,6 +32,6 @@ func (t *Text) Capitalize() *Text {
 		}
 	}
 
-	t.content = string(result)
+	t.setString(string(result))
 	return t
 }

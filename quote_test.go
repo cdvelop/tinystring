@@ -81,7 +81,7 @@ func TestQuoteChaining(t *testing.T) {
 	}
 
 	// Test quote after conversion
-	result2 := FromInt(123).Quote().String()
+	result2 := Convert(123).Quote().String()
 	expected2 := `"123"`
 	if result2 != expected2 {
 		t.Errorf("Quote after conversion = %q, want %q", result2, expected2)

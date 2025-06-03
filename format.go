@@ -1,235 +1,83 @@
 package tinystring
 
 import (
-	"errors"
 	"reflect"
 )
 
-// Format creates a new Text instance with variadic formatting similar to fmt.Sprintf
+// Format creates a new conv instance with variadic formatting similar to fmt.Sprintf
 // Example: tinystring.Format("Hello %s, you have %d messages", "Alice", 5).String()
-func Format(format string, args ...any) *Text {
-	result, err := sprintf(format, args...)
-	return &Text{content: result, err: err}
+func Format(format string, args ...any) *conv {
+	// Use centralized convInit and conv method
+	result := convInit("")
+	result.sprintf(format, args...)
+	return result
 }
 
-// sprintf formats the provided arguments according to the format specifier (integrated from tinyfmt)
-func sprintf(format string, arguments ...any) (string, error) {
-	buffer := make([]byte, 0, len(format)*2) // Estimate initial capacity
-
-	argIndex := 0
-
-	for i := 0; i < len(format); i++ {
-		if format[i] == '%' {
-			if i+1 < len(format) {
-				i++
-
-				// Handle precision for floats (e.g., "%.2f")
-				precision := -1
-				if format[i] == '.' {
-					i++
-					start := i
-					for i < len(format) && format[i] >= '0' && format[i] <= '9' {
-						i++
-					}
-					if start < i {
-						precision = 0
-						for j := start; j < i; j++ {
-							precision = precision*10 + int(format[j]-'0')
-						}
-					}
-				} // Handle different format specifiers
-				switch format[i] {
-				case 'd':
-					if argIndex >= len(arguments) {
-						return "", errors.New("missing argument for %d")
-					}
-					intVal, ok := arguments[argIndex].(int)
-					if !ok {
-						return "", errors.New("argument for %d is not an int")
-					}
-					str := intToStringOptimized(int64(intVal))
-					buffer = append(buffer, []byte(str)...)
-					argIndex++
-				case 'f':
-					if argIndex >= len(arguments) {
-						return "", errors.New("missing argument for %f")
-					}
-					floatVal, ok := arguments[argIndex].(float64)
-					if !ok {
-						return "", errors.New("argument for %f is not a float64")
-					}
-					str := formatFloatToString(floatVal, precision)
-					buffer = append(buffer, []byte(str)...)
-					argIndex++
-				case 'b':
-					if argIndex >= len(arguments) {
-						return "", errors.New("missing argument for %b")
-					}
-					intVal, ok := arguments[argIndex].(int)
-					if !ok {
-						return "", errors.New("argument for %b is not an int")
-					}
-					str := intToStringWithBase(int64(intVal), 2)
-					buffer = append(buffer, []byte(str)...)
-					argIndex++
-				case 'x':
-					if argIndex >= len(arguments) {
-						return "", errors.New("missing argument for %x")
-					}
-					intVal, ok := arguments[argIndex].(int)
-					if !ok {
-						return "", errors.New("argument for %x is not an int")
-					}
-					str := intToStringWithBase(int64(intVal), 16)
-					buffer = append(buffer, []byte(str)...)
-					argIndex++
-				case 'o':
-					if argIndex >= len(arguments) {
-						return "", errors.New("missing argument for %o")
-					}
-					intVal, ok := arguments[argIndex].(int)
-					if !ok {
-						return "", errors.New("argument for %o is not an int")
-					}
-					str := intToStringWithBase(int64(intVal), 8)
-					buffer = append(buffer, []byte(str)...)
-					argIndex++
-				case 'v':
-					if argIndex >= len(arguments) {
-						return "", errors.New("missing argument for %v")
-					}
-					str := formatValue(arguments[argIndex])
-					buffer = append(buffer, []byte(str)...)
-					argIndex++
-				case 's':
-					if argIndex >= len(arguments) {
-						return "", errors.New("missing argument for %s")
-					}
-					strVal, ok := arguments[argIndex].(string)
-					if !ok {
-						return "", errors.New("argument for %s is not a string")
-					}
-					buffer = append(buffer, []byte(strVal)...)
-					argIndex++
-				case '%':
-					buffer = append(buffer, '%')
-				default:
-					return "", errors.New("unsupported format specifier")
-				}
-			} else {
-				return "", errors.New("incomplete format specifier at end of string")
-			}
-		} else {
-			buffer = append(buffer, format[i])
-		}
-	}
-
-	return string(buffer), nil
-}
-
-// Helper function to convert integer to string with base support (integrated from tinystrconv)
-func intToStringWithBase(number int64, base int) string {
-	if number == 0 {
-		return "0" // Directly return "0" for zero value to avoid allocations
-	}
-
-	// Buffer to store the string representation.
-	// Max int64 is -9223372036854775808, which has 19 digits + 1 for sign.
-	// Max uint64 is 18446744073709551615, which has 20 digits.
-	// For base 2, int64 needs up to 63 bits + 1 for sign.
-	var buf [64]byte // Max buffer size for int64 in base 2
-	i := len(buf)    // Start from the end of the buffer
-
-	isNegative := number < 0
-	if isNegative {
-		number = -number // Make number positive for conversion
-	}
-
-	// Supported digits for bases up to 36
-	const digitChars = "0123456789abcdefghijklmnopqrstuvwxyz"
-
-	// Convert number to string representation, filling buffer from the end
-	for number > 0 {
-		i--
-		buf[i] = digitChars[number%int64(base)]
-		number /= int64(base)
-	}
-
-	if isNegative {
-		i--
-		buf[i] = '-'
-	}
-
-	return string(buf[i:]) // Convert the relevant part of the buffer to a string
-}
-
-// Helper function to format float to string with precision (integrated from tinystrconv)
-func formatFloatToString(value float64, precision int) string {
-	if precision == -1 {
-		// Use manual implementation for full precision
-		return floatToStringManual(value, -1)
-	}
-	return floatToStringManual(value, precision)
-}
-
-// Helper function to format any value (integrated from tinyfmt)
-func formatValue(value any) string {
+// formatValue converts any value to string and stores in conv struct.
+// This is an internal conv method that modifies the struct instead of returning values.
+func (c *conv) formatValue(value any) {
 	switch val := value.(type) {
 	case bool:
 		if val {
-			return "true"
+			c.setString("true")
+		} else {
+			c.setString("false")
 		}
-		return "false"
 	case string:
-		return val
+		c.setString(val)
 	case int:
-		return intToStringOptimized(int64(val))
+		c.intToStringOptimizedInternal(int64(val))
 	case int8:
-		return intToStringOptimized(int64(val))
+		c.intToStringOptimizedInternal(int64(val))
 	case int16:
-		return intToStringOptimized(int64(val))
+		c.intToStringOptimizedInternal(int64(val))
 	case int32:
-		return intToStringOptimized(int64(val))
+		c.intToStringOptimizedInternal(int64(val))
 	case int64:
-		return intToStringOptimized(val)
+		c.intToStringOptimizedInternal(val)
 	case uint:
-		return uintToStringOptimized(uint64(val))
+		c.uintToStringOptimizedInternal(uint64(val))
 	case uint8:
-		return uintToStringOptimized(uint64(val))
+		c.uintToStringOptimizedInternal(uint64(val))
 	case uint16:
-		return uintToStringOptimized(uint64(val))
+		c.uintToStringOptimizedInternal(uint64(val))
 	case uint32:
-		return uintToStringOptimized(uint64(val))
+		c.uintToStringOptimizedInternal(uint64(val))
 	case uint64:
-		return uintToStringOptimized(val)
+		c.uintToStringOptimizedInternal(val)
 	case float32:
-		return floatToStringManual(float64(val), -1)
+		c.floatVal = float64(val)
+		c.floatToStringManual(-1)
 	case float64:
-		return floatToStringManual(val, -1)
+		c.floatVal = val
+		c.floatToStringManual(-1)
 	default:
-		return formatUnsupported(value)
+		c.formatUnsupported(value)
 	}
 }
 
-// Helper function to format unsupported types (integrated from tinyfmt)
-func formatUnsupported(value any) string {
+// formatUnsupported formats unsupported types and stores in conv struct.
+// This is an internal conv method that modifies the struct instead of returning values.
+func (c *conv) formatUnsupported(value any) {
 	v := reflect.ValueOf(value)
 	switch v.Kind() {
 	case reflect.Struct:
-		return formatStruct(v)
+		c.formatStruct(v)
 	case reflect.Slice, reflect.Array:
-		return formatSlice(v)
+		c.formatSlice(v)
 	case reflect.Map:
-		return formatMap(v)
+		c.formatMap(v)
 	default:
-		return "<unsupported>"
+		c.setString("<unsupported>")
 	}
 }
 
-// Helper function to format struct (integrated from tinyfmt)
-func formatStruct(v reflect.Value) string {
+// formatStruct formats struct and stores in conv struct.
+// This is an internal conv method that modifies the struct instead of returning values.
+func (c *conv) formatStruct(v reflect.Value) {
 	var buffer []byte
 	buffer = append(buffer, '{')
+	tempConv := convInit("")
 	for i := range v.NumField() {
 		if i > 0 {
 			buffer = append(buffer, ' ')
@@ -238,55 +86,69 @@ func formatStruct(v reflect.Value) string {
 		value := v.Field(i).Interface()
 		buffer = append(buffer, field...)
 		buffer = append(buffer, ':')
-		buffer = append(buffer, formatValue(value)...)
+		tempConv.formatValue(value)
+		buffer = append(buffer, tempConv.getString()...)
 	}
 	buffer = append(buffer, '}')
-	return string(buffer)
+	c.setString(unsafeString(buffer))
 }
 
-// Helper function to format slice (integrated from tinyfmt)
-func formatSlice(v reflect.Value) string {
+// formatSlice formats slice and stores in conv struct.
+// This is an internal conv method that modifies the struct instead of returning values.
+func (c *conv) formatSlice(v reflect.Value) {
 	var buffer []byte
 	buffer = append(buffer, '[')
+	tempConv := convInit("")
 	for i := 0; i < v.Len(); i++ {
 		if i > 0 {
 			buffer = append(buffer, ' ')
 		}
-		buffer = append(buffer, formatValue(v.Index(i).Interface())...)
+		tempConv.formatValue(v.Index(i).Interface())
+		buffer = append(buffer, tempConv.getString()...)
 	}
 	buffer = append(buffer, ']')
-	return string(buffer)
+	c.setString(unsafeString(buffer))
 }
 
-// Helper function to format map (integrated from tinyfmt)
-func formatMap(v reflect.Value) string {
+// formatMap formats map and stores in conv struct.
+// This is an internal conv method that modifies the struct instead of returning values.
+func (c *conv) formatMap(v reflect.Value) {
 	var buffer []byte
 	buffer = append(buffer, '{')
 	keys := v.MapKeys()
+	tempConv := convInit("")
+	tempConv2 := convInit("")
 	for i, key := range keys {
 		if i > 0 {
 			buffer = append(buffer, ' ')
 		}
-		buffer = append(buffer, formatValue(key.Interface())...)
+		tempConv.formatValue(key.Interface())
+		buffer = append(buffer, tempConv.getString()...)
 		buffer = append(buffer, ':')
-		buffer = append(buffer, formatValue(v.MapIndex(key).Interface())...)
+		tempConv2.formatValue(v.MapIndex(key).Interface())
+		buffer = append(buffer, tempConv2.getString()...)
 	}
 	buffer = append(buffer, '}')
-	return string(buffer)
+	c.setString(unsafeString(buffer))
 }
 
 // RoundDecimals rounds a numeric value to the specified number of decimal places
 // Default behavior is rounding up. Use .Down() to round down.
 // Example: Convert(3.154).RoundDecimals(2).String() → "3.16"
-func (t *Text) RoundDecimals(decimals int) *Text {
+func (t *conv) RoundDecimals(decimals int) *conv {
 	if t.err != nil {
 		return t
 	}
+
 	// Try to parse as float
-	val, err := parseFloatManual(t.content)
-	if err != nil {
-		return &Text{content: t.content, err: errors.New("cannot round non-numeric value")}
+	tempConv := convInit(t.getString())
+	tempConv.parseFloatManual()
+	if tempConv.err != nil {
+		// If cannot parse as number, return self without error
+		return t
 	}
+	val := tempConv.floatVal
+
 	// Apply rounding
 	multiplier := 1.0
 	for i := 0; i < decimals; i++ {
@@ -322,29 +184,40 @@ func (t *Text) RoundDecimals(decimals int) *Text {
 				rounded = float64(int64(val*multiplier)-1) / multiplier
 			}
 		}
-	} // Format the result with exact number of decimal places
-	result := floatToStringManual(rounded, decimals)
-	return &Text{content: result, err: nil, roundDown: t.roundDown} // Preserve the roundDown flag
+	}
+	// Format the result with exact number of decimal places
+	conv := convInit(rounded)
+	conv.floatToStringManual(decimals)
+	result := conv.getString()
+	t.setString(result)
+	t.err = nil
+	// Preserve the roundDown flag (already in self)
+	return t
 }
 
 // Down applies downward rounding to a previously rounded number
 // This method works by taking the current rounded value and ensuring it represents the floor
 // Example: Convert(3.154).RoundDecimals(2).Down().String() → "3.15"
-func (t *Text) Down() *Text {
+func (t *conv) Down() *conv {
 	if t.err != nil {
 		return t
 	}
 	// Parse the current value
-	val, err := parseFloatManual(t.content)
-	if err != nil {
+	tempConv := convInit(t.getString())
+	tempConv.parseFloatManual()
+	if tempConv.err != nil {
 		// Not a number, just set the flag
-		return &Text{content: t.content, err: t.err, roundDown: true}
+		result := convInit(t.getString())
+		result.err = t.err
+		result.roundDown = true
+		return result
 	}
-
+	val := tempConv.floatVal
 	// Detect decimal places from the current content
 	decimalPlaces := 0
-	if dotIndex := indexByteManual(t.content, '.'); dotIndex != -1 {
-		decimalPlaces = len(t.content) - dotIndex - 1
+	str := t.getString()
+	if dotIndex := indexByteManual(str, '.'); dotIndex != -1 {
+		decimalPlaces = len(str) - dotIndex - 1
 	}
 
 	// For the specific test cases, we need to handle the following:
@@ -373,235 +246,69 @@ func (t *Text) Down() *Text {
 			// For negative integers, subtract 1 to make it more negative
 			adjustedVal = val - 1.0
 		}
-	}
-	// Format the result
-	result := floatToStringManual(adjustedVal, decimalPlaces)
-	return &Text{content: result, err: nil, roundDown: true}
+	} // Format the result
+	conv := convInit(adjustedVal)
+	conv.floatToStringManual(decimalPlaces)
+	result := conv.getString()
+	finalResult := convInit(result)
+	finalResult.err = nil
+	finalResult.roundDown = true
+	return finalResult
 }
 
 // FormatNumber formats a numeric value with thousand separators
 // Example: Convert(1234567).FormatNumber().String() → "1,234,567"
-func (t *Text) FormatNumber() *Text {
+func (t *conv) FormatNumber() *conv {
 	if t.err != nil {
 		return t
 	}
+
+	str := t.getString()
+
 	// Try to parse as integer first
-	if intVal, err := parseIntManual(t.content, 10); err == nil {
-		result := formatNumberWithCommas(intToStringOptimized(intVal))
-		return &Text{content: result, err: nil}
-	} // Try to parse as float
-	if floatVal, err := parseFloatManual(t.content); err == nil {
+	intConv := convInit(str)
+	intConv.err = intConv.parseIntInternal(str, 10)
+	if intConv.err == nil {
+		conv := convInit(intConv.intVal)
+		conv.intToStringOptimizedInternal(int64(intConv.intVal))
+		conv.formatNumberWithCommas()
+		t.setString(conv.getString())
+		t.err = nil
+		return t
+	}
+
+	// Try to parse as float
+	tempConv := convInit(str)
+	tempConv.err = tempConv.parseFloatInternal(str)
+	if tempConv.err == nil {
 		// Split into integer and decimal parts
-		str := floatToStringManual(floatVal, -1)
-		str = removeTrailingZeros(str) // Remove trailing zeros after decimal point
-		parts := splitFloatString(str)
+		conv := convInit(tempConv.floatVal)
+		conv.floatToStringManual(-1)
+		floatStr := conv.getString()
+		floatStr = removeTrailingZeros(floatStr) // Remove trailing zeros after decimal point
+		conv.setString(floatStr)
+		parts := conv.splitFloatString()
 
 		// Format the integer part with commas
-		integerPart := formatNumberWithCommas(parts[0])
+		intConv := convInit(parts[0])
+		intConv.formatNumberWithCommas()
+		integerPart := intConv.getString()
 
 		// Reconstruct the number
+		var result string
 		if len(parts) > 1 && parts[1] != "" {
-			result := integerPart + "." + parts[1]
-			return &Text{content: result, err: nil}
-		}
-		return &Text{content: integerPart, err: nil}
-	}
-
-	return &Text{content: t.content, err: errors.New("cannot format non-numeric value")}
-}
-
-// Helper function to add thousand separators to a numeric string
-func formatNumberWithCommas(numStr string) string {
-	// Handle negative numbers
-	negative := false
-	if len(numStr) > 0 && numStr[0] == '-' {
-		negative = true
-		numStr = numStr[1:]
-	}
-
-	// Add periods from right to left (European style)
-	result := ""
-	for i, digit := range numStr {
-		if i > 0 && (len(numStr)-i)%3 == 0 {
-			result += "."
-		}
-		result += string(digit)
-	}
-
-	if negative {
-		result = "-" + result
-	}
-
-	return result
-}
-
-// Helper function to split a float string into integer and decimal parts
-func splitFloatString(str string) []string {
-	for i, char := range str {
-		if char == '.' {
-			return []string{str[:i], str[i+1:]}
-		}
-	}
-	return []string{str}
-}
-
-// floatToStringManual converts a float to its string representation (manual implementation, integrated from tinystrconv)
-func floatToStringManual(value float64, precision int) string {
-	if value != value { // NaN
-		return "NaN"
-	}
-
-	isNegative := value < 0
-	if isNegative {
-		value = -value
-	} // Auto precision: use a simple heuristic for common cases
-	if precision == -1 {
-		// For auto precision, try to find a reasonable representation		// Handle common float values manually for better precision
-		if value == 3.14159 {
-			precision = 5
-		} else if value == 3.142 {
-			precision = 3
-		} else if value == 3.14 {
-			precision = 2
+			result = integerPart + "." + parts[1]
 		} else {
-			// Round to 9 decimal places first to handle floating point artifacts
-			rounded := int64(value*1000000000 + 0.5) // Round to 9 decimal places
-			tempValue := float64(rounded) / 1000000000
-
-			integerPart := int64(tempValue)
-			fractionPart := tempValue - float64(integerPart)
-
-			if fractionPart == 0 {
-				precision = 0
-			} else {
-				// Find the last non-zero digit in a reasonable range
-				precision = 0
-				temp := fractionPart
-				for i := 1; i <= 9; i++ {
-					temp *= 10
-					digit := int64(temp)
-					temp -= float64(digit)
-					if digit != 0 {
-						precision = i
-					}
-				}
-				// Ensure we have at least 1 decimal if there's a fraction
-				if precision == 0 && fractionPart > 0 {
-					precision = 1
-				}
-			}
+			result = integerPart
 		}
-
-		// Update value to the rounded version for consistency (if not handled manually)
-		if precision != 5 && precision != 3 {
-			// Round to 9 decimal places first to handle floating point artifacts
-			rounded := int64(value*1000000000 + 0.5) // Round to 9 decimal places
-			value = float64(rounded) / 1000000000
-		}
+		t.setString(result)
+		t.err = nil
+		return t
 	}
 
-	integerPart := int64(value)
-	fractionPart := value - float64(integerPart)
-	result := intToStringWithBase(integerPart, 10)
-
-	if precision > 0 {
-		result += "."
-		for i := 0; i < precision; i++ {
-			fractionPart *= 10
-			digit := int64(fractionPart)
-			result += string('0' + rune(digit))
-			fractionPart -= float64(digit)
-		}
-		// Perform rounding if necessary
-		fractionPart *= 10
-		if int64(fractionPart) >= 5 {
-			result = roundUpFloat(result)
-		}
-	} else if precision == 0 {
-		// Do nothing, avoid adding ".0"
-	}
-
-	if isNegative {
-		result = "-" + result
-	}
-
-	return result
-}
-
-// roundUpFloat handles rounding up the last digit if necessary (helper for floatToStringManual)
-func roundUpFloat(input string) string {
-	carry := true
-	result := []byte(input)
-	for i := len(result) - 1; i >= 0 && carry; i-- {
-		if result[i] == '.' {
-			continue
-		}
-		if result[i] == '9' {
-			result[i] = '0'
-		} else {
-			result[i]++
-			carry = false
-		}
-	}
-	if carry {
-		result = append([]byte{'1'}, result...)
-	}
-	return string(result)
-}
-
-// parseFloatManual converts a string to a float64 (manual implementation to replace strconv.ParseFloat)
-func parseFloatManual(input string) (float64, error) {
-	if input == "" {
-		return 0, errors.New("empty string")
-	}
-
-	isNegative := false
-	if input[0] == '-' {
-		isNegative = true
-		input = input[1:]
-	}
-
-	integerPartStr := ""
-	fractionPartStr := ""
-	decimalPointSeen := false
-	for i := range len(input) {
-		if input[i] == '.' {
-			if decimalPointSeen {
-				return 0, errors.New("invalid float string")
-			}
-			decimalPointSeen = true
-		} else if decimalPointSeen {
-			fractionPartStr += string(input[i])
-		} else {
-			integerPartStr += string(input[i])
-		}
-	}
-
-	integerPart, err := stringToInt(integerPartStr, 10)
-	if err != nil {
-		return 0, err
-	}
-
-	var fractionPart float64
-	fractionDivisor := 1.0
-	for i := range len(fractionPartStr) {
-		fractionPart = fractionPart*10 + float64(fractionPartStr[i]-'0')
-		fractionDivisor *= 10
-	}
-	fractionPart /= fractionDivisor
-
-	result := float64(integerPart) + fractionPart
-	if isNegative {
-		result = -result
-	}
-
-	return result, nil
-}
-
-// parseIntManual converts a string to an int64 (manual implementation to replace strconv.ParseInt)
-func parseIntManual(input string, base int) (int64, error) {
-	val, err := stringToInt(input, base)
-	return int64(val), err
+	// If both integer and float parsing fail, return original string unchanged
+	// This handles non-numeric inputs gracefully
+	return t
 }
 
 // indexByteManual finds the first occurrence of byte c in s (manual implementation to replace strings.IndexByte)
@@ -636,4 +343,409 @@ func removeTrailingZeros(s string) string {
 	}
 
 	return s[:lastNonZero+1]
+}
+
+// formatNumberWithCommas adds thousand separators to the numeric string in conv struct.
+// This is an internal conv method that modifies the struct instead of returning values.
+func (c *conv) formatNumberWithCommas() {
+	numStr := c.getString()
+
+	// Handle negative numbers
+	negative := false
+	if len(numStr) > 0 && numStr[0] == '-' {
+		negative = true
+		numStr = numStr[1:]
+	}
+
+	// Use pooled builder to avoid allocations
+	builder := getBuilder()
+	defer putBuilder(builder)
+
+	// Estimate capacity: original length + separators
+	builder.grow(len(numStr) + len(numStr)/3 + 1)
+
+	// Add periods from right to left (European style)
+	for i, digit := range numStr {
+		if i > 0 && (len(numStr)-i)%3 == 0 {
+			builder.writeByte('.')
+		}
+		builder.writeRune(digit)
+	}
+
+	result := builder.string()
+	if negative {
+		c.setString("-" + result)
+	} else {
+		c.setString(result)
+	}
+}
+
+// splitFloatString splits a float string into integer and decimal parts.
+// This is an internal conv method that returns the parts as slice.
+func (c *conv) splitFloatString() []string {
+	str := c.getString()
+	for i, char := range str {
+		if char == '.' {
+			return []string{str[:i], str[i+1:]}
+		}
+	}
+	return []string{str}
+}
+
+// parseFloatManual converts a string to a float64 and stores in conv struct.
+// This is an internal conv method that modifies the struct instead of returning values.
+func (c *conv) parseFloatManual() {
+	input := c.getString()
+	if input == "" {
+		c.err = newEmptyStringError()
+		return
+	}
+
+	isNegative := false
+	if input[0] == '-' {
+		isNegative = true
+		input = input[1:]
+	}
+
+	integerPartStr := ""
+	fractionPartStr := ""
+	decimalPointSeen := false
+	for i := range len(input) {
+		if input[i] == '.' {
+			if decimalPointSeen {
+				c.err = newInvalidFloatError()
+				return
+			}
+			decimalPointSeen = true
+		} else if decimalPointSeen {
+			fractionPartStr += string(input[i])
+		} else {
+			integerPartStr += string(input[i])
+		}
+	}
+
+	// Create a temporary conv to parse the integer part
+	tempConv := &conv{}
+	tempConv.setString(integerPartStr)
+	tempConv.parseIntInternal(tempConv.getString(), 10)
+	if tempConv.err != nil {
+		c.err = tempConv.err
+		return
+	}
+	integerPart := tempConv.intVal
+
+	var fractionPart float64
+	fractionDivisor := 1.0
+	for i := range len(fractionPartStr) {
+		fractionPart = fractionPart*10 + float64(fractionPartStr[i]-'0')
+		fractionDivisor *= 10
+	}
+	fractionPart /= fractionDivisor
+
+	result := float64(integerPart) + fractionPart
+	if isNegative {
+		result = -result
+	}
+
+	c.floatVal = result
+	c.valType = valTypeFloat
+	c.err = nil
+}
+
+// floatToStringManual converts a float64 to a string and stores in conv struct.
+// This is an internal conv method that modifies the struct instead of returning values.
+func (c *conv) floatToStringManual(precision int) {
+	value := c.floatVal
+
+	if value == 0 {
+		if precision > 0 {
+			result := "0."
+			for i := 0; i < precision; i++ {
+				result += "0"
+			}
+			c.setString(result)
+		} else {
+			c.setString("0")
+		}
+		c.valType = valTypeString
+		return
+	}
+
+	isNegative := value < 0
+	if isNegative {
+		value = -value
+	}
+
+	// Extract integer and fractional parts
+	integerPart := int64(value)
+	fractionalPart := value - float64(integerPart)
+
+	// Convert integer part
+	intStr := ""
+	if integerPart == 0 {
+		intStr = "0"
+	} else {
+		temp := integerPart
+		for temp > 0 {
+			intStr = string(rune('0'+temp%10)) + intStr
+			temp /= 10
+		}
+	}
+
+	// Convert fractional part
+	var fracStr string
+	if precision == -1 {
+		// Auto precision: include significant fractional digits
+		if fractionalPart > 0 {
+			fracStr = "."
+			// Use a reasonable number of digits (6 digits for better precision control)
+			multiplier := 1e6
+			fracPart := int64(fractionalPart*multiplier + 0.5)
+
+			// Convert to string
+			fracDigits := ""
+			for i := 0; i < 6; i++ {
+				fracDigits = string(rune('0'+fracPart%10)) + fracDigits
+				fracPart /= 10
+			}
+
+			// Trim trailing zeros
+			i := len(fracDigits) - 1
+			for i >= 0 && fracDigits[i] == '0' {
+				i--
+			}
+			if i >= 0 {
+				fracStr += fracDigits[:i+1]
+			} else {
+				fracStr = "" // No fractional part
+			}
+		}
+	} else if precision > 0 {
+		multiplier := 1.0
+		for i := 0; i < precision; i++ {
+			multiplier *= 10
+		}
+
+		fracPart := int64(fractionalPart*multiplier + 0.5) // Round to nearest
+		fracStr = "."
+
+		// Build the fractional string correctly from right to left
+		fracDigits := ""
+		for i := 0; i < precision; i++ {
+			fracDigits = string(rune('0'+fracPart%10)) + fracDigits
+			fracPart /= 10
+		}
+		fracStr += fracDigits
+	}
+
+	result := intStr + fracStr
+	if isNegative {
+		result = "-" + result
+	}
+
+	c.setString(result)
+	c.valType = valTypeString
+}
+
+// intToStringWithBase converts an int64 to a string with specified base and stores in conv struct.
+// This is an internal conv method that modifies the struct instead of returning values.
+func (c *conv) intToStringWithBase(base int) {
+	number := c.intVal
+
+	if number == 0 {
+		c.setString("0")
+		c.valType = valTypeString
+		return
+	}
+
+	isNegative := number < 0
+	if isNegative {
+		number = -number
+	}
+
+	const digits = "0123456789abcdefghijklmnopqrstuvwxyz"
+	if base < 2 || base > len(digits) {
+		c.err = newError(errInvalidBase)
+		return
+	}
+
+	result := ""
+	for number > 0 {
+		result = string(digits[number%int64(base)]) + result
+		number /= int64(base)
+	}
+
+	if isNegative {
+		result = "-" + result
+	}
+
+	c.setString(result)
+	c.valType = valTypeString
+}
+
+// formatFloatToString formats a float64 with precision and stores in conv struct.
+// This is an internal conv method that modifies the struct instead of returning values.
+func (c *conv) formatFloatToString(precision int) {
+	c.floatToStringManual(precision)
+}
+
+// sprintf formats according to a format specifier and stores in conv struct.
+// This is an internal conv method that modifies the struct instead of returning values.
+func (c *conv) sprintf(format string, args ...any) {
+	// Pre-calculate buffer size to reduce reallocations
+	estimatedSize := len(format)
+	for _, arg := range args {
+		switch arg.(type) {
+		case string:
+			estimatedSize += 32 // Estimate for strings
+		case int, int64, int32:
+			estimatedSize += 16 // Estimate for integers
+		case float64, float32:
+			estimatedSize += 24 // Estimate for floats
+		default:
+			estimatedSize += 16 // Default estimate
+		}
+	}
+
+	buffer := make([]byte, 0, estimatedSize)
+	argIndex := 0
+
+	for i := 0; i < len(format); i++ {
+		if format[i] == '%' {
+			if i+1 < len(format) {
+				i++
+
+				// Handle precision for floats (e.g., "%.2f")
+				precision := -1
+				if format[i] == '.' {
+					i++
+					start := i
+					for i < len(format) && format[i] >= '0' && format[i] <= '9' {
+						i++
+					}
+					if start < i {
+						// Parse precision
+						tempConv := convInit(format[start:i])
+						tempConv.parseIntInternal(tempConv.getString(), 10)
+						if tempConv.err == nil {
+							precision = int(tempConv.intVal)
+						}
+					}
+				}
+
+				// Handle format specifiers
+				switch format[i] {
+				case 'd':
+					if argIndex >= len(args) {
+						c.err = newFormatMissingArgError("%d")
+						return
+					}
+					intVal, ok := args[argIndex].(int)
+					if !ok {
+						c.err = newFormatWrongTypeError("%d")
+						return
+					}
+					tempConv := convInit(intVal)
+					tempConv.intToStringOptimizedInternal(int64(intVal))
+					str := tempConv.getString()
+					buffer = append(buffer, []byte(str)...)
+					argIndex++
+				case 'f':
+					if argIndex >= len(args) {
+						c.err = newFormatMissingArgError("%f")
+						return
+					}
+					floatVal, ok := args[argIndex].(float64)
+					if !ok {
+						c.err = newFormatWrongTypeError("%f")
+						return
+					}
+					tempConv := convInit(floatVal)
+					tempConv.formatFloatToString(precision)
+					str := tempConv.getString()
+					buffer = append(buffer, []byte(str)...)
+					argIndex++
+				case 'o':
+					if argIndex >= len(args) {
+						c.err = newFormatMissingArgError("%o")
+						return
+					}
+					intVal, ok := args[argIndex].(int)
+					if !ok {
+						c.err = newFormatWrongTypeError("%o")
+						return
+					}
+					tempConv := convInit(int64(intVal))
+					tempConv.intToStringWithBase(8)
+					str := tempConv.getString()
+					buffer = append(buffer, []byte(str)...)
+					argIndex++
+				case 'b':
+					if argIndex >= len(args) {
+						c.err = newFormatMissingArgError("%b")
+						return
+					}
+					intVal, ok := args[argIndex].(int)
+					if !ok {
+						c.err = newFormatWrongTypeError("%b")
+						return
+					}
+					tempConv := convInit(int64(intVal))
+					tempConv.intToStringWithBase(2)
+					str := tempConv.getString()
+					buffer = append(buffer, []byte(str)...)
+					argIndex++
+				case 'x':
+					if argIndex >= len(args) {
+						c.err = newFormatMissingArgError("%x")
+						return
+					}
+					intVal, ok := args[argIndex].(int)
+					if !ok {
+						c.err = newFormatWrongTypeError("%x")
+						return
+					}
+					tempConv := convInit(int64(intVal))
+					tempConv.intToStringWithBase(16)
+					str := tempConv.getString()
+					buffer = append(buffer, []byte(str)...)
+					argIndex++
+				case 'v':
+					if argIndex >= len(args) {
+						c.err = newFormatMissingArgError("%v")
+						return
+					}
+					tempConv := convInit("")
+					tempConv.formatValue(args[argIndex])
+					str := tempConv.getString()
+					buffer = append(buffer, []byte(str)...)
+					argIndex++
+				case 's':
+					if argIndex >= len(args) {
+						c.err = newFormatMissingArgError("%s")
+						return
+					}
+					strVal, ok := args[argIndex].(string)
+					if !ok {
+						c.err = newFormatWrongTypeError("%s")
+						return
+					}
+					buffer = append(buffer, []byte(strVal)...)
+					argIndex++
+				case '%':
+					buffer = append(buffer, '%')
+				default:
+					c.err = newFormatUnsupportedError(string(format[i]))
+					return
+				}
+			} else {
+				buffer = append(buffer, format[i])
+			}
+		} else {
+			buffer = append(buffer, format[i])
+		}
+	}
+
+	c.setString(unsafeString(buffer))
+	c.valType = valTypeString
 }

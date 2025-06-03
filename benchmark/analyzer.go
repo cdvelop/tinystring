@@ -308,7 +308,6 @@ func parseBenchmarkOutput(output, library string) []BenchmarkResult {
 
 	scanner := bufio.NewScanner(strings.NewReader(output))
 	benchmarkRegex := regexp.MustCompile(`^(Benchmark\w+)(?:-\d+)?\s+(\d+)\s+(\d+)\s+ns/op\s+(\d+)\s+B/op\s+(\d+)\s+allocs/op`)
-
 	for scanner.Scan() {
 		line := scanner.Text()
 		matches := benchmarkRegex.FindStringSubmatch(line)

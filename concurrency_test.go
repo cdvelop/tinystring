@@ -1,7 +1,6 @@
 package tinystring
 
 import (
-	"fmt"
 	"sync"
 	"testing"
 	"time"
@@ -52,7 +51,7 @@ func TestConcurrentConvert(t *testing.T) {
 				String()
 
 			if result != expectedResult {
-				counter.addError(fmt.Sprintf("goroutine %d: got %q, want %q", id, result, expectedResult))
+				counter.addError(Format("goroutine %d: got %q, want %q", id, result, expectedResult).String())
 			}
 		}(i)
 	}
@@ -141,10 +140,10 @@ func TestConcurrentUtilityFunctions(t *testing.T) {
 					defer wg.Done()
 					result, err := tc.function()
 					if err != nil {
-						counter.addError(fmt.Sprintf("goroutine %d: error: %v", id, err))
+						counter.addError(Format("goroutine %d: error: %v", id, err).String())
 					}
 					if result != tc.expected {
-						counter.addError(fmt.Sprintf("goroutine %d: got %q, want %q", id, result, tc.expected))
+						counter.addError(Format("goroutine %d: got %q, want %q", id, result, tc.expected).String())
 					}
 				}(i)
 			}
@@ -229,8 +228,8 @@ func TestConcurrentStringManipulation(t *testing.T) {
 					for j := 0; j < iterations; j++ {
 						result := tc.process(tc.input)
 						if result != tc.expected {
-							counter.addError(fmt.Sprintf("goroutine %d, iteration %d: got %q, want %q",
-								id, j, result, tc.expected))
+							counter.addError(Format("goroutine %d, iteration %d: got %q, want %q",
+								id, j, result, tc.expected).String())
 							return
 						}
 					}

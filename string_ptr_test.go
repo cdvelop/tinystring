@@ -1,23 +1,21 @@
-package tinystring_test
+package tinystring
 
 import (
 	"fmt"
 	"testing"
-
-	. "github.com/cdvelop/tinystring"
 )
 
 func TestStringPointer(t *testing.T) {
 	tests := []struct {
 		name          string
 		initialValue  string
-		transform     func(*Text) *Text
+		transform     func(*conv) *conv
 		expectedValue string
 	}{
 		{
 			name:         "Remove tildes from string pointer",
 			initialValue: "áéíóúÁÉÍÓÚ",
-			transform: func(t *Text) *Text {
+			transform: func(t *conv) *conv {
 				return t.RemoveTilde()
 			},
 			expectedValue: "aeiouAEIOU",
@@ -25,7 +23,7 @@ func TestStringPointer(t *testing.T) {
 		{
 			name:         "Convert to lowercase with string pointer",
 			initialValue: "HELLO WORLD",
-			transform: func(t *Text) *Text {
+			transform: func(t *conv) *conv {
 				return t.ToLower()
 			},
 			expectedValue: "hello world",
@@ -33,7 +31,7 @@ func TestStringPointer(t *testing.T) {
 		{
 			name:         "Convert to camelCase with string pointer",
 			initialValue: "hello world example",
-			transform: func(t *Text) *Text {
+			transform: func(t *conv) *conv {
 				return t.CamelCaseLower()
 			},
 			expectedValue: "helloWorldExample",
@@ -41,7 +39,7 @@ func TestStringPointer(t *testing.T) {
 		{
 			name:         "Multiple transforms with string pointer",
 			initialValue: "Él Múrcielago Rápido",
-			transform: func(t *Text) *Text {
+			transform: func(t *conv) *conv {
 				return t.RemoveTilde().CamelCaseLower()
 			},
 			expectedValue: "elMurcielagoRapido",

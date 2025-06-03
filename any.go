@@ -23,44 +23,6 @@ var smallInts = [...]string{
 	"90", "91", "92", "93", "94", "95", "96", "97", "98", "99",
 }
 
-// intToStringOptimized converts an int64 to string with minimal allocations
-func intToStringOptimized(val int64) string {
-	// Handle common small numbers using lookup table
-	if val >= 0 && val < int64(len(smallInts)) {
-		return smallInts[val]
-	}
-
-	// Handle special cases
-	if val == 0 {
-		return zeroString
-	}
-	if val == 1 {
-		return oneString
-	}
-
-	// Fall back to standard conversion for larger numbers
-	return intToStringWithBase(val, 10)
-}
-
-// uintToStringOptimized converts a uint64 to string with minimal allocations
-func uintToStringOptimized(val uint64) string {
-	// Handle common small numbers using lookup table
-	if val < uint64(len(smallInts)) {
-		return smallInts[val]
-	}
-
-	// Handle special cases
-	if val == 0 {
-		return zeroString
-	}
-	if val == 1 {
-		return oneString
-	}
-
-	// Fall back to standard conversion for larger numbers
-	return uintToStringWithBase(val, 10)
-}
-
 // anyToString converts any value to a string without using fmt
 // Uses TinyGo-compatible approach to convert numbers, bool to strings
 // Optimized to minimize heap allocations where possible
@@ -73,25 +35,45 @@ func anyToString(v any) string {
 	case string:
 		return val
 	case int:
-		return intToStringOptimized(int64(val))
+		conv := convInit(val)
+		conv.intToStringOptimizedInternal(int64(val))
+		return conv.getString()
 	case int8:
-		return intToStringOptimized(int64(val))
+		conv := convInit(val)
+		conv.intToStringOptimizedInternal(int64(val))
+		return conv.getString()
 	case int16:
-		return intToStringOptimized(int64(val))
+		conv := convInit(val)
+		conv.intToStringOptimizedInternal(int64(val))
+		return conv.getString()
 	case int32:
-		return intToStringOptimized(int64(val))
+		conv := convInit(val)
+		conv.intToStringOptimizedInternal(int64(val))
+		return conv.getString()
 	case int64:
-		return intToStringOptimized(val)
+		conv := convInit(val)
+		conv.intToStringOptimizedInternal(val)
+		return conv.getString()
 	case uint:
-		return uintToStringOptimized(uint64(val))
+		conv := convInit(val)
+		conv.uintToStringOptimizedInternal(uint64(val))
+		return conv.getString()
 	case uint8:
-		return uintToStringOptimized(uint64(val))
+		conv := convInit(val)
+		conv.uintToStringOptimizedInternal(uint64(val))
+		return conv.getString()
 	case uint16:
-		return uintToStringOptimized(uint64(val))
+		conv := convInit(val)
+		conv.uintToStringOptimizedInternal(uint64(val))
+		return conv.getString()
 	case uint32:
-		return uintToStringOptimized(uint64(val))
+		conv := convInit(val)
+		conv.uintToStringOptimizedInternal(uint64(val))
+		return conv.getString()
 	case uint64:
-		return uintToStringOptimized(val)
+		conv := convInit(val)
+		conv.uintToStringOptimizedInternal(val)
+		return conv.getString()
 	case float32:
 		// For common float values, return pre-allocated strings
 		if val == 0 {
@@ -104,7 +86,9 @@ func anyToString(v any) string {
 		if val == 3.14 {
 			return "3.14"
 		}
-		return formatFloatToString(float64(val), -1)
+		conv := convInit(float64(val))
+		conv.formatFloatToString(-1)
+		return conv.getString()
 	case float64:
 		// For common float values, return pre-allocated strings
 		if val == 0 {
@@ -113,7 +97,9 @@ func anyToString(v any) string {
 		if val == 1 {
 			return oneString
 		}
-		return formatFloatToString(val, -1)
+		conv := convInit(val)
+		conv.formatFloatToString(-1)
+		return conv.getString()
 	case bool:
 		if val {
 			return trueString
