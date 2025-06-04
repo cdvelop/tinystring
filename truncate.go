@@ -97,7 +97,7 @@ func (t *conv) TruncateName(maxCharsPerWord, maxWidth any) *conv {
 
 	// Step 1: Apply maxCharsPerWord rule to each word - minimal allocations
 	var result string
-	
+
 	// Process and join words in one pass
 	for i, word := range words {
 		if i > 0 {

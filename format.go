@@ -417,7 +417,7 @@ func (c *conv) parseFloatManual() {
 	integerPartBuf := make([]byte, 0, len(input))
 	fractionPartBuf := make([]byte, 0, len(input))
 	decimalPointSeen := false
-	
+
 	for i := range len(input) {
 		if input[i] == '.' {
 			if decimalPointSeen {

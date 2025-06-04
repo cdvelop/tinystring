@@ -10,11 +10,10 @@ func (t *conv) Capitalize() *conv {
 	}
 
 	// First pass: normalize whitespace and build word list
-	runes := []rune(str)
-	words := make([][]rune, 0, 4) // estimate 4 words
+	words := make([][]rune, 0, 4)      // estimate 4 words
 	currentWord := make([]rune, 0, 10) // estimate 10 chars per word
-	
-	for _, r := range runes {
+
+	for _, r := range str {
 		if r == ' ' || r == '\t' || r == '\n' || r == '\r' {
 			if len(currentWord) > 0 {
 				words = append(words, currentWord)
@@ -27,7 +26,7 @@ func (t *conv) Capitalize() *conv {
 	if len(currentWord) > 0 {
 		words = append(words, currentWord)
 	}
-	
+
 	if len(words) == 0 {
 		t.setString("")
 		return t
@@ -147,7 +146,7 @@ func (t *conv) toCaseTransformMinimal(firstWordLower bool, separator string) *co
 	// Pre-allocate buffer with estimated size
 	estimatedSize := len(str) + (len(separator) * 5) // Extra space for separators
 	result := make([]byte, 0, estimatedSize)
-	
+
 	// Advanced word boundary detection for camelCase and snake_case
 	wordIndex := 0
 	var prevWasUpper, prevWasLower, prevWasDigit, prevWasSpace bool

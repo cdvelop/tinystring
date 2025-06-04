@@ -17,9 +17,9 @@ func (c *conv) quoteString() {
 	}
 
 	// Pre-allocate with estimated size (input length + 20% buffer for escapes + 2 for quotes)
-	estimatedSize := len(input) + (len(input)/5) + 2
+	estimatedSize := len(input) + (len(input) / 5) + 2
 	result := make([]byte, 0, estimatedSize)
-	
+
 	result = append(result, '"')
 	for _, char := range input {
 		switch char {

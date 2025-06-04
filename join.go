@@ -29,7 +29,7 @@ func (t *conv) Join(sep ...string) *conv {
 		var parts []string
 		runes := []rune(str)
 		start := 0
-		
+
 		for i, r := range runes {
 			if r == ' ' || r == '\t' || r == '\n' || r == '\r' {
 				if i > start {
@@ -49,7 +49,7 @@ func (t *conv) Join(sep ...string) *conv {
 				totalLen += len(part)
 			}
 			totalLen += (len(parts) - 1) * len(separator)
-			
+
 			buf := make([]byte, 0, totalLen)
 			for i, part := range parts {
 				buf = append(buf, part...)

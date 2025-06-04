@@ -15,7 +15,7 @@ func Split(data string, separator ...string) (result []string) {
 			estimatedWords = 2
 		}
 		result = make([]string, 0, estimatedWords)
-		
+
 		inWord := false
 		start := 0
 
@@ -65,7 +65,7 @@ func Split(data string, separator ...string) (result []string) {
 		estimatedParts = 2
 	}
 	result = make([]string, 0, estimatedParts)
-	
+
 	start := 0
 	sepLen := len(sep)
 

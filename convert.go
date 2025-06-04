@@ -181,12 +181,12 @@ func (t *conv) splitIntoWordsLocal() [][]rune {
 	if estimatedWords > 16 {
 		estimatedWords = 16 // Cap reasonable maximum
 	}
-	
+
 	words := make([][]rune, 0, estimatedWords)
-	
+
 	// Convert entire string to runes once
 	runes := []rune(str)
-	
+
 	var start int
 	inWord := false
 
@@ -365,7 +365,7 @@ func (t *conv) joinSlice(separator string) string {
 
 	// Build result string efficiently using slice of bytes
 	result := make([]byte, 0, totalLen)
-	
+
 	for i, s := range t.stringSliceVal {
 		if i > 0 {
 			result = append(result, separator...)

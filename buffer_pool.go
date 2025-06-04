@@ -22,13 +22,6 @@ type tinyStringBuilder struct {
 	buf []byte
 }
 
-// newTinyStringBuilder creates a new string builder with initial capacity
-func newTinyStringBuilder(capacity int) *tinyStringBuilder {
-	return &tinyStringBuilder{
-		buf: make([]byte, 0, capacity),
-	}
-}
-
 // writeString appends a string to the builder
 func (tsb *tinyStringBuilder) writeString(s string) {
 	tsb.buf = append(tsb.buf, s...)
@@ -51,23 +44,6 @@ func (tsb *tinyStringBuilder) writeRune(r rune) {
 	} else {
 		tsb.buf = append(tsb.buf, byte(0xF0|(r>>18)), byte(0x80|((r>>12)&0x3F)), byte(0x80|((r>>6)&0x3F)), byte(0x80|(r&0x3F)))
 	}
-}
-
-// string returns the accumulated string
-func (tsb *tinyStringBuilder) string() string {
-	return string(tsb.buf)
-}
-
-// reset clears the builder for reuse
-func (tsb *tinyStringBuilder) reset() {
-	if tsb != nil && tsb.buf != nil {
-		tsb.buf = tsb.buf[:0]
-	}
-}
-
-// len returns the current length of the accumulated string
-func (tsb *tinyStringBuilder) len() int {
-	return len(tsb.buf)
 }
 
 // grow increases the capacity of the buffer if needed
