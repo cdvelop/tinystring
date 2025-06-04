@@ -75,61 +75,67 @@ func (c *conv) formatUnsupported(value any) {
 // formatStruct formats struct and stores in conv struct.
 // This is an internal conv method that modifies the struct instead of returning values.
 func (c *conv) formatStruct(v reflect.Value) {
-	var buffer []byte
-	buffer = append(buffer, '{')
+	builder := getBuilder()
+	defer putBuilder(builder)
+
+	builder.writeByte('{')
 	tempConv := convInit("")
 	for i := range v.NumField() {
 		if i > 0 {
-			buffer = append(buffer, ' ')
+			builder.writeByte(' ')
 		}
 		field := v.Type().Field(i).Name
 		value := v.Field(i).Interface()
-		buffer = append(buffer, field...)
-		buffer = append(buffer, ':')
+		builder.writeString(field)
+		builder.writeByte(':')
 		tempConv.formatValue(value)
-		buffer = append(buffer, tempConv.getString()...)
+		builder.writeString(tempConv.getString())
 	}
-	buffer = append(buffer, '}')
-	c.setString(unsafeString(buffer))
+	builder.writeByte('}')
+	c.setString(string(builder.buf))
 }
 
 // formatSlice formats slice and stores in conv struct.
 // This is an internal conv method that modifies the struct instead of returning values.
 func (c *conv) formatSlice(v reflect.Value) {
-	var buffer []byte
-	buffer = append(buffer, '[')
+	builder := getBuilder()
+	defer putBuilder(builder)
+
+	builder.writeByte('[')
 	tempConv := convInit("")
 	for i := 0; i < v.Len(); i++ {
 		if i > 0 {
-			buffer = append(buffer, ' ')
+			builder.writeByte(' ')
 		}
 		tempConv.formatValue(v.Index(i).Interface())
-		buffer = append(buffer, tempConv.getString()...)
+		builder.writeString(tempConv.getString())
 	}
-	buffer = append(buffer, ']')
-	c.setString(unsafeString(buffer))
+	builder.writeByte(']')
+	c.setString(string(builder.buf))
 }
 
 // formatMap formats map and stores in conv struct.
 // This is an internal conv method that modifies the struct instead of returning values.
 func (c *conv) formatMap(v reflect.Value) {
-	var buffer []byte
-	buffer = append(buffer, '{')
+	builder := getBuilder()
+	defer putBuilder(builder)
+
+	builder.writeByte('{')
 	keys := v.MapKeys()
 	tempConv := convInit("")
 	tempConv2 := convInit("")
 	for i, key := range keys {
 		if i > 0 {
-			buffer = append(buffer, ' ')
+			builder.writeByte(' ')
 		}
 		tempConv.formatValue(key.Interface())
-		buffer = append(buffer, tempConv.getString()...)
-		buffer = append(buffer, ':')
+		builder.writeString(tempConv.getString())
+		builder.writeByte(':')
 		tempConv2.formatValue(v.MapIndex(key).Interface())
-		buffer = append(buffer, tempConv2.getString()...)
+		builder.writeString(tempConv2.getString())
 	}
-	buffer = append(buffer, '}')
-	c.setString(unsafeString(buffer))
+	builder.writeByte('}')
+	c.setString(string(builder.buf))
 }
 
 // RoundDecimals rounds a numeric value to the specified number of decimal places
@@ -372,7 +378,7 @@ func (c *conv) formatNumberWithCommas() {
 		builder.writeRune(digit)
 	}
 
-	result := builder.string()
+	result := string(builder.buf)
 	if negative {
 		c.setString("-" + result)
 	} else {
@@ -407,9 +413,11 @@ func (c *conv) parseFloatManual() {
 		input = input[1:]
 	}
 
-	integerPartStr := ""
-	fractionPartStr := ""
+	// Pre-allocate buffers based on input length
+	integerPartBuf := make([]byte, 0, len(input))
+	fractionPartBuf := make([]byte, 0, len(input))
 	decimalPointSeen := false
+	
 	for i := range len(input) {
 		if input[i] == '.' {
 			if decimalPointSeen {
@@ -418,15 +426,15 @@ func (c *conv) parseFloatManual() {
 			}
 			decimalPointSeen = true
 		} else if decimalPointSeen {
-			fractionPartStr += string(input[i])
+			fractionPartBuf = append(fractionPartBuf, input[i])
 		} else {
-			integerPartStr += string(input[i])
+			integerPartBuf = append(integerPartBuf, input[i])
 		}
 	}
 
 	// Create a temporary conv to parse the integer part
 	tempConv := &conv{}
-	tempConv.setString(integerPartStr)
+	tempConv.setString(string(integerPartBuf))
 	tempConv.parseIntInternal(tempConv.getString(), 10)
 	if tempConv.err != nil {
 		c.err = tempConv.err
@@ -436,6 +444,7 @@ func (c *conv) parseFloatManual() {
 
 	var fractionPart float64
 	fractionDivisor := 1.0
+	fractionPartStr := string(fractionPartBuf)
 	for i := range len(fractionPartStr) {
 		fractionPart = fractionPart*10 + float64(fractionPartStr[i]-'0')
 		fractionDivisor *= 10
@@ -607,7 +616,12 @@ func (c *conv) sprintf(format string, args ...any) {
 		}
 	}
 
-	buffer := make([]byte, 0, estimatedSize)
+	// Use buffer pool instead of creating new slice
+	builder := getBuilder()
+	defer putBuilder(builder)
+
+	// Pre-allocate based on estimated size
+	builder.grow(estimatedSize)
 	argIndex := 0
 
 	for i := 0; i < len(format); i++ {
@@ -648,7 +662,7 @@ func (c *conv) sprintf(format string, args ...any) {
 					tempConv := convInit(intVal)
 					tempConv.intToStringOptimizedInternal(int64(intVal))
 					str := tempConv.getString()
-					buffer = append(buffer, []byte(str)...)
+					builder.writeString(str)
 					argIndex++
 				case 'f':
 					if argIndex >= len(args) {
@@ -663,7 +677,7 @@ func (c *conv) sprintf(format string, args ...any) {
 					tempConv := convInit(floatVal)
 					tempConv.formatFloatToString(precision)
 					str := tempConv.getString()
-					buffer = append(buffer, []byte(str)...)
+					builder.writeString(str)
 					argIndex++
 				case 'o':
 					if argIndex >= len(args) {
@@ -678,7 +692,7 @@ func (c *conv) sprintf(format string, args ...any) {
 					tempConv := convInit(int64(intVal))
 					tempConv.intToStringWithBase(8)
 					str := tempConv.getString()
-					buffer = append(buffer, []byte(str)...)
+					builder.writeString(str)
 					argIndex++
 				case 'b':
 					if argIndex >= len(args) {
@@ -693,7 +707,7 @@ func (c *conv) sprintf(format string, args ...any) {
 					tempConv := convInit(int64(intVal))
 					tempConv.intToStringWithBase(2)
 					str := tempConv.getString()
-					buffer = append(buffer, []byte(str)...)
+					builder.writeString(str)
 					argIndex++
 				case 'x':
 					if argIndex >= len(args) {
@@ -708,7 +722,7 @@ func (c *conv) sprintf(format string, args ...any) {
 					tempConv := convInit(int64(intVal))
 					tempConv.intToStringWithBase(16)
 					str := tempConv.getString()
-					buffer = append(buffer, []byte(str)...)
+					builder.writeString(str)
 					argIndex++
 				case 'v':
 					if argIndex >= len(args) {
@@ -718,7 +732,7 @@ func (c *conv) sprintf(format string, args ...any) {
 					tempConv := convInit("")
 					tempConv.formatValue(args[argIndex])
 					str := tempConv.getString()
-					buffer = append(buffer, []byte(str)...)
+					builder.writeString(str)
 					argIndex++
 				case 's':
 					if argIndex >= len(args) {
@@ -730,22 +744,22 @@ func (c *conv) sprintf(format string, args ...any) {
 						c.err = newFormatWrongTypeError("%s")
 						return
 					}
-					buffer = append(buffer, []byte(strVal)...)
+					builder.writeString(strVal)
 					argIndex++
 				case '%':
-					buffer = append(buffer, '%')
+					builder.writeByte('%')
 				default:
 					c.err = newFormatUnsupportedError(string(format[i]))
 					return
 				}
 			} else {
-				buffer = append(buffer, format[i])
+				builder.writeByte(format[i])
 			}
 		} else {
-			buffer = append(buffer, format[i])
+			builder.writeByte(format[i])
 		}
 	}
 
-	c.setString(unsafeString(buffer))
+	c.setString(string(builder.buf))
 	c.valType = valTypeString
 }

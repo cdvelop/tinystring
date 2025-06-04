@@ -129,7 +129,7 @@ func (t *conv) transformWithMapping(mappings []charMapping) *conv {
 		return t
 	}
 
-	newStr := builder.string()
+	newStr := string(builder.buf)
 
 	// Always modify in place to avoid creating new instances
 	t.setString(newStr)
@@ -169,29 +169,35 @@ func (t *conv) StringError() (string, error) {
 }
 
 // splitIntoWordsLocal returns words as local variable without storing in struct field
-// This avoids persistent memory allocation in the conv struct
+// Optimized for minimal allocations - Phase 3
 func (t *conv) splitIntoWordsLocal() [][]rune {
 	str := t.getString()
 	if len(str) == 0 {
 		return nil
 	}
 
-	// Pre-allocate slices with estimated capacity to reduce allocations
-	words := make([][]rune, 0, 8) // Estimate 8 words max
-
-	// Use a more efficient approach: build words directly without intermediate copies
+	// Pre-allocate based on estimated word count (rough heuristic: len/5)
+	estimatedWords := (len(str) / 5) + 1
+	if estimatedWords > 16 {
+		estimatedWords = 16 // Cap reasonable maximum
+	}
+	
+	words := make([][]rune, 0, estimatedWords)
+	
+	// Convert entire string to runes once
+	runes := []rune(str)
+	
 	var start int
 	inWord := false
 
-	for i, r := range str {
+	for i, r := range runes {
 		if r == ' ' || r == '\t' || r == '\n' || r == '\r' {
 			if inWord {
-				// Extract word directly from string range
-				word := make([]rune, 0, i-start)
-				for _, char := range str[start:i] {
-					word = append(word, char)
+				// Extract word slice directly from runes - no copying
+				if i > start {
+					word := runes[start:i:i] // Limit capacity to avoid sharing
+					words = append(words, word)
 				}
-				words = append(words, word)
 				inWord = false
 			}
 		} else {
@@ -203,11 +209,8 @@ func (t *conv) splitIntoWordsLocal() [][]rune {
 	}
 
 	// Handle last word if string doesn't end with whitespace
-	if inWord {
-		word := make([]rune, 0, len(str)-start)
-		for _, char := range str[start:] {
-			word = append(word, char)
-		}
+	if inWord && len(runes) > start {
+		word := runes[start:len(runes):len(runes)]
 		words = append(words, word)
 	}
 
@@ -219,35 +222,30 @@ func (t *conv) transformWord(word []rune, transform wordTransform) []rune {
 		return word
 	}
 
-	// Create a copy to avoid modifying the original
-	result := make([]rune, len(word))
-	copy(result, word)
-
+	// Transform in-place to avoid allocation, then copy once
 	switch transform {
 	case toLower:
-		for i, r := range result {
+		for i, r := range word {
 			for _, mapping := range lowerMappings {
 				if r == mapping.from {
-					result[i] = mapping.to
+					word[i] = mapping.to
 					break
 				}
 			}
 		}
 	case toUpper:
-		for i, r := range result {
+		for i, r := range word {
 			for _, mapping := range upperMappings {
 				if r == mapping.from {
-					result[i] = mapping.to
+					word[i] = mapping.to
 					break
 				}
 			}
 		}
 	}
 
-	// Create a copy to return
-	resultCopy := make([]rune, len(result))
-	copy(resultCopy, result)
-	return resultCopy
+	// Return the transformed word (caller will handle copying if needed)
+	return word
 }
 
 // Helper function to check if a rune is a digit
@@ -349,7 +347,7 @@ func (t *conv) setString(s string) {
 	t.lastConvertedType = valType(0)
 }
 
-// joinSlice joins string slice with separator
+// joinSlice joins string slice with separator - optimized for minimal allocations
 func (t *conv) joinSlice(separator string) string {
 	if len(t.stringSliceVal) == 0 {
 		return ""
@@ -365,19 +363,17 @@ func (t *conv) joinSlice(separator string) string {
 	}
 	totalLen += len(separator) * (len(t.stringSliceVal) - 1)
 
-	// Build result string efficiently with pooled builder
-	builder := getBuilder()
-	defer putBuilder(builder)
-	builder.grow(totalLen)
-
+	// Build result string efficiently using slice of bytes
+	result := make([]byte, 0, totalLen)
+	
 	for i, s := range t.stringSliceVal {
 		if i > 0 {
-			builder.writeString(separator)
+			result = append(result, separator...)
 		}
-		builder.writeString(s)
+		result = append(result, s...)
 	}
 
-	return builder.string()
+	return string(result)
 }
 
 // Internal conversion methods - centralized in conv to minimize allocations

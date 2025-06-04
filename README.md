@@ -497,7 +497,7 @@ Performance benchmarks show that using string pointers can reduce memory allocat
 
 ## Binary Size Comparison
 
-*Last updated: 2025-06-03 19:28:41*
+*Last updated: 2025-06-03 23:09:58*
 
 ### Default Optimization
 *Default TinyGo optimization (-opt=z)*
@@ -540,20 +540,20 @@ TinyString consistently produces smaller binaries across all optimization levels
 
 ## Memory Usage Comparison
 
-*Last updated: 2025-06-03 19:28:51*
+*Last updated: 2025-06-03 23:10:08*
 
 Performance benchmarks comparing memory allocation patterns:
 
 | Benchmark | Library | Bytes/Op | Allocs/Op | Time/Op | Memory Improvement | Alloc Improvement |
 |-----------|---------|----------|-----------|---------|-------------------|------------------|
-| **String Processing** | Standard | 1.2 KB | 48 | 3.4μs | - | - |
-| | TinyString | 4.7 KB | 64 | 11.5μs | **302.0% more** | **33.3% more** |
-| **Number Processing** | Standard | 1.2 KB | 132 | 4.2μs | - | - |
-| | TinyString | 13.4 KB | 522 | 14.0μs | **1041.3% more** | **295.5% more** |
+| **String Processing** | Standard | 1.2 KB | 48 | 3.0μs | - | - |
+| | TinyString | 5.1 KB | 358 | 16.7μs | **331.3% more** | **645.8% more** |
+| **Number Processing** | Standard | 1.2 KB | 132 | 4.0μs | - | - |
+| | TinyString | 13.3 KB | 498 | 13.5μs | **1032.0% more** | **277.3% more** |
 | **Mixed Operations** | Standard | 546 B | 44 | 2.1μs | - | - |
-| | TinyString | 4.5 KB | 143 | 6.6μs | **734.8% more** | **225.0% more** |
-| **String Processing (Pointer Optimization)** | Standard | 1.2 KB | 48 | 3.4μs | - | - |
-| | TinyString | 4.6 KB | 56 | 10.9μs | **291.3% more** | **16.7% more** |
+| | TinyString | 4.5 KB | 208 | 7.8μs | **746.9% more** | **372.7% more** |
+| **String Processing (Pointer Optimization)** | Standard | 1.2 KB | 48 | 3.0μs | - | - |
+| | TinyString | 4.9 KB | 350 | 16.0μs | **320.7% more** | **629.2% more** |
 
 ### Trade-offs Analysis
 

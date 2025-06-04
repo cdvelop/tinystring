@@ -20,17 +20,19 @@ func (t *conv) Replace(oldAny, newAny any, n ...int) *conv {
 		maxReplacements = n[0]
 	}
 
-	// Use string builder for efficient string construction
-	estimatedLen := len(str) + len(newStr)*10 // Conservative estimate
-	builder := newTinyStringBuilder(estimatedLen)
+	// Use pooled string builder for efficient string construction
+	builder := getBuilder()
+	defer putBuilder(builder)
+
+	builder.grow(len(str) + len(newStr)*10) // Pre-allocate
 
 	replacements := 0
 	for i := 0; i < len(str); i++ {
-		// Check for occurrence of old in the conv and if we haven't reached the maximum replacements
+		// Check for occurrence of old in the string and if we haven't reached the maximum replacements
 		if i+len(old) <= len(str) && str[i:i+len(old)] == old && (maxReplacements < 0 || replacements < maxReplacements) {
 			// Add the new word to the result
 			builder.writeString(newStr)
-			// Skip the length of the old word in the original conv
+			// Skip the length of the old word in the original string
 			i += len(old) - 1
 			// Increment replacement counter
 			replacements++
@@ -40,7 +42,7 @@ func (t *conv) Replace(oldAny, newAny any, n ...int) *conv {
 		}
 	}
 
-	t.setString(builder.string())
+	t.setString(string(builder.buf))
 	return t
 }
 

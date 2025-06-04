@@ -543,12 +543,17 @@ func (t *conv) formatIntInternal(val int64, base int) {
 
 	// Reverse the string since we built it backwards
 	buf := builder.buf
-	for i, j := 0, len(buf)-1; i < j; i, j = i+1, j-1 {
-		buf[i], buf[j] = buf[j], buf[i]
+	if len(buf) > 0 {
+		for i, j := 0, len(buf)-1; i < j; i, j = i+1, j-1 {
+			buf[i], buf[j] = buf[j], buf[i]
+		}
 	}
 
-	t.cachedString = builder.string()
-	t.stringVal = t.cachedString
+	// Create a copy of the string before returning builder to pool
+	// This avoids corruption when the builder is reused
+	result := string(buf)
+	t.cachedString = result
+	t.stringVal = result
 }
 
 // intToStringOptimizedInternal converts int64 to string with minimal allocations and stores in cachedString
@@ -605,8 +610,10 @@ func (t *conv) formatUintInternal(val uint64, base int) {
 		buf[i], buf[j] = buf[j], buf[i]
 	}
 
-	t.cachedString = builder.string()
-	t.stringVal = t.cachedString
+	// Create a copy of the string before returning builder to pool
+	result := string(builder.buf)
+	t.cachedString = result
+	t.stringVal = result
 }
 
 // uintToStringOptimizedInternal converts uint64 to string with minimal allocations and stores in cachedString
@@ -656,7 +663,7 @@ func (t *conv) uintToStringWithBaseInternal(number uint64, base int) {
 		number /= uint64(base)
 	}
 
-	t.cachedString = unsafeString(buf[i:])
+	t.cachedString = string(buf[i:])
 	t.stringVal = t.cachedString
 }
 
@@ -687,8 +694,9 @@ func (t *conv) formatFloatInternal(val float64) {
 	// Handle infinity
 	if val > 1e308 {
 		builder.writeString("Inf")
-		t.cachedString = builder.string()
-		t.stringVal = t.cachedString
+		result := string(builder.buf)
+		t.cachedString = result
+		t.stringVal = result
 		return
 	}
 
@@ -714,8 +722,8 @@ func (t *conv) formatFloatInternal(val float64) {
 		multiplier := 1e6
 		fracPartInt := int64(fracPart*multiplier + 0.5)
 
-		// Convert to string
-		fracDigits := make([]byte, 6)
+		// Convert to string using static buffer
+		var fracDigits [6]byte
 		for i := 5; i >= 0; i-- {
 			fracDigits[i] = byte('0' + fracPartInt%10)
 			fracPartInt /= 10
@@ -731,8 +739,10 @@ func (t *conv) formatFloatInternal(val float64) {
 		}
 	}
 
-	t.cachedString = builder.string()
-	t.stringVal = t.cachedString
+	// Create a copy of the string before returning builder to pool
+	result := string(builder.buf)
+	t.cachedString = result
+	t.stringVal = result
 }
 
 // parseIntInternal parses string to int with specified base

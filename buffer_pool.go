@@ -1,37 +1,23 @@
 package tinystring
 
-import "unsafe"
-
-// Optimized string builder using unsafe for minimal memory allocations
+// Optimized string builder using minimal memory allocations
 // Based on Go's strings.Builder but with TinyGo compatibility and zero dependencies
 
-// unsafeString converts byte slice to string without allocation
-// This uses the same pattern as Go's strings.Builder.String() method
-func unsafeString(data []byte) string {
-	if len(data) == 0 {
-		return ""
-	}
-	// Convert []byte to string without copying by creating a string header
-	// that points to the same underlying data
-	return unsafe.String(&data[0], len(data))
-}
-
-// getBuilder returns a pooled string builder to minimize allocations
+// getBuilder returns a new string builder to minimize allocations
+// Pool removed for thread safety and TinyGo compatibility
 func getBuilder() *tinyStringBuilder {
-	// Create new builder instead of using pool to avoid concurrency issues
-	// TODO: Implement proper thread-safe pooling
 	return &tinyStringBuilder{
 		buf: make([]byte, 0, 64), // Start with reasonable capacity
 	}
 }
 
-// putBuilder returns the builder to the pool for reuse
+// putBuilder is now a no-op since we removed the pool
+// Kept for API compatibility
 func putBuilder(builder *tinyStringBuilder) {
-	// Temporarily disabled pooling to avoid concurrency issues
-	// TODO: Implement proper thread-safe pooling
+	// No-op: pool removed for thread safety and minimal dependencies
 }
 
-// Optimized string builder with unsafe operations
+// Optimized string builder
 type tinyStringBuilder struct {
 	buf []byte
 }
@@ -67,14 +53,16 @@ func (tsb *tinyStringBuilder) writeRune(r rune) {
 	}
 }
 
-// string returns the accumulated string using unsafe conversion to avoid allocation
+// string returns the accumulated string
 func (tsb *tinyStringBuilder) string() string {
-	return unsafeString(tsb.buf)
+	return string(tsb.buf)
 }
 
 // reset clears the builder for reuse
 func (tsb *tinyStringBuilder) reset() {
-	tsb.buf = tsb.buf[:0]
+	if tsb != nil && tsb.buf != nil {
+		tsb.buf = tsb.buf[:0]
+	}
 }
 
 // len returns the current length of the accumulated string

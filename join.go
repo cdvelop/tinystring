@@ -25,33 +25,40 @@ func (t *conv) Join(sep ...string) *conv {
 	// If content is already a string, we split it and join it again with the new separator
 	str := t.getString()
 	if str != "" {
-		// Split content by whitespace using string builder for efficiency
+		// Split content by whitespace using simple string operations
 		var parts []string
-		builder := newTinyStringBuilder(64)
-
-		for _, r := range str {
+		runes := []rune(str)
+		start := 0
+		
+		for i, r := range runes {
 			if r == ' ' || r == '\t' || r == '\n' || r == '\r' {
-				if builder.len() > 0 {
-					parts = append(parts, builder.string())
-					builder.reset()
+				if i > start {
+					parts = append(parts, string(runes[start:i]))
 				}
-			} else {
-				builder.writeRune(r)
+				start = i + 1
 			}
 		}
-		if builder.len() > 0 {
-			parts = append(parts, builder.string())
+		if start < len(runes) {
+			parts = append(parts, string(runes[start:]))
 		}
 
-		// Join parts with the separator using builder
-		builder.reset()
-		for i, part := range parts {
-			builder.writeString(part)
-			if i < len(parts)-1 {
-				builder.writeString(separator)
+		// Join parts with the separator using pre-allocated buffer
+		if len(parts) > 0 {
+			totalLen := 0
+			for _, part := range parts {
+				totalLen += len(part)
 			}
+			totalLen += (len(parts) - 1) * len(separator)
+			
+			buf := make([]byte, 0, totalLen)
+			for i, part := range parts {
+				buf = append(buf, part...)
+				if i < len(parts)-1 {
+					buf = append(buf, separator...)
+				}
+			}
+			t.setString(string(buf))
 		}
-		t.setString(builder.string())
 	}
 
 	return t

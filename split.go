@@ -9,6 +9,13 @@ package tinystring
 func Split(data string, separator ...string) (result []string) {
 	// If no separator provided, split by whitespace
 	if len(separator) == 0 {
+		// Estimate capacity: assume average word length of 5 characters
+		estimatedWords := len(data)/6 + 1
+		if estimatedWords < 2 {
+			estimatedWords = 2
+		}
+		result = make([]string, 0, estimatedWords)
+		
 		inWord := false
 		start := 0
 
@@ -45,12 +52,20 @@ func Split(data string, separator ...string) (result []string) {
 
 	// Handle empty separator
 	if sep == "" {
+		result = make([]string, 0, len(data))
 		for _, ch := range data {
 			result = append(result, string(ch))
 		}
 		return
 	}
 
+	// Estimate capacity based on separator length
+	estimatedParts := len(data)/len(sep) + 1
+	if estimatedParts < 2 {
+		estimatedParts = 2
+	}
+	result = make([]string, 0, estimatedParts)
+	
 	start := 0
 	sepLen := len(sep)
 

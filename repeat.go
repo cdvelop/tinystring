@@ -10,17 +10,18 @@ func (t *conv) Repeat(n int) *conv {
 		return t
 	}
 
-	// Preallocate the necessary memory
-	result := make([]byte, len(str)*n)
+	// Use builder from pool to reduce allocations
+	builder := getBuilder()
+	defer putBuilder(builder)
 
-	// Copy the first segment
-	copy(result, str)
+	// Pre-grow to exact size needed
+	builder.grow(len(str) * n)
 
-	// Duplicate the segment in the rest of the slice
-	for i := len(str); i < len(result); i *= 2 {
-		copy(result[i:], result[:i])
+	// Write string n times
+	for i := 0; i < n; i++ {
+		builder.writeString(str)
 	}
 
-	t.setString(string(result))
+	t.setString(string(builder.buf))
 	return t
 }

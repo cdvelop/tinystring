@@ -60,7 +60,15 @@ func TestConcurrentConvert(t *testing.T) {
 	select {
 	case <-done:
 		if counter.count > 0 {
-			t.Errorf("Failed with %d errors:\n%s", counter.count, Convert(counter.errs).Join("\n").String())
+			// Join errors using tinystring instead of strings.Join
+			var errorStr string
+			for i, err := range counter.errs {
+				if i > 0 {
+					errorStr += "\n"
+				}
+				errorStr += err
+			}
+			t.Errorf("Failed with %d errors:\n%s", counter.count, errorStr)
 		}
 	case <-time.After(5 * time.Second):
 		t.Fatal("Test timed out after 5 seconds")
