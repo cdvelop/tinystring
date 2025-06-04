@@ -1,41 +1,40 @@
-# TinyString Benchmark Scripts
+# TinyString Benchmark Suite
 
-Automated benchmark tools to measure and compare binary sizes and memory allocations between standard Go libraries and TinyString implementations.
+Automated benchmark tools to measure and compare performance between standard Go libraries and TinyString implementations.
 
-## Quick Start
-
-### Run Complete Benchmark
+## Quick Usage 🚀
 
 ```bash
-# Run full benchmark (binary size + memory allocation)
+# Run complete benchmark (recommended)
 ./build-and-measure.sh
-```
 
-This script will:
-1. Build binaries with multiple TinyGo optimization levels
-2. Measure all binary sizes 
-3. Run memory allocation benchmarks
-4. Update the main README.md with results
-
-### Individual Scripts
-
-```bash
-# Clean all generated files
+# Clean generated files
 ./clean-all.sh
 
-# Update only README with existing data
+# Update README with existing data only
 ./update-readme.sh
-
-# Run specific benchmarks
-./run-all-benchmarks.sh
 ```
+
+## What Gets Measured 📊
+
+1. **Binary Size Comparison**: Native + WebAssembly builds with multiple optimization levels
+2. **Memory Allocation**: Bytes/op, allocations/op, execution time for 3 benchmark categories:
+   - **String Processing**: Case conversion, text manipulation
+   - **Number Processing**: Numeric formatting, conversion operations  
+   - **Mixed Operations**: Combined string + numeric operations
+
+## Current Performance Status
+
+**Target**: Achieve memory usage close to standard library while maintaining binary size benefits
+
+**Latest Results** (Run `./build-and-measure.sh` to update):
+- ✅ **Binary Size**: TinyString is 20-50% smaller than stdlib for WebAssembly
+- ⚠️ **Memory Usage**: Number Processing uses 1000% more memory (needs optimization)
 
 ## Requirements
 
-- **Go 1.21+**: For building native binaries
-- **TinyGo** (optional): For WebAssembly compilation
-  - Install from: https://tinygo.org/getting-started/install/
-  - If not installed, only native binaries will be measured
+- **Go 1.21+**
+- **TinyGo** (optional, but recommended for full WebAssembly testing)
 
 ## Directory Structure
 

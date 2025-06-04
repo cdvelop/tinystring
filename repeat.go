@@ -9,19 +9,14 @@ func (t *conv) Repeat(n int) *conv {
 		t.setString("")
 		return t
 	}
-
-	// Use builder from pool to reduce allocations
-	builder := getBuilder()
-	defer putBuilder(builder)
-
-	// Pre-grow to exact size needed
-	builder.grow(len(str) * n)
+	// Use pre-allocated buffer for better performance
+	buf := make([]byte, 0, len(str)*n)
 
 	// Write string n times
 	for i := 0; i < n; i++ {
-		builder.writeString(str)
+		buf = append(buf, str...)
 	}
 
-	t.setString(string(builder.buf))
+	t.setString(string(buf))
 	return t
 }

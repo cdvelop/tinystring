@@ -101,26 +101,40 @@ func convInit(v any) *conv {
 func (t *conv) transformWithMapping(mappings []charMapping) *conv {
 	str := t.getString()
 
-	// Use pooled builder for efficient string construction
-	builder := getBuilder()
-	defer putBuilder(builder)
-
-	// Pre-allocate builder with exact string length
-	builder.grow(len(str))
+	// Use pre-allocated buffer for efficient string construction
+	buf := make([]byte, 0, len(str)*2) // Allocate extra space for UTF-8 encoding
 
 	hasChanges := false
 	for _, r := range str {
 		mapped := false
 		for _, mapping := range mappings {
 			if r == mapping.from {
-				builder.writeRune(mapping.to)
+				// Manual UTF-8 encoding to avoid imports
+				if mapping.to < 0x80 {
+					buf = append(buf, byte(mapping.to))
+				} else if mapping.to < 0x800 {
+					buf = append(buf, byte(0xC0|(mapping.to>>6)), byte(0x80|(mapping.to&0x3F)))
+				} else if mapping.to < 0x10000 {
+					buf = append(buf, byte(0xE0|(mapping.to>>12)), byte(0x80|((mapping.to>>6)&0x3F)), byte(0x80|(mapping.to&0x3F)))
+				} else {
+					buf = append(buf, byte(0xF0|(mapping.to>>18)), byte(0x80|((mapping.to>>12)&0x3F)), byte(0x80|((mapping.to>>6)&0x3F)), byte(0x80|(mapping.to&0x3F)))
+				}
 				mapped = true
 				hasChanges = true
 				break
 			}
 		}
 		if !mapped {
-			builder.writeRune(r)
+			// Manual UTF-8 encoding for unmapped runes
+			if r < 0x80 {
+				buf = append(buf, byte(r))
+			} else if r < 0x800 {
+				buf = append(buf, byte(0xC0|(r>>6)), byte(0x80|(r&0x3F)))
+			} else if r < 0x10000 {
+				buf = append(buf, byte(0xE0|(r>>12)), byte(0x80|((r>>6)&0x3F)), byte(0x80|(r&0x3F)))
+			} else {
+				buf = append(buf, byte(0xF0|(r>>18)), byte(0x80|((r>>12)&0x3F)), byte(0x80|((r>>6)&0x3F)), byte(0x80|(r&0x3F)))
+			}
 		}
 	}
 
@@ -129,7 +143,7 @@ func (t *conv) transformWithMapping(mappings []charMapping) *conv {
 		return t
 	}
 
-	newStr := string(builder.buf)
+	newStr := string(buf)
 
 	// Always modify in place to avoid creating new instances
 	t.setString(newStr)

@@ -517,43 +517,35 @@ func (t *conv) formatIntInternal(val int64, base int) {
 		return
 	}
 
-	// Use pooled builder for conversion
-	builder := getBuilder()
-	defer putBuilder(builder)
+	// Use fixed buffer instead of pooled builder
+	var buf [64]byte // Max int64 needs 20 digits + sign, base 2 needs 64 digits
+	i := len(buf)    // Start from the end
 
 	negative := val < 0
 	if negative {
 		val = -val
 	}
 
-	// Convert digits in reverse order
+	// Convert digits in reverse order directly into buffer
 	for val > 0 {
 		digit := val % int64(base)
+		i--
 		if digit < 10 {
-			builder.writeByte(byte('0' + digit))
+			buf[i] = byte('0' + digit)
 		} else {
-			builder.writeByte(byte('a' + digit - 10))
+			buf[i] = byte('a' + digit - 10)
 		}
 		val /= int64(base)
 	}
 
 	if negative {
-		builder.writeByte('-')
+		i--
+		buf[i] = '-'
 	}
 
-	// Reverse the string since we built it backwards
-	buf := builder.buf
-	if len(buf) > 0 {
-		for i, j := 0, len(buf)-1; i < j; i, j = i+1, j-1 {
-			buf[i], buf[j] = buf[j], buf[i]
-		}
-	}
-
-	// Create a copy of the string before returning builder to pool
-	// This avoids corruption when the builder is reused
-	result := string(buf)
-	t.cachedString = result
-	t.stringVal = result
+	// Create string from the used portion of buffer
+	t.cachedString = string(buf[i:])
+	t.stringVal = t.cachedString
 }
 
 // intToStringOptimizedInternal converts int64 to string with minimal allocations and stores in cachedString
@@ -589,31 +581,25 @@ func (t *conv) formatUintInternal(val uint64, base int) {
 		return
 	}
 
-	// Use pooled builder for conversion
-	builder := getBuilder()
-	defer putBuilder(builder)
+	// Use fixed buffer instead of pooled builder
+	var buf [64]byte // Max uint64 needs 20 digits, base 2 needs 64 digits
+	i := len(buf)    // Start from the end
 
-	// Convert digits in reverse order
+	// Convert digits in reverse order directly into buffer
 	for val > 0 {
 		digit := val % uint64(base)
+		i--
 		if digit < 10 {
-			builder.writeByte(byte('0' + digit))
+			buf[i] = byte('0' + digit)
 		} else {
-			builder.writeByte(byte('a' + digit - 10))
+			buf[i] = byte('a' + digit - 10)
 		}
 		val /= uint64(base)
 	}
 
-	// Reverse the string since we built it backwards
-	buf := builder.buf
-	for i, j := 0, len(buf)-1; i < j; i, j = i+1, j-1 {
-		buf[i], buf[j] = buf[j], buf[i]
-	}
-
-	// Create a copy of the string before returning builder to pool
-	result := string(builder.buf)
-	t.cachedString = result
-	t.stringVal = result
+	// Create string from the used portion of buffer
+	t.cachedString = string(buf[i:])
+	t.stringVal = t.cachedString
 }
 
 // uintToStringOptimizedInternal converts uint64 to string with minimal allocations and stores in cachedString
@@ -669,10 +655,6 @@ func (t *conv) uintToStringWithBaseInternal(number uint64, base int) {
 
 // formatFloatInternal converts float to string and stores in cachedString
 func (t *conv) formatFloatInternal(val float64) {
-	// Use pooled builder for conversion
-	builder := getBuilder()
-	defer putBuilder(builder)
-
 	// Handle special cases
 	if val != val { // NaN
 		t.cachedString = "NaN"
@@ -685,18 +667,22 @@ func (t *conv) formatFloatInternal(val float64) {
 		return
 	}
 
+	// Use fixed buffer instead of pooled builder
+	var buf [32]byte // Should be enough for most float representations
+	i := 0
+
 	negative := val < 0
 	if negative {
 		val = -val
-		builder.writeByte('-')
+		buf[i] = '-'
+		i++
 	}
 
 	// Handle infinity
 	if val > 1e308 {
-		builder.writeString("Inf")
-		result := string(builder.buf)
-		t.cachedString = result
-		t.stringVal = result
+		copy(buf[i:], "Inf")
+		t.cachedString = string(buf[:i+3])
+		t.stringVal = t.cachedString
 		return
 	}
 
@@ -704,28 +690,32 @@ func (t *conv) formatFloatInternal(val float64) {
 	intPart := int64(val)
 	fracPart := val - float64(intPart)
 
-	// Convert integer part
+	// Convert integer part directly into buffer
 	if intPart == 0 {
-		builder.writeByte('0')
+		buf[i] = '0'
+		i++
 	} else {
-		// Reuse the integer conversion logic
+		// Convert integer part to string using our optimized method
 		tempConv := &conv{}
 		tempConv.formatIntInternal(intPart, 10)
-		builder.writeString(tempConv.cachedString)
+		intStr := tempConv.cachedString
+		copy(buf[i:], intStr)
+		i += len(intStr)
 	}
 
 	// Add decimal point and fractional part if needed
 	if fracPart > 0 {
-		builder.writeByte('.')
-		// Use improved fractional part handling to match formatFloatToString behavior
+		buf[i] = '.'
+		i++
+
 		// Use 6 digits for better precision control
 		multiplier := 1e6
 		fracPartInt := int64(fracPart*multiplier + 0.5)
 
-		// Convert to string using static buffer
+		// Convert to digits directly into buffer
 		var fracDigits [6]byte
-		for i := 5; i >= 0; i-- {
-			fracDigits[i] = byte('0' + fracPartInt%10)
+		for j := 5; j >= 0; j-- {
+			fracDigits[j] = byte('0' + fracPartInt%10)
 			fracPartInt /= 10
 		}
 
@@ -735,14 +725,14 @@ func (t *conv) formatFloatInternal(val float64) {
 			end--
 		}
 		if end >= 0 {
-			builder.buf = append(builder.buf, fracDigits[:end+1]...)
+			copy(buf[i:], fracDigits[:end+1])
+			i += end + 1
 		}
 	}
 
-	// Create a copy of the string before returning builder to pool
-	result := string(builder.buf)
-	t.cachedString = result
-	t.stringVal = result
+	// Create string from the used portion of buffer
+	t.cachedString = string(buf[:i])
+	t.stringVal = t.cachedString
 }
 
 // parseIntInternal parses string to int with specified base

@@ -19,30 +19,26 @@ func (t *conv) Replace(oldAny, newAny any, n ...int) *conv {
 	if len(n) > 0 {
 		maxReplacements = n[0]
 	}
-
-	// Use pooled string builder for efficient string construction
-	builder := getBuilder()
-	defer putBuilder(builder)
-
-	builder.grow(len(str) + len(newStr)*10) // Pre-allocate
+	// Use pre-allocated buffer for efficient string construction
+	buf := make([]byte, 0, len(str)+len(newStr)*10) // Pre-allocate
 
 	replacements := 0
 	for i := 0; i < len(str); i++ {
 		// Check for occurrence of old in the string and if we haven't reached the maximum replacements
 		if i+len(old) <= len(str) && str[i:i+len(old)] == old && (maxReplacements < 0 || replacements < maxReplacements) {
 			// Add the new word to the result
-			builder.writeString(newStr)
+			buf = append(buf, newStr...)
 			// Skip the length of the old word in the original string
 			i += len(old) - 1
 			// Increment replacement counter
 			replacements++
 		} else {
 			// Add the current character to the result
-			builder.writeByte(str[i])
+			buf = append(buf, str[i])
 		}
 	}
 
-	t.setString(string(builder.buf))
+	t.setString(string(buf))
 	return t
 }
 
