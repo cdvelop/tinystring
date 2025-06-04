@@ -1,5 +1,28 @@
 package tinystring
 
+// Common string constants to avoid allocations for frequently used values
+const (
+	emptyString = ""
+	trueString  = "true"
+	falseString = "false"
+	zeroString  = "0"
+	oneString   = "1"
+)
+
+// Small number lookup table to avoid allocations for small integers
+var smallInts = [...]string{
+	"0", "1", "2", "3", "4", "5", "6", "7", "8", "9",
+	"10", "11", "12", "13", "14", "15", "16", "17", "18", "19",
+	"20", "21", "22", "23", "24", "25", "26", "27", "28", "29",
+	"30", "31", "32", "33", "34", "35", "36", "37", "38", "39",
+	"40", "41", "42", "43", "44", "45", "46", "47", "48", "49",
+	"50", "51", "52", "53", "54", "55", "56", "57", "58", "59",
+	"60", "61", "62", "63", "64", "65", "66", "67", "68", "69",
+	"70", "71", "72", "73", "74", "75", "76", "77", "78", "79",
+	"80", "81", "82", "83", "84", "85", "86", "87", "88", "89",
+	"90", "91", "92", "93", "94", "95", "96", "97", "98", "99",
+}
+
 // ToInt converts the conv content to an integer with optional base specification.
 //
 // Parameters:
@@ -484,4 +507,394 @@ func (t *conv) stringToNumberHelper(base int) {
 
 	t.uintVal = result
 	t.valType = valTypeUint
+}
+
+// formatIntInternal converts integer to string and stores in cachedString
+func (t *conv) formatIntInternal(val int64, base int) {
+	if val == 0 {
+		t.cachedString = "0"
+		t.stringVal = t.cachedString
+		return
+	}
+
+	// Use pooled builder for conversion
+	builder := getBuilder()
+	defer putBuilder(builder)
+
+	negative := val < 0
+	if negative {
+		val = -val
+	}
+
+	// Convert digits in reverse order
+	for val > 0 {
+		digit := val % int64(base)
+		if digit < 10 {
+			builder.writeByte(byte('0' + digit))
+		} else {
+			builder.writeByte(byte('a' + digit - 10))
+		}
+		val /= int64(base)
+	}
+
+	if negative {
+		builder.writeByte('-')
+	}
+
+	// Reverse the string since we built it backwards
+	buf := builder.buf
+	for i, j := 0, len(buf)-1; i < j; i, j = i+1, j-1 {
+		buf[i], buf[j] = buf[j], buf[i]
+	}
+
+	t.cachedString = builder.string()
+	t.stringVal = t.cachedString
+}
+
+// intToStringOptimizedInternal converts int64 to string with minimal allocations and stores in cachedString
+func (t *conv) intToStringOptimizedInternal(val int64) {
+	// Handle common small numbers using lookup table
+	if val >= 0 && val < int64(len(smallInts)) {
+		t.cachedString = smallInts[val]
+		t.stringVal = t.cachedString
+		return
+	}
+
+	// Handle special cases
+	if val == 0 {
+		t.cachedString = zeroString
+		t.stringVal = t.cachedString
+		return
+	}
+	if val == 1 {
+		t.cachedString = oneString
+		t.stringVal = t.cachedString
+		return
+	}
+
+	// Fall back to standard conversion for larger numbers
+	t.formatIntInternal(val, 10)
+}
+
+// formatUintInternal converts unsigned integer to string and stores in cachedString
+func (t *conv) formatUintInternal(val uint64, base int) {
+	if val == 0 {
+		t.cachedString = "0"
+		t.stringVal = t.cachedString
+		return
+	}
+
+	// Use pooled builder for conversion
+	builder := getBuilder()
+	defer putBuilder(builder)
+
+	// Convert digits in reverse order
+	for val > 0 {
+		digit := val % uint64(base)
+		if digit < 10 {
+			builder.writeByte(byte('0' + digit))
+		} else {
+			builder.writeByte(byte('a' + digit - 10))
+		}
+		val /= uint64(base)
+	}
+
+	// Reverse the string since we built it backwards
+	buf := builder.buf
+	for i, j := 0, len(buf)-1; i < j; i, j = i+1, j-1 {
+		buf[i], buf[j] = buf[j], buf[i]
+	}
+
+	t.cachedString = builder.string()
+	t.stringVal = t.cachedString
+}
+
+// uintToStringOptimizedInternal converts uint64 to string with minimal allocations and stores in cachedString
+func (t *conv) uintToStringOptimizedInternal(val uint64) {
+	// Handle common small numbers using lookup table
+	if val < uint64(len(smallInts)) {
+		t.cachedString = smallInts[val]
+		t.stringVal = t.cachedString
+		return
+	}
+
+	// Handle special cases
+	if val == 0 {
+		t.cachedString = zeroString
+		t.stringVal = t.cachedString
+		return
+	}
+	if val == 1 {
+		t.cachedString = oneString
+		t.stringVal = t.cachedString
+		return
+	}
+
+	// Fall back to standard conversion for larger numbers
+	t.uintToStringWithBaseInternal(val, 10)
+}
+
+// uintToStringWithBaseInternal converts unsigned integer to string with specified base
+// and stores the result in the conv struct fields
+func (t *conv) uintToStringWithBaseInternal(number uint64, base int) {
+	if number == 0 {
+		t.cachedString = "0"
+		t.stringVal = t.cachedString
+		return
+	}
+
+	// Max uint64 is 18446744073709551615, which has 20 digits.
+	// For base 2, uint64 needs up to 64 bits.
+	var buf [64]byte // Max buffer size for uint64 in base 2
+	i := len(buf)    // Start from the end of the buffer
+
+	const digitChars = "0123456789abcdefghijklmnopqrstuvwxyz"
+
+	for number > 0 {
+		i--
+		buf[i] = digitChars[number%uint64(base)]
+		number /= uint64(base)
+	}
+
+	t.cachedString = unsafeString(buf[i:])
+	t.stringVal = t.cachedString
+}
+
+// formatFloatInternal converts float to string and stores in cachedString
+func (t *conv) formatFloatInternal(val float64) {
+	// Use pooled builder for conversion
+	builder := getBuilder()
+	defer putBuilder(builder)
+
+	// Handle special cases
+	if val != val { // NaN
+		t.cachedString = "NaN"
+		t.stringVal = t.cachedString
+		return
+	}
+	if val == 0 {
+		t.cachedString = "0"
+		t.stringVal = t.cachedString
+		return
+	}
+
+	negative := val < 0
+	if negative {
+		val = -val
+		builder.writeByte('-')
+	}
+
+	// Handle infinity
+	if val > 1e308 {
+		builder.writeString("Inf")
+		t.cachedString = builder.string()
+		t.stringVal = t.cachedString
+		return
+	}
+
+	// Extract integer and fractional parts
+	intPart := int64(val)
+	fracPart := val - float64(intPart)
+
+	// Convert integer part
+	if intPart == 0 {
+		builder.writeByte('0')
+	} else {
+		// Reuse the integer conversion logic
+		tempConv := &conv{}
+		tempConv.formatIntInternal(intPart, 10)
+		builder.writeString(tempConv.cachedString)
+	}
+
+	// Add decimal point and fractional part if needed
+	if fracPart > 0 {
+		builder.writeByte('.')
+		// Use improved fractional part handling to match formatFloatToString behavior
+		// Use 6 digits for better precision control
+		multiplier := 1e6
+		fracPartInt := int64(fracPart*multiplier + 0.5)
+
+		// Convert to string
+		fracDigits := make([]byte, 6)
+		for i := 5; i >= 0; i-- {
+			fracDigits[i] = byte('0' + fracPartInt%10)
+			fracPartInt /= 10
+		}
+
+		// Trim trailing zeros
+		end := 5
+		for end >= 0 && fracDigits[end] == '0' {
+			end--
+		}
+		if end >= 0 {
+			builder.buf = append(builder.buf, fracDigits[:end+1]...)
+		}
+	}
+
+	t.cachedString = builder.string()
+	t.stringVal = t.cachedString
+}
+
+// parseIntInternal parses string to int with specified base
+// and stores result in conv struct fields
+func (t *conv) parseIntInternal(input string, base int) error {
+	if input == "" {
+		return newEmptyStringError()
+	}
+
+	isNegative := false
+	if input[0] == '-' {
+		if base != 10 {
+			return newError(errInvalidBase, "negative numbers are not supported for non-decimal bases")
+		}
+		isNegative = true
+		input = input[1:]
+	}
+
+	number, err := t.parseNumberHelperInternal(input, base)
+	if err != nil {
+		return err
+	}
+
+	if isNegative {
+		t.intVal = -int64(number)
+	} else {
+		t.intVal = int64(number)
+	}
+	return nil
+}
+
+// parseFloatInternal parses string to float64
+// and stores result in conv struct fields
+func (t *conv) parseFloatInternal(input string) error {
+	if input == "" {
+		return newEmptyStringError()
+	}
+
+	// Handle special cases using math constants
+	switch input {
+	case "NaN", "nan":
+		// Use a variable to create NaN since direct division causes compile error
+		var zero float64 = 0.0
+		t.floatVal = zero / zero // NaN
+		return nil
+	case "Inf", "+Inf", "inf", "+inf":
+		// Use a variable to create +Inf
+		var one float64 = 1.0
+		var zero float64 = 0.0
+		t.floatVal = one / zero // +Inf
+		return nil
+	case "-Inf", "-inf":
+		// Use a variable to create -Inf
+		var negone float64 = -1.0
+		var zero float64 = 0.0
+		t.floatVal = negone / zero // -Inf
+		return nil
+	}
+
+	// Simple manual parsing for common cases
+	negative := false
+	if input[0] == '-' {
+		negative = true
+		input = input[1:]
+	} else if input[0] == '+' {
+		input = input[1:]
+	}
+
+	// Find decimal point
+	dotIndex := -1
+	for i, ch := range input {
+		if ch == '.' {
+			dotIndex = i
+			break
+		}
+	}
+
+	var integerPart, fractionalPart uint64
+	var err error
+
+	if dotIndex == -1 {
+		// No decimal point, parse as integer
+		integerPart, err = t.parseNumberHelperInternal(input, 10)
+		if err != nil {
+			return err
+		}
+	} else {
+		// Parse integer part
+		if dotIndex > 0 {
+			integerPart, err = t.parseNumberHelperInternal(input[:dotIndex], 10)
+			if err != nil {
+				return err
+			}
+		}
+
+		// Parse fractional part
+		if dotIndex+1 < len(input) {
+			fractionalPart, err = t.parseNumberHelperInternal(input[dotIndex+1:], 10)
+			if err != nil {
+				return err
+			}
+		}
+	}
+
+	// Convert to float64
+	result := float64(integerPart)
+	if dotIndex != -1 && fractionalPart > 0 {
+		// Calculate fractional part
+		fractionalDigits := len(input) - dotIndex - 1
+		divisor := float64(1)
+		for i := 0; i < fractionalDigits; i++ {
+			divisor *= 10
+		}
+		result += float64(fractionalPart) / divisor
+	}
+
+	if negative {
+		result = -result
+	}
+
+	t.floatVal = result
+	return nil
+}
+
+// parseNumberHelperInternal is an internal helper for parsing digits
+// and stores result in conv struct fields
+func (t *conv) parseNumberHelperInternal(input string, base int) (uint64, error) {
+	if input == "" {
+		return 0, newEmptyStringError()
+	}
+
+	if base < 2 || base > 36 {
+		return 0, newError(errInvalidBase, "base must be between 2 and 36")
+	}
+
+	var result uint64
+
+	for _, ch := range input {
+		var digit int
+
+		switch {
+		case '0' <= ch && ch <= '9':
+			digit = int(ch - '0')
+		case 'a' <= ch && ch <= 'z':
+			digit = int(ch - 'a' + 10)
+		case 'A' <= ch && ch <= 'Z':
+			digit = int(ch - 'A' + 10)
+		default:
+			return 0, newError(errInvalidNumber, "invalid character in number")
+		}
+
+		if digit >= base {
+			return 0, newError(errInvalidNumber, "digit out of range for base")
+		}
+
+		// Check for overflow
+		if result > (^uint64(0)-uint64(digit))/uint64(base) {
+			return 0, newError(errOverflow, "number too large")
+		}
+
+		result = result*uint64(base) + uint64(digit)
+	}
+
+	return result, nil
 }

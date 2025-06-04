@@ -200,3 +200,76 @@ func TestConversions(t *testing.T) {
 		})
 	}
 }
+
+func TestConvertToStringOptimized(t *testing.T) {
+	testCases := []struct {
+		name     string
+		input    any
+		expected string
+	}{
+		{"nil", nil, ""},
+		{"empty string", "", ""},
+		{"string", "hello", "hello"},
+		{"int zero", 0, "0"},
+		{"int one", 1, "1"},
+		{"int small", 42, "42"},
+		{"int negative", -10, "-10"},
+		{"int large", 12345678, "12345678"},
+		{"int8", int8(8), "8"},
+		{"int16", int16(16), "16"},
+		{"int32", int32(32), "32"},
+		{"int64", int64(64), "64"},
+		{"uint", uint(5), "5"},
+		{"uint8", uint8(8), "8"},
+		{"uint16", uint16(16), "16"},
+		{"uint32", uint32(32), "32"},
+		{"uint64", uint64(64), "64"},
+		{"bool true", true, "true"},
+		{"bool false", false, "false"},
+		{"float32 zero", float32(0), "0"},
+		{"float32 one", float32(1), "1"},
+		{"float32", float32(3.14), "3.14"},
+		{"float64 zero", 0.0, "0"},
+		{"float64 one", 1.0, "1"},
+		{"float64", 3.14159, "3.14159"},
+	}
+
+	for _, tc := range testCases {
+		t.Run(tc.name, func(t *testing.T) {
+			result := Convert(tc.input).String()
+			if result != tc.expected {
+				t.Errorf("Convert(%v).String() = %q, want %q", tc.input, result, tc.expected)
+			}
+		})
+	}
+}
+
+// Test to ensure that repeated conversions return the expected value
+func TestConvertStringConsistency(t *testing.T) {
+	// For small integers
+	s1 := Convert(42).String()
+	s2 := Convert(42).String()
+
+	if s1 != "42" || s2 != "42" {
+		t.Errorf("Expected Convert(42).String() to return \"42\"")
+	}
+
+	// For boolean values
+	b1 := Convert(true).String()
+	b2 := Convert(true).String()
+
+	if b1 != "true" || b2 != "true" {
+		t.Errorf("Expected Convert(true).String() to return \"true\"")
+	}
+
+	// For zero value
+	z1 := Convert(0).String()
+	z2 := Convert(0).String()
+
+	if z1 != "0" || z2 != "0" {
+		t.Errorf("Expected Convert(0).String() to return \"0\"")
+	}
+
+	// Prueba adicional para verificar la consistencia
+	t.Log("Tests for Convert().String() consistency passed")
+}

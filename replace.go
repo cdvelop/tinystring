@@ -3,12 +3,11 @@ package tinystring
 // Replace replaces up to n occurrences of old with new in the conv content
 // If n < 0, there is no limit on the number of replacements
 // eg: "hello world" with old "world" and new "universe" will return "hello universe"
-// Old and new can be any type, they will be converted to string using anyToString
+// Old and new can be any type, they will be converted to string using Convert
 func (t *conv) Replace(oldAny, newAny any, n ...int) *conv {
-	// Convert parameters to strings using the standalone anyToString for now
-	// TODO: migrate to use conv methods once all migrations are complete
-	old := anyToString(oldAny)
-	newStr := anyToString(newAny)
+	// Convert parameters to strings using the consistent Convert pattern
+	old := Convert(oldAny).String()
+	newStr := Convert(newAny).String()
 
 	str := t.getString()
 	if len(old) == 0 || str == "" {
