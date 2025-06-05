@@ -11,6 +11,7 @@ const (
 	valTypeBool
 	valTypeStringSlice
 	valTypeStringPtr
+	valTypeErr
 )
 
 type conv struct {
@@ -22,11 +23,11 @@ type conv struct {
 	stringSliceVal    []string
 	stringPtrVal      *string
 	valType           valType
-	err               error
 	roundDown         bool
 	separator         string
-	cachedString      string  // Cache for string conversion to avoid repeated work
-	lastConvertedType valType // Track last converted type for cache validation
+	cachedString      string    // Cache for string conversion to avoid repeated work
+	lastConvertedType valType   // Track last converted type for cache validation
+	err               errorType // Error type from error.go
 }
 
 // struct to store mappings to remove accents and diacritics
@@ -51,51 +52,77 @@ func Convert(v any) *conv {
 // convInit initializes a new conv struct with any type of value for string,bool and number manipulation.
 // This is the centralized initialization function shared by Convert(), Format(), Sprintf(), etc.
 // Uses optimized union-type storage to avoid unnecessary string conversions.
-func convInit(v any) *conv {
-	// Handle nil case explicitly
-	if v == nil {
-		return &conv{stringVal: "", valType: valTypeString}
-	}
+func convInit(value any) *conv {
+	// Initialize conv struct
+	c := &conv{}
 
-	switch val := v.(type) {
-	case []string:
-		return &conv{stringSliceVal: val, valType: valTypeStringSlice}
-	case *string:
-		return &conv{stringVal: *val, stringPtrVal: val, valType: valTypeStringPtr}
-	case string:
-		return &conv{stringVal: val, valType: valTypeString}
-	case int:
-		return &conv{intVal: int64(val), valType: valTypeInt}
-	case int8:
-		return &conv{intVal: int64(val), valType: valTypeInt}
-	case int16:
-		return &conv{intVal: int64(val), valType: valTypeInt}
-	case int32:
-		return &conv{intVal: int64(val), valType: valTypeInt}
-	case int64:
-		return &conv{intVal: val, valType: valTypeInt}
-	case uint:
-		return &conv{uintVal: uint64(val), valType: valTypeUint}
-	case uint8:
-		return &conv{uintVal: uint64(val), valType: valTypeUint}
-	case uint16:
-		return &conv{uintVal: uint64(val), valType: valTypeUint}
-	case uint32:
-		return &conv{uintVal: uint64(val), valType: valTypeUint}
-	case uint64:
-		return &conv{uintVal: val, valType: valTypeUint}
-	case float32:
-		return &conv{floatVal: float64(val), valType: valTypeFloat}
-	case float64:
-		return &conv{floatVal: val, valType: valTypeFloat}
-	case bool:
-		return &conv{boolVal: val, valType: valTypeBool}
-	default:
-		// Fallback to string conversion for unknown types - use internal method to avoid allocation
-		c := &conv{valType: valTypeString}
-		c.anyToStringInternal(v)
+	// Handle empty case or nil first value
+	if value == nil {
+		c.stringVal = ""
+		c.valType = valTypeString
 		return c
 	}
+
+	switch val := value.(type) {
+	case string:
+		c.stringVal = val
+		c.valType = valTypeString
+	case []string:
+		c.stringSliceVal = val
+		c.valType = valTypeStringSlice
+	case *string:
+		c.stringVal = *val
+		c.stringPtrVal = val
+		c.valType = valTypeStringPtr
+	case int:
+		c.intVal = int64(val)
+		c.valType = valTypeInt
+	case int8:
+		c.intVal = int64(val)
+		c.valType = valTypeInt
+	case int16:
+		c.intVal = int64(val)
+		c.valType = valTypeInt
+	case int32:
+		c.intVal = int64(val)
+		c.valType = valTypeInt
+	case int64:
+		c.intVal = val
+		c.valType = valTypeInt
+	case uint:
+		c.uintVal = uint64(val)
+		c.valType = valTypeUint
+	case uint8:
+		c.uintVal = uint64(val)
+		c.valType = valTypeUint
+	case uint16:
+		c.uintVal = uint64(val)
+		c.valType = valTypeUint
+	case uint32:
+		c.uintVal = uint64(val)
+		c.valType = valTypeUint
+	case uint64:
+		c.uintVal = val
+		c.valType = valTypeUint
+	case float32:
+		c.floatVal = float64(val)
+		c.valType = valTypeFloat
+	case float64:
+		c.floatVal = val
+		c.valType = valTypeFloat
+	case bool:
+		c.boolVal = val
+		c.valType = valTypeBool
+	case errorType:
+		c.err = val
+		c.valType = valTypeErr
+	default:
+		// Fallback to string conversion for unknown types - use internal method to avoid allocation
+		c.valType = valTypeString
+		c.anyToStringInternal(value)
+	}
+
+	return c
 }
 
 func (t *conv) transformWithMapping(mappings []charMapping) *conv {
@@ -179,7 +206,10 @@ func (t *conv) String() string {
 
 // StringError returns the content of the conv along with any error that occurred during processing
 func (t *conv) StringError() (string, error) {
-	return t.getString(), t.err
+	if t.valType == valTypeErr {
+		return t.getString(), t
+	}
+	return t.getString(), nil
 }
 
 // splitIntoWordsLocal returns words as local variable without storing in struct field
@@ -286,7 +316,7 @@ func transformSingleRune(r rune, mappings []charMapping) (rune, bool) {
 // getString converts the current value to string only when needed
 // Optimized with string caching to avoid repeated conversions
 func (t *conv) getString() string {
-	if t.err != nil {
+	if t.valType == valTypeErr {
 		return ""
 	}
 
@@ -315,13 +345,13 @@ func (t *conv) getString() string {
 		}
 	case valTypeInt:
 		// Use internal method instead of external function
-		t.formatIntInternal(t.intVal, 10)
+		t.formatIntInternal(10)
 	case valTypeUint:
 		// Use internal method instead of external function
-		t.formatUintInternal(t.uintVal, 10)
+		t.formatUintInternal(10)
 	case valTypeFloat:
 		// Use internal method instead of external function
-		t.formatFloatInternal(t.floatVal)
+		t.formatFloatInternal()
 	case valTypeBool:
 		if t.boolVal {
 			t.cachedString = "true"
@@ -394,35 +424,53 @@ func (t *conv) joinSlice(separator string) string {
 // These methods modify the conv struct directly instead of returning values
 
 // anyToStringInternal converts any type to string and stores in cachedString
+// default set to "" if no conversion is possible
+// supports int, uint, float, bool, string and error types
 func (t *conv) anyToStringInternal(v any) {
 	switch val := v.(type) {
+	case errorType:
+		t.err = val
+	case error:
+		t.err = errorType(val.Error())
 	case string:
 		t.stringVal = val
 		t.cachedString = val
 	case int:
-		t.formatIntInternal(int64(val), 10)
+		t.intVal = int64(val)
+		t.formatIntInternal(10)
 	case int8:
-		t.formatIntInternal(int64(val), 10)
+		t.intVal = int64(val)
+		t.formatIntInternal(10)
 	case int16:
-		t.formatIntInternal(int64(val), 10)
+		t.intVal = int64(val)
+		t.formatIntInternal(10)
 	case int32:
-		t.formatIntInternal(int64(val), 10)
+		t.intVal = int64(val)
+		t.formatIntInternal(10)
 	case int64:
-		t.formatIntInternal(val, 10)
+		t.intVal = val
+		t.formatIntInternal(10)
 	case uint:
-		t.formatUintInternal(uint64(val), 10)
+		t.uintVal = uint64(val)
+		t.formatUintInternal(10)
 	case uint8:
-		t.formatUintInternal(uint64(val), 10)
+		t.uintVal = uint64(val)
+		t.formatUintInternal(10)
 	case uint16:
-		t.formatUintInternal(uint64(val), 10)
+		t.uintVal = uint64(val)
+		t.formatUintInternal(10)
 	case uint32:
-		t.formatUintInternal(uint64(val), 10)
+		t.uintVal = uint64(val)
+		t.formatUintInternal(10)
 	case uint64:
-		t.formatUintInternal(val, 10)
+		t.uintVal = val
+		t.formatUintInternal(10)
 	case float32:
-		t.formatFloatInternal(float64(val))
+		t.floatVal = float64(val)
+		t.formatFloatInternal()
 	case float64:
-		t.formatFloatInternal(val)
+		t.floatVal = val
+		t.formatFloatInternal()
 	case bool:
 		if val {
 			t.cachedString = "true"
@@ -430,8 +478,9 @@ func (t *conv) anyToStringInternal(v any) {
 			t.cachedString = "false"
 		}
 		t.stringVal = t.cachedString
+
 	default:
-		t.cachedString = "unknown"
+		t.cachedString = ""
 		t.stringVal = t.cachedString
 	}
 }

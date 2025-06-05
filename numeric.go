@@ -69,30 +69,36 @@ var smallInts = [...]string{
 // Note: Negative numbers are only supported for base 10. For other bases,
 // negative signs will result in an error.
 func (t *conv) ToInt(base ...int) (int, error) {
-	if t.err != nil {
-		return 0, t.err
+	if t.err != "" {
+		return 0, t
 	}
 
 	b := 10 // default base
 	if len(base) > 0 {
 		b = base[0]
 	}
+
+	// Save the original state
+	originalStringVal := t.stringVal
+	originalValType := t.valType
+
 	// First try to parse as int directly
 	t.stringToInt(b)
-	if t.err == nil {
+	if t.err == "" {
 		return int(t.intVal), nil
 	}
-	intErr := t.err
 
-	// If that fails, try to parse as float and then convert to int (for truncation)
-	t.err = nil // Reset error for float parsing
+	// If that fails, restore state and try to parse as float and then convert to int (for truncation)
+	t.err = "" // Reset error for float parsing
+	t.stringVal = originalStringVal
+	t.valType = originalValType
 	t.stringToFloat()
-	if t.err == nil {
+	if t.err == "" {
 		return int(t.floatVal), nil
 	}
 
 	// Return the original int parsing error
-	return 0, intErr
+	return 0, t
 }
 
 // ToInt64 converts the conv content to a 64-bit integer with optional base specification.
@@ -146,8 +152,8 @@ func (t *conv) ToInt(base ...int) (int, error) {
 // Note: This method provides the full range of 64-bit integers, which is useful
 // for large numeric values that exceed the range of regular int type.
 func (t *conv) ToInt64(base ...int) (int64, error) {
-	if t.err != nil {
-		return 0, t.err
+	if t.err != "" {
+		return 0, t
 	}
 
 	b := 10 // default base
@@ -155,22 +161,27 @@ func (t *conv) ToInt64(base ...int) (int64, error) {
 		b = base[0]
 	}
 
+	// Save the original state
+	originalStringVal := t.stringVal
+	originalValType := t.valType
+
 	// First try to parse as int64 directly
 	t.stringToInt64(b)
-	if t.err == nil {
+	if t.err == "" {
 		return t.intVal, nil
 	}
-	int64Err := t.err
 
-	// If that fails, try to parse as float and then convert to int64 (for truncation)
-	t.err = nil // Reset error for float parsing
+	// If that fails, restore state and try to parse as float and then convert to int64 (for truncation)
+	t.err = "" // Reset error for float parsing
+	t.stringVal = originalStringVal
+	t.valType = originalValType
 	t.stringToFloat()
-	if t.err == nil {
+	if t.err == "" {
 		return int64(t.floatVal), nil
 	}
 
 	// Return the original int64 parsing error
-	return 0, int64Err
+	return 0, t
 }
 
 // ToUint converts the conv content to an unsigned integer with optional base specification.
@@ -219,33 +230,39 @@ func (t *conv) ToInt64(base ...int) (int64, error) {
 // Note: Negative numbers are never supported for unsigned integers and will
 // always result in an error, regardless of the base.
 func (t *conv) ToUint(base ...int) (uint, error) {
-	if t.err != nil {
-		return 0, t.err
+	if t.err != "" {
+		return 0, t
 	}
 
 	b := 10 // default base
 	if len(base) > 0 {
 		b = base[0]
 	}
+
+	// Save the original state
+	originalStringVal := t.stringVal
+	originalValType := t.valType
+
 	// First try to parse as uint directly
-	t.stringToUint(t.getString(), b)
-	if t.err == nil {
+	t.stringToUint(originalStringVal, b)
+	if t.err == "" {
 		return uint(t.uintVal), nil
 	}
-	uintErr := t.err
 
-	// If that fails, try to parse as float and then convert to uint (for truncation)
-	t.err = nil // Reset error for float parsing
+	// If that fails, restore state and try to parse as float and then convert to uint (for truncation)
+	t.err = "" // Reset error for float parsing
+	t.stringVal = originalStringVal
+	t.valType = originalValType
 	t.stringToFloat()
-	if t.err == nil {
+	if t.err == "" {
 		if t.floatVal < 0 {
-			return 0, newError(errNegativeUnsigned)
+			return 0, Err(errNegativeUnsigned)
 		}
 		return uint(t.floatVal), nil
 	}
 
 	// Return the original uint parsing error
-	return 0, uintErr
+	return 0, t
 }
 
 // ToFloat converts the conv content to a float64 (double precision floating point).
@@ -288,8 +305,8 @@ func (t *conv) ToUint(base ...int) (uint, error) {
 // different precision characteristics compared to the standard library.
 func (t *conv) ToFloat() (float64, error) {
 	t.stringToFloat()
-	if t.err != nil {
-		return 0, t.err
+	if t.err != "" {
+		return 0, t
 	}
 	return t.floatVal, nil
 }
@@ -299,14 +316,14 @@ func (t *conv) ToFloat() (float64, error) {
 func (t *conv) stringToInt(base int) {
 	input := t.getString()
 	if input == "" {
-		t.err = newEmptyStringError()
+		t.err = errEmptyString
 		return
 	}
 
 	isNegative := false
 	if input[0] == '-' {
 		if base != 10 {
-			t.err = newError(errInvalidBase, "negative numbers are not supported for non-decimal bases")
+			t.NewErr(errInvalidBase, "negative numbers are not supported for non-decimal bases")
 			return
 		}
 		isNegative = true
@@ -315,7 +332,7 @@ func (t *conv) stringToInt(base int) {
 	}
 
 	t.stringToNumberHelper(base)
-	if t.err != nil {
+	if t.err != "" {
 		return
 	}
 
@@ -332,14 +349,14 @@ func (t *conv) stringToInt(base int) {
 func (t *conv) stringToInt64(base int) {
 	input := t.getString()
 	if input == "" {
-		t.err = newEmptyStringError()
+		t.err = errEmptyString
 		return
 	}
 
 	isNegative := false
 	if input[0] == '-' {
 		if base != 10 {
-			t.err = newInvalidNumberError("negative numbers are not supported for non-decimal bases")
+			t.NewErr("negative numbers are not supported for non-decimal bases")
 			return
 		}
 		isNegative = true
@@ -348,7 +365,7 @@ func (t *conv) stringToInt64(base int) {
 	}
 
 	t.stringToNumberHelper(base)
-	if t.err != nil {
+	if t.err != "" {
 		return
 	}
 
@@ -364,12 +381,12 @@ func (t *conv) stringToInt64(base int) {
 // This is an internal conv method that modifies the struct instead of returning values.
 func (t *conv) stringToUint(input string, base int) {
 	if input == "" {
-		t.err = newEmptyStringError()
+		t.err = errEmptyString
 		return
 	}
 
 	if input[0] == '-' {
-		t.err = newError(errNegativeUnsigned)
+		t.NewErr(errNegativeUnsigned)
 		return
 	}
 
@@ -384,7 +401,7 @@ func (t *conv) stringToUint(input string, base int) {
 func (t *conv) stringToFloat() {
 	input := t.getString()
 	if input == "" {
-		t.err = newEmptyStringError()
+		t.err = errEmptyString
 		return
 	}
 
@@ -394,13 +411,13 @@ func (t *conv) stringToFloat() {
 		isNegative = true
 		startIndex = 1
 		if len(input) == 1 { // Just a "-" sign
-			t.err = newInvalidFloatError()
+			t.err = errInvalidFloat
 			return
 		}
 	} else if input[0] == '+' {
 		startIndex = 1
 		if len(input) == 1 { // Just a "+" sign
-			t.err = newInvalidFloatError()
+			t.err = errInvalidFloat
 			return
 		}
 	}
@@ -416,7 +433,7 @@ func (t *conv) stringToFloat() {
 		char := input[i]
 		if char == '.' {
 			if decimalPointSeen {
-				t.err = newInvalidFloatError()
+				t.err = errInvalidFloat
 				return
 			}
 			decimalPointSeen = true
@@ -425,32 +442,23 @@ func (t *conv) stringToFloat() {
 			hasDigits = true
 			digit := uint64(char - '0')
 			if parsingFraction {
-				// Check for overflow before multiplying fractionPart
-				if fractionPart > (^uint64(0))/10 {
-					// This condition might be too strict for typical float precision needs,
-					// but good for catching extreme cases.
-					// Standard library might handle this by losing precision.
-					// For now, let's consider it an error or rely on float64 limits.
-				}
 				fractionPart = fractionPart*10 + digit
-				fractionDivisor *= 10
-			} else {
-				// Check for overflow before multiplying integerPart
-				if integerPart > (^uint64(0)-digit)/10 {
-					t.err = newError(errOverflow)
+				fractionDivisor *= 10.0
+			} else { // Check for overflow in integer part
+				if integerPart > ^uint64(0)/10 || (integerPart == ^uint64(0)/10 && digit > ^uint64(0)%10) {
+					t.err = errOverflow
 					return
 				}
 				integerPart = integerPart*10 + digit
 			}
 		} else {
-			// Invalid character
-			t.err = newInvalidNumberError(string(char))
+			t.err = errInvalidFloat
 			return
 		}
 	}
 
 	if !hasDigits {
-		t.err = newInvalidFloatError()
+		t.err = errInvalidFloat
 		return
 	}
 
@@ -462,7 +470,6 @@ func (t *conv) stringToFloat() {
 	if isNegative {
 		result = -result
 	}
-
 	t.floatVal = result
 	t.valType = valTypeFloat
 }
@@ -472,7 +479,7 @@ func (t *conv) stringToFloat() {
 func (t *conv) stringToNumberHelper(base int) {
 	input := t.getString()
 	if base < 2 || base > 36 {
-		t.err = newError(errInvalidBase)
+		t.NewErr(errInvalidBase)
 		return
 	}
 
@@ -487,18 +494,18 @@ func (t *conv) stringToNumberHelper(base int) {
 		} else if char >= 'A' && char <= 'Z' {
 			digit = int(char-'A') + 10
 		} else {
-			t.err = newInvalidNumberError(string(char))
+			t.NewErr(string(char))
 			return
 		}
 
 		if digit >= base {
-			t.err = newError(errInvalidBase, "digit out of range for base")
+			t.NewErr(errInvalidBase, "digit out of range for base")
 			return
 		}
 
 		// Check for overflow
 		if result > (^uint64(0))/uint64(base) {
-			t.err = newError(errOverflow)
+			t.NewErr(errOverflow)
 			return
 		}
 
@@ -510,7 +517,8 @@ func (t *conv) stringToNumberHelper(base int) {
 }
 
 // formatIntInternal converts integer to string and stores in cachedString
-func (t *conv) formatIntInternal(val int64, base int) {
+func (t *conv) formatIntInternal(base int) {
+	val := t.intVal
 	if val == 0 {
 		t.cachedString = "0"
 		t.stringVal = t.cachedString
@@ -549,7 +557,8 @@ func (t *conv) formatIntInternal(val int64, base int) {
 }
 
 // intToStringOptimizedInternal converts int64 to string with minimal allocations and stores in cachedString
-func (t *conv) intToStringOptimizedInternal(val int64) {
+func (t *conv) intToStringOptimizedInternal() {
+	val := t.intVal
 	// Handle common small numbers using lookup table
 	if val >= 0 && val < int64(len(smallInts)) {
 		t.cachedString = smallInts[val]
@@ -570,11 +579,12 @@ func (t *conv) intToStringOptimizedInternal(val int64) {
 	}
 
 	// Fall back to standard conversion for larger numbers
-	t.formatIntInternal(val, 10)
+	t.formatIntInternal(10)
 }
 
 // formatUintInternal converts unsigned integer to string and stores in cachedString
-func (t *conv) formatUintInternal(val uint64, base int) {
+func (t *conv) formatUintInternal(base int) {
+	val := t.uintVal
 	if val == 0 {
 		t.cachedString = "0"
 		t.stringVal = t.cachedString
@@ -603,7 +613,8 @@ func (t *conv) formatUintInternal(val uint64, base int) {
 }
 
 // uintToStringOptimizedInternal converts uint64 to string with minimal allocations and stores in cachedString
-func (t *conv) uintToStringOptimizedInternal(val uint64) {
+func (t *conv) uintToStringOptimizedInternal() {
+	val := t.uintVal
 	// Handle common small numbers using lookup table
 	if val < uint64(len(smallInts)) {
 		t.cachedString = smallInts[val]
@@ -624,12 +635,13 @@ func (t *conv) uintToStringOptimizedInternal(val uint64) {
 	}
 
 	// Fall back to standard conversion for larger numbers
-	t.uintToStringWithBaseInternal(val, 10)
+	t.uintToStringWithBaseInternal(10)
 }
 
 // uintToStringWithBaseInternal converts unsigned integer to string with specified base
 // and stores the result in the conv struct fields
-func (t *conv) uintToStringWithBaseInternal(number uint64, base int) {
+func (t *conv) uintToStringWithBaseInternal(base int) {
+	number := t.uintVal
 	if number == 0 {
 		t.cachedString = "0"
 		t.stringVal = t.cachedString
@@ -654,7 +666,8 @@ func (t *conv) uintToStringWithBaseInternal(number uint64, base int) {
 }
 
 // formatFloatInternal converts float to string and stores in cachedString
-func (t *conv) formatFloatInternal(val float64) {
+func (t *conv) formatFloatInternal() {
+	val := t.floatVal
 	// Handle special cases
 	if val != val { // NaN
 		t.cachedString = "NaN"
@@ -696,8 +709,8 @@ func (t *conv) formatFloatInternal(val float64) {
 		i++
 	} else {
 		// Convert integer part to string using our optimized method
-		tempConv := &conv{}
-		tempConv.formatIntInternal(intPart, 10)
+		tempConv := &conv{intVal: intPart}
+		tempConv.formatIntInternal(10)
 		intStr := tempConv.cachedString
 		copy(buf[i:], intStr)
 		i += len(intStr)
@@ -729,172 +742,7 @@ func (t *conv) formatFloatInternal(val float64) {
 			i += end + 1
 		}
 	}
-
 	// Create string from the used portion of buffer
 	t.cachedString = string(buf[:i])
 	t.stringVal = t.cachedString
-}
-
-// parseIntInternal parses string to int with specified base
-// and stores result in conv struct fields
-func (t *conv) parseIntInternal(input string, base int) error {
-	if input == "" {
-		return newEmptyStringError()
-	}
-
-	isNegative := false
-	if input[0] == '-' {
-		if base != 10 {
-			return newError(errInvalidBase, "negative numbers are not supported for non-decimal bases")
-		}
-		isNegative = true
-		input = input[1:]
-	}
-
-	number, err := t.parseNumberHelperInternal(input, base)
-	if err != nil {
-		return err
-	}
-
-	if isNegative {
-		t.intVal = -int64(number)
-	} else {
-		t.intVal = int64(number)
-	}
-	return nil
-}
-
-// parseFloatInternal parses string to float64
-// and stores result in conv struct fields
-func (t *conv) parseFloatInternal(input string) error {
-	if input == "" {
-		return newEmptyStringError()
-	}
-
-	// Handle special cases using math constants
-	switch input {
-	case "NaN", "nan":
-		// Use a variable to create NaN since direct division causes compile error
-		var zero float64 = 0.0
-		t.floatVal = zero / zero // NaN
-		return nil
-	case "Inf", "+Inf", "inf", "+inf":
-		// Use a variable to create +Inf
-		var one float64 = 1.0
-		var zero float64 = 0.0
-		t.floatVal = one / zero // +Inf
-		return nil
-	case "-Inf", "-inf":
-		// Use a variable to create -Inf
-		var negone float64 = -1.0
-		var zero float64 = 0.0
-		t.floatVal = negone / zero // -Inf
-		return nil
-	}
-
-	// Simple manual parsing for common cases
-	negative := false
-	if input[0] == '-' {
-		negative = true
-		input = input[1:]
-	} else if input[0] == '+' {
-		input = input[1:]
-	}
-
-	// Find decimal point
-	dotIndex := -1
-	for i, ch := range input {
-		if ch == '.' {
-			dotIndex = i
-			break
-		}
-	}
-
-	var integerPart, fractionalPart uint64
-	var err error
-
-	if dotIndex == -1 {
-		// No decimal point, parse as integer
-		integerPart, err = t.parseNumberHelperInternal(input, 10)
-		if err != nil {
-			return err
-		}
-	} else {
-		// Parse integer part
-		if dotIndex > 0 {
-			integerPart, err = t.parseNumberHelperInternal(input[:dotIndex], 10)
-			if err != nil {
-				return err
-			}
-		}
-
-		// Parse fractional part
-		if dotIndex+1 < len(input) {
-			fractionalPart, err = t.parseNumberHelperInternal(input[dotIndex+1:], 10)
-			if err != nil {
-				return err
-			}
-		}
-	}
-
-	// Convert to float64
-	result := float64(integerPart)
-	if dotIndex != -1 && fractionalPart > 0 {
-		// Calculate fractional part
-		fractionalDigits := len(input) - dotIndex - 1
-		divisor := float64(1)
-		for i := 0; i < fractionalDigits; i++ {
-			divisor *= 10
-		}
-		result += float64(fractionalPart) / divisor
-	}
-
-	if negative {
-		result = -result
-	}
-
-	t.floatVal = result
-	return nil
-}
-
-// parseNumberHelperInternal is an internal helper for parsing digits
-// and stores result in conv struct fields
-func (t *conv) parseNumberHelperInternal(input string, base int) (uint64, error) {
-	if input == "" {
-		return 0, newEmptyStringError()
-	}
-
-	if base < 2 || base > 36 {
-		return 0, newError(errInvalidBase, "base must be between 2 and 36")
-	}
-
-	var result uint64
-
-	for _, ch := range input {
-		var digit int
-
-		switch {
-		case '0' <= ch && ch <= '9':
-			digit = int(ch - '0')
-		case 'a' <= ch && ch <= 'z':
-			digit = int(ch - 'a' + 10)
-		case 'A' <= ch && ch <= 'Z':
-			digit = int(ch - 'A' + 10)
-		default:
-			return 0, newError(errInvalidNumber, "invalid character in number")
-		}
-
-		if digit >= base {
-			return 0, newError(errInvalidNumber, "digit out of range for base")
-		}
-
-		// Check for overflow
-		if result > (^uint64(0)-uint64(digit))/uint64(base) {
-			return 0, newError(errOverflow, "number too large")
-		}
-
-		result = result*uint64(base) + uint64(digit)
-	}
-
-	return result, nil
 }

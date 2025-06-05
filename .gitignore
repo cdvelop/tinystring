@@ -1,3 +1,6 @@
 *.wasm
 *ISSUE*.md
 *.exe
+# Benchmark binaries (generated files, should not be tracked)
+benchmark/bench-binary-size/standard-lib/standard
+benchmark/bench-binary-size/tinystring-lib/tinystring

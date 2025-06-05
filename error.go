@@ -1,113 +1,74 @@
 package tinystring
 
-// Custom error types to avoid importing standard library packages like "errors" or "fmt"
+// Custom error messages to avoid importing standard library packages like "errors" or "fmt"
 // This keeps the binary size minimal for embedded systems and WebAssembly
 
-// errorType represents different types of errors that can occur
-type errorType uint8
+// errorType represents an error as a string constant
+type errorType string
 
+// Error message constants
 const (
-	errNone errorType = iota
-	errEmptyString
-	errInvalidNumber
-	errNegativeUnsigned
-	errInvalidBase
-	errOverflow
-	errInvalidFormat
-	errFormatMissingArg
-	errFormatWrongType
-	errFormatUnsupported
-	errIncompleteFormat
-	errCannotRound
-	errCannotFormat
-	errInvalidFloat
+	errNone              errorType = ""
+	errEmptyString       errorType = "empty string"
+	errInvalidNumber     errorType = "invalid number"
+	errNegativeUnsigned  errorType = "negative numbers are not supported for unsigned integers"
+	errInvalidBase       errorType = "invalid base"
+	errOverflow          errorType = "number overflow"
+	errInvalidFormat     errorType = "invalid format"
+	errFormatMissingArg  errorType = "missing argument"
+	errFormatWrongType   errorType = "wrong argument type"
+	errFormatUnsupported errorType = "unsupported format specifier"
+	errIncompleteFormat  errorType = "incomplete format specifier at end of string"
+	errCannotRound       errorType = "cannot round non-numeric value"
+	errCannotFormat      errorType = "cannot format non-numeric value"
+	errInvalidFloat      errorType = "invalid float string"
+	errInvalidBool       errorType = "invalid boolean value"
 )
 
-// tinyError represents a lightweight error without external dependencies
-type tinyError struct {
-	errType errorType
-	context string // minimal context without fmt.Sprintf
-}
+// set new error message eg: tinystring.Err(errInvalidFormat, "custom message")
+func (c *conv) NewErr(values ...any) *conv {
+	var sep, out errorType
+	c.cachedString = ""
+	c.err = ""
+	for _, v := range values {
+		c.anyToStringInternal(v)
+		if c.err != "" {
+			out += sep + c.err
+		}
 
-// Error implements the error interface
-func (e *tinyError) Error() string {
-	switch e.errType {
-	case errEmptyString:
-		return "empty string"
-	case errInvalidNumber:
-		if e.context != "" {
-			return "invalid number: " + e.context
+		if c.cachedString != "" {
+			out += sep + errorType(c.cachedString)
 		}
-		return "invalid number"
-	case errNegativeUnsigned:
-		return "negative numbers are not supported for unsigned integers"
-	case errInvalidBase:
-		return "invalid base"
-	case errOverflow:
-		return "number overflow"
-	case errInvalidFormat:
-		if e.context != "" {
-			return e.context
+
+		if c.err != "" || c.cachedString != "" {
+			sep = " "
 		}
-		return "invalid format"
-	case errFormatMissingArg:
-		if e.context != "" {
-			return "missing argument for " + e.context
-		}
-		return "missing argument"
-	case errFormatWrongType:
-		if e.context != "" {
-			return "wrong argument type for " + e.context
-		}
-		return "wrong argument type"
-	case errFormatUnsupported:
-		if e.context != "" {
-			return "unsupported format specifier: " + e.context
-		}
-		return "unsupported format specifier"
-	case errIncompleteFormat:
-		return "incomplete format specifier at end of string"
-	case errCannotRound:
-		return "cannot round non-numeric value"
-	case errCannotFormat:
-		return "cannot format non-numeric value"
-	case errInvalidFloat:
-		return "invalid float string"
-	default:
-		return "unknown error"
 	}
+	c.err = out
+	c.valType = valTypeErr
+	return c
 }
 
-// newError creates a new tinyError without external dependencies
-func newError(errType errorType, context ...string) error {
-	err := &tinyError{errType: errType}
-	if len(context) > 0 {
-		err.context = context[0]
-	}
-	return err
+// Errorf creates a new conv instance with error formatting similar to fmt.Errorf
+// Example: tinystring.Errorf("invalid value: %s", value).Error()
+func Errorf(format string, args ...any) *conv {
+	result := convInit(new(errorType))
+	result.sprintf(format, args...)
+	return result
 }
 
-// Error constructors for common cases
-func newEmptyStringError() error {
-	return newError(errEmptyString)
+// Err if NewErr replace lib errors.New
+// supports multiple arguments
+// eg: tinystring.Err(errInvalidFormat, "custom message")
+// or tinystring.Err(errInvalidFormat, "custom message", "another message")
+// or tinystring.Err("custom message", "another message")
+func Err(args ...any) *conv {
+	c := &conv{}
+	return c.NewErr(args...)
 }
 
-func newInvalidNumberError(input string) error {
-	return newError(errInvalidNumber, input)
-}
-
-func newFormatMissingArgError(specifier string) error {
-	return newError(errFormatMissingArg, specifier)
-}
-
-func newFormatWrongTypeError(specifier string) error {
-	return newError(errFormatWrongType, specifier)
-}
-
-func newFormatUnsupportedError(specifier string) error {
-	return newError(errFormatUnsupported, specifier)
-}
-
-func newInvalidFloatError() error {
-	return newError(errInvalidFloat)
+// Error implements the error interface for conv
+// Returns the error message stored in err
+func (c *conv) Error() string {
+	return string(c.err)
 }

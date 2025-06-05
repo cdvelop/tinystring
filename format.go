@@ -26,25 +26,35 @@ func (c *conv) formatValue(value any) {
 	case string:
 		c.setString(val)
 	case int:
-		c.intToStringOptimizedInternal(int64(val))
+		c.intVal = int64(val)
+		c.intToStringOptimizedInternal()
 	case int8:
-		c.intToStringOptimizedInternal(int64(val))
+		c.intVal = int64(val)
+		c.intToStringOptimizedInternal()
 	case int16:
-		c.intToStringOptimizedInternal(int64(val))
+		c.intVal = int64(val)
+		c.intToStringOptimizedInternal()
 	case int32:
-		c.intToStringOptimizedInternal(int64(val))
+		c.intVal = int64(val)
+		c.intToStringOptimizedInternal()
 	case int64:
-		c.intToStringOptimizedInternal(val)
+		c.intVal = val
+		c.intToStringOptimizedInternal()
 	case uint:
-		c.uintToStringOptimizedInternal(uint64(val))
+		c.uintVal = uint64(val)
+		c.uintToStringOptimizedInternal()
 	case uint8:
-		c.uintToStringOptimizedInternal(uint64(val))
+		c.uintVal = uint64(val)
+		c.uintToStringOptimizedInternal()
 	case uint16:
-		c.uintToStringOptimizedInternal(uint64(val))
+		c.uintVal = uint64(val)
+		c.uintToStringOptimizedInternal()
 	case uint32:
-		c.uintToStringOptimizedInternal(uint64(val))
+		c.uintVal = uint64(val)
+		c.uintToStringOptimizedInternal()
 	case uint64:
-		c.uintToStringOptimizedInternal(val)
+		c.uintVal = val
+		c.uintToStringOptimizedInternal()
 	case float32:
 		c.floatVal = float64(val)
 		c.floatToStringManual(-1)
@@ -142,7 +152,7 @@ func (c *conv) formatMap(v reflect.Value) {
 // Default behavior is rounding up. Use .Down() to round down.
 // Example: Convert(3.154).RoundDecimals(2).String() → "3.16"
 func (t *conv) RoundDecimals(decimals int) *conv {
-	if t.err != nil {
+	if t.err != "" {
 		return t
 	}
 	// If we already have a float value, use it directly to avoid string conversion
@@ -152,10 +162,10 @@ func (t *conv) RoundDecimals(decimals int) *conv {
 	} else {
 		// Parse current string content as float without creating temporary conv
 		t.parseFloatManual()
-		if t.err != nil {
+		if t.err != "" {
 			// If cannot parse as number, set to 0 and continue with formatting
 			val = 0
-			t.err = nil
+			t.err = ""
 		} else {
 			val = t.floatVal
 		}
@@ -202,7 +212,7 @@ func (t *conv) RoundDecimals(decimals int) *conv {
 	t.floatVal = rounded
 	t.valType = valTypeFloat
 	t.floatToStringManual(decimals)
-	t.err = nil
+	t.err = ""
 	// Preserve the roundDown flag (already in self)
 	return t
 }
@@ -211,13 +221,13 @@ func (t *conv) RoundDecimals(decimals int) *conv {
 // This method works by taking the current rounded value and ensuring it represents the floor
 // Example: Convert(3.154).RoundDecimals(2).Down().String() → "3.15"
 func (t *conv) Down() *conv {
-	if t.err != nil {
+	if t.err != "" {
 		return t
 	}
 	// Parse the current value
 	tempConv := convInit(t.getString())
 	tempConv.parseFloatManual()
-	if tempConv.err != nil {
+	if tempConv.err != "" {
 		// Not a number, just set the flag
 		result := convInit(t.getString())
 		result.err = t.err
@@ -263,7 +273,7 @@ func (t *conv) Down() *conv {
 	conv.floatToStringManual(decimalPlaces)
 	result := conv.getString()
 	finalResult := convInit(result)
-	finalResult.err = nil
+	finalResult.err = ""
 	finalResult.roundDown = true
 	return finalResult
 }
@@ -271,26 +281,24 @@ func (t *conv) Down() *conv {
 // FormatNumber formats a numeric value with thousand separators
 // Example: Convert(1234567).FormatNumber().String() → "1,234,567"
 func (t *conv) FormatNumber() *conv {
-	if t.err != nil {
+	if t.err != "" {
 		return t
 	}
-
 	// Try to use existing values directly to avoid string conversions
 	if t.valType == valTypeInt {
 		// We already have an integer value, use it directly
-		t.intToStringOptimizedInternal(t.intVal)
+		t.intToStringOptimizedInternal()
 		t.formatNumberWithCommas()
-		t.err = nil
+		t.err = ""
 		return t
 	}
-
 	if t.valType == valTypeUint {
 		// Convert uint to int64 and format
 		t.intVal = int64(t.uintVal)
 		t.valType = valTypeInt
-		t.intToStringOptimizedInternal(t.intVal)
+		t.intToStringOptimizedInternal()
 		t.formatNumberWithCommas()
-		t.err = nil
+		t.err = ""
 		return t
 	}
 
@@ -317,28 +325,29 @@ func (t *conv) FormatNumber() *conv {
 			}
 			t.setString(result)
 		}
-		t.err = nil
+		t.err = ""
 		return t
 	}
-
 	// For string values, parse them directly using existing methods
 	str := t.getString()
-
-	// Try to parse as integer first using existing parseIntInternal
-	err := t.parseIntInternal(str, 10)
-	if err == nil {
-		// Use the parsed integer value
-		t.valType = valTypeInt
-		t.intToStringOptimizedInternal(t.intVal)
-		t.formatNumberWithCommas()
-		t.err = nil
-		return t
-	} // Try to parse as float using existing parseFloatManual
-	// Save original state in case parsing fails
+	// Save original state BEFORE any parsing attempts
 	originalVal := t.stringVal
 	originalType := t.valType
+	// Try to parse as integer first using existing stringToInt
+	t.setString(str)
+	t.stringToInt(10)
+	if t.err == "" {
+		// Use the parsed integer value
+		t.valType = valTypeInt
+		t.intToStringOptimizedInternal()
+		t.formatNumberWithCommas()
+		t.err = ""
+		return t
+	} // Try to parse as float using existing parseFloatManual
+	t.err = "" // Reset error before trying float parsing
+	t.setString(str)
 	t.parseFloatManual()
-	if t.err == nil {
+	if t.err == "" {
 		// Use the parsed float value
 		t.valType = valTypeFloat
 		t.floatToStringManual(-1)
@@ -372,13 +381,13 @@ func (t *conv) FormatNumber() *conv {
 			}
 			t.setString(result)
 		}
-		t.err = nil
+		t.err = ""
 		return t
 	} else {
 		// Restore original state if parsing failed
 		t.stringVal = originalVal
 		t.valType = originalType
-		t.err = nil
+		t.err = ""
 	}
 
 	// If both integer and float parsing fail, return original string unchanged
@@ -484,7 +493,7 @@ func (c *conv) splitFloatString() []string {
 func (c *conv) parseFloatManual() {
 	input := c.getString()
 	if input == "" {
-		c.err = newEmptyStringError()
+		c.err = errEmptyString
 		return
 	}
 
@@ -499,7 +508,7 @@ func (c *conv) parseFloatManual() {
 	var integerPart int64 = 0
 	for idx < len(input) && input[idx] != '.' {
 		if input[idx] < '0' || input[idx] > '9' {
-			c.err = newInvalidFloatError()
+			c.err = errInvalidFloat
 			return
 		}
 		integerPart = integerPart*10 + int64(input[idx]-'0')
@@ -514,7 +523,7 @@ func (c *conv) parseFloatManual() {
 		idx++ // Skip decimal point
 		for idx < len(input) {
 			if input[idx] < '0' || input[idx] > '9' {
-				c.err = newInvalidFloatError()
+				c.err = errInvalidFloat
 				return
 			}
 			fractionPart = fractionPart*10 + float64(input[idx]-'0')
@@ -531,7 +540,7 @@ func (c *conv) parseFloatManual() {
 
 	c.floatVal = result
 	c.valType = valTypeFloat
-	c.err = nil
+	c.err = ""
 }
 
 // floatToStringManual converts a float64 to a string and stores in conv struct.
@@ -687,7 +696,7 @@ func (c *conv) intToStringWithBase(base int) {
 
 	const digits = "0123456789abcdefghijklmnopqrstuvwxyz"
 	if base < 2 || base > len(digits) {
-		c.err = newError(errInvalidBase)
+		c.err = errInvalidBase
 		return
 	}
 
@@ -751,8 +760,8 @@ func (c *conv) sprintf(format string, args ...any) {
 					if start < i {
 						// Parse precision
 						tempConv := convInit(format[start:i])
-						tempConv.parseIntInternal(tempConv.getString(), 10)
-						if tempConv.err == nil {
+						tempConv.stringToInt(10)
+						if tempConv.err == "" {
 							precision = int(tempConv.intVal)
 						}
 					}
@@ -762,27 +771,27 @@ func (c *conv) sprintf(format string, args ...any) {
 				switch format[i] {
 				case 'd':
 					if argIndex >= len(args) {
-						c.err = newFormatMissingArgError("%d")
+						c.NewErr(errFormatMissingArg, "%d")
 						return
 					}
 					intVal, ok := args[argIndex].(int)
 					if !ok {
-						c.err = newFormatWrongTypeError("%d")
+						c.NewErr(errFormatWrongType, "%d")
 						return
 					}
 					tempConv := convInit(intVal)
-					tempConv.intToStringOptimizedInternal(int64(intVal))
+					tempConv.intToStringOptimizedInternal()
 					str := tempConv.getString()
 					buf = append(buf, str...)
 					argIndex++
 				case 'f':
 					if argIndex >= len(args) {
-						c.err = newFormatMissingArgError("%f")
+						c.NewErr(errFormatMissingArg, "%f")
 						return
 					}
 					floatVal, ok := args[argIndex].(float64)
 					if !ok {
-						c.err = newFormatWrongTypeError("%f")
+						c.NewErr(errFormatWrongType, "%f")
 						return
 					}
 					tempConv := convInit(floatVal)
@@ -792,12 +801,12 @@ func (c *conv) sprintf(format string, args ...any) {
 					argIndex++
 				case 'o':
 					if argIndex >= len(args) {
-						c.err = newFormatMissingArgError("%o")
+						c.NewErr(errFormatMissingArg, "%o")
 						return
 					}
 					intVal, ok := args[argIndex].(int)
 					if !ok {
-						c.err = newFormatWrongTypeError("%o")
+						c.NewErr(errFormatWrongType, "%o")
 						return
 					}
 					tempConv := convInit(int64(intVal))
@@ -807,12 +816,12 @@ func (c *conv) sprintf(format string, args ...any) {
 					argIndex++
 				case 'b':
 					if argIndex >= len(args) {
-						c.err = newFormatMissingArgError("%b")
+						c.NewErr(errFormatMissingArg, "%b")
 						return
 					}
 					intVal, ok := args[argIndex].(int)
 					if !ok {
-						c.err = newFormatWrongTypeError("%b")
+						c.NewErr(errFormatWrongType, "%b")
 						return
 					}
 					tempConv := convInit(int64(intVal))
@@ -822,12 +831,12 @@ func (c *conv) sprintf(format string, args ...any) {
 					argIndex++
 				case 'x':
 					if argIndex >= len(args) {
-						c.err = newFormatMissingArgError("%x")
+						c.NewErr(errFormatMissingArg, "%x")
 						return
 					}
 					intVal, ok := args[argIndex].(int)
 					if !ok {
-						c.err = newFormatWrongTypeError("%x")
+						c.NewErr(errFormatWrongType, "%x")
 						return
 					}
 					tempConv := convInit(int64(intVal))
@@ -837,7 +846,7 @@ func (c *conv) sprintf(format string, args ...any) {
 					argIndex++
 				case 'v':
 					if argIndex >= len(args) {
-						c.err = newFormatMissingArgError("%v")
+						c.NewErr(errFormatMissingArg, "%v")
 						return
 					}
 					tempConv := convInit("")
@@ -847,12 +856,12 @@ func (c *conv) sprintf(format string, args ...any) {
 					argIndex++
 				case 's':
 					if argIndex >= len(args) {
-						c.err = newFormatMissingArgError("%s")
+						c.NewErr(errFormatMissingArg, "%s")
 						return
 					}
 					strVal, ok := args[argIndex].(string)
 					if !ok {
-						c.err = newFormatWrongTypeError("%s")
+						c.NewErr(errFormatWrongType, "%s")
 						return
 					}
 					buf = append(buf, strVal...)
@@ -860,7 +869,7 @@ func (c *conv) sprintf(format string, args ...any) {
 				case '%':
 					buf = append(buf, '%')
 				default:
-					c.err = newFormatUnsupportedError(string(format[i]))
+					c.NewErr(errFormatUnsupported, format[i])
 					return
 				}
 			} else {

@@ -489,71 +489,52 @@ Convert(&originalText).RemoveTilde().ToLower().Apply()
 fmt.Println(originalText)  // Output: "el murcielago rapido" (modified)
 ```
 
-Performance benchmarks show that using string pointers can reduce memory allocations when processing large volumes of conv, which can be beneficial in high-throughput applications or systems with memory constraints.
-
-```go
-// Sample benchmark results:
-```
 
 ## Binary Size Comparison
 
-*Last updated: 2025-06-04 13:27:20*
+[Standard Library Example](bench-binary-size/standard-lib/main.go) | [TinyString Example](bench-binary-size/tinystring-lib/main.go)
 
-### Default Optimization
-*Default TinyGo optimization (-opt=z)*
+<!-- This table is automatically generated from build-and-measure.sh -->
+*Last updated: 2025-06-05 00:41:55*
 
-| Platform | Standard Library | TinyString | Improvement |
-|----------|------------------|------------|-------------|
-| **Native** | 1.6 MB | 1.5 MB | **2.6% smaller** |
-| **WebAssembly** | 879.1 KB | 694.8 KB | **21.0% smaller** |
+| Build Type | Parameters | Standard Library<br/>`go build` | TinyString<br/>`tinygo build` | Size Reduction | Performance |
+|------------|------------|------------------|------------|----------------|-------------|
+| 🖥️ **Default Native** | `-ldflags="-s -w"` | 1.6 MB | 1.5 MB | **-49.5 KB** | ❌ **3.1%** |
+| 🌐 **Default WASM** | `(default -opt=z)` | 879.1 KB | 689.6 KB | **-189.5 KB** | ✅ **21.6%** |
+| 🌐 **Ultra WASM** | `-no-debug -panic=trap -scheduler=none -gc=leaking -target wasm` | 200.6 KB | 98.8 KB | **-101.8 KB** | ✅ **50.7%** |
+| 🌐 **Speed WASM** | `-opt=2 -target wasm` | 1.3 MB | 1012.2 KB | **-278.5 KB** | ✅ **21.6%** |
+| 🌐 **Debug WASM** | `-opt=0 -target wasm` | 3.0 MB | 2.3 MB | **-693.3 KB** | ✅ **22.6%** |
 
-### Ultra Optimization
-*Ultra size optimization*
+### 🎯 Performance Summary
 
-| Platform | Standard Library | TinyString | Improvement |
-|----------|------------------|------------|-------------|
-| **WebAssembly** | 200.6 KB | 99.0 KB | **50.6% smaller** |
+- 🏆 **Peak Reduction: 50.7%** (Best optimization)
+- ✅ **Average WebAssembly Reduction: 29.1%**
+- ✅ **Average Native Reduction: 3.1%**
+- 📦 **Total Size Savings: 1.3 MB across all builds**
 
-### Speed Optimization
-*Speed optimization*
-
-| Platform | Standard Library | TinyString | Improvement |
-|----------|------------------|------------|-------------|
-| **WebAssembly** | 1.3 MB | 1018.7 KB | **21.1% smaller** |
-
-### Debug Optimization
-*Debug build*
-
-| Platform | Standard Library | TinyString | Improvement |
-|----------|------------------|------------|-------------|
-| **WebAssembly** | 3.0 MB | 2.3 MB | **22.0% smaller** |
-
-### Summary
-
-TinyString consistently produces smaller binaries across all optimization levels and platforms:
-
-- **Average binary size reduction: 2.6%**
-- Consistent improvements across all optimization levels
-- WebAssembly builds show similar or better improvements
-- Best results with ultra optimization settings
+#### Performance Legend
+- ❌ Poor (<5% reduction)
+- ➖ Fair (5-15% reduction)
+- ✅ Good (15-70% reduction)
+- 🏆 Outstanding (>70% reduction)
 
 
 ## Memory Usage Comparison
 
-*Last updated: 2025-06-04 13:46:40*
+*Last updated: 2025-06-05 00:40:36*
 
 Performance benchmarks comparing memory allocation patterns:
 
 | Benchmark | Library | Bytes/Op | Allocs/Op | Time/Op | Memory Improvement | Alloc Improvement |
 |-----------|---------|----------|-----------|---------|-------------------|------------------|
-| **String Processing** | Standard | 1.2 KB | 48 | 3.3μs | - | - |
-| | TinyString | 2.4 KB | 46 | 13.1μs | **107.3% more** | **4.2% less** |
+| **String Processing** | Standard | 1.2 KB | 48 | 3.2μs | - | - |
+| | TinyString | 2.3 KB | 46 | 12.1μs | **96.7% more** | **4.2% less** |
 | **Number Processing** | Standard | 1.2 KB | 132 | 4.4μs | - | - |
-| | TinyString | 2.6 KB | 112 | 3.5μs | **122.7% more** | **15.2% less** |
+| | TinyString | 2.5 KB | 120 | 3.9μs | **110.7% more** | **9.1% less** |
 | **Mixed Operations** | Standard | 546 B | 44 | 2.3μs | - | - |
-| | TinyString | 1.2 KB | 44 | 4.5μs | **134.4% more** | **Same** |
-| **String Processing (Pointer Optimization)** | Standard | 1.2 KB | 48 | 3.3μs | - | - |
-| | TinyString | 2.3 KB | 38 | 13.1μs | **96.7% more** | **20.8% less** |
+| | TinyString | 1.2 KB | 46 | 4.4μs | **119.8% more** | **4.5% more** |
+| **String Processing (Pointer Optimization)** | Standard | 1.2 KB | 48 | 3.2μs | - | - |
+| | TinyString | 2.2 KB | 38 | 11.8μs | **86.0% more** | **20.8% less** |
 
 ### Trade-offs Analysis
 
