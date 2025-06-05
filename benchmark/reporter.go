@@ -3,8 +3,10 @@ package main
 import (
 	"fmt"
 	"os"
-	"strings"
+	"strings" // Only for section finding in README
 	"time"
+
+	"github.com/cdvelop/tinystring"
 )
 
 // ReportGenerator handles README and documentation generation
@@ -27,7 +29,7 @@ func (r *ReportGenerator) UpdateBinaryData(binaries []BinaryInfo) error {
 
 	content, err := r.generateBinarySizeSection(binaries)
 	if err != nil {
-		return fmt.Errorf("failed to generate binary size section: %v", err)
+		return tinystring.Err(err)
 	}
 
 	return r.updateREADMESection("Binary Size Comparison", content)
@@ -50,69 +52,125 @@ func (r *ReportGenerator) generateBinarySizeSection(binaries []BinaryInfo) (stri
 	var content strings.Builder
 
 	content.WriteString("## Binary Size Comparison\n\n")
+	content.WriteString("[Standard Library Example](bench-binary-size/standard-lib/main.go) | [TinyString Example](bench-binary-size/tinystring-lib/main.go)\n\n")
+	content.WriteString("<!-- This table is automatically generated from build-and-measure.sh -->\n")
 	content.WriteString("*Last updated: " + time.Now().Format("2006-01-02 15:04:05") + "*\n\n")
 
 	// Group binaries by optimization level
 	optimizations := getOptimizationConfigs()
 
-	for _, opt := range optimizations {
-		content.WriteString(fmt.Sprintf("### %s Optimization\n", opt.Name))
-		content.WriteString(fmt.Sprintf("*%s*\n\n", opt.Description))
+	content.WriteString("| Build Type | Parameters | Standard Library<br/>`go build` | TinyString<br/>`tinygo build` | Size Reduction | Performance |\n")
+	content.WriteString("|------------|------------|------------------|------------|----------------|-------------|\n")
 
+	var allImprovements []float64
+	var maxImprovement float64
+	var totalSavings int64
+
+	for _, opt := range optimizations {
 		// Find matching binaries for this optimization level
 		standardNative := findBinaryByPattern(binaries, "standard", "native", opt.Suffix)
 		tinystringNative := findBinaryByPattern(binaries, "tinystring", "native", opt.Suffix)
 		standardWasm := findBinaryByPattern(binaries, "standard", "wasm", opt.Suffix)
 		tinystringWasm := findBinaryByPattern(binaries, "tinystring", "wasm", opt.Suffix)
 
-		content.WriteString("| Platform | Standard Library | TinyString | Improvement |\n")
-		content.WriteString("|----------|------------------|------------|-------------|\n")
+		// Build type icons and names
+		buildIcon := getBuildTypeIcon(opt.Name)
+		parameters := getBuildParameters(opt.Name, false)    // Native
+		wasmParameters := getBuildParameters(opt.Name, true) // WASM
+
+		// Native builds
+		if standardNative.Name != "" && tinystringNative.Name != "" {
+			improvementPercent := calculateImprovementPercent(standardNative.Size, tinystringNative.Size)
+			sizeDiff := standardNative.Size - tinystringNative.Size
+			performanceIndicator := getPerformanceIndicator(improvementPercent)
+
+			content.WriteString(fmt.Sprintf("| %s **%s Native** | `%s` | %s | %s | **-%s** | %s **%.1f%%** |\n",
+				buildIcon, capitalizeFirst(opt.Name), parameters,
+				standardNative.SizeStr, tinystringNative.SizeStr,
+				FormatSize(sizeDiff), performanceIndicator, improvementPercent))
+
+			allImprovements = append(allImprovements, improvementPercent)
+			if improvementPercent > maxImprovement {
+				maxImprovement = improvementPercent
+			}
+			totalSavings += sizeDiff
+		}
+
+		// WebAssembly builds
+		if standardWasm.Name != "" && tinystringWasm.Name != "" {
+			improvementPercent := calculateImprovementPercent(standardWasm.Size, tinystringWasm.Size)
+			sizeDiff := standardWasm.Size - tinystringWasm.Size
+			performanceIndicator := getPerformanceIndicator(improvementPercent)
+
+			content.WriteString(fmt.Sprintf("| 🌐 **%s WASM** | `%s` | %s | %s | **-%s** | %s **%.1f%%** |\n",
+				capitalizeFirst(opt.Name), wasmParameters,
+				standardWasm.SizeStr, tinystringWasm.SizeStr,
+				FormatSize(sizeDiff), performanceIndicator, improvementPercent))
+
+			allImprovements = append(allImprovements, improvementPercent)
+			if improvementPercent > maxImprovement {
+				maxImprovement = improvementPercent
+			}
+			totalSavings += sizeDiff
+		}
+	}
+
+	// Calculate averages
+	var avgImprovement float64
+	var avgWasmImprovement float64
+	var avgNativeImprovement float64
+	var wasmCount, nativeCount int
+
+	for i, opt := range optimizations {
+		standardNative := findBinaryByPattern(binaries, "standard", "native", opt.Suffix)
+		tinystringNative := findBinaryByPattern(binaries, "tinystring", "native", opt.Suffix)
+		standardWasm := findBinaryByPattern(binaries, "standard", "wasm", opt.Suffix)
+		tinystringWasm := findBinaryByPattern(binaries, "tinystring", "wasm", opt.Suffix)
 
 		if standardNative.Name != "" && tinystringNative.Name != "" {
-			improvement := calculateImprovement(standardNative.Size, tinystringNative.Size)
-			content.WriteString(fmt.Sprintf("| **Native** | %s | %s | **%s** |\n",
-				standardNative.SizeStr, tinystringNative.SizeStr, improvement))
+			improvement := calculateImprovementPercent(standardNative.Size, tinystringNative.Size)
+			avgNativeImprovement += improvement
+			nativeCount++
 		}
 
 		if standardWasm.Name != "" && tinystringWasm.Name != "" {
-			improvement := calculateImprovement(standardWasm.Size, tinystringWasm.Size)
-			content.WriteString(fmt.Sprintf("| **WebAssembly** | %s | %s | **%s** |\n",
-				standardWasm.SizeStr, tinystringWasm.SizeStr, improvement))
+			improvement := calculateImprovementPercent(standardWasm.Size, tinystringWasm.Size)
+			avgWasmImprovement += improvement
+			wasmCount++
 		}
-
-		content.WriteString("\n")
+		_ = i
 	}
 
-	// Summary section
-	content.WriteString("### Summary\n\n")
-	content.WriteString("TinyString consistently produces smaller binaries across all optimization levels and platforms:\n\n")
-
-	// Calculate average improvements
-	var totalImprovements []float64
-	for _, opt := range optimizations {
-		standard := findBinaryByPattern(binaries, "standard", "native", opt.Suffix)
-		tinystring := findBinaryByPattern(binaries, "tinystring", "native", opt.Suffix)
-
-		if standard.Name != "" && tinystring.Name != "" && standard.Size > 0 {
-			improvement := float64(standard.Size-tinystring.Size) / float64(standard.Size) * 100
-			if improvement > 0 {
-				totalImprovements = append(totalImprovements, improvement)
-			}
+	if len(allImprovements) > 0 {
+		for _, imp := range allImprovements {
+			avgImprovement += imp
 		}
+		avgImprovement /= float64(len(allImprovements))
 	}
 
-	if len(totalImprovements) > 0 {
-		var avg float64
-		for _, imp := range totalImprovements {
-			avg += imp
-		}
-		avg /= float64(len(totalImprovements))
-		content.WriteString(fmt.Sprintf("- **Average binary size reduction: %.1f%%**\n", avg))
+	if nativeCount > 0 {
+		avgNativeImprovement /= float64(nativeCount)
+	}
+	if wasmCount > 0 {
+		avgWasmImprovement /= float64(wasmCount)
 	}
 
-	content.WriteString("- Consistent improvements across all optimization levels\n")
-	content.WriteString("- WebAssembly builds show similar or better improvements\n")
-	content.WriteString("- Best results with ultra optimization settings\n\n")
+	// Performance summary
+	content.WriteString("\n### 🎯 Performance Summary\n\n")
+	content.WriteString(fmt.Sprintf("- 🏆 **Peak Reduction: %.1f%%** (Best optimization)\n", maxImprovement))
+	if wasmCount > 0 {
+		content.WriteString(fmt.Sprintf("- ✅ **Average WebAssembly Reduction: %.1f%%**\n", avgWasmImprovement))
+	}
+	if nativeCount > 0 {
+		content.WriteString(fmt.Sprintf("- ✅ **Average Native Reduction: %.1f%%**\n", avgNativeImprovement))
+	}
+	content.WriteString(fmt.Sprintf("- 📦 **Total Size Savings: %s across all builds**\n\n", FormatSize(totalSavings)))
+
+	content.WriteString("#### Performance Legend\n")
+	content.WriteString("- ❌ Poor (<5% reduction)\n")
+	content.WriteString("- ➖ Fair (5-15% reduction)\n")
+	content.WriteString("- ✅ Good (15-70% reduction)\n")
+	content.WriteString("- 🏆 Outstanding (>70% reduction)\n\n")
 
 	return content.String(), nil
 }
@@ -218,4 +276,83 @@ func (r *ReportGenerator) updateREADMESection(sectionTitle, newContent string) e
 
 	LogSuccess(fmt.Sprintf("Updated README section: %s", sectionTitle))
 	return nil
+}
+
+// capitalizeFirst capitalizes the first letter of a string
+func capitalizeFirst(s string) string {
+	if len(s) == 0 {
+		return s
+	}
+	if s[0] >= 'a' && s[0] <= 'z' {
+		return string(s[0]-32) + s[1:]
+	}
+	return s
+}
+
+// Helper functions for binary size reporting
+
+// getBuildTypeIcon returns the appropriate icon for build type
+func getBuildTypeIcon(optName string) string {
+	switch optName {
+	case "Default":
+		return "🖥️"
+	case "Speed":
+		return "⚡"
+	case "Ultra":
+		return "🏁"
+	case "Debug":
+		return "🔧"
+	default:
+		return "📦"
+	}
+}
+
+// getBuildParameters returns the build parameters for different optimization levels
+func getBuildParameters(optName string, isWasm bool) string {
+	switch optName {
+	case "Default":
+		if isWasm {
+			return "(default -opt=z)"
+		}
+		return `-ldflags="-s -w"`
+	case "Speed":
+		if isWasm {
+			return "-opt=2 -target wasm"
+		}
+		return `-ldflags="-s -w"`
+	case "Ultra":
+		if isWasm {
+			return "-no-debug -panic=trap -scheduler=none -gc=leaking -target wasm"
+		}
+		return `-ldflags="-s -w"`
+	case "Debug":
+		if isWasm {
+			return "-opt=0 -target wasm"
+		}
+		return `-ldflags="-s -w"`
+	default:
+		return ""
+	}
+}
+
+// calculateImprovementPercent calculates the percentage improvement
+func calculateImprovementPercent(standardSize, tinystringSize int64) float64 {
+	if standardSize <= 0 {
+		return 0
+	}
+	return float64(standardSize-tinystringSize) / float64(standardSize) * 100
+}
+
+// getPerformanceIndicator returns the appropriate performance indicator
+func getPerformanceIndicator(improvementPercent float64) string {
+	switch {
+	case improvementPercent < 5:
+		return "❌"
+	case improvementPercent < 15:
+		return "➖"
+	case improvementPercent < 70:
+		return "✅"
+	default:
+		return "🏆"
+	}
 }
