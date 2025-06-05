@@ -6,6 +6,17 @@ SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 BENCHMARK_DIR="$SCRIPT_DIR"
 BINARY_SIZE_DIR="$BENCHMARK_DIR/bench-binary-size"
 
+# Function to get the correct analyzer binary name based on OS
+get_analyzer_name() {
+    if [[ "$OSTYPE" == "msys" || "$OSTYPE" == "cygwin" || "$OSTYPE" == "win32" ]]; then
+        echo "analyzer.exe"
+    else
+        echo "analyzer"
+    fi
+}
+
+ANALYZER_BINARY=$(get_analyzer_name)
+
 echo "🚀 Starting binary size benchmark..."
 
 # Check if TinyGo is installed
@@ -128,7 +139,7 @@ fi
 # Run analysis and update
 echo "📊 Analyzing sizes and updating README..."
 cd "$BENCHMARK_DIR"
-go build -o analyzer . && ./analyzer binary
+go build -o "$ANALYZER_BINARY" . && ./"$ANALYZER_BINARY" binary
 
 # Run memory benchmarks
 echo "🧠 Running memory allocation benchmarks..."

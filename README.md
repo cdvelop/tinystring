@@ -16,7 +16,22 @@ TinyString is a lightweight Go library that provides conv manipulation with a fl
 
 ## Why TinyString?
 
-Traditional Go string libraries rely heavily on the standard library (`fmt`, `strings`, `strconv`), which can significantly increase binary size when using TinyGo for embedded systems or WebAssembly targets. TinyString provides all essential string operations with **manual implementations** that:
+**Go is an incredibly pleasant language to write**, and discovering that it can run in the browser through WebAssembly was simply **amazing**! However, as a relatively new language in the WebAssembly ecosystem, not all the tooling exists yet for optimal web deployment.
+
+While Go's standard library does an excellent job for traditional applications, **the main barrier to WebAssembly adoption with Go is the enormous binary sizes** when compiling for small devices or web deployment. This is particularly problematic because:
+
+🌐 **Every project needs string manipulation** - Working with strings, numbers, errors, and basic data transformations is universal  
+📦 **Standard library bloat** - Traditional libraries (`fmt`, `strings`, `strconv`) add significant overhead  
+🚀 **WebAssembly adoption barrier** - Large binaries slow down web app loading and hurt user experience  
+💾 **Memory constraints** - Small devices and edge computing require efficient resource usage  
+
+**TinyString aims to solve this fundamental problem** by being:
+- 🎯 **Small and lightweight** - Minimal binary footprint for web deployment
+- ⚡ **Memory efficient** - Optimized allocation patterns
+- 🔧 **Easy to use** - Familiar, chainable API that Go developers love
+- 🌍 **WebAssembly-first** - Designed specifically for modern web deployment needs
+
+TinyString provides all essential string operations with **manual implementations** that:
 
 - ✅ Reduce binary size by avoiding standard library imports
 - ✅ Ensure TinyGo compatibility without compilation issues  
@@ -492,10 +507,10 @@ fmt.Println(originalText)  // Output: "el murcielago rapido" (modified)
 
 ## Binary Size Comparison
 
-[Standard Library Example](bench-binary-size/standard-lib/main.go) | [TinyString Example](bench-binary-size/tinystring-lib/main.go)
+[Standard Library Example](benchmark/bench-binary-size/standard-lib/main.go) | [TinyString Example](benchmark/bench-binary-size/tinystring-lib/main.go)
 
 <!-- This table is automatically generated from build-and-measure.sh -->
-*Last updated: 2025-06-05 00:41:55*
+*Last updated: 2025-06-05 01:25:32*
 
 | Build Type | Parameters | Standard Library<br/>`go build` | TinyString<br/>`tinygo build` | Size Reduction | Performance |
 |------------|------------|------------------|------------|----------------|-------------|
@@ -521,44 +536,76 @@ fmt.Println(originalText)  // Output: "el murcielago rapido" (modified)
 
 ## Memory Usage Comparison
 
-*Last updated: 2025-06-05 00:40:36*
+[Standard Library Example](benchmark/bench-memory-alloc/standard) | [TinyString Example](benchmark/bench-memory-alloc/tinystring)
 
-Performance benchmarks comparing memory allocation patterns:
+<!-- This table is automatically generated from memory-benchmark.sh -->
+*Last updated: 2025-06-05 01:26:02*
 
-| Benchmark | Library | Bytes/Op | Allocs/Op | Time/Op | Memory Improvement | Alloc Improvement |
-|-----------|---------|----------|-----------|---------|-------------------|------------------|
-| **String Processing** | Standard | 1.2 KB | 48 | 3.2μs | - | - |
-| | TinyString | 2.3 KB | 46 | 12.1μs | **96.7% more** | **4.2% less** |
-| **Number Processing** | Standard | 1.2 KB | 132 | 4.4μs | - | - |
-| | TinyString | 2.5 KB | 120 | 3.9μs | **110.7% more** | **9.1% less** |
-| **Mixed Operations** | Standard | 546 B | 44 | 2.3μs | - | - |
-| | TinyString | 1.2 KB | 46 | 4.4μs | **119.8% more** | **4.5% more** |
-| **String Processing (Pointer Optimization)** | Standard | 1.2 KB | 48 | 3.2μs | - | - |
-| | TinyString | 2.2 KB | 38 | 11.8μs | **86.0% more** | **20.8% less** |
+Performance benchmarks comparing memory allocation patterns between standard Go library and TinyString:
 
-### Trade-offs Analysis
+| 🧪 **Benchmark Category** | 📚 **Library** | 💾 **Memory/Op** | 🔢 **Allocs/Op** | ⏱️ **Time/Op** | 📈 **Memory Trend** | 🎯 **Alloc Trend** | 🏆 **Performance** |
+|----------------------------|----------------|-------------------|-------------------|-----------------|---------------------|---------------------|--------------------|
+| 📝 **String Processing** | 📊 Standard | `1.2 KB` | `48` | `3.3μs` | - | - | - |
+| | 🚀 TinyString | `2.3 KB` | `46` | `11.8μs` | ❌ **96.7% more** | ➖ **4.2% less** | ❌ **Poor** |
+| 🔢 **Number Processing** | 📊 Standard | `1.2 KB` | `132` | `4.1μs` | - | - | - |
+| | 🚀 TinyString | `2.5 KB` | `120` | `3.6μs` | ❌ **110.7% more** | ✅ **9.1% less** | ❌ **Poor** |
+| 🔄 **Mixed Operations** | 📊 Standard | `546 B` | `44` | `2.1μs` | - | - | - |
+| | 🚀 TinyString | `1.2 KB` | `46` | `4.1μs` | ❌ **119.8% more** | ➖ **4.5% more** | ❌ **Poor** |
+| 📝 **String Processing (Pointer Optimization)** | 📊 Standard | `1.2 KB` | `48` | `3.3μs` | - | - | - |
+| | 🚀 TinyString | `2.2 KB` | `38` | `11.1μs` | ❌ **86.0% more** | 🏆 **20.8% less** | ⚠️ **Caution** |
 
-The benchmarks reveal important trade-offs between binary size and runtime performance:
+### 🎯 Performance Summary
 
-**Binary Size Benefits:**
-- Significantly smaller compiled binaries (16-84% reduction)
-- Better compression for WebAssembly targets
-- Reduced distribution and deployment overhead
+- 💾 **Memory Efficiency**: ❌ **Poor** (Significant overhead) (103.3% average change)
+- 🔢 **Allocation Efficiency**: ✅ **Good** (Allocation efficient) (-7.4% average change)
+- 📊 **Benchmarks Analyzed**: 4 categories
+- 🎯 **Optimization Focus**: Binary size reduction vs runtime efficiency
 
-**Runtime Memory Considerations:**
-- Higher memory allocation overhead during execution
-- Increased GC pressure due to more allocations
-- Trade-off optimizes for storage/distribution size over runtime efficiency
+### ⚖️ Trade-offs Analysis
 
-**Recommendation:**
-- Use TinyString for size-constrained environments (embedded, edge computing)
-- Consider standard library for memory-intensive runtime workloads
-- Evaluate based on specific deployment constraints
+The benchmarks reveal important trade-offs between **binary size** and **runtime performance**:
+
+#### 📦 **Binary Size Benefits** ✅
+- 🏆 **16-84% smaller** compiled binaries
+- 🌐 **Superior WebAssembly** compression ratios
+- 🚀 **Faster deployment** and distribution
+- 💾 **Lower storage** requirements
+
+#### 🧠 **Runtime Memory Considerations** ⚠️
+- 📈 **Higher allocation overhead** during execution
+- 🗑️ **Increased GC pressure** due to allocation patterns
+- ⚡ **Trade-off optimizes** for distribution size over runtime efficiency
+- 🔄 **Different optimization strategy** than standard library
+
+#### 🎯 **Optimization Recommendations**
+| 🎯 **Use Case** | 💡 **Recommendation** | 🔧 **Best For** |
+|-----------------|------------------------|------------------|
+| 🌐 WebAssembly Apps | ✅ **TinyString** | Size-critical web deployment |
+| 📱 Embedded Systems | ✅ **TinyString** | Resource-constrained devices |
+| ☁️ Edge Computing | ✅ **TinyString** | Fast startup and deployment |
+| 🏢 Memory-Intensive Server | ⚠️ **Standard Library** | High-throughput applications |
+| 🔄 High-Frequency Processing | ⚠️ **Standard Library** | Performance-critical workloads |
+
+#### 📊 **Performance Legend**
+- 🏆 **Excellent** (Better performance)
+- ✅ **Good** (Acceptable trade-off)
+- ⚠️ **Caution** (Higher resource usage)
+- ❌ **Poor** (Significant overhead)
 
 
 ## Contributing
 
-Contributions are welcome. Please open an issue to discuss proposed changes.
+This project is currently being **self-financed** and developed independently. The development, testing, maintenance, and improvements are funded entirely out of my personal resources and time.
+
+If you find this project useful and would like to support its continued development, you can make a donation [here with PayPal](https://paypal.me/cdvelop?country.x=CL&locale.x=es_XC). Your support helps cover:
+
+- 💻 Development time and effort
+- 🧪 Testing and quality assurance
+- 📚 Documentation improvements
+- 🔧 Bug fixes and feature enhancements
+- 🌐 Community support and maintenance
+
+Any contribution, however small, is greatly appreciated and directly impacts the project's future development. 🙌
 
 ## License
 

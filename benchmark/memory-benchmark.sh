@@ -5,6 +5,17 @@ set -e
 BENCHMARK_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 MEMORY_BENCH_DIR="$BENCHMARK_DIR/bench-memory-alloc"
 
+# Function to get the correct analyzer binary name based on OS
+get_analyzer_name() {
+    if [[ "$OSTYPE" == "msys" || "$OSTYPE" == "cygwin" || "$OSTYPE" == "win32" ]]; then
+        echo "analyzer.exe"
+    else
+        echo "analyzer"
+    fi
+}
+
+ANALYZER_BINARY=$(get_analyzer_name)
+
 echo "🧠 Running memory allocation benchmarks..."
 
 # Run standard library benchmarks
@@ -67,8 +78,8 @@ echo "📄 Results saved to: $TEMP_RESULTS"
 
 # Now update the main README with these results
 cd "$BENCHMARK_DIR"
-go build -o analyzer .
-./analyzer memory "$TEMP_RESULTS"
+go build -o "$ANALYZER_BINARY" .
+./"$ANALYZER_BINARY" memory "$TEMP_RESULTS"
 
 # Clean up temporary file
 rm -f "$TEMP_RESULTS"

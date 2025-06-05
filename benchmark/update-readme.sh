@@ -8,13 +8,24 @@ set -e
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 cd "$SCRIPT_DIR"
 
+# Function to get the correct analyzer binary name based on OS
+get_analyzer_name() {
+    if [[ "$OSTYPE" == "msys" || "$OSTYPE" == "cygwin" || "$OSTYPE" == "win32" ]]; then
+        echo "analyzer.exe"
+    else
+        echo "analyzer"
+    fi
+}
+
+ANALYZER_BINARY=$(get_analyzer_name)
+
 echo "📚 Updating TinyString Benchmark Documentation"
 echo "=============================================="
 
 # Check if analyzer exists
-if [[ ! -f "analyzer" ]]; then
+if [[ ! -f "$ANALYZER_BINARY" ]]; then
     echo "📋 Building analyzer tool..."
-    if ! go build -o analyzer *.go; then
+    if ! go build -o "$ANALYZER_BINARY" *.go; then
         echo "❌ Failed to build analyzer tool"
         exit 1
     fi
@@ -39,7 +50,7 @@ update_binary_results() {
         return 1
     fi
     
-    if ./analyzer binary; then
+    if ./"$ANALYZER_BINARY" binary; then
         echo "✅ README updated with binary size results"
         return 0
     else
@@ -58,7 +69,7 @@ update_memory_results() {
         return 1
     fi
     
-    if ./analyzer memory; then
+    if ./"$ANALYZER_BINARY" memory; then
         echo "✅ README updated with memory allocation results"
         return 0
     else
@@ -71,7 +82,7 @@ update_memory_results() {
 update_all_results() {
     echo "� Updating README with complete benchmark results..."
     
-    if ./analyzer all; then
+    if ./"$ANALYZER_BINARY" all; then
         echo "✅ README updated with complete benchmark results"
         return 0
     else

@@ -47,10 +47,15 @@ clean_memory_artifacts() {
 clean_build_artifacts() {
     echo "📋 Cleaning build artifacts..."
     
-    # Remove analyzer binary
+    # Remove analyzer binaries (both Unix and Windows versions)
     if [[ -f "analyzer" ]]; then
         rm -f analyzer
-        echo "✅ Analyzer binary removed"
+        echo "✅ Analyzer binary (Unix) removed"
+    fi
+    
+    if [[ -f "analyzer.exe" ]]; then
+        rm -f analyzer.exe
+        echo "✅ Analyzer binary (Windows) removed"
     fi
     
     # Remove benchmark-test binary

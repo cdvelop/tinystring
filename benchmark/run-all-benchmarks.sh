@@ -8,12 +8,23 @@ set -e
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 cd "$SCRIPT_DIR"
 
+# Function to get the correct analyzer binary name based on OS
+get_analyzer_name() {
+    if [[ "$OSTYPE" == "msys" || "$OSTYPE" == "cygwin" || "$OSTYPE" == "win32" ]]; then
+        echo "analyzer.exe"
+    else
+        echo "analyzer"
+    fi
+}
+
+ANALYZER_BINARY=$(get_analyzer_name)
+
 echo "🚀 Starting TinyString Benchmark Suite"
 echo "======================================="
 
 # Build the analyzer tool
 echo "📋 Building analyzer tool..."
-if ! go build -o analyzer *.go; then
+if ! go build -o "$ANALYZER_BINARY" *.go; then
     echo "❌ Failed to build analyzer tool"
     exit 1
 fi
@@ -32,7 +43,7 @@ run_binary_benchmarks() {
     fi
     
     # Run binary analysis
-    if ./analyzer binary; then
+    if ./"$ANALYZER_BINARY" binary; then
         echo "✅ Binary size analysis completed"
         return 0
     else
@@ -54,7 +65,7 @@ run_memory_benchmarks() {
     fi
     
     # Run memory analysis
-    if ./analyzer memory; then
+    if ./"$ANALYZER_BINARY" memory; then
         echo "✅ Memory allocation analysis completed"
         return 0
     else
@@ -68,7 +79,7 @@ run_all_benchmarks() {
     echo ""
     echo "📋 Running complete benchmark suite..."
     
-    if ./analyzer all; then
+    if ./"$ANALYZER_BINARY" all; then
         echo "✅ Complete benchmark suite completed"
         return 0
     else
