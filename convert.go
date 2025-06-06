@@ -268,7 +268,7 @@ func isDigit(r rune) bool {
 
 func isLetter(r rune) bool {
 	return (r >= 'a' && r <= 'z') || (r >= 'A' && r <= 'Z') ||
-		(r >= 'À' && r <= 'ÿ' && r != '×' && r != '÷')
+		(r >= 'À' && r <= 'ÿ' && r != 'x' && r != '÷')
 }
 
 // trRune applies a character mapping to a single rune.
