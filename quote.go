@@ -10,18 +10,18 @@ func (t *conv) Quote() *conv {
 // quoteString quotes a string by wrapping it in double quotes and escaping special characters
 // Integrated from tinystrconv QuoteString function - optimized for minimal allocations
 func (c *conv) quoteString() {
-	input := c.getString()
-	if input == "" {
+	inp := c.getString()
+	if inp == "" {
 		c.setString("\"\"")
 		return
 	}
 
 	// Pre-allocate with estimated size (input length + 20% buffer for escapes + 2 for quotes)
-	estimatedSize := len(input) + (len(input) / 5) + 2
-	result := make([]byte, 0, estimatedSize)
+	eSz := len(inp) + (len(inp) / 5) + 2
+	result := make([]byte, 0, eSz)
 
 	result = append(result, '"')
-	for _, char := range input {
+	for _, char := range inp {
 		switch char {
 		case '"':
 			result = append(result, '\\', '"')

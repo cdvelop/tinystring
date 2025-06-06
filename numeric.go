@@ -1,14 +1,5 @@
 package tinystring
 
-// Common string constants to avoid allocations for frequently used values
-const (
-	emptyString = ""
-	trueString  = "true"
-	falseString = "false"
-	zeroString  = "0"
-	oneString   = "1"
-)
-
 // Small number lookup table to avoid allocations for small integers
 var smallInts = [...]string{
 	"0", "1", "2", "3", "4", "5", "6", "7", "8", "9",
@@ -21,6 +12,118 @@ var smallInts = [...]string{
 	"70", "71", "72", "73", "74", "75", "76", "77", "78", "79",
 	"80", "81", "82", "83", "84", "85", "86", "87", "88", "89",
 	"90", "91", "92", "93", "94", "95", "96", "97", "98", "99",
+}
+
+// Shared helper methods to reduce code duplication between numeric.go and format.go
+
+// saveState saves the current string value and type for later restoration
+func (t *conv) saveState() (string, vTpe) {
+	return t.stringVal, t.vTpe
+}
+
+// restoreState restores previously saved string value and type
+func (t *conv) restoreState(savedVal string, savedType vTpe) {
+	t.stringVal = savedVal
+	t.vTpe = savedType
+	t.err = "" // Reset error when restoring state
+}
+
+// tryParseAsInt attempts to parse the current content as integer with fallback to float
+func (t *conv) tryParseAsInt(base int) bool {
+	// Save original state
+	oSV, oVT := t.saveState()
+
+	// Try to parse as int directly
+	t.s2Int(base)
+	if t.err == "" {
+		return true
+	}
+
+	// If that fails, restore state and try to parse as float then convert to int
+	t.restoreState(oSV, oVT)
+	t.s2Float()
+	if t.err == "" {
+		t.intVal = int64(t.floatVal)
+		t.vTpe = typeInt
+		return true
+	}
+
+	return false
+}
+
+// tryParseAsInt64 attempts to parse the current content as int64 with fallback to float
+func (t *conv) tryParseAsInt64(base int) bool {
+	// Save original state
+	oSV, oVT := t.saveState()
+
+	// Try to parse as int64 directly
+	t.s2Int64(base)
+	if t.err == "" {
+		return true
+	}
+
+	// If that fails, restore state and try to parse as float then convert to int64
+	t.restoreState(oSV, oVT)
+	t.s2Float()
+	if t.err == "" {
+		t.intVal = int64(t.floatVal)
+		t.vTpe = typeInt
+		return true
+	}
+
+	return false
+}
+
+// tryParseAsUint attempts to parse the current content as uint with fallback to float
+func (t *conv) tryParseAsUint(base int) bool {
+	// Save original state
+	oSV, oVT := t.saveState()
+
+	// Try to parse as uint directly using the original string value
+	t.s2Uint(oSV, base)
+	if t.err == "" {
+		return true
+	}
+
+	// If that fails, restore state and try to parse as float then convert to uint
+	t.restoreState(oSV, oVT)
+	t.s2Float()
+	if t.err == "" {
+		if t.floatVal < 0 {
+			t.err = errNegativeUnsigned
+			return false
+		}
+		t.uintVal = uint64(t.floatVal)
+		t.vTpe = typeUint
+		return true
+	}
+
+	return false
+}
+
+// validateBase validates that base is within acceptable range (2-36)
+func (t *conv) validateBase(base int) bool {
+	if base < 2 || base > 36 {
+		t.NewErr(errInvalidBase)
+		return false
+	}
+	return true
+}
+
+// handleNegativeNumber processes negative sign for non-decimal bases
+func (t *conv) handleNegativeNumber(input string, base int) (string, bool, bool) {
+	if len(input) == 0 {
+		return input, false, false
+	}
+
+	if input[0] == '-' {
+		if base != 10 {
+			t.NewErr(errInvalidBase, "negative numbers are not supported for non-decimal bases")
+			return input, false, false
+		}
+		return input[1:], true, true
+	}
+	return input, false, true
 }
 
 // ToInt converts the conv content to an integer with optional base specification.
@@ -78,26 +181,12 @@ func (t *conv) ToInt(base ...int) (int, error) {
 		b = base[0]
 	}
 
-	// Save the original state
-	originalStringVal := t.stringVal
-	originalValType := t.valType
-
-	// First try to parse as int directly
-	t.stringToInt(b)
-	if t.err == "" {
+	// Use shared helper method for parsing with fallback
+	if t.tryParseAsInt(b) {
 		return int(t.intVal), nil
 	}
 
-	// If that fails, restore state and try to parse as float and then convert to int (for truncation)
-	t.err = "" // Reset error for float parsing
-	t.stringVal = originalStringVal
-	t.valType = originalValType
-	t.stringToFloat()
-	if t.err == "" {
-		return int(t.floatVal), nil
-	}
-
-	// Return the original int parsing error
+	// Return error if parsing failed
 	return 0, t
 }
 
@@ -161,26 +250,12 @@ func (t *conv) ToInt64(base ...int) (int64, error) {
 		b = base[0]
 	}
 
-	// Save the original state
-	originalStringVal := t.stringVal
-	originalValType := t.valType
-
-	// First try to parse as int64 directly
-	t.stringToInt64(b)
-	if t.err == "" {
+	// Use shared helper method for parsing with fallback
+	if t.tryParseAsInt64(b) {
 		return t.intVal, nil
 	}
 
-	// If that fails, restore state and try to parse as float and then convert to int64 (for truncation)
-	t.err = "" // Reset error for float parsing
-	t.stringVal = originalStringVal
-	t.valType = originalValType
-	t.stringToFloat()
-	if t.err == "" {
-		return int64(t.floatVal), nil
-	}
-
-	// Return the original int64 parsing error
+	// Return error if parsing failed
 	return 0, t
 }
 
@@ -239,29 +314,12 @@ func (t *conv) ToUint(base ...int) (uint, error) {
 		b = base[0]
 	}
 
-	// Save the original state
-	originalStringVal := t.stringVal
-	originalValType := t.valType
-
-	// First try to parse as uint directly
-	t.stringToUint(originalStringVal, b)
-	if t.err == "" {
+	// Use shared helper method for parsing with fallback
+	if t.tryParseAsUint(b) {
 		return uint(t.uintVal), nil
 	}
 
-	// If that fails, restore state and try to parse as float and then convert to uint (for truncation)
-	t.err = "" // Reset error for float parsing
-	t.stringVal = originalStringVal
-	t.valType = originalValType
-	t.stringToFloat()
-	if t.err == "" {
-		if t.floatVal < 0 {
-			return 0, Err(errNegativeUnsigned)
-		}
-		return uint(t.floatVal), nil
-	}
-
-	// Return the original uint parsing error
+	// Return error if parsing failed
 	return 0, t
 }
 
@@ -304,84 +362,81 @@ func (t *conv) ToUint(base ...int) (uint, error) {
 // Note: This method uses a custom float parsing implementation that may have
 // different precision characteristics compared to the standard library.
 func (t *conv) ToFloat() (float64, error) {
-	t.stringToFloat()
+	t.s2Float()
 	if t.err != "" {
 		return 0, t
 	}
 	return t.floatVal, nil
 }
 
-// stringToInt converts string to int with specified base and stores in conv struct.
+// s2Int converts string to int with specified base and stores in conv struct.
 // This is an internal conv method that modifies the struct instead of returning values.
-func (t *conv) stringToInt(base int) {
-	input := t.getString()
-	if input == "" {
-		t.err = errEmptyString
+func (t *conv) s2Int(base int) {
+	inp := t.getString()
+	if t.isEmptyString(inp) {
 		return
 	}
 
-	isNegative := false
-	if input[0] == '-' {
+	isNeg := false
+	if inp[0] == '-' {
 		if base != 10 {
 			t.NewErr(errInvalidBase, "negative numbers are not supported for non-decimal bases")
 			return
 		}
-		isNegative = true
+		isNeg = true
 		// Update the conv struct with the string without the negative sign
-		t.setString(input[1:])
+		t.setString(inp[1:])
 	}
 
-	t.stringToNumberHelper(base)
+	t.s2n(base)
 	if t.err != "" {
 		return
 	}
 
-	if isNegative {
+	if isNeg {
 		t.intVal = -int64(t.uintVal)
 	} else {
 		t.intVal = int64(t.uintVal)
 	}
-	t.valType = valTypeInt
+	t.vTpe = typeInt
 }
 
-// stringToInt64 converts string to int64 with specified base and stores in conv struct.
+// s2Int64 converts string to int64 with specified base and stores in conv struct.
 // This is an internal conv method that modifies the struct instead of returning values.
-func (t *conv) stringToInt64(base int) {
-	input := t.getString()
-	if input == "" {
-		t.err = errEmptyString
+func (t *conv) s2Int64(base int) {
+	inp := t.getString()
+	if t.isEmptyString(inp) {
 		return
 	}
 
-	isNegative := false
-	if input[0] == '-' {
+	isNeg := false
+	if inp[0] == '-' {
 		if base != 10 {
 			t.NewErr("negative numbers are not supported for non-decimal bases")
 			return
 		}
-		isNegative = true
+		isNeg = true
 		// Update the conv struct with the string without the negative sign
-		t.setString(input[1:])
+		t.setString(inp[1:])
 	}
 
-	t.stringToNumberHelper(base)
+	t.s2n(base)
 	if t.err != "" {
 		return
 	}
 
-	if isNegative {
+	if isNeg {
 		t.intVal = -int64(t.uintVal)
 	} else {
 		t.intVal = int64(t.uintVal)
 	}
-	t.valType = valTypeInt
+	t.vTpe = typeInt
 }
 
-// stringToUint converts string to uint with specified base and stores in conv struct.
+// s2Uint converts string to uint with specified base and stores in conv struct.
 // This is an internal conv method that modifies the struct instead of returning values.
-func (t *conv) stringToUint(input string, base int) {
-	if input == "" {
-		t.err = errEmptyString
+func (t *conv) s2Uint(input string, base int) {
+	if t.isEmptyString(input) {
 		return
 	}
 
@@ -389,67 +444,65 @@ func (t *conv) stringToUint(input string, base int) {
 		t.NewErr(errNegativeUnsigned)
 		return
 	}
-
 	// Update the conv struct with the provided input string
 	t.setString(input)
-	t.stringToNumberHelper(base)
-	// Result already stored in t.uintVal by stringToNumberHelper
+	t.s2n(base)
+	// Result already stored in t.uintVal by s2n
 }
 
-// stringToFloat converts string to float64 and stores in conv struct.
+// s2Float converts string to float64 and stores in conv struct.
 // This is an internal conv method that modifies the struct instead of returning values.
-func (t *conv) stringToFloat() {
-	input := t.getString()
-	if input == "" {
-		t.err = errEmptyString
+func (t *conv) s2Float() {
+	inp := t.getString()
+	if t.isEmptyString(inp) {
 		return
 	}
 
-	isNegative := false
-	startIndex := 0
-	if input[0] == '-' {
-		isNegative = true
-		startIndex = 1
-		if len(input) == 1 { // Just a "-" sign
+	isNeg := false
+	sIdx := 0
+	if inp[0] == '-' {
+		isNeg = true
+		sIdx = 1
+		if len(inp) == 1 { // Just a "-" sign
 			t.err = errInvalidFloat
 			return
 		}
-	} else if input[0] == '+' {
-		startIndex = 1
-		if len(input) == 1 { // Just a "+" sign
+	} else if inp[0] == '+' {
+		sIdx = 1
+		if len(inp) == 1 { // Just a "+" sign
 			t.err = errInvalidFloat
 			return
 		}
 	}
 
-	var integerPart uint64
-	var fractionPart uint64
-	var fractionDivisor float64 = 1.0
-	decimalPointSeen := false
-	parsingFraction := false
-	hasDigits := false // To check if there's at least one digit
+	var ip uint64        // integerPart
+	var fp uint64        // fractionPart
+	var fd float64 = 1.0 // fractionDivisor
+	dps := false         // decimalPointSeen
+	pf := false          // parsingFraction
+	hd := false          // hasDigits
 
-	for i := startIndex; i < len(input); i++ {
-		char := input[i]
-		if char == '.' {
-			if decimalPointSeen {
+	for i := sIdx; i < len(inp); i++ {
+		ch := inp[i] // char
+		if ch == '.' {
+			if dps {
 				t.err = errInvalidFloat
 				return
 			}
-			decimalPointSeen = true
-			parsingFraction = true
-		} else if char >= '0' && char <= '9' {
-			hasDigits = true
-			digit := uint64(char - '0')
-			if parsingFraction {
-				fractionPart = fractionPart*10 + digit
-				fractionDivisor *= 10.0
+			dps = true
+			pf = true
+		} else if ch >= '0' && ch <= '9' {
+			hd = true
+			dgt := uint64(ch - '0') // digit
+			if pf {
+				fp = fp*10 + dgt
+				fd *= 10.0
 			} else { // Check for overflow in integer part
-				if integerPart > ^uint64(0)/10 || (integerPart == ^uint64(0)/10 && digit > ^uint64(0)%10) {
+				if ip > ^uint64(0)/10 || (ip == ^uint64(0)/10 && dgt > ^uint64(0)%10) {
 					t.err = errOverflow
 					return
 				}
-				integerPart = integerPart*10 + digit
+				ip = ip*10 + dgt
 			}
 		} else {
 			t.err = errInvalidFloat
@@ -457,292 +510,259 @@ func (t *conv) stringToFloat() {
 		}
 	}
 
-	if !hasDigits {
+	if !hd {
 		t.err = errInvalidFloat
 		return
 	}
 
-	result := float64(integerPart)
-	if fractionPart > 0 {
-		result += float64(fractionPart) / fractionDivisor
+	result := float64(ip)
+	if fp > 0 {
+		result += float64(fp) / fd
 	}
 
-	if isNegative {
+	if isNeg {
 		result = -result
 	}
 	t.floatVal = result
-	t.valType = valTypeFloat
+	t.vTpe = typeFloat
 }
 
-// stringToNumberHelper converts string to number with specified base and stores in conv struct.
+// s2n converts string to number with specified base and stores in conv struct.
 // This is an internal conv method that modifies the struct instead of returning values.
-func (t *conv) stringToNumberHelper(base int) {
-	input := t.getString()
-	if base < 2 || base > 36 {
-		t.NewErr(errInvalidBase)
+func (t *conv) s2n(base int) {
+	inp := t.getString()
+	if !t.validateBase(base) {
 		return
 	}
 
-	var result uint64
+	var res uint64 // result
 
-	for _, char := range input {
-		var digit int
-		if char >= '0' && char <= '9' {
-			digit = int(char - '0')
-		} else if char >= 'a' && char <= 'z' {
-			digit = int(char-'a') + 10
-		} else if char >= 'A' && char <= 'Z' {
-			digit = int(char-'A') + 10
+	for _, ch := range inp { // char
+		var d int // digit
+		if ch >= '0' && ch <= '9' {
+			d = int(ch - '0')
+		} else if ch >= 'a' && ch <= 'z' {
+			d = int(ch-'a') + 10
+		} else if ch >= 'A' && ch <= 'Z' {
+			d = int(ch-'A') + 10
 		} else {
-			t.NewErr(string(char))
+			t.NewErr(string(ch))
 			return
 		}
 
-		if digit >= base {
+		if d >= base {
 			t.NewErr(errInvalidBase, "digit out of range for base")
 			return
 		}
 
 		// Check for overflow
-		if result > (^uint64(0))/uint64(base) {
+		if res > (^uint64(0))/uint64(base) {
 			t.NewErr(errOverflow)
 			return
 		}
 
-		result = result*uint64(base) + uint64(digit)
+		res = res*uint64(base) + uint64(d)
 	}
 
-	t.uintVal = result
-	t.valType = valTypeUint
+	t.uintVal = res
+	t.vTpe = typeUint
 }
 
-// formatIntInternal converts integer to string and stores in cachedString
-func (t *conv) formatIntInternal(base int) {
+// isEmptyString checks if the input string is empty and sets an error if it is.
+func (t *conv) isEmptyString(inp string) bool {
+	if inp == "" {
+		t.err = errEmptyString
+		return true
+	}
+	return false
+}
+
+// fmtUint2Str converts an unsigned integer to a string in the given base,
+// writing it into the provided buffer and returning the resulting string and its start index in the buffer.
+func fmtUint2Str(val uint64, base int, buf []byte) (string, int) {
+	idx := len(buf) // i
+
+	for val > 0 {
+		idx--
+		buf[idx] = digs[val%uint64(base)]
+		val /= uint64(base)
+	}
+	return string(buf[idx:]), idx
+}
+
+// fmtInt converts integer to string and stores in tmpStr
+func (t *conv) fmtInt(base int) {
 	val := t.intVal
 	if val == 0 {
-		t.cachedString = "0"
-		t.stringVal = t.cachedString
+		t.tmpStr = "0"
+		t.stringVal = t.tmpStr
 		return
 	}
 
-	// Use fixed buffer instead of pooled builder
 	var buf [64]byte // Max int64 needs 20 digits + sign, base 2 needs 64 digits
-	i := len(buf)    // Start from the end
-
 	negative := val < 0
 	if negative {
 		val = -val
 	}
 
-	// Convert digits in reverse order directly into buffer
-	for val > 0 {
-		digit := val % int64(base)
-		i--
-		if digit < 10 {
-			buf[i] = byte('0' + digit)
-		} else {
-			buf[i] = byte('a' + digit - 10)
-		}
-		val /= int64(base)
-	}
+	_, idx := fmtUint2Str(uint64(val), base, buf[:]) // i
 
 	if negative {
-		i--
-		buf[i] = '-'
+		idx--
+		buf[idx] = '-'
 	}
 
-	// Create string from the used portion of buffer
-	t.cachedString = string(buf[i:])
-	t.stringVal = t.cachedString
+	t.tmpStr = string(buf[idx:])
+	t.stringVal = t.tmpStr
 }
 
-// intToStringOptimizedInternal converts int64 to string with minimal allocations and stores in cachedString
-func (t *conv) intToStringOptimizedInternal() {
+// i2s converts int64 to string with minimal allocations and stores in tmpStr
+func (t *conv) i2s() {
 	val := t.intVal
 	// Handle common small numbers using lookup table
 	if val >= 0 && val < int64(len(smallInts)) {
-		t.cachedString = smallInts[val]
-		t.stringVal = t.cachedString
+		t.tmpStr = smallInts[val]
+		t.stringVal = t.tmpStr
 		return
 	}
 
 	// Handle special cases
 	if val == 0 {
-		t.cachedString = zeroString
-		t.stringVal = t.cachedString
+		t.tmpStr = zeroStr
+		t.stringVal = t.tmpStr
 		return
 	}
 	if val == 1 {
-		t.cachedString = oneString
-		t.stringVal = t.cachedString
+		t.tmpStr = oneStr
+		t.stringVal = t.tmpStr
 		return
 	}
 
 	// Fall back to standard conversion for larger numbers
-	t.formatIntInternal(10)
+	t.fmtInt(10)
 }
 
-// formatUintInternal converts unsigned integer to string and stores in cachedString
-func (t *conv) formatUintInternal(base int) {
+// fmtUint converts unsigned integer to string and stores in tmpStr
+func (t *conv) fmtUint(base int) {
 	val := t.uintVal
 	if val == 0 {
-		t.cachedString = "0"
-		t.stringVal = t.cachedString
+		t.tmpStr = "0"
+		t.stringVal = t.tmpStr
 		return
 	}
 
-	// Use fixed buffer instead of pooled builder
-	var buf [64]byte // Max uint64 needs 20 digits, base 2 needs 64 digits
-	i := len(buf)    // Start from the end
+	var buf [64]byte                         // Max uint64 needs 20 digits, base 2 needs 64 digits
+	_, idx := fmtUint2Str(val, base, buf[:]) // i
 
-	// Convert digits in reverse order directly into buffer
-	for val > 0 {
-		digit := val % uint64(base)
-		i--
-		if digit < 10 {
-			buf[i] = byte('0' + digit)
-		} else {
-			buf[i] = byte('a' + digit - 10)
-		}
-		val /= uint64(base)
-	}
-
-	// Create string from the used portion of buffer
-	t.cachedString = string(buf[i:])
-	t.stringVal = t.cachedString
+	t.tmpStr = string(buf[idx:])
+	t.stringVal = t.tmpStr
 }
 
-// uintToStringOptimizedInternal converts uint64 to string with minimal allocations and stores in cachedString
-func (t *conv) uintToStringOptimizedInternal() {
+// u2s converts uint64 to string with minimal allocations and stores in tmpStr
+func (t *conv) u2s() {
 	val := t.uintVal
 	// Handle common small numbers using lookup table
 	if val < uint64(len(smallInts)) {
-		t.cachedString = smallInts[val]
-		t.stringVal = t.cachedString
+		t.tmpStr = smallInts[val]
+		t.stringVal = t.tmpStr
 		return
 	}
 
 	// Handle special cases
 	if val == 0 {
-		t.cachedString = zeroString
-		t.stringVal = t.cachedString
+		t.tmpStr = zeroStr
+		t.stringVal = t.tmpStr
 		return
 	}
 	if val == 1 {
-		t.cachedString = oneString
-		t.stringVal = t.cachedString
+		t.tmpStr = oneStr
+		t.stringVal = t.tmpStr
 		return
 	}
 
 	// Fall back to standard conversion for larger numbers
-	t.uintToStringWithBaseInternal(10)
+	t.fmtUint(10) // Use the unified fmtUint
 }
 
-// uintToStringWithBaseInternal converts unsigned integer to string with specified base
-// and stores the result in the conv struct fields
-func (t *conv) uintToStringWithBaseInternal(base int) {
-	number := t.uintVal
-	if number == 0 {
-		t.cachedString = "0"
-		t.stringVal = t.cachedString
-		return
-	}
-
-	// Max uint64 is 18446744073709551615, which has 20 digits.
-	// For base 2, uint64 needs up to 64 bits.
-	var buf [64]byte // Max buffer size for uint64 in base 2
-	i := len(buf)    // Start from the end of the buffer
-
-	const digitChars = "0123456789abcdefghijklmnopqrstuvwxyz"
-
-	for number > 0 {
-		i--
-		buf[i] = digitChars[number%uint64(base)]
-		number /= uint64(base)
-	}
-
-	t.cachedString = string(buf[i:])
-	t.stringVal = t.cachedString
-}
-
-// formatFloatInternal converts float to string and stores in cachedString
-func (t *conv) formatFloatInternal() {
+// f2s converts float to string and stores in tmpStr
+// Uses simplified float-to-string conversion for basic numeric.go operations
+func (t *conv) f2s() {
 	val := t.floatVal
 	// Handle special cases
 	if val != val { // NaN
-		t.cachedString = "NaN"
-		t.stringVal = t.cachedString
+		t.tmpStr = "NaN"
+		t.stringVal = t.tmpStr
 		return
-	}
-	if val == 0 {
-		t.cachedString = "0"
-		t.stringVal = t.cachedString
-		return
-	}
-
-	// Use fixed buffer instead of pooled builder
-	var buf [32]byte // Should be enough for most float representations
-	i := 0
-
-	negative := val < 0
-	if negative {
-		val = -val
-		buf[i] = '-'
-		i++
 	}
 
 	// Handle infinity
-	if val > 1e308 {
-		copy(buf[i:], "Inf")
-		t.cachedString = string(buf[:i+3])
-		t.stringVal = t.cachedString
+	if val > 1e308 || val < -1e308 {
+		if val < 0 {
+			t.tmpStr = "-Inf"
+		} else {
+			t.tmpStr = "Inf"
+		}
+		t.stringVal = t.tmpStr
 		return
 	}
 
+	// Handle zero
+	if val == 0 {
+		t.tmpStr = "0"
+		t.stringVal = t.tmpStr
+		return
+	}
+
+	// Simple float-to-string conversion for basic cases
+	isNegative := val < 0
+	if isNegative {
+		val = -val
+	}
+
 	// Extract integer and fractional parts
-	intPart := int64(val)
-	fracPart := val - float64(intPart)
+	integerPart := int64(val)
+	fractionalPart := val - float64(integerPart)
 
-	// Convert integer part directly into buffer
-	if intPart == 0 {
-		buf[i] = '0'
-		i++
+	// Convert integer part
+	var result string
+	if integerPart == 0 {
+		result = "0"
 	} else {
-		// Convert integer part to string using our optimized method
-		tempConv := &conv{intVal: intPart}
-		tempConv.formatIntInternal(10)
-		intStr := tempConv.cachedString
-		copy(buf[i:], intStr)
-		i += len(intStr)
+		// Convert integer to string
+		temp := integerPart
+		digits := ""
+		for temp > 0 {
+			digits = string(byte('0'+temp%10)) + digits
+			temp /= 10
+		}
+		result = digits
 	}
 
-	// Add decimal point and fractional part if needed
-	if fracPart > 0 {
-		buf[i] = '.'
-		i++
-
-		// Use 6 digits for better precision control
+	// Add fractional part if significant
+	if fractionalPart > 0 {
+		result += "."
+		// Add up to 6 significant fractional digits, removing trailing zeros
 		multiplier := 1e6
-		fracPartInt := int64(fracPart*multiplier + 0.5)
+		fracPart := int64(fractionalPart*multiplier + 0.5)
 
-		// Convert to digits directly into buffer
-		var fracDigits [6]byte
-		for j := 5; j >= 0; j-- {
-			fracDigits[j] = byte('0' + fracPartInt%10)
-			fracPartInt /= 10
+		fracStr := ""
+		for i := 0; i < 6; i++ {
+			fracStr = string(byte('0'+fracPart%10)) + fracStr
+			fracPart /= 10
 		}
 
-		// Trim trailing zeros
-		end := 5
-		for end >= 0 && fracDigits[end] == '0' {
-			end--
+		// Remove trailing zeros
+		for len(fracStr) > 1 && fracStr[len(fracStr)-1] == '0' {
+			fracStr = fracStr[:len(fracStr)-1]
 		}
-		if end >= 0 {
-			copy(buf[i:], fracDigits[:end+1])
-			i += end + 1
-		}
+
+		result += fracStr
 	}
-	// Create string from the used portion of buffer
-	t.cachedString = string(buf[:i])
-	t.stringVal = t.cachedString
+
+	if isNegative {
+		result = "-" + result
+	}
+
+	t.tmpStr = result
+	t.stringVal = result
 }

@@ -14,9 +14,9 @@ package tinystring
 //
 //	value, err := ParseKeyValue("invalid-string")
 //	// value = "", err = error containing "delimiter ':' not found in string invalid-string"
-func ParseKeyValue(input string, delimiters ...string) (value string, err error) {
+func ParseKeyValue(in string, delimiters ...string) (value string, err error) {
 	// Default delimiter is ":"
-	delimiter := ":"
+	d := ":"
 
 	// Check for a custom delimiter
 	if len(delimiters) > 0 {
@@ -24,33 +24,33 @@ func ParseKeyValue(input string, delimiters ...string) (value string, err error)
 			return "", Err(errInvalidFormat, "only one delimiter is allowed")
 		}
 		if delimiters[0] != "" {
-			delimiter = delimiters[0]
+			d = delimiters[0]
 		}
 	}
 
-	// Special case: if the input is exactly the delimiter, return empty value without error
-	if input == delimiter {
+	// Special case: if the in is exactly the delimiter, return empty value without error
+	if in == d {
 		return "", nil
 	}
 
-	// Check if delimiter exists in the input
-	if !Contains(input, delimiter) {
-		errorMsg := "delimiter '" + delimiter + "' not found in string " + input
-		return "", Err(errInvalidFormat, errorMsg)
+	// Check if delimiter exists in the in
+	if !Contains(in, d) {
+		em := "delimiter '" + d + "' not found in string " + in
+		return "", Err(errInvalidFormat, em)
 	}
 	// Extract value part (everything after the first occurrence of the delimiter)
 	// Find the position of the first delimiter
-	delimIndex := -1
-	for i := 0; i <= len(input)-len(delimiter); i++ {
-		if input[i:i+len(delimiter)] == delimiter {
-			delimIndex = i
+	di := -1
+	for i := 0; i <= len(in)-len(d); i++ {
+		if in[i:i+len(d)] == d {
+			di = i
 			break
 		}
 	}
 
 	// Return everything after the first delimiter
-	if delimIndex >= 0 {
-		return input[delimIndex+len(delimiter):], nil
+	if di >= 0 {
+		return in[di+len(d):], nil
 	}
 
 	// This should never happen if Contains returned true

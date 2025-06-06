@@ -1,56 +1,94 @@
 package tinystring
 
-// Slice of mappings to remove accents and diacritics
-var accentMappings = []charMapping{
-	{'á', 'a'}, {'à', 'a'}, {'ã', 'a'}, {'â', 'a'}, {'ä', 'a'},
-	{'é', 'e'}, {'è', 'e'}, {'ê', 'e'}, {'ë', 'e'},
-	{'í', 'i'}, {'ì', 'i'}, {'î', 'i'}, {'ï', 'i'},
-	{'ó', 'o'}, {'ò', 'o'}, {'õ', 'o'}, {'ô', 'o'}, {'ö', 'o'},
-	{'ú', 'u'}, {'ù', 'u'}, {'û', 'u'}, {'ü', 'u'},
-	{'ý', 'y'}, {'ÿ', 'y'},
-	{'ñ', 'n'},
-	// Upper case
-	{'Á', 'A'}, {'À', 'A'}, {'Ã', 'A'}, {'Â', 'A'}, {'Ä', 'A'},
-	{'É', 'E'}, {'È', 'E'}, {'Ê', 'E'}, {'Ë', 'E'},
-	{'Í', 'I'}, {'Ì', 'I'}, {'Î', 'I'}, {'Ï', 'I'},
-	{'Ó', 'O'}, {'Ò', 'O'}, {'Õ', 'O'}, {'Ô', 'O'}, {'Ö', 'O'},
-	{'Ú', 'U'}, {'Ù', 'U'}, {'Û', 'U'}, {'Ü', 'U'},
-	{'Ý', 'Y'},
-	{'Ñ', 'N'},
+// Shared constants for maximum code reuse and minimal binary size
+const (
+	// Digit characters for base conversion (supports bases 2-36)
+	digs = "0123456789abcdefghijklmnopqrstuvwxyz"
+	// Common string constants to avoid allocations for frequently used values
+	emptyStr = ""
+	trueStr  = "true"
+	falseStr = "false"
+	zeroStr  = "0"
+	oneStr   = "1"
+)
+
+// Index-based character mapping for maximum efficiency
+var (
+	// Accented characters (lowercase)
+	aL = []rune{'á', 'à', 'ã', 'â', 'ä', 'é', 'è', 'ê', 'ë', 'í', 'ì', 'î', 'ï', 'ó', 'ò', 'õ', 'ô', 'ö', 'ú', 'ù', 'û', 'ü', 'ý', 'ñ'}
+	// Base characters (lowercase)
+	bL = []rune{'a', 'a', 'a', 'a', 'a', 'e', 'e', 'e', 'e', 'i', 'i', 'i', 'i', 'o', 'o', 'o', 'o', 'o', 'u', 'u', 'u', 'u', 'y', 'n'}
+	// Accented characters (uppercase)
+	aU = []rune{'Á', 'À', 'Ã', 'Â', 'Ä', 'É', 'È', 'Ê', 'Ë', 'Í', 'Ì', 'Î', 'Ï', 'Ó', 'Ò', 'Õ', 'Ô', 'Ö', 'Ú', 'Ù', 'Û', 'Ü', 'Ý', 'Ñ'}
+	// Base characters (uppercase)
+	bU = []rune{'A', 'A', 'A', 'A', 'A', 'E', 'E', 'E', 'E', 'I', 'I', 'I', 'I', 'O', 'O', 'O', 'O', 'O', 'U', 'U', 'U', 'U', 'Y', 'N'}
+)
+
+// toUpperRune converts a single rune to uppercase using optimized lookup
+func toUpperRune(r rune) rune {
+	// ASCII fast path
+	if r >= 'a' && r <= 'z' {
+		return r - 32
+	}
+	// Accent conversion using index lookup
+	for i, char := range aL {
+		if r == char {
+			return aU[i]
+		}
+	}
+	return r
 }
 
-// Mappings to convert upper case to lower case
-var lowerMappings = []charMapping{
-	{'A', 'a'}, {'B', 'b'}, {'C', 'c'}, {'D', 'd'}, {'E', 'e'},
-	{'F', 'f'}, {'G', 'g'}, {'H', 'h'}, {'I', 'i'}, {'J', 'j'},
-	{'K', 'k'}, {'L', 'l'}, {'M', 'm'}, {'N', 'n'}, {'O', 'o'},
-	{'P', 'p'}, {'Q', 'q'}, {'R', 'r'}, {'S', 's'}, {'T', 't'},
-	{'U', 'u'}, {'V', 'v'}, {'W', 'w'}, {'X', 'x'}, {'Y', 'y'},
-	{'Z', 'z'},
-	// Accented uppercase to accented lowercase
-	{'Á', 'á'}, {'À', 'à'}, {'Ã', 'ã'}, {'Â', 'â'}, {'Ä', 'ä'},
-	{'É', 'é'}, {'È', 'è'}, {'Ê', 'ê'}, {'Ë', 'ë'},
-	{'Í', 'í'}, {'Ì', 'ì'}, {'Î', 'î'}, {'Ï', 'ï'},
-	{'Ó', 'ó'}, {'Ò', 'ò'}, {'Õ', 'õ'}, {'Ô', 'ô'}, {'Ö', 'ö'},
-	{'Ú', 'ú'}, {'Ù', 'ù'}, {'Û', 'û'}, {'Ü', 'ü'},
-	{'Ý', 'ý'},
-	{'Ñ', 'ñ'},
+// toLowerRune converts a single rune to lowercase using optimized lookup
+func toLowerRune(r rune) rune {
+	// ASCII fast path
+	if r >= 'A' && r <= 'Z' {
+		return r + 32
+	}
+	// Accent conversion using index lookup
+	for i, char := range aU {
+		if r == char {
+			return aL[i]
+		}
+	}
+	return r
 }
 
-// Mappings to convert lower case to upper case
-var upperMappings = []charMapping{
-	{'a', 'A'}, {'b', 'B'}, {'c', 'C'}, {'d', 'D'}, {'e', 'E'},
-	{'f', 'F'}, {'g', 'G'}, {'h', 'H'}, {'i', 'I'}, {'j', 'J'},
-	{'k', 'K'}, {'l', 'L'}, {'m', 'M'}, {'n', 'N'}, {'o', 'O'},
-	{'p', 'P'}, {'q', 'Q'}, {'r', 'R'}, {'s', 'S'}, {'t', 'T'},
-	{'u', 'U'}, {'v', 'V'}, {'w', 'W'}, {'x', 'X'}, {'y', 'Y'},
-	{'z', 'Z'},
-	// Accented lowercase to accented uppercase
-	{'á', 'Á'}, {'à', 'À'}, {'ã', 'Ã'}, {'â', 'Â'}, {'ä', 'Ä'},
-	{'é', 'É'}, {'è', 'È'}, {'ê', 'Ê'}, {'ë', 'Ë'},
-	{'í', 'Í'}, {'ì', 'Ì'}, {'î', 'Î'}, {'ï', 'Ï'},
-	{'ó', 'Ó'}, {'ò', 'Ò'}, {'õ', 'Õ'}, {'ô', 'Ô'}, {'ö', 'Ö'},
-	{'ú', 'Ú'}, {'ù', 'Ù'}, {'û', 'Û'}, {'ü', 'Ü'},
-	{'ý', 'Ý'}, {'ÿ', 'Ÿ'},
-	{'ñ', 'Ñ'},
+// RemoveTilde removes accents and diacritics using index-based lookup
+func (t *conv) RemoveTilde() *conv {
+	str := t.getString()
+	buf := make([]byte, 0, len(str)*2)
+	hc := false
+	for _, r := range str {
+		// Find accent and replace with base character using index lookup
+		found := false
+		// Check lowercase accents
+		for i, char := range aL {
+			if r == char {
+				buf = addRne2Buf(buf, bL[i])
+				hc = true
+				found = true
+				break
+			}
+		}
+		// Check uppercase accents if not found in lowercase
+		if !found {
+			for i, char := range aU {
+				if r == char {
+					buf = addRne2Buf(buf, bU[i])
+					hc = true
+					found = true
+					break
+				}
+			}
+		}
+		if !found {
+			buf = addRne2Buf(buf, r)
+		}
+	}
+	if !hc {
+		return t
+	}
+	t.setString(string(buf))
+	return t
 }

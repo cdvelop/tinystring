@@ -28,24 +28,24 @@ const (
 // set new error message eg: tinystring.Err(errInvalidFormat, "custom message")
 func (c *conv) NewErr(values ...any) *conv {
 	var sep, out errorType
-	c.cachedString = ""
+	c.tmpStr = ""
 	c.err = ""
 	for _, v := range values {
-		c.anyToStringInternal(v)
+		c.any2s(v)
 		if c.err != "" {
 			out += sep + c.err
 		}
 
-		if c.cachedString != "" {
-			out += sep + errorType(c.cachedString)
+		if c.tmpStr != "" {
+			out += sep + errorType(c.tmpStr)
 		}
 
-		if c.err != "" || c.cachedString != "" {
+		if c.err != "" || c.tmpStr != "" {
 			sep = " "
 		}
 	}
 	c.err = out
-	c.valType = valTypeErr
+	c.vTpe = typeErr
 	return c
 }
 

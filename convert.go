@@ -1,33 +1,33 @@
 package tinystring
 
-// valType represents the type of value stored in conv
-type valType uint8
+// vTpe represents the type of value stored in conv
+type vTpe uint8
 
 const (
-	valTypeString valType = iota
-	valTypeInt
-	valTypeUint
-	valTypeFloat
-	valTypeBool
-	valTypeStringSlice
-	valTypeStringPtr
-	valTypeErr
+	typeStr vTpe = iota
+	typeInt
+	typeUint
+	typeFloat
+	typeBool
+	typeStrSlice
+	typeStrPtr
+	typeErr
 )
 
 type conv struct {
-	stringVal         string
-	intVal            int64
-	uintVal           uint64
-	floatVal          float64
-	boolVal           bool
-	stringSliceVal    []string
-	stringPtrVal      *string
-	valType           valType
-	roundDown         bool
-	separator         string
-	cachedString      string    // Cache for string conversion to avoid repeated work
-	lastConvertedType valType   // Track last converted type for cache validation
-	err               errorType // Error type from error.go
+	stringVal      string
+	intVal         int64
+	uintVal        uint64
+	floatVal       float64
+	boolVal        bool
+	stringSliceVal []string
+	stringPtrVal   *string
+	vTpe           vTpe
+	roundDown      bool
+	separator      string
+	tmpStr         string    // Cache for temp string conversion to avoid repeated work
+	lastConvType   vTpe      // Track last converted type for cache validation
+	err            errorType // Error type from error.go
 }
 
 // struct to store mappings to remove accents and diacritics
@@ -59,127 +59,106 @@ func convInit(value any) *conv {
 	// Handle empty case or nil first value
 	if value == nil {
 		c.stringVal = ""
-		c.valType = valTypeString
+		c.vTpe = typeStr
 		return c
 	}
-
 	switch val := value.(type) {
 	case string:
 		c.stringVal = val
-		c.valType = valTypeString
+		c.vTpe = typeStr
 	case []string:
 		c.stringSliceVal = val
-		c.valType = valTypeStringSlice
+		c.vTpe = typeStrSlice
 	case *string:
 		c.stringVal = *val
 		c.stringPtrVal = val
-		c.valType = valTypeStringPtr
-	case int:
-		c.intVal = int64(val)
-		c.valType = valTypeInt
-	case int8:
-		c.intVal = int64(val)
-		c.valType = valTypeInt
-	case int16:
-		c.intVal = int64(val)
-		c.valType = valTypeInt
-	case int32:
-		c.intVal = int64(val)
-		c.valType = valTypeInt
-	case int64:
-		c.intVal = val
-		c.valType = valTypeInt
-	case uint:
-		c.uintVal = uint64(val)
-		c.valType = valTypeUint
-	case uint8:
-		c.uintVal = uint64(val)
-		c.valType = valTypeUint
-	case uint16:
-		c.uintVal = uint64(val)
-		c.valType = valTypeUint
-	case uint32:
-		c.uintVal = uint64(val)
-		c.valType = valTypeUint
-	case uint64:
-		c.uintVal = val
-		c.valType = valTypeUint
-	case float32:
-		c.floatVal = float64(val)
-		c.valType = valTypeFloat
-	case float64:
-		c.floatVal = val
-		c.valType = valTypeFloat
+		c.vTpe = typeStrPtr
 	case bool:
-		c.boolVal = val
-		c.valType = valTypeBool
+		c.setBoolVal(val)
 	case errorType:
-		c.err = val
-		c.valType = valTypeErr
+		c.setErrorVal(val)
 	default:
+		// Try consolidated type handlers
+		if c.handleIntTypes(value) {
+			return c
+		}
+		if c.handleUintTypes(value) {
+			return c
+		}
+		if c.handleFloatTypes(value) {
+			return c
+		}
+
 		// Fallback to string conversion for unknown types - use internal method to avoid allocation
-		c.valType = valTypeString
-		c.anyToStringInternal(value)
+		c.vTpe = typeStr
+		c.any2s(value)
 	}
 
 	return c
 }
 
-func (t *conv) transformWithMapping(mappings []charMapping) *conv {
+// setIntVal sets the int64 value and updates the vTpe
+func (c *conv) setIntVal(val int64) {
+	c.intVal = val
+	c.vTpe = typeInt
+}
+
+// setUintVal sets the uint64 value and updates the vTpe
+func (c *conv) setUintVal(val uint64) {
+	c.uintVal = val
+	c.vTpe = typeUint
+}
+
+// setFloatVal sets the float64 value and updates the vTpe
+func (c *conv) setFloatVal(val float64) {
+	c.floatVal = val
+	c.vTpe = typeFloat
+}
+
+// setBoolVal sets the bool value and updates the vTpe
+func (c *conv) setBoolVal(val bool) {
+	c.boolVal = val
+	c.vTpe = typeBool
+}
+
+// setErrorVal sets the errorType value and updates the vTpe
+func (c *conv) setErrorVal(val errorType) {
+	c.err = val
+	c.vTpe = typeErr
+}
+
+func (t *conv) tmap(mappings []charMapping) *conv {
 	str := t.getString()
 
 	// Use pre-allocated buffer for efficient string construction
 	buf := make([]byte, 0, len(str)*2) // Allocate extra space for UTF-8 encoding
 
-	hasChanges := false
+	hc := false // hasChanges
 	for _, r := range str {
 		mapped := false
-		for _, mapping := range mappings {
-			if r == mapping.from {
-				// Manual UTF-8 encoding to avoid imports
-				if mapping.to < 0x80 {
-					buf = append(buf, byte(mapping.to))
-				} else if mapping.to < 0x800 {
-					buf = append(buf, byte(0xC0|(mapping.to>>6)), byte(0x80|(mapping.to&0x3F)))
-				} else if mapping.to < 0x10000 {
-					buf = append(buf, byte(0xE0|(mapping.to>>12)), byte(0x80|((mapping.to>>6)&0x3F)), byte(0x80|(mapping.to&0x3F)))
-				} else {
-					buf = append(buf, byte(0xF0|(mapping.to>>18)), byte(0x80|((mapping.to>>12)&0x3F)), byte(0x80|((mapping.to>>6)&0x3F)), byte(0x80|(mapping.to&0x3F)))
-				}
+		for _, m := range mappings { // mapping
+			if r == m.from {
+				buf = addRne2Buf(buf, m.to)
+				hc = true
 				mapped = true
-				hasChanges = true
 				break
 			}
 		}
 		if !mapped {
-			// Manual UTF-8 encoding for unmapped runes
-			if r < 0x80 {
-				buf = append(buf, byte(r))
-			} else if r < 0x800 {
-				buf = append(buf, byte(0xC0|(r>>6)), byte(0x80|(r&0x3F)))
-			} else if r < 0x10000 {
-				buf = append(buf, byte(0xE0|(r>>12)), byte(0x80|((r>>6)&0x3F)), byte(0x80|(r&0x3F)))
-			} else {
-				buf = append(buf, byte(0xF0|(r>>18)), byte(0x80|((r>>12)&0x3F)), byte(0x80|((r>>6)&0x3F)), byte(0x80|(r&0x3F)))
-			}
+			buf = addRne2Buf(buf, r)
 		}
 	}
 
 	// If no changes were made, return self to avoid allocation
-	if !hasChanges {
+	if !hc {
 		return t
 	}
 
-	newStr := string(buf)
+	ns := string(buf) // newStr
 
 	// Always modify in place to avoid creating new instances
-	t.setString(newStr)
+	t.setString(ns)
 	return t
-}
-
-// Remueve tildes y diacríticos
-func (t *conv) RemoveTilde() *conv {
-	return t.transformWithMapping(accentMappings)
 }
 
 func (t *conv) separatorCase(sep ...string) string {
@@ -194,7 +173,7 @@ func (t *conv) separatorCase(sep ...string) string {
 // This method should be used when you want to modify the original string directly
 // without additional allocations.
 func (t *conv) Apply() {
-	if t.valType == valTypeStringPtr && t.stringPtrVal != nil {
+	if t.vTpe == typeStrPtr && t.stringPtrVal != nil {
 		*t.stringPtrVal = t.getString()
 	}
 }
@@ -206,7 +185,7 @@ func (t *conv) String() string {
 
 // StringError returns the content of the conv along with any error that occurred during processing
 func (t *conv) StringError() (string, error) {
-	if t.valType == valTypeErr {
+	if t.vTpe == typeErr {
 		return t.getString(), t
 	}
 	return t.getString(), nil
@@ -214,19 +193,19 @@ func (t *conv) StringError() (string, error) {
 
 // splitIntoWordsLocal returns words as local variable without storing in struct field
 // Optimized for minimal allocations - Phase 3
-func (t *conv) splitIntoWordsLocal() [][]rune {
+func (t *conv) split() [][]rune {
 	str := t.getString()
 	if len(str) == 0 {
 		return nil
 	}
 
 	// Pre-allocate based on estimated word count (rough heuristic: len/5)
-	estimatedWords := (len(str) / 5) + 1
-	if estimatedWords > 16 {
-		estimatedWords = 16 // Cap reasonable maximum
+	ew := (len(str) / 5) + 1 // estimatedWords
+	if ew > 16 {
+		ew = 16 // Cap reasonable maximum
 	}
 
-	words := make([][]rune, 0, estimatedWords)
+	words := make([][]rune, 0, ew)
 
 	// Convert entire string to runes once
 	runes := []rune(str)
@@ -270,21 +249,11 @@ func (t *conv) transformWord(word []rune, transform wordTransform) []rune {
 	switch transform {
 	case toLower:
 		for i, r := range word {
-			for _, mapping := range lowerMappings {
-				if r == mapping.from {
-					word[i] = mapping.to
-					break
-				}
-			}
+			word[i] = toLowerRune(r)
 		}
 	case toUpper:
 		for i, r := range word {
-			for _, mapping := range upperMappings {
-				if r == mapping.from {
-					word[i] = mapping.to
-					break
-				}
-			}
+			word[i] = toUpperRune(r)
 		}
 	}
 
@@ -302,9 +271,9 @@ func isLetter(r rune) bool {
 		(r >= 'À' && r <= 'ÿ' && r != '×' && r != '÷')
 }
 
-// transformSingleRune applies a character mapping to a single rune.
+// trRune applies a character mapping to a single rune.
 // It returns the transformed rune and true if a mapping was applied, otherwise the original rune and false.
-func transformSingleRune(r rune, mappings []charMapping) (rune, bool) {
+func trRune(r rune, mappings []charMapping) (rune, bool) {
 	for _, mapping := range mappings {
 		if r == mapping.from {
 			return mapping.to, true
@@ -316,55 +285,69 @@ func transformSingleRune(r rune, mappings []charMapping) (rune, bool) {
 // getString converts the current value to string only when needed
 // Optimized with string caching to avoid repeated conversions
 func (t *conv) getString() string {
-	if t.valType == valTypeErr {
+	if t.vTpe == typeErr {
 		return ""
 	}
 
 	// If we already have a string value and haven't changed types, reuse it
-	if t.valType == valTypeString && t.stringVal != "" {
+	if t.vTpe == typeStr && t.stringVal != "" {
 		return t.stringVal
 	}
 
 	// Use cached string if available and type hasn't changed
-	if t.cachedString != "" && t.lastConvertedType == t.valType {
-		return t.cachedString
+	if t.tmpStr != "" && t.lastConvType == t.vTpe {
+		return t.tmpStr
 	}
 
 	// Convert to string using internal methods to avoid allocations
-	switch t.valType {
-	case valTypeString:
-		t.cachedString = t.stringVal
-	case valTypeStringPtr:
-		t.cachedString = t.stringVal // Already stored during creation
-	case valTypeStringSlice:
+	switch t.vTpe {
+	case typeStr:
+		t.tmpStr = t.stringVal
+	case typeStrPtr:
+		t.tmpStr = t.stringVal // Already stored during creation
+	case typeStrSlice:
 		if len(t.stringSliceVal) == 0 {
-			t.cachedString = ""
+			t.tmpStr = ""
 		} else {
 			// Join with space as default - use internal method
-			t.cachedString = t.joinSlice(" ")
+			t.tmpStr = t.joinSlice(" ")
 		}
-	case valTypeInt:
+	case typeInt:
 		// Use internal method instead of external function
-		t.formatIntInternal(10)
-	case valTypeUint:
+		t.fmtInt(10)
+	case typeUint:
 		// Use internal method instead of external function
-		t.formatUintInternal(10)
-	case valTypeFloat:
+		t.fmtUint(10)
+	case typeFloat:
 		// Use internal method instead of external function
-		t.formatFloatInternal()
-	case valTypeBool:
+		t.f2s()
+	case typeBool:
 		if t.boolVal {
-			t.cachedString = "true"
+			t.tmpStr = trueStr
 		} else {
-			t.cachedString = "false"
+			t.tmpStr = falseStr
 		}
 	default:
-		t.cachedString = ""
+		t.tmpStr = ""
 	}
 
 	// Update cache state
-	t.lastConvertedType = t.valType
-	return t.cachedString
+	t.lastConvType = t.vTpe
+	return t.tmpStr
+}
+
+// addRne2Buf manually encodes a rune to UTF-8 and appends it to the byte slice.
+// This avoids importing the unicode/utf8 package for size optimization.
+func addRne2Buf(buf []byte, r rune) []byte {
+	if r < 0x80 {
+		return append(buf, byte(r))
+	} else if r < 0x800 {
+		return append(buf, byte(0xC0|(r>>6)), byte(0x80|(r&0x3F)))
+	} else if r < 0x10000 {
+		return append(buf, byte(0xE0|(r>>12)), byte(0x80|((r>>6)&0x3F)), byte(0x80|(r&0x3F)))
+	} else {
+		return append(buf, byte(0xF0|(r>>18)), byte(0x80|((r>>12)&0x3F)), byte(0x80|((r>>6)&0x3F)), byte(0x80|(r&0x3F)))
+	}
 }
 
 // setString converts to string type and stores the value
@@ -372,11 +355,11 @@ func (t *conv) setString(s string) {
 	t.stringVal = s
 
 	// If working with string pointer, update the original string
-	if t.valType == valTypeStringPtr && t.stringPtrVal != nil {
+	if t.vTpe == typeStrPtr && t.stringPtrVal != nil {
 		*t.stringPtrVal = s
-		// Keep the valType as stringPtr to maintain the pointer relationship
+		// Keep the vTpe as stringPtr to maintain the pointer relationship
 	} else {
-		t.valType = valTypeString
+		t.vTpe = typeStr
 	}
 
 	// Clear other values to save memory
@@ -387,8 +370,8 @@ func (t *conv) setString(s string) {
 	t.stringSliceVal = nil
 
 	// Invalidate cache since we changed the string
-	t.cachedString = ""
-	t.lastConvertedType = valType(0)
+	t.tmpStr = ""
+	t.lastConvType = vTpe(0)
 }
 
 // joinSlice joins string slice with separator - optimized for minimal allocations
@@ -401,14 +384,14 @@ func (t *conv) joinSlice(separator string) string {
 	}
 
 	// Calculate total length to minimize allocations
-	totalLen := 0
+	tl := 0 // totalLen
 	for _, s := range t.stringSliceVal {
-		totalLen += len(s)
+		tl += len(s)
 	}
-	totalLen += len(separator) * (len(t.stringSliceVal) - 1)
+	tl += len(separator) * (len(t.stringSliceVal) - 1)
 
 	// Build result string efficiently using slice of bytes
-	result := make([]byte, 0, totalLen)
+	result := make([]byte, 0, tl) // result
 
 	for i, s := range t.stringSliceVal {
 		if i > 0 {
@@ -423,10 +406,10 @@ func (t *conv) joinSlice(separator string) string {
 // Internal conversion methods - centralized in conv to minimize allocations
 // These methods modify the conv struct directly instead of returning values
 
-// anyToStringInternal converts any type to string and stores in cachedString
+// any2s converts any type to string and stores in tmpStr
 // default set to "" if no conversion is possible
 // supports int, uint, float, bool, string and error types
-func (t *conv) anyToStringInternal(v any) {
+func (t *conv) any2s(v any) {
 	switch val := v.(type) {
 	case errorType:
 		t.err = val
@@ -434,53 +417,162 @@ func (t *conv) anyToStringInternal(v any) {
 		t.err = errorType(val.Error())
 	case string:
 		t.stringVal = val
-		t.cachedString = val
-	case int:
-		t.intVal = int64(val)
-		t.formatIntInternal(10)
-	case int8:
-		t.intVal = int64(val)
-		t.formatIntInternal(10)
-	case int16:
-		t.intVal = int64(val)
-		t.formatIntInternal(10)
-	case int32:
-		t.intVal = int64(val)
-		t.formatIntInternal(10)
-	case int64:
-		t.intVal = val
-		t.formatIntInternal(10)
-	case uint:
-		t.uintVal = uint64(val)
-		t.formatUintInternal(10)
-	case uint8:
-		t.uintVal = uint64(val)
-		t.formatUintInternal(10)
-	case uint16:
-		t.uintVal = uint64(val)
-		t.formatUintInternal(10)
-	case uint32:
-		t.uintVal = uint64(val)
-		t.formatUintInternal(10)
-	case uint64:
-		t.uintVal = val
-		t.formatUintInternal(10)
-	case float32:
-		t.floatVal = float64(val)
-		t.formatFloatInternal()
-	case float64:
-		t.floatVal = val
-		t.formatFloatInternal()
+		t.tmpStr = val
 	case bool:
 		if val {
-			t.cachedString = "true"
+			t.tmpStr = trueStr
 		} else {
-			t.cachedString = "false"
+			t.tmpStr = falseStr
 		}
-		t.stringVal = t.cachedString
-
+		t.stringVal = t.tmpStr
 	default:
-		t.cachedString = ""
-		t.stringVal = t.cachedString
+		// Use consolidated type handlers
+		if t.handleIntTypesForAny2s(v) {
+			return
+		}
+		if t.handleUintTypesForAny2s(v) {
+			return
+		}
+		if t.handleFloatTypesForAny2s(v) {
+			return
+		}
+
+		// Fallback for unknown types
+		t.tmpStr = ""
+		t.stringVal = t.tmpStr
+	}
+}
+
+// Helper functions to reduce code duplication in type handling
+
+// handleIntTypes consolidates repetitive int type handling
+func (c *conv) handleIntTypes(val any) bool {
+	switch v := val.(type) {
+	case int:
+		c.setIntVal(int64(v))
+		return true
+	case int8:
+		c.setIntVal(int64(v))
+		return true
+	case int16:
+		c.setIntVal(int64(v))
+		return true
+	case int32:
+		c.setIntVal(int64(v))
+		return true
+	case int64:
+		c.setIntVal(v)
+		return true
+	default:
+		return false
+	}
+}
+
+// handleUintTypes consolidates repetitive uint type handling
+func (c *conv) handleUintTypes(val any) bool {
+	switch v := val.(type) {
+	case uint:
+		c.setUintVal(uint64(v))
+		return true
+	case uint8:
+		c.setUintVal(uint64(v))
+		return true
+	case uint16:
+		c.setUintVal(uint64(v))
+		return true
+	case uint32:
+		c.setUintVal(uint64(v))
+		return true
+	case uint64:
+		c.setUintVal(v)
+		return true
+	default:
+		return false
+	}
+}
+
+// handleFloatTypes consolidates repetitive float type handling
+func (c *conv) handleFloatTypes(val any) bool {
+	switch v := val.(type) {
+	case float32:
+		c.setFloatVal(float64(v))
+		return true
+	case float64:
+		c.setFloatVal(v)
+		return true
+	default:
+		return false
+	}
+}
+
+// handleIntTypesForAny2s consolidates repetitive int type handling for any2s
+func (c *conv) handleIntTypesForAny2s(val any) bool {
+	switch v := val.(type) {
+	case int:
+		c.intVal = int64(v)
+		c.fmtInt(10)
+		return true
+	case int8:
+		c.intVal = int64(v)
+		c.fmtInt(10)
+		return true
+	case int16:
+		c.intVal = int64(v)
+		c.fmtInt(10)
+		return true
+	case int32:
+		c.intVal = int64(v)
+		c.fmtInt(10)
+		return true
+	case int64:
+		c.intVal = v
+		c.fmtInt(10)
+		return true
+	default:
+		return false
+	}
+}
+
+// handleUintTypesForAny2s consolidates repetitive uint type handling for any2s
+func (c *conv) handleUintTypesForAny2s(val any) bool {
+	switch v := val.(type) {
+	case uint:
+		c.uintVal = uint64(v)
+		c.fmtUint(10)
+		return true
+	case uint8:
+		c.uintVal = uint64(v)
+		c.fmtUint(10)
+		return true
+	case uint16:
+		c.uintVal = uint64(v)
+		c.fmtUint(10)
+		return true
+	case uint32:
+		c.uintVal = uint64(v)
+		c.fmtUint(10)
+		return true
+	case uint64:
+		c.uintVal = v
+		c.fmtUint(10)
+		return true
+	default:
+		return false
+	}
+}
+
+// handleFloatTypesForAny2s consolidates repetitive float type handling for any2s
+func (c *conv) handleFloatTypesForAny2s(val any) bool {
+	switch v := val.(type) {
+	case float32:
+		c.floatVal = float64(v)
+		c.f2s()
+		return true
+	case float64:
+		c.floatVal = v
+		c.f2s()
+		return true
+	default:
+		return false
 	}
 }

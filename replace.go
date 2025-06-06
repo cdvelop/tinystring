@@ -15,23 +15,23 @@ func (t *conv) Replace(oldAny, newAny any, n ...int) *conv {
 	}
 
 	// Default behavior: replace all occurrences (n = -1)
-	maxReplacements := -1
+	maxReps := -1
 	if len(n) > 0 {
-		maxReplacements = n[0]
+		maxReps = n[0]
 	}
 	// Use pre-allocated buffer for efficient string construction
 	buf := make([]byte, 0, len(str)+len(newStr)*10) // Pre-allocate
 
-	replacements := 0
+	rep := 0
 	for i := 0; i < len(str); i++ {
-		// Check for occurrence of old in the string and if we haven't reached the maximum replacements
-		if i+len(old) <= len(str) && str[i:i+len(old)] == old && (maxReplacements < 0 || replacements < maxReplacements) {
+		// Check for occurrence of old in the string and if we haven't reached the maximum rep
+		if i+len(old) <= len(str) && str[i:i+len(old)] == old && (maxReps < 0 || rep < maxReps) {
 			// Add the new word to the result
 			buf = append(buf, newStr...)
 			// Skip the length of the old word in the original string
 			i += len(old) - 1
 			// Increment replacement counter
-			replacements++
+			rep++
 		} else {
 			// Add the current character to the result
 			buf = append(buf, str[i])

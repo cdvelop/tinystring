@@ -13,7 +13,7 @@ func (t *conv) Repeat(n int) *conv {
 	buf := make([]byte, 0, len(str)*n)
 
 	// Write string n times
-	for i := 0; i < n; i++ {
+	for range n {
 		buf = append(buf, str...)
 	}
 

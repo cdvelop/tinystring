@@ -12,7 +12,7 @@ func (t *conv) Join(sep ...string) *conv {
 	}
 
 	// Handle case when we have a string slice stored
-	if t.valType == valTypeStringSlice {
+	if t.vTpe == typeStrSlice {
 		if len(t.stringSliceVal) == 0 {
 			t.setString("")
 		} else {
@@ -44,13 +44,13 @@ func (t *conv) Join(sep ...string) *conv {
 
 		// Join parts with the separator using pre-allocated buffer
 		if len(parts) > 0 {
-			totalLen := 0
+			tL := 0
 			for _, part := range parts {
-				totalLen += len(part)
+				tL += len(part)
 			}
-			totalLen += (len(parts) - 1) * len(separator)
+			tL += (len(parts) - 1) * len(separator)
 
-			buf := make([]byte, 0, totalLen)
+			buf := make([]byte, 0, tL)
 			for i, part := range parts {
 				buf = append(buf, part...)
 				if i < len(parts)-1 {

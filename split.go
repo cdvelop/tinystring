@@ -10,32 +10,32 @@ func Split(data string, separator ...string) (result []string) {
 	// If no separator provided, split by whitespace
 	if len(separator) == 0 {
 		// Estimate capacity: assume average word length of 5 characters
-		estimatedWords := len(data)/6 + 1
-		if estimatedWords < 2 {
-			estimatedWords = 2
+		eW := len(data)/6 + 1
+		if eW < 2 {
+			eW = 2
 		}
-		result = make([]string, 0, estimatedWords)
+		result = make([]string, 0, eW)
 
-		inWord := false
+		iW := false
 		start := 0
 
 		// Iterate through the string character by character
 		for i, ch := range data {
-			isSpace := ch == ' ' || ch == '\t' || ch == '\n' || ch == '\r'
+			iS := ch == ' ' || ch == '\t' || ch == '\n' || ch == '\r'
 
-			if !isSpace && !inWord {
+			if !iS && !iW {
 				// Start of a new word
-				inWord = true
+				iW = true
 				start = i
-			} else if isSpace && inWord {
+			} else if iS && iW {
 				// End of a word
-				inWord = false
+				iW = false
 				result = append(result, data[start:i])
 			}
 		}
 
 		// Handle the last word if the string doesn't end with whitespace
-		if inWord {
+		if iW {
 			result = append(result, data[start:])
 		}
 
@@ -60,20 +60,20 @@ func Split(data string, separator ...string) (result []string) {
 	}
 
 	// Estimate capacity based on separator length
-	estimatedParts := len(data)/len(sep) + 1
-	if estimatedParts < 2 {
-		estimatedParts = 2
+	eP := len(data)/len(sep) + 1
+	if eP < 2 {
+		eP = 2
 	}
-	result = make([]string, 0, estimatedParts)
+	result = make([]string, 0, eP)
 
 	start := 0
-	sepLen := len(sep)
+	sL := len(sep)
 
-	for i := 0; i <= len(data)-sepLen; i++ {
-		if data[i:i+sepLen] == sep {
+	for i := 0; i <= len(data)-sL; i++ {
+		if data[i:i+sL] == sep {
 			result = append(result, data[start:i])
-			start = i + sepLen
-			i += sepLen - 1 // Skip the characters we just checked
+			start = i + sL
+			i += sL - 1 // Skip the characters we just checked
 		}
 	}
 

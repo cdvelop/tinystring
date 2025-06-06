@@ -1,9 +1,5 @@
 package tinystring
 
-import (
-	"reflect"
-)
-
 // Format creates a new conv instance with variadic formatting similar to fmt.Sprintf
 // Example: tinystring.Format("Hello %s, you have %d messages", "Alice", 5).String()
 func Format(format string, args ...any) *conv {
@@ -19,49 +15,25 @@ func (c *conv) formatValue(value any) {
 	switch val := value.(type) {
 	case bool:
 		if val {
-			c.setString("true")
+			c.setString(trueStr)
 		} else {
-			c.setString("false")
+			c.setString(falseStr)
 		}
 	case string:
 		c.setString(val)
-	case int:
-		c.intVal = int64(val)
-		c.intToStringOptimizedInternal()
-	case int8:
-		c.intVal = int64(val)
-		c.intToStringOptimizedInternal()
-	case int16:
-		c.intVal = int64(val)
-		c.intToStringOptimizedInternal()
-	case int32:
-		c.intVal = int64(val)
-		c.intToStringOptimizedInternal()
-	case int64:
-		c.intVal = val
-		c.intToStringOptimizedInternal()
-	case uint:
-		c.uintVal = uint64(val)
-		c.uintToStringOptimizedInternal()
-	case uint8:
-		c.uintVal = uint64(val)
-		c.uintToStringOptimizedInternal()
-	case uint16:
-		c.uintVal = uint64(val)
-		c.uintToStringOptimizedInternal()
-	case uint32:
-		c.uintVal = uint64(val)
-		c.uintToStringOptimizedInternal()
-	case uint64:
-		c.uintVal = val
-		c.uintToStringOptimizedInternal()
-	case float32:
-		c.floatVal = float64(val)
-		c.floatToStringManual(-1)
-	case float64:
-		c.floatVal = val
-		c.floatToStringManual(-1)
 	default:
+		// Try consolidated type handlers
+		if c.handleIntTypesForFormat(value) {
+			return
+		}
+		if c.handleUintTypesForFormat(value) {
+			return
+		}
+		if c.handleFloatTypesForFormat(value) {
+			return
+		}
+
+		// Handle unsupported types
 		c.formatUnsupported(value)
 	}
 }
@@ -69,83 +41,9 @@ func (c *conv) formatValue(value any) {
 // formatUnsupported formats unsupported types and stores in conv struct.
 // This is an internal conv method that modifies the struct instead of returning values.
 func (c *conv) formatUnsupported(value any) {
-	v := reflect.ValueOf(value)
-	switch v.Kind() {
-	case reflect.Struct:
-		c.formatStruct(v)
-	case reflect.Slice, reflect.Array:
-		c.formatSlice(v)
-	case reflect.Map:
-		c.formatMap(v)
-	default:
-		c.setString("<unsupported>")
-	}
-}
-
-// formatStruct formats struct and stores in conv struct.
-// This is an internal conv method that modifies the struct instead of returning values.
-func (c *conv) formatStruct(v reflect.Value) {
-	// Use fixed buffer for struct formatting
-	var buf []byte
-	buf = append(buf, '{')
-
-	tempConv := convInit("")
-	for i := range v.NumField() {
-		if i > 0 {
-			buf = append(buf, ' ')
-		}
-		field := v.Type().Field(i).Name
-		value := v.Field(i).Interface()
-		buf = append(buf, field...)
-		buf = append(buf, ':')
-		tempConv.formatValue(value)
-		buf = append(buf, tempConv.getString()...)
-	}
-	buf = append(buf, '}')
-	c.setString(string(buf))
-}
-
-// formatSlice formats slice and stores in conv struct.
-// This is an internal conv method that modifies the struct instead of returning values.
-func (c *conv) formatSlice(v reflect.Value) {
-	// Use fixed buffer for slice formatting
-	var buf []byte
-	buf = append(buf, '[')
-
-	tempConv := convInit("")
-	for i := 0; i < v.Len(); i++ {
-		if i > 0 {
-			buf = append(buf, ' ')
-		}
-		tempConv.formatValue(v.Index(i).Interface())
-		buf = append(buf, tempConv.getString()...)
-	}
-	buf = append(buf, ']')
-	c.setString(string(buf))
-}
-
-// formatMap formats map and stores in conv struct.
-// This is an internal conv method that modifies the struct instead of returning values.
-func (c *conv) formatMap(v reflect.Value) {
-	// Use fixed buffer for map formatting
-	var buf []byte
-	buf = append(buf, '{')
-
-	keys := v.MapKeys()
-	tempConv := convInit("")
-	tempConv2 := convInit("")
-	for i, key := range keys {
-		if i > 0 {
-			buf = append(buf, ' ')
-		}
-		tempConv.formatValue(key.Interface())
-		buf = append(buf, tempConv.getString()...)
-		buf = append(buf, ':')
-		tempConv2.formatValue(v.MapIndex(key).Interface())
-		buf = append(buf, tempConv2.getString()...)
-	}
-	buf = append(buf, '}')
-	c.setString(string(buf))
+	// Replace reflection with simple unsupported message
+	// This eliminates the reflect package dependency for significant size reduction
+	c.setString("<unsupported>")
 }
 
 // RoundDecimals rounds a numeric value to the specified number of decimal places
@@ -157,11 +55,11 @@ func (t *conv) RoundDecimals(decimals int) *conv {
 	}
 	// If we already have a float value, use it directly to avoid string conversion
 	var val float64
-	if t.valType == valTypeFloat {
+	if t.vTpe == typeFloat {
 		val = t.floatVal
 	} else {
 		// Parse current string content as float without creating temporary conv
-		t.parseFloatManual()
+		t.parseFloat()
 		if t.err != "" {
 			// If cannot parse as number, set to 0 and continue with formatting
 			val = 0
@@ -210,8 +108,8 @@ func (t *conv) RoundDecimals(decimals int) *conv {
 
 	// Update the current conv object directly instead of creating a new one
 	t.floatVal = rounded
-	t.valType = valTypeFloat
-	t.floatToStringManual(decimals)
+	t.vTpe = typeFloat
+	t.f2sMan(decimals)
 	t.err = ""
 	// Preserve the roundDown flag (already in self)
 	return t
@@ -226,7 +124,7 @@ func (t *conv) Down() *conv {
 	}
 	// Parse the current value
 	tempConv := convInit(t.getString())
-	tempConv.parseFloatManual()
+	tempConv.parseFloat()
 	if tempConv.err != "" {
 		// Not a number, just set the flag
 		result := convInit(t.getString())
@@ -238,7 +136,7 @@ func (t *conv) Down() *conv {
 	// Detect decimal places from the current content
 	decimalPlaces := 0
 	str := t.getString()
-	if dotIndex := indexByteManual(str, '.'); dotIndex != -1 {
+	if dotIndex := idxByte(str, '.'); dotIndex != -1 {
 		decimalPlaces = len(str) - dotIndex - 1
 	}
 
@@ -270,7 +168,7 @@ func (t *conv) Down() *conv {
 		}
 	} // Format the result
 	conv := convInit(adjustedVal)
-	conv.floatToStringManual(decimalPlaces)
+	conv.f2sMan(decimalPlaces)
 	result := conv.getString()
 	finalResult := convInit(result)
 	finalResult.err = ""
@@ -285,99 +183,94 @@ func (t *conv) FormatNumber() *conv {
 		return t
 	}
 	// Try to use existing values directly to avoid string conversions
-	if t.valType == valTypeInt {
-		// We already have an integer value, use it directly
-		t.intToStringOptimizedInternal()
-		t.formatNumberWithCommas()
+	if t.vTpe == typeInt { // We already have an integer value, use it directly
+		t.i2s()
+		t.fmtNum()
 		t.err = ""
 		return t
 	}
-	if t.valType == valTypeUint {
+	if t.vTpe == typeUint {
 		// Convert uint to int64 and format
 		t.intVal = int64(t.uintVal)
-		t.valType = valTypeInt
-		t.intToStringOptimizedInternal()
-		t.formatNumberWithCommas()
+		t.vTpe = typeInt
+		t.i2s()
+		t.fmtNum()
 		t.err = ""
 		return t
 	}
-
-	if t.valType == valTypeFloat {
+	if t.vTpe == typeFloat {
 		// We already have a float value, use it directly
-		t.floatToStringManual(-1)
-		floatStr := t.getString()
-		floatStr = removeTrailingZeros(floatStr) // Remove trailing zeros after decimal point
-		t.setString(floatStr)
-		parts := t.splitFloatString()
+		t.f2sMan(-1)
+		fStr := t.getString()
+		fStr = rmZeros(fStr) // Remove trailing zeros after decimal point
+		t.setString(fStr)
+		parts := t.splitFloat()
 		// Format the integer part with commas directly
 		if len(parts) > 0 {
 			// Use current conv object for integer formatting to avoid allocation
 			t.setString(parts[0])
-			t.formatNumberWithCommas()
-			integerPart := t.getString()
+			t.fmtNum()
+			iPart := t.getString()
 
 			// Reconstruct the number
 			var result string
 			if len(parts) > 1 && parts[1] != "" {
-				result = integerPart + "." + parts[1]
+				result = iPart + "." + parts[1]
 			} else {
-				result = integerPart
+				result = iPart
 			}
 			t.setString(result)
 		}
 		t.err = ""
 		return t
-	}
-	// For string values, parse them directly using existing methods
+	} // For string values, parse them directly using existing methods
 	str := t.getString()
 	// Save original state BEFORE any parsing attempts
-	originalVal := t.stringVal
-	originalType := t.valType
-	// Try to parse as integer first using existing stringToInt
+	oVal := t.stringVal
+	oType := t.vTpe
+	// Try to parse as integer first using existing s2Int
 	t.setString(str)
-	t.stringToInt(10)
-	if t.err == "" {
-		// Use the parsed integer value
-		t.valType = valTypeInt
-		t.intToStringOptimizedInternal()
-		t.formatNumberWithCommas()
+	t.s2Int(10)
+	if t.err == "" { // Use the parsed integer value
+		t.vTpe = typeInt
+		t.i2s()
+		t.fmtNum()
 		t.err = ""
 		return t
 	} // Try to parse as float using existing parseFloatManual
 	t.err = "" // Reset error before trying float parsing
 	t.setString(str)
-	t.parseFloatManual()
+	t.parseFloat()
 	if t.err == "" {
 		// Use the parsed float value
-		t.valType = valTypeFloat
-		t.floatToStringManual(-1)
-		floatStr := t.getString()
-		floatStr = removeTrailingZeros(floatStr) // Remove trailing zeros after decimal point
-		t.setString(floatStr)
-		parts := t.splitFloatString()
+		t.vTpe = typeFloat
+		t.f2sMan(-1)
+		fStr := t.getString()
+		fStr = rmZeros(fStr) // Remove trailing zeros after decimal point
+		t.setString(fStr)
+		parts := t.splitFloat()
 		// Format the integer part with commas directly
 		if len(parts) > 0 {
 			t.setString(parts[0])
-			t.formatNumberWithCommas()
-			integerPart := t.getString()
+			t.fmtNum()
+			iPart := t.getString()
 
 			// Reconstruct the number with formatted decimal part
 			var result string
 			if len(parts) > 1 && parts[1] != "" {
 				// Also format the decimal part with commas for consistency with test expectation
-				decimalPart := parts[1]
-				if len(decimalPart) > 3 {
-					// Save current state
-					savedIntPart := t.getString()
-					t.setString(decimalPart)
-					t.formatNumberWithCommas()
-					decimalPart = t.getString()
+				dPart := parts[1]
+				if len(dPart) > 3 { // Save current state
+					sIP := t.getString()
+					t.setString(dPart)
+					t.fmtNum()
+					dPart = t.getString()
 					// Restore state for final result construction
-					t.setString(savedIntPart)
+					t.setString(sIP)
 				}
-				result = integerPart + "." + decimalPart
+				result = iPart + "." + dPart
 			} else {
-				result = integerPart
+				result = iPart
 			}
 			t.setString(result)
 		}
@@ -385,8 +278,8 @@ func (t *conv) FormatNumber() *conv {
 		return t
 	} else {
 		// Restore original state if parsing failed
-		t.stringVal = originalVal
-		t.valType = originalType
+		t.stringVal = oVal
+		t.vTpe = oType
 		t.err = ""
 	}
 
@@ -395,8 +288,8 @@ func (t *conv) FormatNumber() *conv {
 	return t
 }
 
-// indexByteManual finds the first occurrence of byte c in s (manual implementation to replace strings.IndexByte)
-func indexByteManual(s string, c byte) int {
+// idxByte finds the first occurrence of byte c in s (manual implementation to replace strings.IndexByte)
+func idxByte(s string, c byte) int {
 	for i := range len(s) {
 		if s[i] == c {
 			return i
@@ -405,9 +298,9 @@ func indexByteManual(s string, c byte) int {
 	return -1
 }
 
-// removeTrailingZeros removes trailing zeros from decimal numbers
-func removeTrailingZeros(s string) string {
-	dotIndex := indexByteManual(s, '.')
+// rmZeros removes trailing zeros from decimal numbers
+func rmZeros(s string) string {
+	dotIndex := idxByte(s, '.')
 	if dotIndex == -1 {
 		return s // No decimal point, return as is
 	}
@@ -432,7 +325,7 @@ func removeTrailingZeros(s string) string {
 // formatNumberWithCommas adds thousand separators to the numeric string in conv struct.
 // This is an internal conv method that modifies the struct instead of returning values.
 // Optimized to minimize allocations and use more efficient buffer operations.
-func (c *conv) formatNumberWithCommas() {
+func (c *conv) fmtNum() {
 	numStr := c.getString()
 	if len(numStr) == 0 {
 		return
@@ -475,9 +368,9 @@ func (c *conv) formatNumberWithCommas() {
 	c.setString(string(buf))
 }
 
-// splitFloatString splits a float string into integer and decimal parts.
+// splitFloat splits a float string into integer and decimal parts.
 // This is an internal conv method that returns the parts as slice.
-func (c *conv) splitFloatString() []string {
+func (c *conv) splitFloat() []string {
 	str := c.getString()
 	for i, char := range str {
 		if char == '.' {
@@ -487,66 +380,18 @@ func (c *conv) splitFloatString() []string {
 	return []string{str}
 }
 
-// parseFloatManual converts a string to a float64 and stores in conv struct.
+// parseFloat converts a string to a float64 and stores in conv struct.
 // This is an internal conv method that modifies the struct instead of returning values.
-// Optimized to avoid allocations by parsing directly without creating temporary buffers.
-func (c *conv) parseFloatManual() {
-	input := c.getString()
-	if input == "" {
-		c.err = errEmptyString
-		return
-	}
-
-	var idx int
-	isNegative := false
-	if input[0] == '-' {
-		isNegative = true
-		idx = 1
-	}
-
-	// Parse integer part directly without allocations
-	var integerPart int64 = 0
-	for idx < len(input) && input[idx] != '.' {
-		if input[idx] < '0' || input[idx] > '9' {
-			c.err = errInvalidFloat
-			return
-		}
-		integerPart = integerPart*10 + int64(input[idx]-'0')
-		idx++
-	}
-
-	// Parse fractional part directly if present
-	var fractionPart float64 = 0
-	var fractionDivisor float64 = 1
-
-	if idx < len(input) && input[idx] == '.' {
-		idx++ // Skip decimal point
-		for idx < len(input) {
-			if input[idx] < '0' || input[idx] > '9' {
-				c.err = errInvalidFloat
-				return
-			}
-			fractionPart = fractionPart*10 + float64(input[idx]-'0')
-			fractionDivisor *= 10
-			idx++
-		}
-		fractionPart /= fractionDivisor
-	}
-
-	result := float64(integerPart) + fractionPart
-	if isNegative {
-		result = -result
-	}
-
-	c.floatVal = result
-	c.valType = valTypeFloat
-	c.err = ""
+// Uses the same optimized parsing logic as s2Float() for consistency.
+func (c *conv) parseFloat() {
+	// Use the unified float parsing logic from s2Float
+	c.s2Float()
 }
 
-// floatToStringManual converts a float64 to a string and stores in conv struct.
+// f2sMan converts a float64 to a string and stores in conv struct.
 // This is an internal conv method that modifies the struct instead of returning values.
 // Optimized to avoid string concatenations and reduce allocations.
-func (c *conv) floatToStringManual(precision int) {
+func (c *conv) f2sMan(precision int) {
 	value := c.floatVal
 
 	if value == 0 {
@@ -561,7 +406,7 @@ func (c *conv) floatToStringManual(precision int) {
 		} else {
 			c.setString("0")
 		}
-		c.valType = valTypeString
+		c.vTpe = typeStr
 		return
 	}
 
@@ -675,17 +520,24 @@ func (c *conv) floatToStringManual(precision int) {
 	}
 
 	c.setString(string(result))
-	c.valType = valTypeString
+	c.vTpe = typeStr
 }
 
-// intToStringWithBase converts an int64 to a string with specified base and stores in conv struct.
+// i2sBase converts an int64 to a string with specified base and stores in conv struct.
 // This is an internal conv method that modifies the struct instead of returning values.
-func (c *conv) intToStringWithBase(base int) {
+func (c *conv) i2sBase(base int) {
 	number := c.intVal
 
 	if number == 0 {
 		c.setString("0")
-		c.valType = valTypeString
+		c.vTpe = typeStr
+		return
+	}
+
+	// Use optimized i2s() for decimal base
+	if base == 10 {
+		c.i2s()
+		c.vTpe = typeStr
 		return
 	}
 
@@ -694,15 +546,13 @@ func (c *conv) intToStringWithBase(base int) {
 		number = -number
 	}
 
-	const digits = "0123456789abcdefghijklmnopqrstuvwxyz"
-	if base < 2 || base > len(digits) {
-		c.err = errInvalidBase
+	if !c.validateBase(base) {
 		return
 	}
 
 	result := ""
 	for number > 0 {
-		result = string(digits[number%int64(base)]) + result
+		result = string(digs[number%int64(base)]) + result
 		number /= int64(base)
 	}
 
@@ -711,19 +561,96 @@ func (c *conv) intToStringWithBase(base int) {
 	}
 
 	c.setString(result)
-	c.valType = valTypeString
-}
-
-// formatFloatToString formats a float64 with precision and stores in conv struct.
-// This is an internal conv method that modifies the struct instead of returning values.
-func (c *conv) formatFloatToString(precision int) {
-	c.floatToStringManual(precision)
+	c.vTpe = typeStr
 }
 
 // sprintf formats according to a format specifier and stores in conv struct.
 // This is an internal conv method that modifies the struct instead of returning values.
-// sprintf formats according to a format specifier and stores in conv struct.
-// This is an internal conv method that modifies the struct instead of returning values.
+
+// Helper function to validate and extract argument for format specifiers
+func (c *conv) extractArg(args []any, argIndex int, formatSpec string) (any, bool) {
+	if argIndex >= len(args) {
+		c.NewErr(errFormatMissingArg, formatSpec)
+		return nil, false
+	}
+	return args[argIndex], true
+}
+
+// Helper function to handle integer format specifiers (d, o, b, x)
+func (c *conv) handleIntFormat(args []any, argIndex *int, base int, formatSpec string) ([]byte, bool) {
+	arg, ok := c.extractArg(args, *argIndex, formatSpec)
+	if !ok {
+		return nil, false
+	}
+
+	intVal, ok := arg.(int)
+	if !ok {
+		c.NewErr(errFormatWrongType, formatSpec)
+		return nil, false
+	}
+
+	tempConv := convInit(int64(intVal))
+	if base == 10 {
+		tempConv.i2s()
+	} else {
+		tempConv.i2sBase(base)
+	}
+	str := tempConv.getString()
+	*argIndex++
+	return []byte(str), true
+}
+
+// Helper function to handle float format specifiers (f)
+func (c *conv) handleFloatFormat(args []any, argIndex *int, precision int, formatSpec string) ([]byte, bool) {
+	arg, ok := c.extractArg(args, *argIndex, formatSpec)
+	if !ok {
+		return nil, false
+	}
+
+	floatVal, ok := arg.(float64)
+	if !ok {
+		c.NewErr(errFormatWrongType, formatSpec)
+		return nil, false
+	}
+
+	tempConv := convInit(floatVal)
+	tempConv.f2sMan(precision)
+	str := tempConv.getString()
+	*argIndex++
+	return []byte(str), true
+}
+
+// Helper function to handle string format specifiers (s)
+func (c *conv) handleStringFormat(args []any, argIndex *int, formatSpec string) ([]byte, bool) {
+	arg, ok := c.extractArg(args, *argIndex, formatSpec)
+	if !ok {
+		return nil, false
+	}
+
+	strVal, ok := arg.(string)
+	if !ok {
+		c.NewErr(errFormatWrongType, formatSpec)
+		return nil, false
+	}
+
+	*argIndex++
+	return []byte(strVal), true
+}
+
+// Helper function to handle generic format specifiers (v)
+func (c *conv) handleGenericFormat(args []any, argIndex *int, formatSpec string) ([]byte, bool) {
+	arg, ok := c.extractArg(args, *argIndex, formatSpec)
+	if !ok {
+		return nil, false
+	}
+
+	tempConv := convInit("")
+	tempConv.formatValue(arg)
+	str := tempConv.getString()
+	*argIndex++
+	return []byte(str), true
+}
+
 func (c *conv) sprintf(format string, args ...any) {
 	// Pre-calculate buffer size to reduce reallocations
 	estimatedSize := len(format)
@@ -760,112 +687,55 @@ func (c *conv) sprintf(format string, args ...any) {
 					if start < i {
 						// Parse precision
 						tempConv := convInit(format[start:i])
-						tempConv.stringToInt(10)
+						tempConv.s2Int(10)
 						if tempConv.err == "" {
 							precision = int(tempConv.intVal)
 						}
 					}
-				}
-
-				// Handle format specifiers
+				} // Handle format specifiers
 				switch format[i] {
 				case 'd':
-					if argIndex >= len(args) {
-						c.NewErr(errFormatMissingArg, "%d")
+					if str, ok := c.handleIntFormat(args, &argIndex, 10, "%d"); ok {
+						buf = append(buf, str...)
+					} else {
 						return
 					}
-					intVal, ok := args[argIndex].(int)
-					if !ok {
-						c.NewErr(errFormatWrongType, "%d")
-						return
-					}
-					tempConv := convInit(intVal)
-					tempConv.intToStringOptimizedInternal()
-					str := tempConv.getString()
-					buf = append(buf, str...)
-					argIndex++
 				case 'f':
-					if argIndex >= len(args) {
-						c.NewErr(errFormatMissingArg, "%f")
+					if str, ok := c.handleFloatFormat(args, &argIndex, precision, "%f"); ok {
+						buf = append(buf, str...)
+					} else {
 						return
 					}
-					floatVal, ok := args[argIndex].(float64)
-					if !ok {
-						c.NewErr(errFormatWrongType, "%f")
-						return
-					}
-					tempConv := convInit(floatVal)
-					tempConv.formatFloatToString(precision)
-					str := tempConv.getString()
-					buf = append(buf, str...)
-					argIndex++
 				case 'o':
-					if argIndex >= len(args) {
-						c.NewErr(errFormatMissingArg, "%o")
+					if str, ok := c.handleIntFormat(args, &argIndex, 8, "%o"); ok {
+						buf = append(buf, str...)
+					} else {
 						return
 					}
-					intVal, ok := args[argIndex].(int)
-					if !ok {
-						c.NewErr(errFormatWrongType, "%o")
-						return
-					}
-					tempConv := convInit(int64(intVal))
-					tempConv.intToStringWithBase(8)
-					str := tempConv.getString()
-					buf = append(buf, str...)
-					argIndex++
 				case 'b':
-					if argIndex >= len(args) {
-						c.NewErr(errFormatMissingArg, "%b")
+					if str, ok := c.handleIntFormat(args, &argIndex, 2, "%b"); ok {
+						buf = append(buf, str...)
+					} else {
 						return
 					}
-					intVal, ok := args[argIndex].(int)
-					if !ok {
-						c.NewErr(errFormatWrongType, "%b")
-						return
-					}
-					tempConv := convInit(int64(intVal))
-					tempConv.intToStringWithBase(2)
-					str := tempConv.getString()
-					buf = append(buf, str...)
-					argIndex++
 				case 'x':
-					if argIndex >= len(args) {
-						c.NewErr(errFormatMissingArg, "%x")
+					if str, ok := c.handleIntFormat(args, &argIndex, 16, "%x"); ok {
+						buf = append(buf, str...)
+					} else {
 						return
 					}
-					intVal, ok := args[argIndex].(int)
-					if !ok {
-						c.NewErr(errFormatWrongType, "%x")
-						return
-					}
-					tempConv := convInit(int64(intVal))
-					tempConv.intToStringWithBase(16)
-					str := tempConv.getString()
-					buf = append(buf, str...)
-					argIndex++
 				case 'v':
-					if argIndex >= len(args) {
-						c.NewErr(errFormatMissingArg, "%v")
+					if str, ok := c.handleGenericFormat(args, &argIndex, "%v"); ok {
+						buf = append(buf, str...)
+					} else {
 						return
 					}
-					tempConv := convInit("")
-					tempConv.formatValue(args[argIndex])
-					str := tempConv.getString()
-					buf = append(buf, str...)
-					argIndex++
 				case 's':
-					if argIndex >= len(args) {
-						c.NewErr(errFormatMissingArg, "%s")
+					if str, ok := c.handleStringFormat(args, &argIndex, "%s"); ok {
+						buf = append(buf, str...)
+					} else {
 						return
 					}
-					strVal, ok := args[argIndex].(string)
-					if !ok {
-						c.NewErr(errFormatWrongType, "%s")
-						return
-					}
-					buf = append(buf, strVal...)
-					argIndex++
 				case '%':
 					buf = append(buf, '%')
 				default:
@@ -881,5 +751,79 @@ func (c *conv) sprintf(format string, args ...any) {
 	}
 
 	c.setString(string(buf))
-	c.valType = valTypeString
+	c.vTpe = typeStr
+}
+
+// Helper functions for formatValue type handling
+
+// handleIntTypesForFormat consolidates repetitive int type handling for format operations
+func (c *conv) handleIntTypesForFormat(val any) bool {
+	switch v := val.(type) {
+	case int:
+		c.intVal = int64(v)
+		c.i2s()
+		return true
+	case int8:
+		c.intVal = int64(v)
+		c.i2s()
+		return true
+	case int16:
+		c.intVal = int64(v)
+		c.i2s()
+		return true
+	case int32:
+		c.intVal = int64(v)
+		c.i2s()
+		return true
+	case int64:
+		c.intVal = v
+		c.i2s()
+		return true
+	default:
+		return false
+	}
+}
+
+// handleUintTypesForFormat consolidates repetitive uint type handling for format operations
+func (c *conv) handleUintTypesForFormat(val any) bool {
+	switch v := val.(type) {
+	case uint:
+		c.uintVal = uint64(v)
+		c.u2s()
+		return true
+	case uint8:
+		c.uintVal = uint64(v)
+		c.u2s()
+		return true
+	case uint16:
+		c.uintVal = uint64(v)
+		c.u2s()
+		return true
+	case uint32:
+		c.uintVal = uint64(v)
+		c.u2s()
+		return true
+	case uint64:
+		c.uintVal = v
+		c.u2s()
+		return true
+	default:
+		return false
+	}
+}
+
+// handleFloatTypesForFormat consolidates repetitive float type handling for format operations
+func (c *conv) handleFloatTypesForFormat(val any) bool {
+	switch v := val.(type) {
+	case float32:
+		c.floatVal = float64(v)
+		c.f2sMan(-1)
+		return true
+	case float64:
+		c.floatVal = v
+		c.f2sMan(-1)
+		return true
+	default:
+		return false
+	}
 }
