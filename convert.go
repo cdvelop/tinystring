@@ -14,6 +14,19 @@ const (
 	typeErr
 )
 
+// Generic type interfaces for consolidating repetitive type switches
+type anyInt interface {
+	~int | ~int8 | ~int16 | ~int32 | ~int64
+}
+
+type anyUint interface {
+	~uint | ~uint8 | ~uint16 | ~uint32 | ~uint64
+}
+
+type anyFloat interface {
+	~float32 | ~float64
+}
+
 type conv struct {
 	stringVal      string
 	intVal         int64
@@ -43,76 +56,113 @@ const (
 	toUpper
 )
 
-// Convert initializes a new conv struct with any type of value for string,bool and number manipulation.
-// Uses the centralized convInit function to avoid code duplication.
-func Convert(v any) *conv {
-	return convInit(v)
+// Functional options pattern for conv construction
+type convOpt func(*conv)
+
+// withValue initializes conv with any value type
+func withValue(v any) convOpt {
+	return func(c *conv) {
+		if v == nil {
+			c.stringVal = ""
+			c.vTpe = typeStr
+			return
+		}
+		switch val := v.(type) {
+		case string:
+			c.stringVal = val
+			c.vTpe = typeStr
+		case []string:
+			c.stringSliceVal = val
+			c.vTpe = typeStrSlice
+		case *string:
+			c.stringVal = *val
+			c.stringPtrVal = val
+			c.vTpe = typeStrPtr
+		case bool:
+			c.setBoolVal(val)
+		case errorType:
+			c.setErrorVal(val)
+		default:
+			// Handle numeric types using generics
+			switch val := val.(type) {
+			case int, int8, int16, int32, int64:
+				c.handleIntType(val)
+			case uint, uint8, uint16, uint32, uint64:
+				c.handleUintType(val)
+			case float32, float64:
+				c.handleFloatType(val)
+			default:
+				// Fallback to string conversion for unknown types
+				c.vTpe = typeStr
+				c.any2s(val)
+			}
+		}
+	}
 }
 
-// convInit initializes a new conv struct with any type of value for string,bool and number manipulation.
-// This is the centralized initialization function shared by Convert(), Format(), Sprintf(), etc.
-// Uses optimized union-type storage to avoid unnecessary string conversions.
-func convInit(value any) *conv {
-	// Initialize conv struct
-	c := &conv{}
-
-	// Handle empty case or nil first value
-	if value == nil {
-		c.stringVal = ""
-		c.vTpe = typeStr
-		return c
+// newConv creates a new conv with functional options
+func newConv(opts ...convOpt) *conv {
+	c := &conv{
+		separator: "_", // default separator
 	}
-	switch val := value.(type) {
-	case string:
-		c.stringVal = val
-		c.vTpe = typeStr
-	case []string:
-		c.stringSliceVal = val
-		c.vTpe = typeStrSlice
-	case *string:
-		c.stringVal = *val
-		c.stringPtrVal = val
-		c.vTpe = typeStrPtr
-	case bool:
-		c.setBoolVal(val)
-	case errorType:
-		c.setErrorVal(val)
-	default:
-		// Try consolidated type handlers
-		if c.handleIntTypes(value) {
-			return c
-		}
-		if c.handleUintTypes(value) {
-			return c
-		}
-		if c.handleFloatTypes(value) {
-			return c
-		}
-
-		// Fallback to string conversion for unknown types - use internal method to avoid allocation
-		c.vTpe = typeStr
-		c.any2s(value)
+	for _, opt := range opts {
+		opt(c)
 	}
-
 	return c
 }
 
-// setIntVal sets the int64 value and updates the vTpe
-func (c *conv) setIntVal(val int64) {
-	c.intVal = val
+// Convert initializes a new conv struct with any type of value for string,bool and number manipulation.
+// Uses the functional options pattern internally.
+func Convert(v any) *conv {
+	return newConv(withValue(v))
+}
+
+// Generic functions to handle numeric types without repetitive switches
+func genInt[T anyInt](c *conv, v T) {
+	c.intVal = int64(v)
 	c.vTpe = typeInt
 }
 
-// setUintVal sets the uint64 value and updates the vTpe
-func (c *conv) setUintVal(val uint64) {
-	c.uintVal = val
+func genUint[T anyUint](c *conv, v T) {
+	c.uintVal = uint64(v)
 	c.vTpe = typeUint
 }
 
-// setFloatVal sets the float64 value and updates the vTpe
-func (c *conv) setFloatVal(val float64) {
-	c.floatVal = val
+func genFloat[T anyFloat](c *conv, v T) {
+	c.floatVal = float64(v)
 	c.vTpe = typeFloat
+}
+
+// Generic functions for any2s operations
+func genAny2sInt[T anyInt](c *conv, v T) {
+	c.intVal = int64(v)
+	c.fmtInt(10)
+}
+
+func genAny2sUint[T anyUint](c *conv, v T) {
+	c.uintVal = uint64(v)
+	c.fmtUint(10)
+}
+
+func genAny2sFloat[T anyFloat](c *conv, v T) {
+	c.floatVal = float64(v)
+	c.f2s()
+}
+
+// Generic functions for format operations
+func genFormatInt[T anyInt](c *conv, v T) {
+	c.intVal = int64(v)
+	c.i2s()
+}
+
+func genFormatUint[T anyUint](c *conv, v T) {
+	c.uintVal = uint64(v)
+	c.u2s()
+}
+
+func genFormatFloat[T anyFloat](c *conv, v T) {
+	c.floatVal = float64(v)
+	c.f2sMan(-1)
 }
 
 // setBoolVal sets the bool value and updates the vTpe
@@ -125,40 +175,6 @@ func (c *conv) setBoolVal(val bool) {
 func (c *conv) setErrorVal(val errorType) {
 	c.err = val
 	c.vTpe = typeErr
-}
-
-func (t *conv) tmap(mappings []charMapping) *conv {
-	str := t.getString()
-
-	// Use pre-allocated buffer for efficient string construction
-	buf := make([]byte, 0, len(str)*2) // Allocate extra space for UTF-8 encoding
-
-	hc := false // hasChanges
-	for _, r := range str {
-		mapped := false
-		for _, m := range mappings { // mapping
-			if r == m.from {
-				buf = addRne2Buf(buf, m.to)
-				hc = true
-				mapped = true
-				break
-			}
-		}
-		if !mapped {
-			buf = addRne2Buf(buf, r)
-		}
-	}
-
-	// If no changes were made, return self to avoid allocation
-	if !hc {
-		return t
-	}
-
-	ns := string(buf) // newStr
-
-	// Always modify in place to avoid creating new instances
-	t.setString(ns)
-	return t
 }
 
 func (t *conv) separatorCase(sep ...string) string {
@@ -191,76 +207,6 @@ func (t *conv) StringError() (string, error) {
 	return t.getString(), nil
 }
 
-// splitIntoWordsLocal returns words as local variable without storing in struct field
-// Optimized for minimal allocations - Phase 3
-func (t *conv) split() [][]rune {
-	str := t.getString()
-	if len(str) == 0 {
-		return nil
-	}
-
-	// Pre-allocate based on estimated word count (rough heuristic: len/5)
-	ew := (len(str) / 5) + 1 // estimatedWords
-	if ew > 16 {
-		ew = 16 // Cap reasonable maximum
-	}
-
-	words := make([][]rune, 0, ew)
-
-	// Convert entire string to runes once
-	runes := []rune(str)
-
-	var start int
-	inWord := false
-
-	for i, r := range runes {
-		if r == ' ' || r == '\t' || r == '\n' || r == '\r' {
-			if inWord {
-				// Extract word slice directly from runes - no copying
-				if i > start {
-					word := runes[start:i:i] // Limit capacity to avoid sharing
-					words = append(words, word)
-				}
-				inWord = false
-			}
-		} else {
-			if !inWord {
-				start = i
-				inWord = true
-			}
-		}
-	}
-
-	// Handle last word if string doesn't end with whitespace
-	if inWord && len(runes) > start {
-		word := runes[start:len(runes):len(runes)]
-		words = append(words, word)
-	}
-
-	return words
-}
-
-func (t *conv) transformWord(word []rune, transform wordTransform) []rune {
-	if len(word) == 0 {
-		return word
-	}
-
-	// Transform in-place to avoid allocation, then copy once
-	switch transform {
-	case toLower:
-		for i, r := range word {
-			word[i] = toLowerRune(r)
-		}
-	case toUpper:
-		for i, r := range word {
-			word[i] = toUpperRune(r)
-		}
-	}
-
-	// Return the transformed word (caller will handle copying if needed)
-	return word
-}
-
 // Helper function to check if a rune is a digit
 func isDigit(r rune) bool {
 	return r >= '0' && r <= '9'
@@ -269,17 +215,6 @@ func isDigit(r rune) bool {
 func isLetter(r rune) bool {
 	return (r >= 'a' && r <= 'z') || (r >= 'A' && r <= 'Z') ||
 		(r >= 'À' && r <= 'ÿ' && r != 'x' && r != '÷')
-}
-
-// trRune applies a character mapping to a single rune.
-// It returns the transformed rune and true if a mapping was applied, otherwise the original rune and false.
-func trRune(r rune, mappings []charMapping) (rune, bool) {
-	for _, mapping := range mappings {
-		if r == mapping.from {
-			return mapping.to, true
-		}
-	}
-	return r, false
 }
 
 // getString converts the current value to string only when needed
@@ -426,153 +361,104 @@ func (t *conv) any2s(v any) {
 		}
 		t.stringVal = t.tmpStr
 	default:
-		// Use consolidated type handlers
-		if t.handleIntTypesForAny2s(v) {
-			return
+		// Handle numeric types using generics for any2s
+		switch v := v.(type) {
+		case int, int8, int16, int32, int64:
+			t.handleIntTypeForAny2s(v)
+		case uint, uint8, uint16, uint32, uint64:
+			t.handleUintTypeForAny2s(v)
+		case float32, float64:
+			t.handleFloatTypeForAny2s(v)
+		default:
+			// Fallback for unknown types
+			t.tmpStr = ""
+			t.stringVal = t.tmpStr
 		}
-		if t.handleUintTypesForAny2s(v) {
-			return
-		}
-		if t.handleFloatTypesForAny2s(v) {
-			return
-		}
-
-		// Fallback for unknown types
-		t.tmpStr = ""
-		t.stringVal = t.tmpStr
 	}
 }
 
-// Helper functions to reduce code duplication in type handling
-
-// handleIntTypes consolidates repetitive int type handling
-func (c *conv) handleIntTypes(val any) bool {
+// handleIntType processes integer types using generics
+func (c *conv) handleIntType(val any) {
 	switch v := val.(type) {
 	case int:
-		c.setIntVal(int64(v))
-		return true
+		genInt(c, v)
 	case int8:
-		c.setIntVal(int64(v))
-		return true
+		genInt(c, v)
 	case int16:
-		c.setIntVal(int64(v))
-		return true
+		genInt(c, v)
 	case int32:
-		c.setIntVal(int64(v))
-		return true
+		genInt(c, v)
 	case int64:
-		c.setIntVal(v)
-		return true
-	default:
-		return false
+		genInt(c, v)
 	}
 }
 
-// handleUintTypes consolidates repetitive uint type handling
-func (c *conv) handleUintTypes(val any) bool {
+// handleUintType processes unsigned integer types using generics
+func (c *conv) handleUintType(val any) {
 	switch v := val.(type) {
 	case uint:
-		c.setUintVal(uint64(v))
-		return true
+		genUint(c, v)
 	case uint8:
-		c.setUintVal(uint64(v))
-		return true
+		genUint(c, v)
 	case uint16:
-		c.setUintVal(uint64(v))
-		return true
+		genUint(c, v)
 	case uint32:
-		c.setUintVal(uint64(v))
-		return true
+		genUint(c, v)
 	case uint64:
-		c.setUintVal(v)
-		return true
-	default:
-		return false
+		genUint(c, v)
 	}
 }
 
-// handleFloatTypes consolidates repetitive float type handling
-func (c *conv) handleFloatTypes(val any) bool {
+// handleFloatType processes float types using generics
+func (c *conv) handleFloatType(val any) {
 	switch v := val.(type) {
 	case float32:
-		c.setFloatVal(float64(v))
-		return true
+		genFloat(c, v)
 	case float64:
-		c.setFloatVal(v)
-		return true
-	default:
-		return false
+		genFloat(c, v)
 	}
 }
 
-// handleIntTypesForAny2s consolidates repetitive int type handling for any2s
-func (c *conv) handleIntTypesForAny2s(val any) bool {
+// handleIntTypeForAny2s processes integer types for any2s using generics
+func (c *conv) handleIntTypeForAny2s(val any) {
 	switch v := val.(type) {
 	case int:
-		c.intVal = int64(v)
-		c.fmtInt(10)
-		return true
+		genAny2sInt(c, v)
 	case int8:
-		c.intVal = int64(v)
-		c.fmtInt(10)
-		return true
+		genAny2sInt(c, v)
 	case int16:
-		c.intVal = int64(v)
-		c.fmtInt(10)
-		return true
+		genAny2sInt(c, v)
 	case int32:
-		c.intVal = int64(v)
-		c.fmtInt(10)
-		return true
+		genAny2sInt(c, v)
 	case int64:
-		c.intVal = v
-		c.fmtInt(10)
-		return true
-	default:
-		return false
+		genAny2sInt(c, v)
 	}
 }
 
-// handleUintTypesForAny2s consolidates repetitive uint type handling for any2s
-func (c *conv) handleUintTypesForAny2s(val any) bool {
+// handleUintTypeForAny2s processes unsigned integer types for any2s using generics
+func (c *conv) handleUintTypeForAny2s(val any) {
 	switch v := val.(type) {
 	case uint:
-		c.uintVal = uint64(v)
-		c.fmtUint(10)
-		return true
+		genAny2sUint(c, v)
 	case uint8:
-		c.uintVal = uint64(v)
-		c.fmtUint(10)
-		return true
+		genAny2sUint(c, v)
 	case uint16:
-		c.uintVal = uint64(v)
-		c.fmtUint(10)
-		return true
+		genAny2sUint(c, v)
 	case uint32:
-		c.uintVal = uint64(v)
-		c.fmtUint(10)
-		return true
+		genAny2sUint(c, v)
 	case uint64:
-		c.uintVal = v
-		c.fmtUint(10)
-		return true
-	default:
-		return false
+		genAny2sUint(c, v)
 	}
 }
 
-// handleFloatTypesForAny2s consolidates repetitive float type handling for any2s
-func (c *conv) handleFloatTypesForAny2s(val any) bool {
+// handleFloatTypeForAny2s processes float types for any2s using generics
+func (c *conv) handleFloatTypeForAny2s(val any) {
 	switch v := val.(type) {
 	case float32:
-		c.floatVal = float64(v)
-		c.f2s()
-		return true
+		genAny2sFloat(c, v)
 	case float64:
-		c.floatVal = v
-		c.f2s()
-		return true
-	default:
-		return false
+		genAny2sFloat(c, v)
 	}
 }
+
+// Generic helper functions are all defined above

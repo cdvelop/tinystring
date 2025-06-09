@@ -28,73 +28,45 @@ func (t *conv) restoreState(savedVal string, savedType vTpe) {
 	t.err = "" // Reset error when restoring state
 }
 
-// tryParseAsInt attempts to parse the current content as integer with fallback to float
-func (t *conv) tryParseAsInt(base int) bool {
+// tryParseAs attempts to parse content as the specified numeric type with fallback to float
+func (t *conv) tryParseAs(parseType vTpe, base int) bool {
 	// Save original state
 	oSV, oVT := t.saveState()
 
-	// Try to parse as int directly
-	t.s2Int(base)
+	// Try direct parsing based on type
+	switch parseType {
+	case typeInt:
+		t.s2Int(base)
+	case typeUint:
+		t.s2Uint(oSV, base)
+	}
+
 	if t.err == "" {
 		return true
 	}
 
-	// If that fails, restore state and try to parse as float then convert to int
+	// Check if the error is due to invalid base with negative numbers
+	// If so, don't attempt float fallback as it would bypass base validation
+	if base != 10 && len(oSV) > 0 && oSV[0] == '-' {
+		return false
+	}
+
+	// If that fails, restore state and try to parse as float then convert
 	t.restoreState(oSV, oVT)
 	t.s2Float()
 	if t.err == "" {
-		t.intVal = int64(t.floatVal)
-		t.vTpe = typeInt
-		return true
-	}
-
-	return false
-}
-
-// tryParseAsInt64 attempts to parse the current content as int64 with fallback to float
-func (t *conv) tryParseAsInt64(base int) bool {
-	// Save original state
-	oSV, oVT := t.saveState()
-
-	// Try to parse as int64 directly
-	t.s2Int64(base)
-	if t.err == "" {
-		return true
-	}
-
-	// If that fails, restore state and try to parse as float then convert to int64
-	t.restoreState(oSV, oVT)
-	t.s2Float()
-	if t.err == "" {
-		t.intVal = int64(t.floatVal)
-		t.vTpe = typeInt
-		return true
-	}
-
-	return false
-}
-
-// tryParseAsUint attempts to parse the current content as uint with fallback to float
-func (t *conv) tryParseAsUint(base int) bool {
-	// Save original state
-	oSV, oVT := t.saveState()
-
-	// Try to parse as uint directly using the original string value
-	t.s2Uint(oSV, base)
-	if t.err == "" {
-		return true
-	}
-
-	// If that fails, restore state and try to parse as float then convert to uint
-	t.restoreState(oSV, oVT)
-	t.s2Float()
-	if t.err == "" {
-		if t.floatVal < 0 {
-			t.err = errNegativeUnsigned
-			return false
+		switch parseType {
+		case typeInt:
+			t.intVal = int64(t.floatVal)
+			t.vTpe = typeInt
+		case typeUint:
+			if t.floatVal < 0 {
+				t.err = errNegativeUnsigned
+				return false
+			}
+			t.uintVal = uint64(t.floatVal)
+			t.vTpe = typeUint
 		}
-		t.uintVal = uint64(t.floatVal)
-		t.vTpe = typeUint
 		return true
 	}
 
@@ -108,22 +80,6 @@ func (t *conv) validateBase(base int) bool {
 		return false
 	}
 	return true
-}
-
-// handleNegativeNumber processes negative sign for non-decimal bases
-func (t *conv) handleNegativeNumber(input string, base int) (string, bool, bool) {
-	if len(input) == 0 {
-		return input, false, false
-	}
-
-	if input[0] == '-' {
-		if base != 10 {
-			t.NewErr(errInvalidBase, "negative numbers are not supported for non-decimal bases")
-			return input, false, false
-		}
-		return input[1:], true, true
-	}
-	return input, false, true
 }
 
 // ToInt converts the conv content to an integer with optional base specification.
@@ -180,14 +136,21 @@ func (t *conv) ToInt(base ...int) (int, error) {
 	if len(base) > 0 {
 		b = base[0]
 	}
-
-	// Use shared helper method for parsing with fallback
-	if t.tryParseAsInt(b) {
-		return int(t.intVal), nil
+	switch t.vTpe {
+	case typeInt:
+		return int(t.intVal), nil // Direct return for integer values
+	case typeUint:
+		return int(t.uintVal), nil // Direct conversion from uint
+	case typeFloat:
+		return int(t.floatVal), nil // Direct truncation from float
+	default:
+		// For string types and other types, use shared helper method for parsing with fallback
+		if t.tryParseAs(typeInt, b) {
+			return int(t.intVal), nil
+		}
+		// Return error if parsing failed
+		return 0, t
 	}
-
-	// Return error if parsing failed
-	return 0, t
 }
 
 // ToInt64 converts the conv content to a 64-bit integer with optional base specification.
@@ -249,9 +212,8 @@ func (t *conv) ToInt64(base ...int) (int64, error) {
 	if len(base) > 0 {
 		b = base[0]
 	}
-
 	// Use shared helper method for parsing with fallback
-	if t.tryParseAsInt64(b) {
+	if t.tryParseAs(typeInt, b) {
 		return t.intVal, nil
 	}
 
@@ -314,13 +276,29 @@ func (t *conv) ToUint(base ...int) (uint, error) {
 		b = base[0]
 	}
 
-	// Use shared helper method for parsing with fallback
-	if t.tryParseAsUint(b) {
-		return uint(t.uintVal), nil
+	switch t.vTpe {
+	case typeUint:
+		return uint(t.uintVal), nil // Direct return for uint values
+	case typeInt:
+		if t.intVal < 0 {
+			t.NewErr(errNegativeUnsigned, t.intVal)
+			return 0, t
+		}
+		return uint(t.intVal), nil // Direct conversion from int if positive
+	case typeFloat:
+		if t.floatVal < 0 {
+			t.NewErr(errNegativeUnsigned, t.floatVal)
+			return 0, t
+		}
+		return uint(t.floatVal), nil // Direct truncation from float if positive
+	default:
+		// For string types and other types, use shared helper method for parsing with fallback
+		if t.tryParseAs(typeUint, b) {
+			return uint(t.uintVal), nil
+		}
+		// Return error if parsing failed
+		return 0, t
 	}
-
-	// Return error if parsing failed
-	return 0, t
 }
 
 // ToFloat converts the conv content to a float64 (double precision floating point).
@@ -362,16 +340,36 @@ func (t *conv) ToUint(base ...int) (uint, error) {
 // Note: This method uses a custom float parsing implementation that may have
 // different precision characteristics compared to the standard library.
 func (t *conv) ToFloat() (float64, error) {
-	t.s2Float()
 	if t.err != "" {
 		return 0, t
 	}
-	return t.floatVal, nil
+
+	switch t.vTpe {
+	case typeFloat:
+		return t.floatVal, nil // Direct return for float values
+	case typeInt:
+		return float64(t.intVal), nil // Direct conversion from int
+	case typeUint:
+		return float64(t.uintVal), nil // Direct conversion from uint
+	default:
+		// For string types and other types, parse as float
+		t.s2Float()
+		if t.err != "" {
+			return 0, t
+		}
+		return t.floatVal, nil
+	}
 }
 
 // s2Int converts string to int with specified base and stores in conv struct.
 // This is an internal conv method that modifies the struct instead of returning values.
 func (t *conv) s2Int(base int) {
+	t.s2IntGeneric(base)
+}
+
+// s2IntGeneric converts string to signed integer with specified base and stores in conv struct.
+// This unified method handles both int and int64 conversions.
+func (t *conv) s2IntGeneric(base int) {
 	inp := t.getString()
 	if t.isEmptyString(inp) {
 		return
@@ -381,38 +379,6 @@ func (t *conv) s2Int(base int) {
 	if inp[0] == '-' {
 		if base != 10 {
 			t.NewErr(errInvalidBase, "negative numbers are not supported for non-decimal bases")
-			return
-		}
-		isNeg = true
-		// Update the conv struct with the string without the negative sign
-		t.setString(inp[1:])
-	}
-
-	t.s2n(base)
-	if t.err != "" {
-		return
-	}
-
-	if isNeg {
-		t.intVal = -int64(t.uintVal)
-	} else {
-		t.intVal = int64(t.uintVal)
-	}
-	t.vTpe = typeInt
-}
-
-// s2Int64 converts string to int64 with specified base and stores in conv struct.
-// This is an internal conv method that modifies the struct instead of returning values.
-func (t *conv) s2Int64(base int) {
-	inp := t.getString()
-	if t.isEmptyString(inp) {
-		return
-	}
-
-	isNeg := false
-	if inp[0] == '-' {
-		if base != 10 {
-			t.NewErr("negative numbers are not supported for non-decimal bases")
 			return
 		}
 		isNeg = true
@@ -592,7 +558,16 @@ func fmtUint2Str(val uint64, base int, buf []byte) (string, int) {
 
 // fmtInt converts integer to string and stores in tmpStr
 func (t *conv) fmtInt(base int) {
-	val := t.intVal
+	t.fmtIntGeneric(t.intVal, base, true)
+}
+
+// fmtUint converts unsigned integer to string and stores in tmpStr
+func (t *conv) fmtUint(base int) {
+	t.fmtIntGeneric(int64(t.uintVal), base, false)
+}
+
+// fmtIntGeneric converts integer to string with unified logic
+func (t *conv) fmtIntGeneric(val int64, base int, allowNegative bool) {
 	if val == 0 {
 		t.tmpStr = "0"
 		t.stringVal = t.tmpStr
@@ -600,12 +575,12 @@ func (t *conv) fmtInt(base int) {
 	}
 
 	var buf [64]byte // Max int64 needs 20 digits + sign, base 2 needs 64 digits
-	negative := val < 0
+	negative := allowNegative && val < 0
 	if negative {
 		val = -val
 	}
 
-	_, idx := fmtUint2Str(uint64(val), base, buf[:]) // i
+	_, idx := fmtUint2Str(uint64(val), base, buf[:])
 
 	if negative {
 		idx--
@@ -637,25 +612,8 @@ func (t *conv) i2s() {
 		t.stringVal = t.tmpStr
 		return
 	}
-
 	// Fall back to standard conversion for larger numbers
 	t.fmtInt(10)
-}
-
-// fmtUint converts unsigned integer to string and stores in tmpStr
-func (t *conv) fmtUint(base int) {
-	val := t.uintVal
-	if val == 0 {
-		t.tmpStr = "0"
-		t.stringVal = t.tmpStr
-		return
-	}
-
-	var buf [64]byte                         // Max uint64 needs 20 digits, base 2 needs 64 digits
-	_, idx := fmtUint2Str(val, base, buf[:]) // i
-
-	t.tmpStr = string(buf[idx:])
-	t.stringVal = t.tmpStr
 }
 
 // u2s converts uint64 to string with minimal allocations and stores in tmpStr
@@ -765,4 +723,77 @@ func (t *conv) f2s() {
 
 	t.tmpStr = result
 	t.stringVal = result
+}
+
+// validateIntParam validates and converts an any parameter to int
+func (t *conv) validateIntParam(param any, allowZero bool) (int, bool) {
+	var val int
+	var ok bool
+
+	// Convert to int using consolidated type switch
+	switch v := param.(type) {
+	case int, int8, int16, int32, int64:
+		val, ok = t.extractInt(v)
+	case uint, uint8, uint16, uint32, uint64:
+		val, ok = t.extractUint(v)
+	case float32, float64:
+		val, ok = t.extractFloat(v)
+	default:
+		return 0, false
+	}
+
+	if !ok {
+		return 0, false
+	}
+
+	// Unified validation logic
+	if allowZero {
+		return val, val >= 0
+	}
+	return val, val > 0
+}
+
+// extractInt extracts integer value from signed integer types
+func (t *conv) extractInt(v any) (int, bool) {
+	switch val := v.(type) {
+	case int:
+		return val, true
+	case int8:
+		return int(val), true
+	case int16:
+		return int(val), true
+	case int32:
+		return int(val), true
+	case int64:
+		return int(val), true
+	}
+	return 0, false
+}
+
+// extractUint extracts integer value from unsigned integer types
+func (t *conv) extractUint(v any) (int, bool) {
+	switch val := v.(type) {
+	case uint:
+		return int(val), true
+	case uint8:
+		return int(val), true
+	case uint16:
+		return int(val), true
+	case uint32:
+		return int(val), true
+	case uint64:
+		return int(val), true
+	}
+	return 0, false
+}
+
+// extractFloat extracts integer value from float types
+func (t *conv) extractFloat(v any) (int, bool) {
+	switch val := v.(type) {
+	case float32:
+		return int(val), true
+	case float64:
+		return int(val), true
+	}
+	return 0, false
 }

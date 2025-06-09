@@ -52,8 +52,8 @@ func (c *conv) NewErr(values ...any) *conv {
 // Errorf creates a new conv instance with error formatting similar to fmt.Errorf
 // Example: tinystring.Errorf("invalid value: %s", value).Error()
 func Errorf(format string, args ...any) *conv {
-	result := convInit(new(errorType))
-	result.sprintf(format, args...)
+	result := unifiedFormat(format, args...)
+	result.vTpe = typeErr
 	return result
 }
 

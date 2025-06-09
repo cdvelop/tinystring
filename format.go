@@ -3,10 +3,7 @@ package tinystring
 // Format creates a new conv instance with variadic formatting similar to fmt.Sprintf
 // Example: tinystring.Format("Hello %s, you have %d messages", "Alice", 5).String()
 func Format(format string, args ...any) *conv {
-	// Use centralized convInit and conv method
-	result := convInit("")
-	result.sprintf(format, args...)
-	return result
+	return unifiedFormat(format, args...)
 }
 
 // formatValue converts any value to string and stores in conv struct.
@@ -21,20 +18,57 @@ func (c *conv) formatValue(value any) {
 		}
 	case string:
 		c.setString(val)
+	case int, int8, int16, int32, int64:
+		c.formatAny2Int(val)
+	case uint, uint8, uint16, uint32, uint64:
+		c.formatAny2Uint(val)
+	case float32, float64:
+		c.formatAny2Float(val)
 	default:
-		// Try consolidated type handlers
-		if c.handleIntTypesForFormat(value) {
-			return
-		}
-		if c.handleUintTypesForFormat(value) {
-			return
-		}
-		if c.handleFloatTypesForFormat(value) {
-			return
-		}
-
 		// Handle unsupported types
 		c.formatUnsupported(value)
+	}
+}
+
+// formatAny2Int consolidates all integer type formatting
+func (c *conv) formatAny2Int(val any) {
+	switch v := val.(type) {
+	case int:
+		genFormatInt(c, v)
+	case int8:
+		genFormatInt(c, v)
+	case int16:
+		genFormatInt(c, v)
+	case int32:
+		genFormatInt(c, v)
+	case int64:
+		genFormatInt(c, v)
+	}
+}
+
+// formatAny2Uint consolidates all unsigned integer type formatting
+func (c *conv) formatAny2Uint(val any) {
+	switch v := val.(type) {
+	case uint:
+		genFormatUint(c, v)
+	case uint8:
+		genFormatUint(c, v)
+	case uint16:
+		genFormatUint(c, v)
+	case uint32:
+		genFormatUint(c, v)
+	case uint64:
+		genFormatUint(c, v)
+	}
+}
+
+// formatAny2Float consolidates all float type formatting
+func (c *conv) formatAny2Float(val any) {
+	switch v := val.(type) {
+	case float32:
+		genFormatFloat(c, v)
+	case float64:
+		genFormatFloat(c, v)
 	}
 }
 
@@ -123,11 +157,11 @@ func (t *conv) Down() *conv {
 		return t
 	}
 	// Parse the current value
-	tempConv := convInit(t.getString())
+	tempConv := newConv(withValue(t.getString()))
 	tempConv.parseFloat()
 	if tempConv.err != "" {
 		// Not a number, just set the flag
-		result := convInit(t.getString())
+		result := newConv(withValue(t.getString()))
 		result.err = t.err
 		result.roundDown = true
 		return result
@@ -167,10 +201,10 @@ func (t *conv) Down() *conv {
 			adjustedVal = val - 1.0
 		}
 	} // Format the result
-	conv := convInit(adjustedVal)
+	conv := newConv(withValue(adjustedVal))
 	conv.f2sMan(decimalPlaces)
 	result := conv.getString()
-	finalResult := convInit(result)
+	finalResult := newConv(withValue(result))
 	finalResult.err = ""
 	finalResult.roundDown = true
 	return finalResult
@@ -589,7 +623,7 @@ func (c *conv) handleIntFormat(args []any, argIndex *int, base int, formatSpec s
 		return nil, false
 	}
 
-	tempConv := convInit(int64(intVal))
+	tempConv := newConv(withValue(int64(intVal)))
 	if base == 10 {
 		tempConv.i2s()
 	} else {
@@ -613,7 +647,7 @@ func (c *conv) handleFloatFormat(args []any, argIndex *int, precision int, forma
 		return nil, false
 	}
 
-	tempConv := convInit(floatVal)
+	tempConv := newConv(withValue(floatVal))
 	tempConv.f2sMan(precision)
 	str := tempConv.getString()
 	*argIndex++
@@ -644,11 +678,18 @@ func (c *conv) handleGenericFormat(args []any, argIndex *int, formatSpec string)
 		return nil, false
 	}
 
-	tempConv := convInit("")
+	tempConv := newConv(withValue(""))
 	tempConv.formatValue(arg)
 	str := tempConv.getString()
 	*argIndex++
 	return []byte(str), true
+}
+
+// unifiedFormat creates a formatted string using sprintf, shared by Format and Errorf
+func unifiedFormat(format string, args ...any) *conv {
+	result := newConv(withValue(""))
+	result.sprintf(format, args...)
+	return result
 }
 
 func (c *conv) sprintf(format string, args ...any) {
@@ -686,7 +727,7 @@ func (c *conv) sprintf(format string, args ...any) {
 					}
 					if start < i {
 						// Parse precision
-						tempConv := convInit(format[start:i])
+						tempConv := newConv(withValue(format[start:i]))
 						tempConv.s2Int(10)
 						if tempConv.err == "" {
 							precision = int(tempConv.intVal)
@@ -754,76 +795,4 @@ func (c *conv) sprintf(format string, args ...any) {
 	c.vTpe = typeStr
 }
 
-// Helper functions for formatValue type handling
-
-// handleIntTypesForFormat consolidates repetitive int type handling for format operations
-func (c *conv) handleIntTypesForFormat(val any) bool {
-	switch v := val.(type) {
-	case int:
-		c.intVal = int64(v)
-		c.i2s()
-		return true
-	case int8:
-		c.intVal = int64(v)
-		c.i2s()
-		return true
-	case int16:
-		c.intVal = int64(v)
-		c.i2s()
-		return true
-	case int32:
-		c.intVal = int64(v)
-		c.i2s()
-		return true
-	case int64:
-		c.intVal = v
-		c.i2s()
-		return true
-	default:
-		return false
-	}
-}
-
-// handleUintTypesForFormat consolidates repetitive uint type handling for format operations
-func (c *conv) handleUintTypesForFormat(val any) bool {
-	switch v := val.(type) {
-	case uint:
-		c.uintVal = uint64(v)
-		c.u2s()
-		return true
-	case uint8:
-		c.uintVal = uint64(v)
-		c.u2s()
-		return true
-	case uint16:
-		c.uintVal = uint64(v)
-		c.u2s()
-		return true
-	case uint32:
-		c.uintVal = uint64(v)
-		c.u2s()
-		return true
-	case uint64:
-		c.uintVal = v
-		c.u2s()
-		return true
-	default:
-		return false
-	}
-}
-
-// handleFloatTypesForFormat consolidates repetitive float type handling for format operations
-func (c *conv) handleFloatTypesForFormat(val any) bool {
-	switch v := val.(type) {
-	case float32:
-		c.floatVal = float64(v)
-		c.f2sMan(-1)
-		return true
-	case float64:
-		c.floatVal = v
-		c.f2sMan(-1)
-		return true
-	default:
-		return false
-	}
-}
+// Helper functions for formatValue type handling using generics

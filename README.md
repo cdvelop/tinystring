@@ -1,5 +1,6 @@
 # TinyString
 
+
 TinyString is a lightweight Go library that provides conv manipulation with a fluid API, specifically designed for small devices and web applications using TinyGo as the target compiler.
 
 ## Key Features
@@ -58,11 +59,6 @@ TinyString achieves its goals through **manual implementations** of commonly use
 ### Replaced Standard Library Functions
 | Standard Library | TinyString Implementation | Purpose |
 |-----------------|---------------------------|---------|
-| `strconv.ParseFloat` | `parseFloatManual` | String to float conversion |
-| `strconv.FormatFloat` | `floatToStringManual` | Float to string conversion |
-| `strconv.ParseInt` | `parseIntManual` | String to integer conversion |
-| `strconv.FormatInt` | `intToStringOptimized` | Integer to string conversion |
-| `strings.IndexByte` | `indexByteManual` | Byte search in strings |
 | `fmt.Sprintf` | Custom `sprintf` implementation | String formatting |
 
 ### Performance Benefits
@@ -510,22 +506,22 @@ fmt.Println(originalText)  // Output: "el murcielago rapido" (modified)
 [Standard Library Example](benchmark/bench-binary-size/standard-lib/main.go) | [TinyString Example](benchmark/bench-binary-size/tinystring-lib/main.go)
 
 <!-- This table is automatically generated from build-and-measure.sh -->
-*Last updated: 2025-06-05 21:34:43*
+*Last updated: 2025-06-09 14:44:50*
 
 | Build Type | Parameters | Standard Library<br/>`go build` | TinyString<br/>`tinygo build` | Size Reduction | Performance |
 |------------|------------|------------------|------------|----------------|-------------|
-| 🖥️ **Default Native** | `-ldflags="-s -w"` | 1.6 MB | 1.5 MB | **-67.0 KB** | ❌ **4.2%** |
-| 🌐 **Default WASM** | `(default -opt=z)` | 879.1 KB | 671.9 KB | **-207.2 KB** | ✅ **23.6%** |
-| 🌐 **Ultra WASM** | `-no-debug -panic=trap -scheduler=none -gc=leaking -target wasm` | 200.6 KB | 94.8 KB | **-105.8 KB** | ✅ **52.8%** |
-| 🌐 **Speed WASM** | `-opt=2 -target wasm` | 1.3 MB | 972.2 KB | **-318.4 KB** | ✅ **24.7%** |
-| 🌐 **Debug WASM** | `-opt=0 -target wasm` | 3.0 MB | 2.3 MB | **-759.8 KB** | ✅ **24.7%** |
+| 🖥️ **Default Native** | `-ldflags="-s -w"` | 1.6 MB | 983.5 KB | **-605.5 KB** | ✅ **38.1%** |
+| 🌐 **Default WASM** | `(default -opt=z)` | 879.1 KB | 206.2 KB | **-673.0 KB** | 🏆 **76.5%** |
+| 🌐 **Ultra WASM** | `-no-debug -panic=trap -scheduler=none -gc=leaking -target wasm` | 200.6 KB | 24.9 KB | **-175.7 KB** | 🏆 **87.6%** |
+| 🌐 **Speed WASM** | `-opt=2 -target wasm` | 1.3 MB | 271.7 KB | **-1019.0 KB** | 🏆 **79.0%** |
+| 🌐 **Debug WASM** | `-opt=0 -target wasm` | 3.0 MB | 666.1 KB | **-2.4 MB** | 🏆 **78.3%** |
 
 ### 🎯 Performance Summary
 
-- 🏆 **Peak Reduction: 52.8%** (Best optimization)
-- ✅ **Average WebAssembly Reduction: 31.4%**
-- ✅ **Average Native Reduction: 4.2%**
-- 📦 **Total Size Savings: 1.4 MB across all builds**
+- 🏆 **Peak Reduction: 87.6%** (Best optimization)
+- ✅ **Average WebAssembly Reduction: 80.3%**
+- ✅ **Average Native Reduction: 38.1%**
+- 📦 **Total Size Savings: 4.8 MB across all builds**
 
 #### Performance Legend
 - ❌ Poor (<5% reduction)
@@ -539,20 +535,20 @@ fmt.Println(originalText)  // Output: "el murcielago rapido" (modified)
 [Standard Library Example](benchmark/bench-memory-alloc/standard) | [TinyString Example](benchmark/bench-memory-alloc/tinystring)
 
 <!-- This table is automatically generated from memory-benchmark.sh -->
-*Last updated: 2025-06-05 21:35:11*
+*Last updated: 2025-06-09 14:45:19*
 
 Performance benchmarks comparing memory allocation patterns between standard Go library and TinyString:
 
 | 🧪 **Benchmark Category** | 📚 **Library** | 💾 **Memory/Op** | 🔢 **Allocs/Op** | ⏱️ **Time/Op** | 📈 **Memory Trend** | 🎯 **Alloc Trend** | 🏆 **Performance** |
 |----------------------------|----------------|-------------------|-------------------|-----------------|---------------------|---------------------|--------------------|
-| 📝 **String Processing** | 📊 Standard | `1.2 KB` | `48` | `3.1μs` | - | - | - |
-| | 🚀 TinyString | `2.3 KB` | `46` | `9.3μs` | ❌ **96.7% more** | ➖ **4.2% less** | ❌ **Poor** |
-| 🔢 **Number Processing** | 📊 Standard | `1.2 KB` | `132` | `4.2μs` | - | - | - |
-| | 🚀 TinyString | `2.5 KB` | `120` | `3.8μs` | ❌ **110.7% more** | ✅ **9.1% less** | ❌ **Poor** |
+| 📝 **String Processing** | 📊 Standard | `1.2 KB` | `48` | `3.2μs` | - | - | - |
+| | 🚀 TinyString | `2.3 KB` | `46` | `9.4μs` | ❌ **96.7% more** | ➖ **4.2% less** | ❌ **Poor** |
+| 🔢 **Number Processing** | 📊 Standard | `1.2 KB` | `132` | `4.4μs` | - | - | - |
+| | 🚀 TinyString | `2.5 KB` | `120` | `3.9μs` | ❌ **110.7% more** | ✅ **9.1% less** | ❌ **Poor** |
 | 🔄 **Mixed Operations** | 📊 Standard | `546 B` | `44` | `2.2μs` | - | - | - |
-| | 🚀 TinyString | `1.2 KB` | `46` | `3.5μs` | ❌ **119.8% more** | ➖ **4.5% more** | ❌ **Poor** |
-| 📝 **String Processing (Pointer Optimization)** | 📊 Standard | `1.2 KB` | `48` | `3.1μs` | - | - | - |
-| | 🚀 TinyString | `2.2 KB` | `38` | `9.0μs` | ❌ **86.0% more** | 🏆 **20.8% less** | ⚠️ **Caution** |
+| | 🚀 TinyString | `1.2 KB` | `46` | `3.7μs` | ❌ **119.8% more** | ➖ **4.5% more** | ❌ **Poor** |
+| 📝 **String Processing (Pointer Optimization)** | 📊 Standard | `1.2 KB` | `48` | `3.2μs` | - | - | - |
+| | 🚀 TinyString | `2.2 KB` | `38` | `9.3μs` | ❌ **86.0% more** | 🏆 **20.8% less** | ⚠️ **Caution** |
 
 ### 🎯 Performance Summary
 

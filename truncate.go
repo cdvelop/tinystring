@@ -2,18 +2,6 @@ package tinystring
 
 const ellipsis = "..."
 
-// validateIntParam validates and converts an any parameter to int
-func (t *conv) validateIntParam(param any, allowZero bool) (int, bool) {
-	val, ok := toInt(param)
-	if !ok {
-		return 0, false
-	}
-	if allowZero {
-		return val, val >= 0
-	}
-	return val, val > 0
-}
-
 // processWordForName applies the maxCharsPerWord rule to a word for name truncation
 func (t *conv) processWordForName(word string, wordIndex int, totalWords int, maxCharsPerWord int) string {
 	// Last word doesn't get truncated by maxCharsPerWord
