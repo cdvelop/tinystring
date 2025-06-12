@@ -12,7 +12,7 @@ func (t *conv) Join(sep ...string) *conv {
 	}
 
 	// Handle case when we have a string slice stored
-	if t.vTpe == typeStrSlice {
+	if t.vTpe == tpStrSlice {
 		if len(t.stringSliceVal) == 0 {
 			t.setString("")
 		} else {

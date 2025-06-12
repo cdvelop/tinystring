@@ -1,18 +1,7 @@
 package tinystring
 
-// vTpe represents the type of value stored in conv
-type vTpe uint8
-
-const (
-	typeStr vTpe = iota
-	typeInt
-	typeUint
-	typeFloat
-	typeBool
-	typeStrSlice
-	typeStrPtr
-	typeErr
-)
+// Import unified types from abi.go - no more duplication
+// kind is now defined in abi.go with tp prefix
 
 // Generic type interfaces for consolidating repetitive type switches
 type anyInt interface {
@@ -35,12 +24,13 @@ type conv struct {
 	boolVal        bool
 	stringSliceVal []string
 	stringPtrVal   *string
-	vTpe           vTpe
+	vTpe           kind // Updated to use unified kind type from abi.go
 	roundDown      bool
 	separator      string
 	tmpStr         string    // Cache for temp string conversion to avoid repeated work
-	lastConvType   vTpe      // Track last converted type for cache validation
+	lastConvType   kind      // Track last converted type for cache validation
 	err            errorType // Error type from error.go
+	anyVal         any       // Generic field to store any value type
 }
 
 // struct to store mappings to remove accents and diacritics
@@ -64,20 +54,20 @@ func withValue(v any) convOpt {
 	return func(c *conv) {
 		if v == nil {
 			c.stringVal = ""
-			c.vTpe = typeStr
+			c.vTpe = tpString
 			return
 		}
 		switch val := v.(type) {
 		case string:
 			c.stringVal = val
-			c.vTpe = typeStr
+			c.vTpe = tpString
 		case []string:
 			c.stringSliceVal = val
-			c.vTpe = typeStrSlice
+			c.vTpe = tpStrSlice
 		case *string:
 			c.stringVal = *val
 			c.stringPtrVal = val
-			c.vTpe = typeStrPtr
+			c.vTpe = tpStrPtr
 		case bool:
 			c.setBoolVal(val)
 		case errorType:
@@ -91,10 +81,22 @@ func withValue(v any) convOpt {
 				c.handleUintType(val)
 			case float32, float64:
 				c.handleFloatType(val)
-			default:
-				// Fallback to string conversion for unknown types
-				c.vTpe = typeStr
-				c.any2s(val)
+			default: // Check for struct or slice types using reflection
+				rv := refValueOf(v)
+				switch rv.Kind() {
+				case tpStruct:
+					// Store the value for struct encoding
+					c.anyVal = v
+					c.vTpe = tpStruct
+				case tpSlice, tpArray:
+					// Store the value for slice encoding
+					c.anyVal = v
+					c.vTpe = tpSlice
+				default:
+					// Fallback to string conversion for unknown types
+					c.vTpe = tpString
+					c.any2s(val)
+				}
 			}
 		}
 	}
@@ -111,6 +113,26 @@ func newConv(opts ...convOpt) *conv {
 	return c
 }
 
+// length returns the length of the current string
+func (c *conv) length() int {
+	return len(c.getString())
+}
+
+// reset clears the conv builder
+func (c *conv) reset() *conv {
+	c.setString("")
+	return c
+}
+
+// Builder creates a new string builder instance
+func Builder() *conv {
+	return &conv{
+		stringVal: "",
+		vTpe:      tpString,
+		separator: "_",
+	}
+}
+
 // Convert initializes a new conv struct with any type of value for string,bool and number manipulation.
 // Uses the functional options pattern internally.
 func Convert(v any) *conv {
@@ -120,17 +142,17 @@ func Convert(v any) *conv {
 // Generic functions to handle numeric types without repetitive switches
 func genInt[T anyInt](c *conv, v T) {
 	c.intVal = int64(v)
-	c.vTpe = typeInt
+	c.vTpe = tpInt
 }
 
 func genUint[T anyUint](c *conv, v T) {
 	c.uintVal = uint64(v)
-	c.vTpe = typeUint
+	c.vTpe = tpUint
 }
 
 func genFloat[T anyFloat](c *conv, v T) {
 	c.floatVal = float64(v)
-	c.vTpe = typeFloat
+	c.vTpe = tpFloat64
 }
 
 // Generic functions for any2s operations
@@ -168,13 +190,13 @@ func genFormatFloat[T anyFloat](c *conv, v T) {
 // setBoolVal sets the bool value and updates the vTpe
 func (c *conv) setBoolVal(val bool) {
 	c.boolVal = val
-	c.vTpe = typeBool
+	c.vTpe = tpBool
 }
 
 // setErrorVal sets the errorType value and updates the vTpe
 func (c *conv) setErrorVal(val errorType) {
 	c.err = val
-	c.vTpe = typeErr
+	c.vTpe = tpErr
 }
 
 func (t *conv) separatorCase(sep ...string) string {
@@ -189,7 +211,7 @@ func (t *conv) separatorCase(sep ...string) string {
 // This method should be used when you want to modify the original string directly
 // without additional allocations.
 func (t *conv) Apply() {
-	if t.vTpe == typeStrPtr && t.stringPtrVal != nil {
+	if t.vTpe == tpStrPtr && t.stringPtrVal != nil {
 		*t.stringPtrVal = t.getString()
 	}
 }
@@ -201,7 +223,7 @@ func (t *conv) String() string {
 
 // StringError returns the content of the conv along with any error that occurred during processing
 func (t *conv) StringError() (string, error) {
-	if t.vTpe == typeErr {
+	if t.vTpe == tpErr {
 		return t.getString(), t
 	}
 	return t.getString(), nil
@@ -220,12 +242,12 @@ func isLetter(r rune) bool {
 // getString converts the current value to string only when needed
 // Optimized with string caching to avoid repeated conversions
 func (t *conv) getString() string {
-	if t.vTpe == typeErr {
+	if t.vTpe == tpErr {
 		return ""
 	}
 
 	// If we already have a string value and haven't changed types, reuse it
-	if t.vTpe == typeStr && t.stringVal != "" {
+	if t.vTpe == tpString && t.stringVal != "" {
 		return t.stringVal
 	}
 
@@ -236,27 +258,27 @@ func (t *conv) getString() string {
 
 	// Convert to string using internal methods to avoid allocations
 	switch t.vTpe {
-	case typeStr:
+	case tpString:
 		t.tmpStr = t.stringVal
-	case typeStrPtr:
+	case tpStrPtr:
 		t.tmpStr = t.stringVal // Already stored during creation
-	case typeStrSlice:
+	case tpStrSlice:
 		if len(t.stringSliceVal) == 0 {
 			t.tmpStr = ""
 		} else {
 			// Join with space as default - use internal method
 			t.tmpStr = t.joinSlice(" ")
 		}
-	case typeInt:
+	case tpInt:
 		// Use internal method instead of external function
 		t.fmtInt(10)
-	case typeUint:
+	case tpUint:
 		// Use internal method instead of external function
 		t.fmtUint(10)
-	case typeFloat:
+	case tpFloat64:
 		// Use internal method instead of external function
 		t.f2s()
-	case typeBool:
+	case tpBool:
 		if t.boolVal {
 			t.tmpStr = trueStr
 		} else {
@@ -290,11 +312,11 @@ func (t *conv) setString(s string) {
 	t.stringVal = s
 
 	// If working with string pointer, update the original string
-	if t.vTpe == typeStrPtr && t.stringPtrVal != nil {
+	if t.vTpe == tpStrPtr && t.stringPtrVal != nil {
 		*t.stringPtrVal = s
 		// Keep the vTpe as stringPtr to maintain the pointer relationship
 	} else {
-		t.vTpe = typeStr
+		t.vTpe = tpString
 	}
 
 	// Clear other values to save memory
@@ -306,7 +328,7 @@ func (t *conv) setString(s string) {
 
 	// Invalidate cache since we changed the string
 	t.tmpStr = ""
-	t.lastConvType = vTpe(0)
+	t.lastConvType = kind(0)
 }
 
 // joinSlice joins string slice with separator - optimized for minimal allocations

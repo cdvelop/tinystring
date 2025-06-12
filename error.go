@@ -23,6 +23,10 @@ const (
 	errCannotFormat      errorType = "cannot format non-numeric value"
 	errInvalidFloat      errorType = "invalid float string"
 	errInvalidBool       errorType = "invalid boolean value"
+	// JSON specific errors
+	errInvalidJSON     errorType = "invalid json"
+	errUnsupportedType errorType = "unsupported type"
+	errCircularRef     errorType = "circular reference"
 )
 
 // set new error message eg: tinystring.Err(errInvalidFormat, "custom message")
@@ -45,7 +49,7 @@ func (c *conv) NewErr(values ...any) *conv {
 		}
 	}
 	c.err = out
-	c.vTpe = typeErr
+	c.vTpe = tpErr
 	return c
 }
 
@@ -53,7 +57,7 @@ func (c *conv) NewErr(values ...any) *conv {
 // Example: tinystring.Errorf("invalid value: %s", value).Error()
 func Errorf(format string, args ...any) *conv {
 	result := unifiedFormat(format, args...)
-	result.vTpe = typeErr
+	result.vTpe = tpErr
 	return result
 }
 

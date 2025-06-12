@@ -89,7 +89,7 @@ func (t *conv) RoundDecimals(decimals int) *conv {
 	}
 	// If we already have a float value, use it directly to avoid string conversion
 	var val float64
-	if t.vTpe == typeFloat {
+	if t.vTpe == tpFloat64 {
 		val = t.floatVal
 	} else {
 		// Parse current string content as float without creating temporary conv
@@ -142,7 +142,7 @@ func (t *conv) RoundDecimals(decimals int) *conv {
 
 	// Update the current conv object directly instead of creating a new one
 	t.floatVal = rounded
-	t.vTpe = typeFloat
+	t.vTpe = tpFloat64
 	t.f2sMan(decimals)
 	t.err = ""
 	// Preserve the roundDown flag (already in self)
@@ -217,22 +217,22 @@ func (t *conv) FormatNumber() *conv {
 		return t
 	}
 	// Try to use existing values directly to avoid string conversions
-	if t.vTpe == typeInt { // We already have an integer value, use it directly
+	if t.vTpe == tpInt { // We already have an integer value, use it directly
 		t.i2s()
 		t.fmtNum()
 		t.err = ""
 		return t
 	}
-	if t.vTpe == typeUint {
+	if t.vTpe == tpUint {
 		// Convert uint to int64 and format
 		t.intVal = int64(t.uintVal)
-		t.vTpe = typeInt
+		t.vTpe = tpInt
 		t.i2s()
 		t.fmtNum()
 		t.err = ""
 		return t
 	}
-	if t.vTpe == typeFloat {
+	if t.vTpe == tpFloat64 {
 		// We already have a float value, use it directly
 		t.f2sMan(-1)
 		fStr := t.getString()
@@ -266,7 +266,7 @@ func (t *conv) FormatNumber() *conv {
 	t.setString(str)
 	t.s2Int(10)
 	if t.err == "" { // Use the parsed integer value
-		t.vTpe = typeInt
+		t.vTpe = tpInt
 		t.i2s()
 		t.fmtNum()
 		t.err = ""
@@ -277,7 +277,7 @@ func (t *conv) FormatNumber() *conv {
 	t.parseFloat()
 	if t.err == "" {
 		// Use the parsed float value
-		t.vTpe = typeFloat
+		t.vTpe = tpFloat64
 		t.f2sMan(-1)
 		fStr := t.getString()
 		fStr = rmZeros(fStr) // Remove trailing zeros after decimal point
@@ -440,7 +440,7 @@ func (c *conv) f2sMan(precision int) {
 		} else {
 			c.setString("0")
 		}
-		c.vTpe = typeStr
+		c.vTpe = tpString
 		return
 	}
 
@@ -554,7 +554,7 @@ func (c *conv) f2sMan(precision int) {
 	}
 
 	c.setString(string(result))
-	c.vTpe = typeStr
+	c.vTpe = tpString
 }
 
 // i2sBase converts an int64 to a string with specified base and stores in conv struct.
@@ -564,14 +564,14 @@ func (c *conv) i2sBase(base int) {
 
 	if number == 0 {
 		c.setString("0")
-		c.vTpe = typeStr
+		c.vTpe = tpString
 		return
 	}
 
 	// Use optimized i2s() for decimal base
 	if base == 10 {
 		c.i2s()
-		c.vTpe = typeStr
+		c.vTpe = tpString
 		return
 	}
 
@@ -595,7 +595,7 @@ func (c *conv) i2sBase(base int) {
 	}
 
 	c.setString(result)
-	c.vTpe = typeStr
+	c.vTpe = tpString
 }
 
 // sprintf formats according to a format specifier and stores in conv struct.
@@ -792,7 +792,7 @@ func (c *conv) sprintf(format string, args ...any) {
 	}
 
 	c.setString(string(buf))
-	c.vTpe = typeStr
+	c.vTpe = tpString
 }
 
 // Helper functions for formatValue type handling using generics

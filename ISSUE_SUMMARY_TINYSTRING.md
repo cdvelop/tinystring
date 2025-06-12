@@ -2,100 +2,93 @@
 
 ## What is TinyString?
 
-Lightweight Go library for string manipulation with fluid API, specifically designed for small devices and web applications using TinyGo compiler.
+**Zero-dependency Go string manipulation library** for TinyGo/WebAssembly with fluid API. **80% smaller binaries** by replacing standard library with manual implementations.
 
-## Core Problem
+## Core Problem & Solution
 
-**Excessive binary sizes in WebAssembly when using Go standard library**, specifically:
-- Large binaries slow web app loading
-- Standard library (`fmt`, `strings`, `strconv`) adds significant overhead  
-- Memory constraints on small devices and edge computing
-- Universal need for string manipulation in all projects
+**Problem**: Standard library (`fmt`, `strings`, `strconv`, `encoding/json`) creates huge WebAssembly binaries  
+**Solution**: Manual implementations in 5,062 lines of Go code, eliminating stdlib imports entirely
 
-## Primary Goal
+## Critical Constraints
 
-Enable Go WebAssembly adoption by reducing binary size while providing essential string operations through manual implementations that avoid standard library imports.
+- ❌ **NEVER import**: `fmt`, `strings`, `strconv`, `reflect`, `encoding/json`, `errors`
+- ✅ **Only allowed**: `unsafe` and essential runtime packages
+- 🔄 **Pattern**: All operations via `Convert(any).Method().String()` chain
+- 🎯 **Priority**: Binary size over runtime performance
 
-## Key Features
-
-- Fluid chainable API
-- Zero standard library dependencies
-- TinyGo compatible
-- Universal type conversion (string, int, float, bool)
-- Manual implementations replace: `strconv.ParseFloat`, `strconv.FormatFloat`, `strconv.ParseInt`, `strconv.FormatInt`, `strings.IndexByte`, `fmt.Sprintf`
-
-## Basic Usage Pattern
+## API Pattern & Standard Library Replacements
 
 ```go
-import "github.com/cdvelop/tinystring"
+// Entry point: Convert any type, chain operations, get result
+result := tinystring.Convert(input).Method1().Method2().String()
 
-// Basic string processing
-result := tinystring.Convert("MÍ téxtO").RemoveTilde().String()
-// Output: "MI textO"
+// Standard library replacements:
+fmt.Sprintf(format, args...)     → Format(format, args...).String()
+strings.ToLower(s)               → Convert(s).ToLower().String()  
+strconv.Itoa(i)                  → Convert(i).String()
+strconv.ParseInt(s, base, bits)  → Convert(s).ToInt(base)
+strings.Split(s, sep)            → Split(s, sep)
+strings.Join(slice, sep)         → Convert(slice).Join(sep).String()
+```
 
-// Type conversion and chaining
-result := tinystring.Convert(42).ToUpper().String()
-// Output: "42"
+## Complete Method Reference
 
-// Complex chaining
-result := tinystring.Convert("Él Múrcielago Rápido")
-    .RemoveTilde()
-    .CamelCaseLower()
-    .String()
-// Output: "elMurcielagoRapido"
+| Category | Methods | Location | Stdlib Equivalent |
+|----------|---------|----------|-------------------|
+| **Core** | `Convert(any)`, `String()`, `Apply()` | convert.go | Entry point |
+| **Text** | `ToLower()`, `ToUpper()`, `RemoveTilde()`, `Capitalize()` | capitalize.go | strings.ToLower/ToUpper |
+| **Case** | `CamelCaseLower()`, `CamelCaseUpper()`, `ToSnakeCaseLower()` | capitalize.go | Custom transforms |
+| **Strings** | `Split()`, `Join()`, `Replace()`, `TrimPrefix()`, `Repeat()` | split.go, join.go, replace.go, repeat.go | strings.* |
+| **Search** | `Contains()`, `CountOccurrences()` | contain.go | strings.Contains/Count |
+| **Numbers** | `ToInt()`, `ToUint()`, `ToFloat()`, `ToBool()`, `RoundDecimals()` | numeric.go, bool.go | strconv.Parse* |  
+| **Format** | `Format()`, `FormatNumber()`, `Quote()` | format.go, numeric.go, quote.go | fmt.Sprintf |
+| **Advanced** | `Truncate()`, `TruncateName()`, `ParseKeyValue()` | truncate.go, parse.go | Custom logic |
+| **JSON** | `JsonEncode()`, `JsonDecode()` | json_encode.go, json_decode.go | encoding/json |
+| **Error** | `StringError()`, `Errorf()`, `Err()` | error.go | fmt.Errorf |
 
-// Memory optimization with pointers
-text := "Él Múrcielago Rápido"
+## File Structure & Implementation Size
+
+| File | Lines | Purpose | Key Methods |
+|------|-------|---------|-------------|
+| **convert.go** | 486 | Core engine, type system | `Convert()`, type interfaces, `Apply()` |
+| **format.go** | 798 | Printf replacement | `Format()` (replaces fmt.Sprintf) |
+| **numeric.go** | 799 | Number operations | `ToInt()`, `ToFloat()`, `RoundDecimals()`, `FormatNumber()` |
+| **reflect.go** | 789 | Custom reflection | `refType`, `refValue` for JSON |
+| **json_decode.go** | 531 | JSON parsing | `JsonDecode()` (replaces json.Unmarshal) |
+| **json_encode.go** | 363 | JSON generation | `JsonEncode()` (replaces json.Marshal) |
+| **abi.go** | 276 | Type definitions | `kind` enum, struct cache |
+| **capitalize.go** | 218 | Text transforms | `Capitalize()`, `CamelCase*()`, `ToSnakeCase*()` |
+| **truncate.go** | 174 | Smart truncation | `Truncate()`, `TruncateName()` |
+| **replace.go** | 97 | String replacement | `Replace()` (replaces strings.Replace) |
+| **mapping.go** | 94 | Character maps | Accent removal tables |
+| **split.go** | 83 | String splitting | `Split()` (replaces strings.Split) |
+| **error.go** | 78 | Error system | `Errorf()`, `Err()` (replaces fmt.Errorf) |
+| **join.go** | 65 | String joining | `Join()` (replaces strings.Join) |
+| **parse.go** | 58 | Parsing utilities | `ParseKeyValue()` |
+| **bool.go** | 55 | Boolean conversion | `ToBool()` (replaces strconv.ParseBool) |
+| **quote.go** | 42 | String quoting | `Quote()` (replaces strconv.Quote) |
+| **contain.go** | 33 | Search operations | `Contains()`, `CountOccurrences()` |
+| **repeat.go** | 22 | String repetition | `Repeat()` (replaces strings.Repeat) |
+| **numeric_convert.go** | 1 | Placeholder | Empty file |
+
+**Total: 5,062 lines** replacing 6 standard library packages
+
+## Usage Examples & Binary Impact
+
+```go
+// Memory optimization: modify original string
+text := "José María García"
 tinystring.Convert(&text).RemoveTilde().CamelCaseLower().Apply()
-// text is now: "elMurcielagoRapido"
+// text = "joseMaria Garcia"
+
+// Type conversion chain
+result := tinystring.Convert(42.7859).RoundDecimals(2).FormatNumber().String()
+// result = "42.79"
+
+// JSON operations without encoding/json
+bytes, err := tinystring.Convert(&user).JsonEncode()
+err = tinystring.Convert(jsonData).JsonDecode(&user)
 ```
 
-## Core Operations
-
-**Initialization & Output:**
-- `Convert(v any)` - Initialize with any type
-- `String()` - Get result as string 
-- `Apply()` - Modify original string pointer
-
-**Text Transformations:**
-- `RemoveTilde()` - Remove accents/diacritics
-- `ToLower()`, `ToUpper()` - Case conversion
-- `Capitalize()` - First letter of each word
-- `CamelCaseLower()`, `CamelCaseUpper()` - camelCase conversion
-- `ToSnakeCaseLower()`, `ToSnakeCaseUpper()` - snake_case conversion
-
-**String Operations:**
-- `Split(data, separator)` - Split strings
-- `Join(sep...)` - Join string slices
-- `Replace(old, new, n...)` - Replace substrings
-- `TrimPrefix()`, `TrimSuffix()`, `Trim()` - Trim operations
-- `Contains()`, `CountOccurrences()` - Search operations
-- `Repeat(n)` - Repeat strings
-
-**Advanced Features:**
-- `Truncate(maxWidth, reservedChars...)` - Smart truncation
-- `TruncateName(maxCharsPerWord, maxWidth)` - Name truncation for UI
-- `RoundDecimals(decimals)` - Numeric rounding with `Down()` modifier
-- `FormatNumber()` - Thousand separators
-- `Format(format, args...)` - sprintf-style formatting
-- `Quote()` - Add quotes with escaping
-
-**Type Conversions:**
-- `ToBool()` - Convert to boolean
-- `ToInt(base...)`, `ToUint(base...)` - Integer conversion
-- `ToFloat()` - Float conversion
-- `StringError()` - Get result with error handling
-
-## Installation
-
-```bash
-go get github.com/cdvelop/tinystring
-```
-
-## Architecture Notes
-
-- Manual implementations avoid standard library bloat
-- Optimized for binary size over runtime performance
-- Thread-safe operations
-- Supports pointer optimization to reduce allocations
-- WebAssembly-first design philosophy
+**Binary Size Reduction**: 76.5% - 87.6% smaller WebAssembly builds  
+**Trade-off**: Higher runtime memory usage for smaller distribution size

@@ -17,27 +17,27 @@ var smallInts = [...]string{
 // Shared helper methods to reduce code duplication between numeric.go and format.go
 
 // saveState saves the current string value and type for later restoration
-func (t *conv) saveState() (string, vTpe) {
+func (t *conv) saveState() (string, kind) {
 	return t.stringVal, t.vTpe
 }
 
 // restoreState restores previously saved string value and type
-func (t *conv) restoreState(savedVal string, savedType vTpe) {
+func (t *conv) restoreState(savedVal string, savedType kind) {
 	t.stringVal = savedVal
 	t.vTpe = savedType
 	t.err = "" // Reset error when restoring state
 }
 
 // tryParseAs attempts to parse content as the specified numeric type with fallback to float
-func (t *conv) tryParseAs(parseType vTpe, base int) bool {
+func (t *conv) tryParseAs(parseType kind, base int) bool {
 	// Save original state
 	oSV, oVT := t.saveState()
 
 	// Try direct parsing based on type
 	switch parseType {
-	case typeInt:
+	case tpInt:
 		t.s2Int(base)
-	case typeUint:
+	case tpUint:
 		t.s2Uint(oSV, base)
 	}
 
@@ -56,16 +56,16 @@ func (t *conv) tryParseAs(parseType vTpe, base int) bool {
 	t.s2Float()
 	if t.err == "" {
 		switch parseType {
-		case typeInt:
+		case tpInt:
 			t.intVal = int64(t.floatVal)
-			t.vTpe = typeInt
-		case typeUint:
+			t.vTpe = tpInt
+		case tpUint:
 			if t.floatVal < 0 {
 				t.err = errNegativeUnsigned
 				return false
 			}
 			t.uintVal = uint64(t.floatVal)
-			t.vTpe = typeUint
+			t.vTpe = tpUint
 		}
 		return true
 	}
@@ -137,15 +137,15 @@ func (t *conv) ToInt(base ...int) (int, error) {
 		b = base[0]
 	}
 	switch t.vTpe {
-	case typeInt:
+	case tpInt:
 		return int(t.intVal), nil // Direct return for integer values
-	case typeUint:
+	case tpUint:
 		return int(t.uintVal), nil // Direct conversion from uint
-	case typeFloat:
+	case tpFloat64:
 		return int(t.floatVal), nil // Direct truncation from float
 	default:
 		// For string types and other types, use shared helper method for parsing with fallback
-		if t.tryParseAs(typeInt, b) {
+		if t.tryParseAs(tpInt, b) {
 			return int(t.intVal), nil
 		}
 		// Return error if parsing failed
@@ -213,7 +213,7 @@ func (t *conv) ToInt64(base ...int) (int64, error) {
 		b = base[0]
 	}
 	// Use shared helper method for parsing with fallback
-	if t.tryParseAs(typeInt, b) {
+	if t.tryParseAs(tpInt, b) {
 		return t.intVal, nil
 	}
 
@@ -277,15 +277,15 @@ func (t *conv) ToUint(base ...int) (uint, error) {
 	}
 
 	switch t.vTpe {
-	case typeUint:
+	case tpUint:
 		return uint(t.uintVal), nil // Direct return for uint values
-	case typeInt:
+	case tpInt:
 		if t.intVal < 0 {
 			t.NewErr(errNegativeUnsigned, t.intVal)
 			return 0, t
 		}
 		return uint(t.intVal), nil // Direct conversion from int if positive
-	case typeFloat:
+	case tpFloat64:
 		if t.floatVal < 0 {
 			t.NewErr(errNegativeUnsigned, t.floatVal)
 			return 0, t
@@ -293,7 +293,7 @@ func (t *conv) ToUint(base ...int) (uint, error) {
 		return uint(t.floatVal), nil // Direct truncation from float if positive
 	default:
 		// For string types and other types, use shared helper method for parsing with fallback
-		if t.tryParseAs(typeUint, b) {
+		if t.tryParseAs(tpUint, b) {
 			return uint(t.uintVal), nil
 		}
 		// Return error if parsing failed
@@ -345,11 +345,11 @@ func (t *conv) ToFloat() (float64, error) {
 	}
 
 	switch t.vTpe {
-	case typeFloat:
+	case tpFloat64:
 		return t.floatVal, nil // Direct return for float values
-	case typeInt:
+	case tpInt:
 		return float64(t.intVal), nil // Direct conversion from int
-	case typeUint:
+	case tpUint:
 		return float64(t.uintVal), nil // Direct conversion from uint
 	default:
 		// For string types and other types, parse as float
@@ -396,7 +396,7 @@ func (t *conv) s2IntGeneric(base int) {
 	} else {
 		t.intVal = int64(t.uintVal)
 	}
-	t.vTpe = typeInt
+	t.vTpe = tpInt
 }
 
 // s2Uint converts string to uint with specified base and stores in conv struct.
@@ -490,7 +490,7 @@ func (t *conv) s2Float() {
 		result = -result
 	}
 	t.floatVal = result
-	t.vTpe = typeFloat
+	t.vTpe = tpFloat64
 }
 
 // s2n converts string to number with specified base and stores in conv struct.
@@ -531,7 +531,7 @@ func (t *conv) s2n(base int) {
 	}
 
 	t.uintVal = res
-	t.vTpe = typeUint
+	t.vTpe = tpUint
 }
 
 // isEmptyString checks if the input string is empty and sets an error if it is.
