@@ -91,22 +91,11 @@ var kindNames = []string{
 // tFlag is used by a Type to signal what extra type information is available
 type tFlag uint8
 
-const (
-	tflagUncommon       tFlag = 1 << 0
-	tflagExtraStar      tFlag = 1 << 1
-	tflagNamed          tFlag = 1 << 2
-	tflagRegularMemory  tFlag = 1 << 3
-	tflagUnrolledBitmap tFlag = 1 << 4
-)
-
 // nameOff is the offset to a name from moduledata.types
 type nameOff int32
 
 // typeOff is the offset to a type from moduledata.types
 type typeOff int32
-
-// textOff is an offset from the top of a text section
-type textOff int32
 
 // refType is the runtime representation of a Go type (adapted from internal/abi)
 // Used for JSON struct inspection and field access
@@ -235,42 +224,7 @@ func (n refName) dataChecked(off int, whySafe string) *byte {
 	return (*byte)(unsafe.Pointer(uintptr(unsafe.Pointer(n.bytes)) + uintptr(off)))
 }
 
-// Global cache for struct type information
-// Using slice instead of map for TinyGo compatibility
-var objects []object
-
-// object represents cached information about a struct type
-type object struct {
-	snakeName string   // snake_case name of the type
-	refType   *refType // reference to the type information
-	fields    []field  // cached field information
-}
-
-// field represents cached information about a struct field
-type field struct {
-	name      string   // original field name (e.g., "BirthDate")
-	snakeName string   // snake_case name of the field (e.g., "birth_date")
-	refType   *refType // type of the field
-	offset    uintptr  // byte offset in the struct
-	index     int      // field index
-}
-
-// findObject searches for cached object by snake_case name
-func findObject(snakeName string) *object {
-	for i := range objects {
-		if objects[i].snakeName == snakeName {
-			return &objects[i]
-		}
-	}
-	return nil
-}
-
-// addObject adds a new object to the cache
-func addObject(obj object) {
-	objects = append(objects, obj)
-}
-
 // clearObjectCache clears the global object cache - useful for testing
 func clearObjectCache() {
-	objects = objects[:0] // Clear slice while preserving capacity
+	// This function is deprecated, use clearRefStructsCache in reflect.go instead
 }

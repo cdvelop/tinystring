@@ -92,3 +92,21 @@ err = tinystring.Convert(jsonData).JsonDecode(&user)
 
 **Binary Size Reduction**: 76.5% - 87.6% smaller WebAssembly builds  
 **Trade-off**: Higher runtime memory usage for smaller distribution size
+
+## Test Organization & Debug Files
+
+The TinyString project includes comprehensive test coverage with specialized debug and diagnostic tests:
+
+### Debug Test Files
+- **`json_debug_test.go`**: JSON encode/decode diagnostics, pointer-to-struct field tests, Convert() pointer handling
+- **`reflect_debug_test.go`**: Reflection/field access diagnostics, field setter operations, corruption testing
+
+### Core Test Files (by functionality)
+- **JSON**: `json_encode_test.go`, `json_decode_test.go`, `json_data_test.go`
+- **Reflection**: `reflect_test.go` 
+- **Numeric**: `numeric_test.go`, `numeric_convert.go`
+- **Text**: `capitalize_test.go`, `format_test.go`, `quote_test.go`
+- **String Operations**: `contain_test.go`, `convert_test.go`, `join_test.go`, `parse_test.go`, `repeat_test.go`
+- **Utilities**: `abi_test.go`, `bool_test.go`, `concurrency_test.go`
+
+**Total Test Coverage**: ~95% with comprehensive edge case testing and diagnostic utilities

@@ -4,23 +4,6 @@ import (
 	"testing"
 )
 
-// Test structures for JSON functionality
-type Person struct {
-	Id        string
-	Name      string
-	BirthDate string
-	Gender    string
-	Phone     string
-	Addresses []Address
-}
-
-type Address struct {
-	Id      string
-	Street  string
-	City    string
-	ZipCode string
-}
-
 // Basic JSON encoding tests
 func TestJsonEncodeString(t *testing.T) {
 	tests := []struct {
@@ -192,7 +175,7 @@ func TestJsonEncodeUnsupportedType(t *testing.T) {
 
 // Struct JSON encoding tests
 func TestJsonEncodeStruct(t *testing.T) {
-	clearObjectCache() // Clear cache to avoid interference between tests
+	clearRefStructsCache() // Clear cache to avoid interference between tests
 
 	person := Person{
 		Id:        "123",
@@ -210,13 +193,12 @@ func TestJsonEncodeStruct(t *testing.T) {
 	// Check that it contains the expected fields in snake_case
 	jsonStr := string(result)
 	t.Logf("Actual JSON result: %s", jsonStr)
-
 	expectedFields := []string{
-		`"id":"123"`,
-		`"name":"John Doe"`,
-		`"birth_date":"1990-01-01"`,
-		`"gender":"male"`,
-		`"phone":"+1234567890"`,
+		`"Id":"123"`,
+		`"Name":"John Doe"`,
+		`"BirthDate":"1990-01-01"`,
+		`"Gender":"male"`,
+		`"Phone":"+1234567890"`,
 	}
 	for _, field := range expectedFields {
 		if !Contains(jsonStr, field) {
@@ -228,7 +210,7 @@ func TestJsonEncodeStruct(t *testing.T) {
 }
 
 func TestJsonEncodeNestedStruct(t *testing.T) {
-	clearObjectCache() // Clear cache to avoid interference
+	clearRefStructsCache() // Clear cache to avoid interference
 
 	address := Address{
 		Id:      "addr1",
@@ -251,13 +233,13 @@ func TestJsonEncodeNestedStruct(t *testing.T) {
 		t.Errorf("JsonEncode(nested Person) returned error: %v", err)
 		return
 	}
-
 	jsonStr := string(result) // Should contain nested addresses array
-	if !Contains(jsonStr, `"addresses"`) {
+
+	if !Contains(jsonStr, `"Addresses"`) {
 		t.Errorf("JsonEncode(nested Person) missing addresses field in: %s", jsonStr)
 	}
 
-	if !Contains(jsonStr, `"street":"123 Main St"`) {
+	if !Contains(jsonStr, `"Street":"123 Main St"`) {
 		t.Errorf("JsonEncode(nested Person) missing nested street field in: %s", jsonStr)
 	}
 }
@@ -276,79 +258,8 @@ func TestJsonEncodeEmptyStruct(t *testing.T) {
 	}
 }
 
-// Debug test to understand struct encoding issue
-func TestJsonDebugStruct(t *testing.T) {
-	clearObjectCache() // Clear cache to avoid interference
-
-	person := Person{
-		Id:        "123",
-		Name:      "John Doe",
-		BirthDate: "1990-01-01",
-		Gender:    "male",
-		Phone:     "+1234567890",
-	}
-
-	// Test reflection info first
-	rv := refValueOf(person)
-	t.Logf("refValue kind: %v", rv.Kind())
-	t.Logf("NumField(): %d", rv.NumField())
-
-	for i := range rv.NumField() {
-		field := rv.Field(i)
-		t.Logf("Field %d: Kind=%v, Valid=%v, String=%v", i, field.Kind(), field.IsValid(), field.String())
-	}
-
-	// Test struct info
-	structInfo := getStructInfo(rv.Type())
-	if structInfo != nil {
-		t.Logf("StructInfo fields count: %d", len(structInfo.fields))
-		for i, f := range structInfo.fields {
-			t.Logf("StructInfo field %d: name=%s, jsonName=%s", i, f.name, f.jsonName)
-		}
-	} else {
-		t.Log("StructInfo is nil!")
-	}
-
-	// Test actual encoding
-	result, err := Convert(person).JsonEncode()
-	if err != nil {
-		t.Errorf("JsonEncode(Person) returned error: %v", err)
-		return
-	}
-	t.Logf("JSON result: %s", string(result))
-
-	// Now test Address to see if it gets different cache entry
-	address := Address{
-		Id:      "addr1",
-		Street:  "123 Main St",
-		City:    "New York",
-		ZipCode: "10001",
-	}
-
-	rv2 := refValueOf(address)
-	t.Logf("Address refValue kind: %v", rv2.Kind())
-	t.Logf("Address NumField(): %d", rv2.NumField())
-
-	structInfo2 := getStructInfo(rv2.Type())
-	if structInfo2 != nil {
-		t.Logf("Address StructInfo fields count: %d", len(structInfo2.fields))
-		for i, f := range structInfo2.fields {
-			t.Logf("Address StructInfo field %d: name=%s, jsonName=%s", i, f.name, f.jsonName)
-		}
-	}
-
-	result2, err := Convert(address).JsonEncode()
-	if err != nil {
-		t.Errorf("JsonEncode(Address) returned error: %v", err)
-		return
-	}
-
-	t.Logf("Address JSON result: %s", string(result2))
-}
-
 func TestJsonEncodeStructSlice(t *testing.T) {
-	clearObjectCache() // Clear cache to avoid interference
-
+	clearRefStructsCache() // Clear cache to avoid interference
 	addresses := []Address{
 		{Id: "1", Street: "Main St", City: "NYC", ZipCode: "10001"},
 		{Id: "2", Street: "Oak Ave", City: "LA", ZipCode: "90210"},
@@ -360,10 +271,10 @@ func TestJsonEncodeStructSlice(t *testing.T) {
 		return
 	}
 	jsonStr := string(result)
-	if !Contains(jsonStr, `"street":"Main St"`) {
+	if !Contains(jsonStr, `"Street":"Main St"`) {
 		t.Errorf("JsonEncode([]Address) missing first address in: %s", jsonStr)
 	}
-	if !Contains(jsonStr, `"street":"Oak Ave"`) {
+	if !Contains(jsonStr, `"Street":"Oak Ave"`) {
 		t.Errorf("JsonEncode([]Address) missing second address in: %s", jsonStr)
 	}
 }
@@ -399,21 +310,20 @@ func TestJsonFieldNameConversion(t *testing.T) {
 	}
 
 	jsonStr := string(result)
-
-	// Check snake_case field names
+	// Check original field names (PascalCase)
 	expectedFields := []string{
-		`"first_name":"John"`,
-		`"last_name":"Doe"`,
-		`"email_addr":"john@example.com"`,
-		`"phone_num":"123-456-7890"`,
-		`"birth_date":"1990-01-01"`,
-		`"is_active":true`,
-		`"user_id":42`,
-		`"account_num":123456789`,
+		`"FirstName":"John"`,
+		`"LastName":"Doe"`,
+		`"EmailAddr":"john@example.com"`,
+		`"PhoneNum":"123-456-7890"`,
+		`"BirthDate":"1990-01-01"`,
+		`"IsActive":true`,
+		`"UserID":42`,
+		`"AccountNum":123456789`,
 	}
 	for _, field := range expectedFields {
 		if !Contains(jsonStr, field) {
-			t.Errorf("JsonEncode(TestStruct) missing snake_case field: %s in %s", field, jsonStr)
+			t.Errorf("JsonEncode(TestStruct) missing PascalCase field: %s in %s", field, jsonStr)
 		}
 	}
 }

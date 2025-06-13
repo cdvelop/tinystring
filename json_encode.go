@@ -1,5 +1,7 @@
 package tinystring
 
+import "unsafe"
+
 // JSON encoding implementation for TinyString
 // Uses our custom reflectlite integration for minimal binary size
 
@@ -202,6 +204,15 @@ func (c *conv) quoteJsonString(s string) []byte {
 
 // encodeStructValueWithRefReflect encodes a struct using refValue directly
 func (c *conv) encodeStructValueWithRefReflect(rv refValue) ([]byte, error) {
+	// Handle pointer to struct
+	if rv.Kind() == tpPointer {
+		elem := rv.Elem()
+		if !elem.IsValid() {
+			return []byte("null"), nil
+		}
+		rv = elem
+	}
+
 	if rv.Kind() != tpStruct {
 		return nil, Err(errUnsupportedType, "not a struct")
 	}
@@ -218,15 +229,14 @@ func (c *conv) encodeStructValueWithRefReflect(rv refValue) ([]byte, error) {
 		// Skip invalid fields
 		if !field.IsValid() {
 			continue
-		}
-
-		// Get field name from struct info and convert to snake_case
-		structInfo := getStructInfo(rv.Type())
-		if structInfo == nil || i >= len(structInfo.fields) {
+		} // Get field name from struct info - use original field name
+		var structInfo refStructInfo
+		getStructInfo(rv.Type(), &structInfo)
+		if structInfo.refType == nil || i >= len(structInfo.fields) {
 			continue
 		}
 
-		jsonKey := structInfo.fields[i].jsonName
+		jsonKey := structInfo.fields[i].name
 
 		// Add comma separator for subsequent fields
 		if fieldCount > 0 {
@@ -275,10 +285,11 @@ func (c *conv) encodeFieldValueWithRefReflect(v refValue) ([]byte, error) {
 	case tpMap, tpChan, tpFunc, tpUnsafePointer:
 		return nil, Err(errUnsupportedType, "unsupported type for JSON encoding: "+v.Kind().String())
 	case tpPointer:
-		if v.ptr == nil {
+		elem := v.Elem()
+		if !elem.IsValid() {
 			return []byte("null"), nil
 		}
-		return c.encodeFieldValueWithRefReflect(v.Elem())
+		return c.encodeFieldValueWithRefReflect(elem)
 	default:
 		return []byte("null"), nil
 	}
@@ -325,7 +336,11 @@ func (v refValue) Len() int {
 	case tpSlice:
 		return (*refSliceHeader)(v.ptr).Len
 	case tpString:
-		return len(*(*string)(v.ptr))
+		ptr := v.ptr
+		if v.flag&flagIndir != 0 {
+			ptr = *(*unsafe.Pointer)(ptr)
+		}
+		return len(*(*string)(ptr))
 	default:
 		panic("reflect: call of reflect.Value.Len on " + v.Kind().String() + " value")
 	}
@@ -348,13 +363,9 @@ func (v refValue) Index(i int) refValue {
 
 		// Calculate element address
 		elemPtr := add(s.Data, uintptr(i)*elemType.Size(), "same as &s[i]")
-
 		// Create flags for the element
-		fl := v.flag&flagRO | flagAddr
-		if ifaceIndir(elemType) {
-			fl |= flagIndir
-		}
-		fl = (fl &^ flagKindMask) | refFlag(elemType.Kind())
+		// Elements in slices are accessed directly, no flagIndir needed
+		fl := v.flag&flagRO | flagAddr | refFlag(elemType.Kind())
 
 		return refValue{elemType, elemPtr, fl}
 	default:

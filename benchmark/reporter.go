@@ -47,6 +47,18 @@ func (r *ReportGenerator) UpdateMemoryData(comparisons []MemoryComparison) error
 	return r.updateREADMESection("Memory Usage Comparison", content)
 }
 
+// UpdateREADMEWithJSONData updates README with JSON benchmark data
+func (r *ReportGenerator) UpdateJSONData(comparisons []JSONComparison) error {
+	LogInfo("Updating README with JSON benchmark analysis...")
+
+	content, err := r.generateJSONSection(comparisons)
+	if err != nil {
+		return fmt.Errorf("failed to generate JSON section: %v", err)
+	}
+
+	return r.updateREADMESection("JSON Performance Comparison", content)
+}
+
 // generateBinarySizeSection creates the binary size comparison section
 func (r *ReportGenerator) generateBinarySizeSection(binaries []BinaryInfo) (string, error) {
 	var content strings.Builder
@@ -288,6 +300,102 @@ func (r *ReportGenerator) generateMemorySection(comparisons []MemoryComparison) 
 	return content.String(), nil
 }
 
+// generateJSONSection creates the JSON performance comparison section
+func (r *ReportGenerator) generateJSONSection(comparisons []JSONComparison) (string, error) {
+	var content strings.Builder
+
+	content.WriteString("## 🔄 JSON Performance Comparison\n\n")
+	content.WriteString("Comparing JSON performance between standard library (`encoding/json`) and TinyString:\n\n")
+	content.WriteString("<!-- This table is automatically generated from json-comparison benchmarks -->\n")
+	content.WriteString("*Last updated: " + time.Now().Format("2006-01-02 15:04:05") + "*\n\n")
+
+	// Tabla principal
+	content.WriteString("| 🧪 Operation | 📦 Batch Size | 📚 Library | 💾 Memory/Op | 🔢 Allocs/Op | ⏱️ Time/Op | 📈 Performance |\n")
+	content.WriteString("|-------------|---------------|------------|--------------|--------------|------------|---------------|\n")
+
+	// Ordenar comparaciones por operación y tamaño de lote
+	operations := []string{"Marshal", "Unmarshal"}
+	batchSizes := []int{1, 100, 1000, 10000, 0} // 0 para casos de error
+
+	for _, op := range operations {
+		for _, size := range batchSizes {
+			for _, comp := range comparisons {
+				if comp.Operation == op && comp.BatchSize == size {
+					// Standard Library row
+					batchDesc := getBatchDescription(size, comp.IsErrorCase)
+					perfIndicator := getJSONPerformanceIndicator(comp.Standard, comp.TinyString)
+
+					content.WriteString(fmt.Sprintf("| %s | %s | Standard | %s | %d | %s | %s |\n",
+						op,
+						batchDesc,
+						formatBytes(comp.Standard.BytesPerOp),
+						comp.Standard.AllocsPerOp,
+						formatNanoseconds(comp.Standard.NsPerOp),
+						"⚡"))
+
+					content.WriteString(fmt.Sprintf("| %s | %s | TinyString | %s | %d | %s | %s |\n",
+						op,
+						batchDesc,
+						formatBytes(comp.TinyString.BytesPerOp),
+						comp.TinyString.AllocsPerOp,
+						formatNanoseconds(comp.TinyString.NsPerOp),
+						perfIndicator))
+				}
+			}
+		}
+	}
+
+	// Resumen y análisis
+	content.WriteString("\n### 📊 Performance Analysis\n\n")
+
+	// Calcular estadísticas
+	var (
+		totalMemoryImprovement float64
+		totalAllocsImprovement float64
+		totalSpeedImprovement  float64
+		comparisonCount        int
+	)
+
+	for _, comp := range comparisons {
+		if !comp.IsErrorCase { // Excluir casos de error del promedio
+			memoryChange := calculatePercentageChange(comp.Standard.BytesPerOp, comp.TinyString.BytesPerOp)
+			allocsChange := calculatePercentageChange(comp.Standard.AllocsPerOp, comp.TinyString.AllocsPerOp)
+			speedChange := calculatePercentageChange(comp.Standard.NsPerOp, comp.TinyString.NsPerOp)
+
+			totalMemoryImprovement += memoryChange
+			totalAllocsImprovement += allocsChange
+			totalSpeedImprovement += speedChange
+			comparisonCount++
+		}
+	}
+
+	if comparisonCount > 0 {
+		avgMemory := totalMemoryImprovement / float64(comparisonCount)
+		avgAllocs := totalAllocsImprovement / float64(comparisonCount)
+		avgSpeed := totalSpeedImprovement / float64(comparisonCount)
+
+		content.WriteString(fmt.Sprintf("#### 📈 Average Performance Metrics\n"))
+		content.WriteString(fmt.Sprintf("- 💾 **Memory Usage**: %.1f%% %s\n", abs(avgMemory), getChangeIndicator(avgMemory)))
+		content.WriteString(fmt.Sprintf("- 🔢 **Allocations**: %.1f%% %s\n", abs(avgAllocs), getChangeIndicator(avgAllocs)))
+		content.WriteString(fmt.Sprintf("- ⚡ **Speed**: %.1f%% %s\n\n", abs(avgSpeed), getChangeIndicator(avgSpeed)))
+	}
+
+	content.WriteString("#### 🎯 Performance Legend\n")
+	content.WriteString("- 🏆 Outstanding (>30% better)\n")
+	content.WriteString("- ✅ Good (10-30% better)\n")
+	content.WriteString("- ➖ Similar (±10%)\n")
+	content.WriteString("- ⚠️ Caution (10-30% worse)\n")
+	content.WriteString("- ❌ Poor (>30% worse)\n\n")
+
+	content.WriteString("#### 💡 Key Observations\n")
+	content.WriteString("- 🔍 Results from real-world JSON structures\n")
+	content.WriteString("- 📦 Tested with various batch sizes (1-10000 items)\n")
+	content.WriteString("- ⚡ Includes error handling performance\n")
+	content.WriteString("- 🧪 All tests run multiple times for consistency\n")
+
+	return content.String(), nil
+}
+
 // updateREADMESection updates a specific section in the README
 func (r *ReportGenerator) updateREADMESection(sectionTitle, newContent string) error {
 	// Read current README
@@ -525,4 +633,82 @@ func getAllocEfficiencyClass(avgPercent float64) string {
 	default:
 		return "❌ **Poor** (Excessive allocations)"
 	}
+}
+
+// Funciones auxiliares para el reporte JSON
+
+func getBatchDescription(size int, isError bool) string {
+	if isError {
+		return "Error Cases"
+	}
+	if size == 1 {
+		return "Single"
+	}
+	return fmt.Sprintf("%d items", size)
+}
+
+func getJSONPerformanceIndicator(standard, tinyString BenchmarkResult) string {
+	memoryChange := calculatePercentageChange(standard.BytesPerOp, tinyString.BytesPerOp)
+	allocsChange := calculatePercentageChange(standard.AllocsPerOp, tinyString.AllocsPerOp)
+	speedChange := calculatePercentageChange(standard.NsPerOp, tinyString.NsPerOp)
+
+	// Promedio de los tres factores
+	avgChange := (memoryChange + allocsChange + speedChange) / 3
+
+	switch {
+	case avgChange < -30:
+		return "🏆" // Mucho mejor
+	case avgChange < -10:
+		return "✅" // Mejor
+	case avgChange <= 10:
+		return "➖" // Similar
+	case avgChange <= 30:
+		return "⚠️" // Peor
+	default:
+		return "❌" // Mucho peor
+	}
+}
+
+func calculatePercentageChange(original, new int64) float64 {
+	if original == 0 {
+		return 0
+	}
+	return float64(new-original) / float64(original) * 100
+}
+
+func getChangeIndicator(change float64) string {
+	if change < 0 {
+		return "better"
+	}
+	return "worse"
+}
+
+func abs(x float64) float64 {
+	if x < 0 {
+		return -x
+	}
+	return x
+}
+
+func formatBytes(bytes int64) string {
+	const unit = 1024
+	if bytes < unit {
+		return fmt.Sprintf("%d B", bytes)
+	}
+	div, exp := int64(unit), 0
+	for n := bytes / unit; n >= unit; n /= unit {
+		div *= unit
+		exp++
+	}
+	return fmt.Sprintf("%.1f %ciB", float64(bytes)/float64(div), "KMGTPE"[exp])
+}
+
+func formatNanoseconds(ns int64) string {
+	if ns < 1000 {
+		return fmt.Sprintf("%d ns", ns)
+	}
+	if ns < 1000000 {
+		return fmt.Sprintf("%.2f µs", float64(ns)/1000)
+	}
+	return fmt.Sprintf("%.2f ms", float64(ns)/1000000)
 }

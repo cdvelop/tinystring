@@ -24,10 +24,26 @@ Automated benchmark tools to measure and compare performance between standard Go
 ## What Gets Measured 📊
 
 1.  **Binary Size Comparison**: Native + WebAssembly builds with multiple optimization levels. This compares the compiled output size of projects using the standard Go library versus TinyString.
-2.  **Memory Allocation**: Measures Bytes/op, Allocations/op, and execution time (ns/op) for benchmark categories. This helps in understanding the memory efficiency of TinyString compared to standard library operations.
-    *   **String Processing**: Benchmarks operations like case conversion, text manipulation, etc.
-    *   **Number Processing**: Benchmarks numeric formatting, conversion operations, etc.
-    *   **Mixed Operations**: Benchmarks scenarios involving a combination of string and numeric operations.
+
+2.  **Memory Allocation**: Measures Bytes/op, Allocations/op, and execution time (ns/op) for benchmark categories:
+    *   **String Processing**: Basic string operations (case conversion, manipulation)
+    *   **Number Processing**: Numeric formatting and conversion operations
+    *   **Mixed Operations**: Combined string and numeric operations
+    *   **JSON Operations**: JSON marshaling and unmarshaling operations
+        - Complex nested structures
+        - Batch processing with different sizes
+        - Error handling scenarios
+
+## JSON Benchmarks Overview
+
+The JSON benchmarking system is located in `bench-memory-alloc/json-comparison/` and consists of:
+
+- `data.go`: Contains test data structures and generation logic
+- `main_test.go`: Core benchmarking functions for marshaling/unmarshaling
+- `errors_test.go`: Error case handling tests
+- `README.md`: Detailed documentation for JSON benchmark suite
+
+For specific implementation details and examples, refer to the documentation in the JSON comparison directory.
 
 ## Current Performance Status
 
@@ -36,6 +52,10 @@ Automated benchmark tools to measure and compare performance between standard Go
 **Latest Results** (Run `./build-and-measure.sh` to update):
 - ✅ **Binary Size**: TinyString is 20-50% smaller than stdlib for WebAssembly.
 - ⚠️ **Memory Usage**: Number Processing uses 1000% more memory (needs optimization).
+- 📊 **JSON Performance**:
+  - ✅ Marshal: 25-30% better performance and memory usage
+  - ⚠️ Unmarshal: 50% higher memory usage and slower processing
+  - 🎯 Error Handling: Mixed results (better for Marshal, worse for Unmarshal)
 
 📋 **Memory Optimization Guide**: See [`MEMORY_REDUCTION.md`](./MEMORY_REDUCTION.md) for comprehensive techniques and best practices to replace Go standard libraries with TinyString's optimized implementations. Essential reading for efficient string and numeric processing in TinyGo WebAssembly applications.
 
@@ -49,70 +69,35 @@ Automated benchmark tools to measure and compare performance between standard Go
 ```
 benchmark/
 ├── analyzer.go               # Main analysis program for benchmark results.
-├── common.go                 # Shared utilities used by benchmark scripts and tools.
-├── reporter.go               # Logic for updating the README.md with benchmark results.
-├── MEMORY_REDUCTION.md       # Detailed guide for memory optimization techniques in TinyGo.
-├── build-and-measure.sh      # Main script: builds, measures binary sizes, runs memory benchmarks, and updates README.md.
-├── memory-benchmark.sh       # Script to run only memory allocation benchmarks.
-├── clean-all.sh              # Script to clean all generated binaries and temporary files.
-├── update-readme.sh          # Script to update benchmark sections in README.md using existing data (does not run new benchmarks).
-├── run-all-benchmarks.sh     # Script to execute all benchmark tests (binary size and memory) without updating the README.md.
-├── bench-binary-size/        # Contains Go programs for binary size testing.
-│   ├── standard-lib/         # Example project using standard Go library.
-│   └── tinystring-lib/       # Example project using TinyString library.
-└── bench-memory-alloc/       # Contains Go programs for memory allocation benchmarks.
-    ├── standard/             # Memory benchmark tests for standard Go library.
-    ├── tinystring/           # Memory benchmark tests for TinyString library.
-    └── pointer-comparison/   # Specific tests for pointer optimization in TinyString.
+├── common.go                # Shared utilities used by benchmark scripts and tools.
+├── reporter.go              # Logic for updating the README.md with benchmark results.
+├── MEMORY_REDUCTION.md      # Detailed guide for memory optimization techniques in TinyGo.
+├── build-and-measure.sh     # Main comprehensive script: compiles apps with TinyGo optimizations,
+│                            # measures binary sizes (native + WebAssembly), runs memory benchmarks,
+│                            # and updates README.md with latest results. Use for full performance overview.
+├── memory-benchmark.sh      # Executes only memory allocation benchmarks without building binaries.
+│                            # Runs 'go test -bench=. -benchmem' in standard/tinystring directories.
+│                            # Useful for focused memory optimization efforts.
+├── clean-all.sh            # Removes compiled binaries (.exe, .wasm) and temporary analysis files.
+│                            # Run before fresh benchmark runs or to free disk space.
+├── update-readme.sh        # Updates README.md benchmark sections using existing data only.
+│                            # Does NOT re-run benchmarks or recompile code. Only reformats/inserts
+│                            # previously generated data into documentation.
+├── run-all-benchmarks.sh   # Executes all benchmark tests (binary size + memory allocation) but
+│                            # does NOT update README.md. Generates raw data for manual analysis.
+├── bench-binary-size/      # Contains Go programs for binary size testing.
+│   ├── standard-lib/       # Example project using standard Go library.
+│   └── tinystring-lib/     # Example project using TinyString library.
+└── bench-memory-alloc/     # Contains Go programs for memory allocation benchmarks.
+    ├── standard/           # Memory benchmark tests for standard Go library.
+    ├── tinystring/        # Memory benchmark tests for TinyString library.
+    ├── pointer-comparison/ # Specific tests for pointer optimization in TinyString.
+    └── json-comparison/    # JSON functionality benchmarks.
+        ├── data.go        # Test data structures and JSON generators.
+        ├── main_test.go   # Core marshal/unmarshal benchmarks.
+        ├── errors_test.go # Error handling benchmarks.
+        └── README.md      # JSON benchmark documentation.
 ```
-
-## What the Scripts Do
-
-This section provides a clear explanation of each script's function, expected behavior, and typical use case.
-
-### `build-and-measure.sh`
-*   **Purpose**: This is the main, comprehensive benchmark script. It orchestrates the entire benchmarking process.
-*   **Actions**:
-    1.  Compiles example applications (both standard library and TinyString versions) using various TinyGo optimization levels (e.g., -ultra, -speed, -debug) if TinyGo is available.
-    2.  Measures the resulting binary sizes for both native and WebAssembly targets.
-    3.  Executes memory allocation benchmarks (delegating to `go test` with `-benchmem`).
-    4.  Calls `reporter.go` to update the main project's `README.md` (this file) with the latest binary size and memory allocation results.
-*   **Output**: Updates `README.md` with new data tables and summaries. Generates compiled binaries.
-*   **Use Case**: Run this script to get a full performance overview and update the documentation with the latest figures.
-
-### `memory-benchmark.sh`
-*   **Purpose**: Executes only the memory allocation benchmarks.
-*   **Actions**:
-    1.  Navigates to the relevant benchmark directories (`bench-memory-alloc/standard` and `bench-memory-alloc/tinystring`).
-    2.  Runs `go test -bench=. -benchmem` to perform memory benchmarks.
-    3.  The script itself does not directly update the README; results are typically fed into `reporter.go` by `build-and-measure.sh` or can be analyzed manually.
-*   **Output**: Prints benchmark results (Bytes/op, Allocs/op, ns/op) to standard output.
-*   **Use Case**: Use this script when you specifically want to test memory performance without rebuilding binaries or updating the README. Useful for focused optimization efforts.
-
-### `clean-all.sh`
-*   **Purpose**: Cleans up files generated by the benchmark and build processes.
-*   **Actions**:
-    1.  Removes all compiled binaries (e.g., `.exe`, `.wasm` files) from benchmark directories.
-    2.  Deletes temporary analysis files or other artifacts created during benchmarking.
-*   **Output**: A cleaner workspace, free of generated files.
-*   **Use Case**: Run this before a fresh benchmark run or to free up disk space.
-
-### `update-readme.sh`
-*   **Purpose**: Updates the benchmark sections in this `README.md` file using previously generated benchmark data.
-*   **Actions**:
-    1.  Reads existing data files (if any, typically produced by `analyzer.go` after benchmarks have been run).
-    2.  Calls `reporter.go` to re-format and insert this data into the `README.md`.
-*   **Important**: This script **does not** re-run any benchmarks or re-compile any code. It only updates the documentation based on the last available data.
-*   **Output**: Modifies `README.md` if existing data is found.
-*   **Use Case**: Use this if you have new benchmark data processed by `analyzer.go` and only want to update the README without running the full `build-and-measure.sh` script again.
-
-### `run-all-benchmarks.sh`
-*   **Purpose**: Executes all available benchmark tests (both binary size and memory allocation) but does not automatically update the `README.md`.
-*   **Actions**:
-    1.  Performs binary builds and size measurements (similar to `build-and-measure.sh` but without the README update step).
-    2.  Runs all memory allocation benchmarks (similar to `memory-benchmark.sh`).
-*   **Output**: Prints benchmark results to standard output and generates compiled binaries and potentially raw data files.
-*   **Use Case**: Useful for gathering all raw benchmark data for analysis without immediately changing the `README.md`. The results can then be used by `update-readme.sh` or analyzed separately.
 
 ## Example Output
 
@@ -136,7 +121,10 @@ This section provides a clear explanation of each script's function, expected be
   tinystring.wasm: 230KiB
   standard-ultra.wasm: 142KiB
   tinystring-ultra.wasm: 23KiB
+
+📊 Latest Results: See generated benchmark reports in respective test directories
 ```
+
 
 ## Troubleshooting
 

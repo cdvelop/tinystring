@@ -550,3 +550,236 @@ func TestSetValue(t *testing.T) {
 		}
 	}
 }
+
+// TestPointerChainConsistency - Test to ensure pointer chains work consistently
+func TestPointerChainConsistency(t *testing.T) {
+	tests := []struct {
+		name     string
+		value    any
+		expected any
+	}{
+		{"int_pointer", &[]int{42}[0], int(42)},
+		{"string_pointer", &[]string{"hello"}[0], "hello"},
+		{"bool_pointer", &[]bool{true}[0], true},
+		{"float64_pointer", &[]float64{3.14}[0], 3.14},
+	}
+
+	for _, test := range tests {
+		t.Run(test.name, func(t *testing.T) {
+			v := refValueOf(test.value)
+
+			// Should be pointer
+			if v.Kind() != tpPointer {
+				t.Errorf("Expected pointer type, got %v", v.Kind())
+				return
+			}
+
+			// Elem() should work
+			elem := v.Elem()
+			if !elem.IsValid() {
+				t.Error("Elem() should be valid for non-nil pointer")
+				return
+			}
+
+			// Interface() should return original value
+			result := elem.Interface()
+			if result != test.expected {
+				t.Errorf("Expected %v, got %v", test.expected, result)
+			}
+		})
+	}
+}
+
+// TestPointerTypeElemAccess - Test various ways to access pointer element types
+func TestPointerTypeElemAccess(t *testing.T) {
+	// Test different pointer types
+	tests := []struct {
+		name     string
+		ptr      any
+		elemKind kind
+	}{
+		{"*int", new(int), tpInt},
+		{"*string", new(string), tpString},
+		{"*bool", new(bool), tpBool},
+		{"*float64", new(float64), tpFloat64},
+	}
+
+	for _, test := range tests {
+		t.Run(test.name, func(t *testing.T) {
+			v := refValueOf(test.ptr)
+
+			// Validate pointer type
+			if v.Kind() != tpPointer {
+				t.Errorf("Expected pointer, got %v", v.Kind())
+				return
+			}
+
+			// Test type.Elem()
+			elemType := v.Type().Elem()
+			if elemType == nil {
+				t.Error("Type().Elem() should not be nil for pointer")
+				return
+			}
+
+			if elemType.Kind() != test.elemKind {
+				t.Errorf("Type().Elem().Kind() expected %v, got %v", test.elemKind, elemType.Kind())
+			}
+
+			// Test value.Elem()
+			elem := v.Elem()
+			if !elem.IsValid() {
+				t.Error("Elem() should be valid")
+				return
+			}
+
+			if elem.Kind() != test.elemKind {
+				t.Errorf("Elem().Kind() expected %v, got %v", test.elemKind, elem.Kind())
+			}
+		})
+	}
+}
+
+// TestStructStringFieldAccess - Critical test for struct string field access
+// This test ensures that string fields in structs are read correctly through reflection
+func TestStructStringFieldAccess(t *testing.T) {
+	type TestStruct struct {
+		Name string
+		Age  int
+	}
+
+	s := TestStruct{
+		Name: "John Doe",
+		Age:  30,
+	}
+
+	// Test through reflection
+	v := refValueOf(s)
+	if v.Kind() != tpStruct {
+		t.Fatalf("Expected struct, got %v", v.Kind())
+	}
+
+	// Get Name field (field 0)
+	nameField := v.Field(0)
+	if nameField.Kind() != tpString {
+		t.Errorf("Expected string field, got %v", nameField.Kind())
+	}
+
+	// Validate flagIndir is NOT set for string fields in structs
+	if nameField.flag&flagIndir != 0 {
+		t.Errorf("flagIndir should not be set for string fields in structs")
+	}
+
+	// Test reading the string through reflection
+	nameValue := nameField.String()
+	if nameValue != s.Name {
+		t.Errorf("String field mismatch: got %q, want %q", nameValue, s.Name)
+	}
+	// Validate memory address consistency by testing that direct access works
+	if nameField.ptr != nil {
+		directValue := *(*string)(nameField.ptr)
+		if directValue != s.Name {
+			t.Errorf("Direct memory access failed: got %q, want %q", directValue, s.Name)
+		}
+	} else {
+		t.Error("Field pointer should not be nil")
+	}
+}
+
+// TestComplexStructStringFields - Test with JSON-like struct to prevent string corruption
+// This test replicates the exact scenario that was causing string corruption in JSON encoding
+func TestComplexStructStringFields(t *testing.T) {
+	type ComplexUser struct {
+		ReadStatus string `json:"read_status"`
+		OpenStat   string `json:"open_stat"`
+	}
+
+	user := ComplexUser{
+		ReadStatus: "read",
+		OpenStat:   "open",
+	}
+
+	v := refValueOf(user)
+	if v.Kind() != tpStruct {
+		t.Fatalf("Expected struct, got %v", v.Kind())
+	}
+
+	// Test ReadStatus field
+	readStatusField := v.Field(0)
+	if readStatusField.Kind() != tpString {
+		t.Errorf("ReadStatus field should be string, got %v", readStatusField.Kind())
+	}
+
+	readStatus := readStatusField.String()
+	if readStatus != user.ReadStatus {
+		t.Errorf("ReadStatus mismatch: got %q, want %q", readStatus, user.ReadStatus)
+	}
+
+	// Test OpenStat field
+	openStatField := v.Field(1)
+	if openStatField.Kind() != tpString {
+		t.Errorf("OpenStat field should be string, got %v", openStatField.Kind())
+	}
+
+	openStat := openStatField.String()
+	if openStat != user.OpenStat {
+		t.Errorf("OpenStat mismatch: got %q, want %q", openStat, user.OpenStat)
+	}
+
+	// Test string length validity (corruption check)
+	if len(readStatus) > 1000 || len(openStat) > 1000 {
+		t.Errorf("String corruption detected: readStatus len=%d, openStat len=%d", len(readStatus), len(openStat))
+	}
+}
+
+// TestStringFieldFlagConsistency - Ensure flagIndir is handled correctly for different field types
+func TestStringFieldFlagConsistency(t *testing.T) {
+	type MixedStruct struct {
+		StringField  string
+		IntField     int
+		PointerField *string
+	}
+
+	str := "test"
+	s := MixedStruct{
+		StringField:  "hello",
+		IntField:     42,
+		PointerField: &str,
+	}
+
+	v := refValueOf(s)
+
+	// Test string field (should NOT have flagIndir)
+	stringField := v.Field(0)
+	if stringField.flag&flagIndir != 0 {
+		t.Errorf("String field should not have flagIndir set")
+	}
+
+	// Test int field (should NOT have flagIndir)
+	intField := v.Field(1)
+	if intField.flag&flagIndir != 0 {
+		t.Errorf("Int field should not have flagIndir set")
+	}
+
+	// Test pointer field (SHOULD have flagIndir)
+	pointerField := v.Field(2)
+	if pointerField.flag&flagIndir == 0 {
+		t.Errorf("Pointer field should have flagIndir set")
+	}
+
+	// Validate values
+	if stringField.String() != s.StringField {
+		t.Errorf("String field value mismatch: got %q, want %q", stringField.String(), s.StringField)
+	}
+
+	if intField.Int() != int64(s.IntField) {
+		t.Errorf("Int field value mismatch: got %d, want %d", intField.Int(), s.IntField)
+	}
+
+	// Validate pointer field dereferencing
+	pointerElem := pointerField.Elem()
+	if !pointerElem.IsValid() {
+		t.Error("Pointer field Elem() should be valid")
+	} else if pointerElem.String() != *s.PointerField {
+		t.Errorf("Pointer field dereferenced value mismatch: got %q, want %q", pointerElem.String(), *s.PointerField)
+	}
+}

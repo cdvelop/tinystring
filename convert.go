@@ -92,6 +92,30 @@ func withValue(v any) convOpt {
 					// Store the value for slice encoding
 					c.anyVal = v
 					c.vTpe = tpSlice
+				case tpPointer:
+					// Handle pointer types - dereference and store the pointed value
+					elem := rv.Elem()
+					if !elem.IsValid() {
+						// Nil pointer
+						c.stringVal = ""
+						c.vTpe = tpString
+					} else {
+						// Dereference and check the pointed-to type
+						switch elem.Kind() {
+						case tpStruct:
+							// Store the pointer for struct encoding (encoder will handle dereferencing)
+							c.anyVal = v
+							c.vTpe = tpStruct
+						case tpSlice, tpArray:
+							// Store the pointer for slice encoding
+							c.anyVal = v
+							c.vTpe = tpSlice
+						default:
+							// For other pointer types, convert to string
+							c.vTpe = tpString
+							c.any2s(val)
+						}
+					}
 				default:
 					// Fallback to string conversion for unknown types
 					c.vTpe = tpString

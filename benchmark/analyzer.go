@@ -29,12 +29,22 @@ type MemoryComparison struct {
 	Category   string
 }
 
+// JSONComparison stores JSON benchmark comparison data
+type JSONComparison struct {
+	Operation   string // "Marshal" or "Unmarshal"
+	BatchSize   int    // 1, 100, 1000, 10000
+	IsErrorCase bool
+	Standard    BenchmarkResult
+	TinyString  BenchmarkResult
+}
+
 func main() {
 	if len(os.Args) < 2 {
-		fmt.Println("Usage: go run analyzer.go [binary|memory|all]")
+		fmt.Println("Usage: go run analyzer.go [binary|memory|json|all]")
 		fmt.Println("  binary  - Analyze binary sizes")
 		fmt.Println("  memory  - Analyze memory allocations")
-		fmt.Println("  all     - Run both analyses")
+		fmt.Println("  json    - Analyze JSON operations")
+		fmt.Println("  all     - Run all analyses")
 		return
 	}
 
@@ -45,10 +55,14 @@ func main() {
 		analyzeBinarySizes()
 	case "memory":
 		analyzeMemoryAllocations()
+	case "json":
+		analyzeJSONOperations()
 	case "all":
 		analyzeBinarySizes()
 		fmt.Println()
 		analyzeMemoryAllocations()
+		fmt.Println()
+		analyzeJSONOperations()
 	default:
 		LogError(fmt.Sprintf("Unknown mode: %s", mode))
 		return
@@ -96,6 +110,37 @@ func analyzeMemoryAllocations() {
 	updateREADMEWithMemoryData(comparisons)
 
 	LogSuccess("Memory benchmark completed and README updated")
+}
+
+// analyzeJSONOperations analyzes and reports JSON operation comparisons
+func analyzeJSONOperations() {
+	LogStep("Starting JSON operations benchmark...")
+
+	// Check if we can run benchmarks
+	if !checkGoBenchAvailable() {
+		LogError("Cannot run Go benchmarks")
+		return
+	}
+
+	// Run JSON benchmarks
+	comparisons, err := runJSONBenchmarks()
+	if err != nil {
+		LogError(fmt.Sprintf("Error running JSON benchmarks: %v", err))
+		return
+	}
+
+	if len(comparisons) == 0 {
+		LogError("No JSON benchmark results available")
+		return
+	}
+
+	// Display results
+	displayJSONResults(comparisons)
+
+	// Update README
+	updateREADMEWithJSONData(comparisons)
+
+	LogSuccess("JSON benchmark completed and README updated")
 }
 
 // measureBinarySizes scans for and measures all binary files
@@ -432,4 +477,139 @@ func updateREADMEWithMemoryData(comparisons []MemoryComparison) {
 	if err := reporter.UpdateMemoryData(comparisons); err != nil {
 		LogError(fmt.Sprintf("Failed to update README with memory data: %v", err))
 	}
+}
+
+// updateREADMEWithJSONData actualiza el README con los resultados de los benchmarks JSON
+func updateREADMEWithJSONData(comparisons []JSONComparison) error {
+	reporter := NewReportGenerator("README.md")
+	err := reporter.UpdateJSONData(comparisons)
+	if err != nil {
+		return fmt.Errorf("failed to update README with JSON data: %v", err)
+	}
+	return nil
+}
+
+// runJSONBenchmarks executes JSON benchmarks and returns the results
+func runJSONBenchmarks() ([]JSONComparison, error) {
+	LogInfo("Running JSON benchmarks...")
+
+	comparisons := make([]JSONComparison, 0)
+	jsonDir := filepath.Join("bench-memory-alloc", "json-comparison")
+
+	// Execute benchmarks
+	cmd := exec.Command("go", "test", "-bench=.", "-benchmem")
+	cmd.Dir = jsonDir
+	output, err := cmd.CombinedOutput()
+	if err != nil {
+		return nil, fmt.Errorf("error running benchmarks: %v", err)
+	}
+
+	// Process results
+	scanner := bufio.NewScanner(strings.NewReader(string(output)))
+	for scanner.Scan() {
+		line := scanner.Text()
+		if !strings.HasPrefix(line, "Benchmark") {
+			continue
+		}
+
+		// Extract benchmark data
+		fields := strings.Fields(line)
+		if len(fields) < 5 {
+			continue
+		}
+
+		name := fields[0]
+		nsPerOp, _ := strconv.ParseInt(fields[2], 10, 64)
+		bytesPerOp, _ := strconv.ParseInt(fields[3], 10, 64)
+		allocsPerOp, _ := strconv.ParseInt(fields[4], 10, 64)
+
+		result := BenchmarkResult{
+			Name:        name,
+			NsPerOp:     nsPerOp,
+			BytesPerOp:  bytesPerOp,
+			AllocsPerOp: allocsPerOp,
+		}
+
+		// Determine operation type and batch size
+		operation := getJSONOperation(name)
+		batchSize := getJSONBatchSize(name)
+		isError := strings.Contains(name, "Errors")
+
+		// Find corresponding pair or create new comparison
+		found := false
+		for i := range comparisons {
+			if comparisons[i].Operation == operation &&
+				comparisons[i].BatchSize == batchSize &&
+				comparisons[i].IsErrorCase == isError {
+				if strings.Contains(name, "Standard") {
+					comparisons[i].Standard = result
+				} else {
+					comparisons[i].TinyString = result
+				}
+				found = true
+				break
+			}
+		}
+
+		if !found {
+			comparison := JSONComparison{
+				Operation:   operation,
+				BatchSize:   batchSize,
+				IsErrorCase: isError,
+			}
+			if strings.Contains(name, "Standard") {
+				comparison.Standard = result
+			} else {
+				comparison.TinyString = result
+			}
+			comparisons = append(comparisons, comparison)
+		}
+	}
+
+	return comparisons, nil
+}
+
+// displayJSONResults shows the results of the JSON benchmarks
+func displayJSONResults(comparisons []JSONComparison) {
+	fmt.Println("\nJSON Performance Results:")
+	fmt.Println("=========================")
+
+	for _, comp := range comparisons {
+		batchDesc := ""
+		if comp.IsErrorCase {
+			batchDesc = "Error Cases"
+		} else if comp.BatchSize == 1 {
+			batchDesc = "Single"
+		} else {
+			batchDesc = fmt.Sprintf("Batch-%d", comp.BatchSize)
+		}
+
+		fmt.Printf("\n%s (%s):\n", comp.Operation, batchDesc)
+		fmt.Printf("  Standard:   %d ns/op, %d B/op, %d allocs/op\n",
+			comp.Standard.NsPerOp, comp.Standard.BytesPerOp, comp.Standard.AllocsPerOp)
+		fmt.Printf("  TinyString: %d ns/op, %d B/op, %d allocs/op\n",
+			comp.TinyString.NsPerOp, comp.TinyString.BytesPerOp, comp.TinyString.AllocsPerOp)
+	}
+}
+
+// getJSONOperation extracts the operation type from the benchmark name
+func getJSONOperation(name string) string {
+	if strings.Contains(name, "Marshal") {
+		return "Marshal"
+	}
+	return "Unmarshal"
+}
+
+// getJSONBatchSize extracts the batch size from the benchmark name
+func getJSONBatchSize(name string) int {
+	if strings.Contains(name, "Single") {
+		return 1
+	}
+	re := regexp.MustCompile(`Batch(\d+)`)
+	matches := re.FindStringSubmatch(name)
+	if len(matches) < 2 {
+		return 0 // For error cases
+	}
+	size, _ := strconv.Atoi(matches[1])
+	return size
 }

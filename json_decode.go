@@ -1,5 +1,7 @@
 package tinystring
 
+import "unsafe"
+
 // JSON decoding implementation for TinyString
 // Uses our custom reflectlite integration for minimal binary size - NO standard reflect
 
@@ -70,7 +72,6 @@ func (c *conv) parseJsonValueWithRefReflect(jsonStr string, target refValue) err
 	if len(jsonStr) == 0 {
 		return Err(errInvalidJSON, "empty JSON")
 	}
-
 	switch target.Kind() {
 	case tpString:
 		return c.parseJsonStringRef(jsonStr, target)
@@ -86,6 +87,8 @@ func (c *conv) parseJsonValueWithRefReflect(jsonStr string, target refValue) err
 		return c.parseJsonStructRef(jsonStr, target)
 	case tpSlice:
 		return c.parseJsonSliceRef(jsonStr, target)
+	case tpPointer:
+		return c.parseJsonPointerRef(jsonStr, target)
 	default:
 		return Err(errUnsupportedType, "unsupported target type for JSON decoding: "+target.Kind().String())
 	}
@@ -168,16 +171,16 @@ func (c *conv) parseJsonStructRef(jsonStr string, target refValue) error {
 	if jsonStr == "{}" {
 		return nil // empty object, nothing to set
 	}
-
 	// Get struct information
-	structInfo := getStructInfo(target.Type())
-	if structInfo == nil {
+	var structInfo refStructInfo
+	getStructInfo(target.Type(), &structInfo)
+	if structInfo.refType == nil {
 		return Err(errUnsupportedType, "cannot get struct information")
 	}
 
 	// Simple JSON parsing - remove outer braces and split by commas
 	content := jsonStr[1 : len(jsonStr)-1] // Remove { }
-	return c.parseJsonObjectContent(content, target, structInfo)
+	return c.parseJsonObjectContent(content, target, &structInfo)
 }
 
 // parseJsonSliceRef parses a JSON array into a slice using our custom reflection
@@ -511,11 +514,9 @@ func (c *conv) findJsonColon(pair string) int {
 
 // findStructFieldByJsonName finds the field index by JSON field name
 func (c *conv) findStructFieldByJsonName(jsonKey string, structInfo *refStructInfo) int {
-	// Convert jsonKey to snake_case to match our internal jsonName format
-	snakeJsonKey := Convert(jsonKey).ToSnakeCaseLower().String()
-	
+	// Match using original field names (no case conversion)
 	for i, field := range structInfo.fields {
-		if field.jsonName == snakeJsonKey {
+		if field.name == jsonKey {
 			return i
 		}
 	}
@@ -531,4 +532,44 @@ func (c *conv) appendRune(r rune) *conv {
 	buf = addRne2Buf(buf, r)
 	c.setString(string(buf))
 	return c
+}
+
+// parseJsonPointerRef parses a JSON value into a pointer using our custom reflection
+func (c *conv) parseJsonPointerRef(jsonStr string, target refValue) error {
+	if target.Kind() != tpPointer {
+		return Err(errUnsupportedType, "target is not a pointer")
+	}
+
+	// Check if JSON value is null
+	jsonStr = Convert(jsonStr).Trim().String()
+	if jsonStr == "null" {
+		// Set pointer to nil by setting the pointer variable to zero
+		*(*unsafe.Pointer)(target.ptr) = nil
+		return nil
+	}
+
+	// Get the element type that the pointer points to
+	elemType := target.Type().Elem()
+	if elemType == nil {
+		return Err(errUnsupportedType, "pointer element type is nil")
+	}
+
+	// Create a new value of the element type
+	elemValue := refNew(elemType)
+	if !elemValue.IsValid() {
+		return Err(errUnsupportedType, "failed to create new element value")
+	}
+
+	// Parse JSON into the new element value
+	err := c.parseJsonValueWithRefReflect(jsonStr, elemValue.Elem())
+	if err != nil {
+		return err
+	}
+	// Set the pointer to point to the new element
+	// target.ptr points to the pointer field location in the struct
+	// elemValue.ptr from refNew points to a pointer variable containing the allocated address
+	// We need to store the actual allocated address in the struct field
+	actualAddr := *(*unsafe.Pointer)(elemValue.ptr)
+	*(*unsafe.Pointer)(target.ptr) = actualAddr
+	return nil
 }

@@ -104,22 +104,19 @@ func extractOptLevel(filename string) string {
 	return "default"
 }
 
-// LogStep prints a formatted step message
-func LogStep(message string) {
-	fmt.Printf("📋 %s\n", message)
+// Funciones de logging
+func LogStep(msg string) {
+	fmt.Printf("🔄 %s\n", msg)
 }
 
-// LogSuccess prints a formatted success message
-func LogSuccess(message string) {
-	fmt.Printf("✅ %s\n", message)
+func LogError(msg string) {
+	fmt.Printf("❌ Error: %s\n", msg)
 }
 
-// LogError prints a formatted error message
-func LogError(message string) {
-	fmt.Printf("❌ %s\n", message)
+func LogSuccess(msg string) {
+	fmt.Printf("✅ %s\n", msg)
 }
 
-// LogInfo prints a formatted info message
-func LogInfo(message string) {
-	fmt.Printf("ℹ️  %s\n", message)
+func LogInfo(msg string) {
+	fmt.Printf("ℹ️ %s\n", msg)
 }
