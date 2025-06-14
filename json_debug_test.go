@@ -171,7 +171,7 @@ func TestJsonConvertPointerHandling(t *testing.T) {
 	if conv1.vTpe != tpStruct {
 		t.Errorf("Direct struct conv type: expected %v, got %v", tpStruct, conv1.vTpe)
 	}
-	if !conv1.refVal.IsValid() {
+	if !conv1.refIsValid() {
 		t.Error("Direct struct refVal should be valid")
 	}
 
@@ -181,7 +181,7 @@ func TestJsonConvertPointerHandling(t *testing.T) {
 	if conv2.vTpe != tpStruct {
 		t.Errorf("Pointer conv type: expected %v, got %v", tpStruct, conv2.vTpe)
 	}
-	if !conv2.refVal.IsValid() {
+	if !conv2.refIsValid() {
 		t.Error("Pointer conv refVal should be valid")
 	}
 
@@ -216,24 +216,24 @@ func TestDebugJSONReflectionIssue(t *testing.T) {
 
 	// Test the reflection chain exactly as used in JSON encoding
 	v := refValueOf(user)
-	if v.Kind() != tpStruct {
-		t.Fatalf("Expected struct, got %v", v.Kind())
+	if v.refKind() != tpStruct {
+		t.Fatalf("Expected struct, got %v", v.refKind())
 	}
 
-	numFields := v.NumField()
+	numFields := v.refNumField()
 	if numFields != 2 {
 		t.Errorf("Expected 2 fields, got %d", numFields)
 	}
 
 	for i := 0; i < numFields; i++ {
-		field := v.Field(i)
-		if !field.IsValid() {
-			t.Errorf("Field %d should be valid", i)
+		field := v.refField(i)
+		if !field.refIsValid() {
+			t.Errorf("refField %d should be valid", i)
 			continue
 		}
 
-		if field.Kind() != tpString {
-			t.Errorf("Field %d expected string, got %v", i, field.Kind())
+		if field.refKind() != tpString {
+			t.Errorf("refField %d expected string, got %v", i, field.refKind())
 			continue
 		}
 
@@ -242,7 +242,7 @@ func TestDebugJSONReflectionIssue(t *testing.T) {
 
 		// Check for corruption by validating string length and content
 		if len(strValue) > 100 {
-			t.Errorf("Field %d appears corrupted - string too long: %d", i, len(strValue))
+			t.Errorf("refField %d appears corrupted - string too long: %d", i, len(strValue))
 		}
 
 		// Validate against expected values
@@ -252,14 +252,14 @@ func TestDebugJSONReflectionIssue(t *testing.T) {
 		}
 
 		if strValue != expected {
-			t.Errorf("Field %d mismatch: got %q, want %q", i, strValue, expected)
+			t.Errorf("refField %d mismatch: got %q, want %q", i, strValue, expected)
 		}
 
 		// Test direct memory access for comparison
 		if field.ptr != nil {
 			directValue := *(*string)(field.ptr)
 			if strValue != directValue {
-				t.Errorf("Field %d reflection vs direct mismatch: reflection=%q, direct=%q", i, strValue, directValue)
+				t.Errorf("refField %d reflection vs direct mismatch: reflection=%q, direct=%q", i, strValue, directValue)
 			}
 		}
 	}
@@ -279,12 +279,12 @@ func TestJsonDebugStruct(t *testing.T) {
 
 	// Test reflection info first
 	rv := refValueOf(person)
-	t.Logf("refValue kind: %v", rv.Kind())
-	t.Logf("NumField(): %d", rv.NumField())
+	t.Logf("refValue kind: %v", rv.refKind())
+	t.Logf("refNumField(): %d", rv.refNumField())
 
-	for i := range rv.NumField() {
-		field := rv.Field(i)
-		t.Logf("Field %d: Kind=%v, Valid=%v, String=%v", i, field.Kind(), field.IsValid(), field.String())
+	for i := range rv.refNumField() {
+		field := rv.refField(i)
+		t.Logf("refField %d: refKind=%v, Valid=%v, String=%v", i, field.refKind(), field.refIsValid(), field.String())
 	}
 	// Test struct info
 	var structInfo refStructInfo
@@ -315,8 +315,8 @@ func TestJsonDebugStruct(t *testing.T) {
 	}
 
 	rv2 := refValueOf(address)
-	t.Logf("Address refValue kind: %v", rv2.Kind())
-	t.Logf("Address NumField(): %d", rv2.NumField())
+	t.Logf("Address refValue kind: %v", rv2.refKind())
+	t.Logf("Address refNumField(): %d", rv2.refNumField())
 	var structInfo2 refStructInfo
 	getStructInfo(rv2.Type(), &structInfo2)
 	if structInfo2.refType != nil {
@@ -333,4 +333,23 @@ func TestJsonDebugStruct(t *testing.T) {
 	}
 
 	t.Logf("Address JSON result: %s", string(result2))
+}
+
+func TestDebugComplexCoordinates(t *testing.T) {
+	coords := ComplexCoordinates{
+		Latitude:  37.7749,
+		Longitude: -122.4194,
+		Accuracy:  10,
+	}
+
+	conv := Convert(coords)
+	t.Logf("vTpe: %v", conv.vTpe)
+	t.Logf("refKind: %v", conv.refKind())
+	t.Logf("refIsValid: %v", conv.refIsValid())
+
+	if conv.refKind() == tpStruct {
+		t.Logf("NumFields: %v", conv.refNumField())
+	} else {
+		t.Errorf("Expected struct, got %v", conv.refKind())
+	}
 }

@@ -32,30 +32,27 @@ func (c *conv) formatValue(value any) {
 
 // formatAny2Int consolidates all integer type formatting using reflection
 func (c *conv) formatAny2Int(val any) {
-	rv := refValueOf(val)
-	if rv.IsValid() && (rv.Kind() >= tpInt && rv.Kind() <= tpInt64) {
-		c.refVal = rv
-		c.vTpe = rv.Kind()
+	c.initFromValue(val)
+	if c.refIsValid() && (c.refKind() >= tpInt && c.refKind() <= tpInt64) {
+		c.vTpe = c.refKind()
 		c.i2s()
 	}
 }
 
 // formatAny2Uint consolidates all unsigned integer type formatting using reflection
 func (c *conv) formatAny2Uint(val any) {
-	rv := refValueOf(val)
-	if rv.IsValid() && (rv.Kind() >= tpUint && rv.Kind() <= tpUintptr) {
-		c.refVal = rv
-		c.vTpe = rv.Kind()
+	c.initFromValue(val)
+	if c.refIsValid() && (c.refKind() >= tpUint && c.refKind() <= tpUintptr) {
+		c.vTpe = c.refKind()
 		c.u2s()
 	}
 }
 
 // formatAny2Float consolidates all float type formatting using reflection
 func (c *conv) formatAny2Float(val any) {
-	rv := refValueOf(val)
-	if rv.IsValid() && (rv.Kind() == tpFloat32 || rv.Kind() == tpFloat64) {
-		c.refVal = rv
-		c.vTpe = rv.Kind()
+	c.initFromValue(val)
+	if c.refIsValid() && (c.refKind() == tpFloat32 || c.refKind() == tpFloat64) {
+		c.vTpe = c.refKind()
 		c.f2sMan(-1)
 	}
 }
@@ -74,15 +71,14 @@ func (c *conv) formatUnsupported(value any) {
 func (t *conv) RoundDecimals(decimals int) *conv {
 	if t.err != "" {
 		return t
-	}
-	// If it's a string, try to parse it as a float first
+	} // If it's a string, try to parse it as a float first
 	if t.vTpe == tpString {
 		t.s2Float()
 		if t.err != "" {
 			// If parsing fails, treat as 0 and continue
 			val := 0.0
 			// Update the current conv object directly using reflection
-			t.refVal = refValueOf(val)
+			t.initFromValue(val)
 			t.vTpe = tpFloat64
 			t.f2sMan(decimals)
 			t.err = "" // Clear error after handling
@@ -134,9 +130,8 @@ func (t *conv) RoundDecimals(decimals int) *conv {
 			}
 		}
 	}
-
 	// Update the current conv object directly using reflection
-	t.refVal = refValueOf(rounded)
+	t.initFromValue(rounded)
 	t.vTpe = tpFloat64
 	t.f2sMan(decimals)
 	t.err = ""
@@ -211,10 +206,9 @@ func (t *conv) FormatNumber() *conv {
 	if t.err != "" {
 		return t
 	} // Try to use existing values directly to avoid string conversions
-	if t.vTpe == tpInt || t.vTpe == tpUint {
-		// Use reflection-based conversion
+	if t.vTpe == tpInt || t.vTpe == tpUint { // Use reflection-based conversion
 		intVal := t.getInt64()
-		t.refVal = refValueOf(intVal)
+		t.initFromValue(intVal)
 		t.vTpe = tpInt
 		t.i2s()
 		t.fmtNum()

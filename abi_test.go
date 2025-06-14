@@ -24,8 +24,8 @@ func TestBasicTypeReflection(t *testing.T) {
 			v := refValueOf(test.value)
 
 			// Test validity
-			if got := v.IsValid(); got != test.expectedValid {
-				t.Errorf("IsValid() = %v, want %v", got, test.expectedValid)
+			if got := v.refIsValid(); got != test.expectedValid {
+				t.Errorf("refIsValid() = %v, want %v", got, test.expectedValid)
 			}
 
 			if !test.expectedValid {
@@ -33,8 +33,8 @@ func TestBasicTypeReflection(t *testing.T) {
 			}
 
 			// Test kind detection
-			if got := v.Kind(); got != test.expectedKind {
-				t.Errorf("Kind() = %v, want %v", got, test.expectedKind)
+			if got := v.refKind(); got != test.expectedKind {
+				t.Errorf("refKind() = %v, want %v", got, test.expectedKind)
 			}
 
 			// Test type consistency
@@ -43,8 +43,8 @@ func TestBasicTypeReflection(t *testing.T) {
 				return
 			}
 
-			if got := v.typ.Kind(); got != test.expectedKind {
-				t.Errorf("typ.Kind() = %v, want %v", got, test.expectedKind)
+			if got := v.refKind(); got != test.expectedKind {
+				t.Errorf("typ.refKind() = %v, want %v", got, test.expectedKind)
 			}
 		})
 	}
@@ -55,12 +55,12 @@ func TestStringValueRetrieval(t *testing.T) {
 	v := refValueOf(original)
 
 	// Validate basic properties
-	if !v.IsValid() {
+	if !v.refIsValid() {
 		t.Fatal("refValue should be valid for string")
 	}
 
-	if v.Kind() != tpString {
-		t.Fatalf("Kind() = %v, want %v", v.Kind(), tpString)
+	if v.refKind() != tpString {
+		t.Fatalf("refKind() = %v, want %v", v.refKind(), tpString)
 	}
 
 	// Test String() method
@@ -75,18 +75,18 @@ func TestIntValueRetrieval(t *testing.T) {
 	v := refValueOf(original)
 
 	// Validate basic properties
-	if !v.IsValid() {
+	if !v.refIsValid() {
 		t.Fatal("refValue should be valid for int64")
 	}
 
-	if v.Kind() != tpInt64 {
-		t.Fatalf("Kind() = %v, want %v", v.Kind(), tpInt64)
+	if v.refKind() != tpInt64 {
+		t.Fatalf("refKind() = %v, want %v", v.refKind(), tpInt64)
 	}
 
-	// Test Int() method
-	result := v.Int()
+	// Test refInt() method
+	result := v.refInt()
 	if result != original {
-		t.Errorf("Int() = %d, want %d", result, original)
+		t.Errorf("refInt() = %d, want %d", result, original)
 	}
 }
 
@@ -127,7 +127,7 @@ func TestFlagIndirCorrectness(t *testing.T) {
 
 				// Additional debug info
 				t.Logf("Value: %+v", test.value)
-				t.Logf("Type kind: %v", v.Kind())
+				t.Logf("Type kind: %v", v.refKind())
 				if v.typ != nil {
 					t.Logf("Type size: %d", v.typ.Size())
 					t.Logf("kindDirectIface: %t", v.typ.kind&kindDirectIface != 0)

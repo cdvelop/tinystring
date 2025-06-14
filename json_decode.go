@@ -42,21 +42,20 @@ func (c *conv) parseJsonIntoTarget(jsonStr string, target any) error {
 
 	// Use our custom reflection for target analysis
 	rv := refValueOf(target)
-
 	// Debug: Check what kind we get for the pointer
-	targetKind := rv.Kind()
+	targetKind := rv.refKind()
 	if targetKind != tpPointer {
 		return Err(errInvalidJSON, "target must be a pointer, got: "+targetKind.String())
 	}
 
 	// Get the element that the pointer points to
-	elem := rv.Elem()
-	if !elem.IsValid() {
+	elem := rv.refElem()
+	if !elem.refIsValid() {
 		return Err(errInvalidJSON, "target pointer is nil or invalid")
 	}
 
 	// Debug: Check what kind we get for the element
-	elemKind := elem.Kind()
+	elemKind := elem.refKind()
 	if elemKind.String() == "invalid" {
 		return Err(errInvalidJSON, "element kind is invalid - reflection issue")
 	}
@@ -66,13 +65,13 @@ func (c *conv) parseJsonIntoTarget(jsonStr string, target any) error {
 }
 
 // parseJsonValueWithRefReflect parses a JSON value using our custom reflection
-func (c *conv) parseJsonValueWithRefReflect(jsonStr string, target refValue) error {
+func (c *conv) parseJsonValueWithRefReflect(jsonStr string, target *conv) error {
 	// Trim whitespace
 	jsonStr = Convert(jsonStr).Trim().String()
 	if len(jsonStr) == 0 {
 		return Err(errInvalidJSON, "empty JSON")
 	}
-	switch target.Kind() {
+	switch target.refKind() {
 	case tpString:
 		return c.parseJsonStringRef(jsonStr, target)
 	case tpInt, tpInt8, tpInt16, tpInt32, tpInt64:
@@ -90,14 +89,14 @@ func (c *conv) parseJsonValueWithRefReflect(jsonStr string, target refValue) err
 	case tpPointer:
 		return c.parseJsonPointerRef(jsonStr, target)
 	default:
-		return Err(errUnsupportedType, "unsupported target type for JSON decoding: "+target.Kind().String())
+		return Err(errUnsupportedType, "unsupported target type for JSON decoding: "+target.refKind().String())
 	}
 }
 
-// Custom reflection-based parsing functions using our refValue system
+// Custom reflection-based parsing functions using our *conv system
 
 // parseJsonStringRef parses a JSON string using our custom reflection
-func (c *conv) parseJsonStringRef(jsonStr string, target refValue) error {
+func (c *conv) parseJsonStringRef(jsonStr string, target *conv) error {
 	if len(jsonStr) < 2 || jsonStr[0] != '"' || jsonStr[len(jsonStr)-1] != '"' {
 		return Err(errInvalidJSON, "invalid JSON string format")
 	}
@@ -108,47 +107,47 @@ func (c *conv) parseJsonStringRef(jsonStr string, target refValue) error {
 	if err != nil {
 		return err
 	}
-	target.SetString(decoded)
+	target.refSetString(decoded)
 	return nil
 }
 
 // parseJsonIntRef parses a JSON integer using our custom reflection
-func (c *conv) parseJsonIntRef(jsonStr string, target refValue) error {
+func (c *conv) parseJsonIntRef(jsonStr string, target *conv) error {
 	intVal, err := Convert(jsonStr).ToInt64()
 	if err != nil {
 		return err
 	}
-	target.SetInt(intVal)
+	target.refSetInt(intVal)
 	return nil
 }
 
 // parseJsonUintRef parses a JSON unsigned integer using our custom reflection
-func (c *conv) parseJsonUintRef(jsonStr string, target refValue) error {
+func (c *conv) parseJsonUintRef(jsonStr string, target *conv) error {
 	val, err := Convert(jsonStr).ToInt64() // Convert to int64 first, then cast to uint64
 	if err != nil {
 		return err
 	}
-	target.SetUint(uint64(val))
+	target.refSetUint(uint64(val))
 	return nil
 }
 
 // parseJsonFloatRef parses a JSON float using our custom reflection
-func (c *conv) parseJsonFloatRef(jsonStr string, target refValue) error {
+func (c *conv) parseJsonFloatRef(jsonStr string, target *conv) error {
 	val, err := Convert(jsonStr).ToFloat()
 	if err != nil {
 		return err
 	}
-	target.SetFloat(val)
+	target.refSetFloat(val)
 	return nil
 }
 
 // parseJsonBoolRef parses a JSON boolean using our custom reflection
-func (c *conv) parseJsonBoolRef(jsonStr string, target refValue) error {
+func (c *conv) parseJsonBoolRef(jsonStr string, target *conv) error {
 	switch jsonStr {
 	case "true":
-		target.SetBool(true)
+		target.refSetBool(true)
 	case "false":
-		target.SetBool(false)
+		target.refSetBool(false)
 	default:
 		return Err(errInvalidJSON, "invalid JSON boolean: "+jsonStr)
 	}
@@ -156,8 +155,8 @@ func (c *conv) parseJsonBoolRef(jsonStr string, target refValue) error {
 }
 
 // parseJsonStructRef parses a JSON object into a struct using our custom reflection
-func (c *conv) parseJsonStructRef(jsonStr string, target refValue) error {
-	if target.Kind() != tpStruct {
+func (c *conv) parseJsonStructRef(jsonStr string, target *conv) error {
+	if target.refKind() != tpStruct {
 		return Err(errUnsupportedType, "target is not a struct")
 	}
 
@@ -184,8 +183,8 @@ func (c *conv) parseJsonStructRef(jsonStr string, target refValue) error {
 }
 
 // parseJsonSliceRef parses a JSON array into a slice using our custom reflection
-func (c *conv) parseJsonSliceRef(jsonStr string, target refValue) error {
-	if target.Kind() != tpSlice {
+func (c *conv) parseJsonSliceRef(jsonStr string, target *conv) error {
+	if target.refKind() != tpSlice {
 		return Err(errUnsupportedType, "target is not a slice")
 	}
 
@@ -201,10 +200,10 @@ func (c *conv) parseJsonSliceRef(jsonStr string, target refValue) error {
 	if jsonStr == "[]" {
 		switch elemType.Kind() {
 		case tpString:
-			target.Set(refValueOf([]string{}))
+			target.refSet(refValueOf([]string{}))
 		case tpStruct:
 			// Create empty slice of structs using unsafe operations
-			target.Set(refValueOf([]interface{}{}))
+			target.refSet(refValueOf([]interface{}{}))
 		default:
 			return Err(errUnsupportedType, "unsupported slice element type: "+elemType.Kind().String())
 		}
@@ -234,7 +233,7 @@ func (c *conv) parseJsonSliceRef(jsonStr string, target refValue) error {
 }
 
 // parseStringSlice parses a slice of JSON strings
-func (c *conv) parseStringSlice(elements []string, target refValue) error {
+func (c *conv) parseStringSlice(elements []string, target *conv) error {
 	var stringSlice []string
 	for _, elem := range elements {
 		// Parse string element
@@ -250,56 +249,89 @@ func (c *conv) parseStringSlice(elements []string, target refValue) error {
 			return Err(errInvalidJSON, "invalid string element in array: "+elem)
 		}
 	}
-	target.Set(refValueOf(stringSlice))
+	target.refSet(refValueOf(stringSlice))
 	return nil
 }
 
 // parseStructSlice parses JSON array elements into a struct slice
-func (c *conv) parseStructSlice(elements []string, target refValue, elemType *refType) error {
-	if len(elements) == 0 {
-		// Empty slice - set target to empty slice of correct type
-		target.Set(refZero(target.Type()))
-		return nil
+func (c *conv) parseStructSlice(elements []string, target *conv, elemType *refType) error {
+	if elemType.Kind() != tpStruct {
+		return Err(errUnsupportedType, "element type is not a struct")
 	}
 
-	// Create slice to hold the parsed structs
-	slicePtr := refNew(target.Type())
-	slice := slicePtr.Elem()
+	// Create a slice to hold the parsed structs
+	// We'll build this using reflection
+	var parsedStructs []interface{}
 
-	// Parse each element as a struct
-	for _, element := range elements {
-		element = Convert(element).Trim().String()
-
-		// Create new struct instance
-		structPtr := refNew(elemType)
-		structValue := structPtr.Elem()
-
-		// Parse JSON into the struct
-		err := c.parseJsonValueWithRefReflect(element, structValue)
-		if err != nil {
-			return Err(errInvalidJSON, "error parsing struct element: "+err.Error())
+	for _, elem := range elements {
+		// Create a new instance of the struct type
+		structValue := refZero(elemType)
+		if !structValue.refIsValid() {
+			return Err(errUnsupportedType, "cannot create struct instance")
 		}
 
-		// Append to slice using reflection
-		slice = refAppend(slice, structValue)
+		// Parse the JSON object into the struct
+		err := c.parseJsonStructRef(elem, structValue)
+		if err != nil {
+			return err
+		}
+
+		// Add to our slice
+		parsedStructs = append(parsedStructs, structValue.Interface())
 	}
 
-	// Set the target to our constructed slice
-	target.Set(slice)
+	// Set the target to our parsed slice
+	target.refSet(refValueOf(parsedStructs))
 	return nil
 }
 
-// parseIntSlice, parseFloatSlice, parseBoolSlice - simplified implementations
-func (c *conv) parseIntSlice(elements []string, target refValue) error {
-	return Err(errUnsupportedType, "int slice decoding not implemented yet")
+// parseIntSlice, parseFloatSlice, parseBoolSlice implementations
+func (c *conv) parseIntSlice(elements []string, target *conv) error {
+	var intSlice []int
+	for _, elem := range elements {
+		// Parse int element
+		elemStr := Convert(elem).Trim().String()
+		intVal, err := Convert(elemStr).ToInt()
+		if err != nil {
+			return Err(errInvalidJSON, "invalid int element in array: "+elem)
+		}
+		intSlice = append(intSlice, intVal)
+	}
+	target.refSet(refValueOf(intSlice))
+	return nil
 }
 
-func (c *conv) parseFloatSlice(elements []string, target refValue) error {
-	return Err(errUnsupportedType, "float slice decoding not implemented yet")
+func (c *conv) parseFloatSlice(elements []string, target *conv) error {
+	var floatSlice []float64
+	for _, elem := range elements {
+		// Parse float element
+		elemStr := Convert(elem).Trim().String()
+		floatVal, err := Convert(elemStr).ToFloat()
+		if err != nil {
+			return Err(errInvalidJSON, "invalid float element in array: "+elem)
+		}
+		floatSlice = append(floatSlice, floatVal)
+	}
+	target.refSet(refValueOf(floatSlice))
+	return nil
 }
 
-func (c *conv) parseBoolSlice(elements []string, target refValue) error {
-	return Err(errUnsupportedType, "bool slice decoding not implemented yet")
+func (c *conv) parseBoolSlice(elements []string, target *conv) error {
+	var boolSlice []bool
+	for _, elem := range elements {
+		// Parse bool element
+		elemStr := Convert(elem).Trim().String()
+		switch elemStr {
+		case "true":
+			boolSlice = append(boolSlice, true)
+		case "false":
+			boolSlice = append(boolSlice, false)
+		default:
+			return Err(errInvalidJSON, "invalid bool element in array: "+elem)
+		}
+	}
+	target.refSet(refValueOf(boolSlice))
+	return nil
 }
 
 // splitJsonArrayElements splits JSON array content into individual elements
@@ -392,7 +424,7 @@ func (c *conv) unescapeJsonString(s string) (string, error) {
 }
 
 // parseJsonObjectContent parses the content of a JSON object (without outer braces)
-func (c *conv) parseJsonObjectContent(content string, target refValue, structInfo *refStructInfo) error {
+func (c *conv) parseJsonObjectContent(content string, target *conv, structInfo *refStructInfo) error {
 	if content == "" {
 		return nil // empty content
 	}
@@ -464,7 +496,7 @@ func (c *conv) splitJsonFields(content string) []string {
 }
 
 // parseJsonFieldPair parses a single "key":"value" pair
-func (c *conv) parseJsonFieldPair(pair string, target refValue, structInfo *refStructInfo) error {
+func (c *conv) parseJsonFieldPair(pair string, target *conv, structInfo *refStructInfo) error {
 	pair = Convert(pair).Trim().String()
 
 	// Find the colon separator
@@ -490,8 +522,8 @@ func (c *conv) parseJsonFieldPair(pair string, target refValue, structInfo *refS
 	}
 
 	// Get the target field
-	field := target.Field(fieldIndex)
-	if !field.IsValid() {
+	field := target.refField(fieldIndex)
+	if !field.refIsValid() {
 		return Err(errInvalidJSON, "invalid field")
 	}
 
@@ -535,16 +567,15 @@ func (c *conv) appendRune(r rune) *conv {
 }
 
 // parseJsonPointerRef parses a JSON value into a pointer using our custom reflection
-func (c *conv) parseJsonPointerRef(jsonStr string, target refValue) error {
-	if target.Kind() != tpPointer {
+func (c *conv) parseJsonPointerRef(jsonStr string, target *conv) error {
+	if target.refKind() != tpPointer {
 		return Err(errUnsupportedType, "target is not a pointer")
 	}
 
-	// Check if JSON value is null
+	// Handle null values
 	jsonStr = Convert(jsonStr).Trim().String()
 	if jsonStr == "null" {
-		// Set pointer to nil by setting the pointer variable to zero
-		*(*unsafe.Pointer)(target.ptr) = nil
+		// Set pointer to nil - this is handled by not setting anything
 		return nil
 	}
 
@@ -554,22 +585,31 @@ func (c *conv) parseJsonPointerRef(jsonStr string, target refValue) error {
 		return Err(errUnsupportedType, "pointer element type is nil")
 	}
 
-	// Create a new value of the element type
-	elemValue := refNew(elemType)
-	if !elemValue.IsValid() {
-		return Err(errUnsupportedType, "failed to create new element value")
+	// Allocate memory for the element value
+	elemSize := elemType.Size()
+	if elemSize == 0 {
+		return Err(errUnsupportedType, "element type has zero size")
 	}
 
-	// Parse JSON into the new element value
-	err := c.parseJsonValueWithRefReflect(jsonStr, elemValue.Elem())
+	// Allocate memory for the pointed-to value
+	elemPtr := unsafe.Pointer(&make([]byte, elemSize)[0])
+	memclr(elemPtr, elemSize)
+
+	// Create a conv representing the element value
+	elemValue := &conv{
+		separator: "_",
+		typ:       elemType,
+		ptr:       elemPtr,
+		flag:      refFlag(elemType.Kind()) | flagAddr,
+	}
+
+	// Parse the JSON into the element value
+	err := c.parseJsonValueWithRefReflect(jsonStr, elemValue)
 	if err != nil {
 		return err
 	}
-	// Set the pointer to point to the new element
-	// target.ptr points to the pointer field location in the struct
-	// elemValue.ptr from refNew points to a pointer variable containing the allocated address
-	// We need to store the actual allocated address in the struct field
-	actualAddr := *(*unsafe.Pointer)(elemValue.ptr)
-	*(*unsafe.Pointer)(target.ptr) = actualAddr
+
+	// Set the pointer to point to our allocated memory
+	*(*unsafe.Pointer)(target.ptr) = elemPtr
 	return nil
 }

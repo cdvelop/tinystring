@@ -23,7 +23,7 @@ func (t *conv) saveState() (string, kind) {
 
 // restoreState restores previously saved string value and type using reflection
 func (t *conv) restoreState(savedVal string, savedType kind) {
-	t.refVal = refValueOf(savedVal)
+	t.initFromValue(savedVal)
 	t.vTpe = savedType
 	t.err = "" // Reset error when restoring state
 	// Clear the string cache to force regeneration
@@ -61,7 +61,7 @@ func (t *conv) tryParseAs(parseType kind, base int) bool {
 		switch parseType {
 		case tpInt:
 			intVal := int64(floatVal)
-			t.refVal = refValueOf(intVal)
+			t.initFromValue(intVal)
 			t.vTpe = tpInt
 		case tpUint:
 			if floatVal < 0 {
@@ -69,7 +69,7 @@ func (t *conv) tryParseAs(parseType kind, base int) bool {
 				return false
 			}
 			uintVal := uint64(floatVal)
-			t.refVal = refValueOf(uintVal)
+			t.initFromValue(uintVal)
 			t.vTpe = tpUint
 		}
 		return true
@@ -402,10 +402,10 @@ func (t *conv) s2IntGeneric(base int) {
 	}
 	if isNeg {
 		intVal := -int64(t.getUint64())
-		t.refVal = refValueOf(intVal)
+		t.initFromValue(intVal)
 	} else {
 		intVal := int64(t.getUint64())
-		t.refVal = refValueOf(intVal)
+		t.initFromValue(intVal)
 	}
 	t.vTpe = tpInt
 }
@@ -496,11 +496,10 @@ func (t *conv) s2Float() {
 	if fp > 0 {
 		result += float64(fp) / fd
 	}
-
 	if isNeg {
 		result = -result
 	}
-	t.refVal = refValueOf(result)
+	t.initFromValue(result)
 	t.vTpe = tpFloat64
 }
 
@@ -540,7 +539,7 @@ func (t *conv) s2n(base int) {
 
 		res = res*uint64(base) + uint64(d)
 	}
-	t.refVal = refValueOf(res)
+	t.initFromValue(res)
 	t.vTpe = tpUint
 }
 
@@ -580,7 +579,6 @@ func (t *conv) fmtUint(base int) {
 func (t *conv) fmtIntGeneric(val int64, base int, allowNegative bool) {
 	if val == 0 {
 		t.tmpStr = "0"
-		t.setString(t.tmpStr)
 		return
 	}
 
@@ -598,7 +596,6 @@ func (t *conv) fmtIntGeneric(val int64, base int, allowNegative bool) {
 	}
 
 	t.tmpStr = string(buf[idx:])
-	t.setString(t.tmpStr)
 }
 
 // i2s converts int64 to string with minimal allocations and stores in tmpStr
@@ -607,19 +604,16 @@ func (t *conv) i2s() {
 	// Handle common small numbers using lookup table
 	if val >= 0 && val < int64(len(smallInts)) {
 		t.tmpStr = smallInts[val]
-		t.setString(t.tmpStr)
 		return
 	}
 
 	// Handle special cases
 	if val == 0 {
 		t.tmpStr = zeroStr
-		t.setString(t.tmpStr)
 		return
 	}
 	if val == 1 {
 		t.tmpStr = oneStr
-		t.setString(t.tmpStr)
 		return
 	}
 	// Fall back to standard conversion for larger numbers
@@ -632,19 +626,16 @@ func (t *conv) u2s() {
 	// Handle common small numbers using lookup table
 	if val < uint64(len(smallInts)) {
 		t.tmpStr = smallInts[val]
-		t.setString(t.tmpStr)
 		return
 	}
 
 	// Handle special cases
 	if val == 0 {
 		t.tmpStr = zeroStr
-		t.setString(t.tmpStr)
 		return
 	}
 	if val == 1 {
 		t.tmpStr = oneStr
-		t.setString(t.tmpStr)
 		return
 	}
 
@@ -659,7 +650,6 @@ func (t *conv) f2s() {
 	// Handle special cases
 	if val != val { // NaN
 		t.tmpStr = "NaN"
-		t.setString(t.tmpStr)
 		return
 	}
 	// Handle infinity
@@ -669,14 +659,12 @@ func (t *conv) f2s() {
 		} else {
 			t.tmpStr = "Inf"
 		}
-		t.setString(t.tmpStr)
 		return
 	}
 
 	// Handle zero
 	if val == 0 {
 		t.tmpStr = "0"
-		t.setString(t.tmpStr)
 		return
 	}
 
@@ -725,12 +713,10 @@ func (t *conv) f2s() {
 
 		result += fracStr
 	}
-
 	if isNegative {
 		result = "-" + result
 	}
 	t.tmpStr = result
-	t.setString(result)
 }
 
 // validateIntParam validates and converts an any parameter to int
@@ -804,4 +790,55 @@ func (t *conv) extractFloat(v any) (int, bool) {
 		return int(val), true
 	}
 	return 0, false
+}
+
+// floatToJsonString converts float64 to JSON string format without heap allocation
+// Stores result in c.tmpStr and returns success status
+func (c *conv) floatToJsonString(val float64) bool {
+	// Handle special cases
+	if val != val { // NaN
+		c.tmpStr = "null" // JSON doesn't support NaN
+		return true
+	}
+
+	// Handle infinity
+	if val > 1e308 || val < -1e308 {
+		c.tmpStr = "null" // JSON doesn't support Infinity
+		return true
+	}
+
+	// Handle zero
+	if val == 0 {
+		c.tmpStr = "0"
+		return true
+	}
+	// Use temporary conv to avoid modifying current state
+	tempConv := &conv{}
+	tempConv.initFromValue(val)
+	tempConv.f2s()
+	c.tmpStr = tempConv.tmpStr
+
+	return true
+}
+
+// intToJsonString converts int64 to JSON string format without heap allocation
+// Stores result in c.tmpStr and returns success status
+func (c *conv) intToJsonString(val int64) bool { // Use temporary conv to avoid modifying current state
+	tempConv := &conv{}
+	tempConv.initFromValue(val)
+	tempConv.i2s()
+	c.tmpStr = tempConv.tmpStr
+
+	return true
+}
+
+// uintToJsonString converts uint64 to JSON string format without heap allocation
+// Stores result in c.tmpStr and returns success status
+func (c *conv) uintToJsonString(val uint64) bool { // Use temporary conv to avoid modifying current state
+	tempConv := &conv{}
+	tempConv.initFromValue(val)
+	tempConv.u2s()
+	c.tmpStr = tempConv.tmpStr
+
+	return true
 }

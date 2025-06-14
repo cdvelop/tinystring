@@ -21,7 +21,7 @@ type NestedStruct struct {
 	Value int
 }
 
-// Test basic refValueOf and Kind detection
+// Test basic refValueOf and refKind detection
 func TestRefValueOfBasicTypes(t *testing.T) {
 	tests := []struct {
 		value    any
@@ -48,16 +48,16 @@ func TestRefValueOfBasicTypes(t *testing.T) {
 
 	for _, test := range tests {
 		v := refValueOf(test.value)
-		if v.Kind() != test.expected {
-			t.Errorf("%s: got kind %v, want %v", test.name, v.Kind(), test.expected)
+		if v.refKind() != test.expected {
+			t.Errorf("%s: got kind %v, want %v", test.name, v.refKind(), test.expected)
 		}
-		if !v.IsValid() {
+		if !v.refIsValid() {
 			t.Errorf("%s: value should be valid", test.name)
 		}
 	}
 }
 
-// Test pointer handling with Elem()
+// Test pointer handling with refElem()
 func TestRefValuePointerElem(t *testing.T) {
 	// Test with different pointer types
 	tests := []struct {
@@ -75,20 +75,20 @@ func TestRefValuePointerElem(t *testing.T) {
 		v := refValueOf(test.value)
 
 		// Pointer should be detected
-		if v.Kind() != tpPointer {
-			t.Errorf("%s: got kind %v, want %v (pointer)", test.name, v.Kind(), tpPointer)
+		if v.refKind() != tpPointer {
+			t.Errorf("%s: got kind %v, want %v (pointer)", test.name, v.refKind(), tpPointer)
 			continue
 		}
 
-		// Elem() should give us the pointed-to type
-		elem := v.Elem()
-		if !elem.IsValid() {
-			t.Errorf("%s: Elem() should be valid", test.name)
+		// refElem() should give us the pointed-to type
+		elem := v.refElem()
+		if !elem.refIsValid() {
+			t.Errorf("%s: refElem() should be valid", test.name)
 			continue
 		}
 
-		if elem.Kind() != test.expected {
-			t.Errorf("%s: Elem() got kind %v, want %v", test.name, elem.Kind(), test.expected)
+		if elem.refKind() != test.expected {
+			t.Errorf("%s: refElem() got kind %v, want %v", test.name, elem.refKind(), test.expected)
 		}
 	}
 }
@@ -98,12 +98,12 @@ func TestRefValueSetters(t *testing.T) {
 	// Test string setting
 	t.Run("SetString", func(t *testing.T) {
 		var s string
-		v := refValueOf(&s).Elem()
-		if v.Kind() != tpString {
-			t.Fatalf("Expected string kind, got %v", v.Kind())
+		v := refValueOf(&s).refElem()
+		if v.refKind() != tpString {
+			t.Fatalf("Expected string kind, got %v", v.refKind())
 		}
 
-		v.SetString("hello world")
+		v.refSetString("hello world")
 		if s != "hello world" {
 			t.Errorf("SetString failed: got %q, want %q", s, "hello world")
 		}
@@ -112,42 +112,39 @@ func TestRefValueSetters(t *testing.T) {
 	// Test integer setting
 	t.Run("SetInt", func(t *testing.T) {
 		var i int64
-		v := refValueOf(&i).Elem()
-		if v.Kind() != tpInt64 {
-			t.Fatalf("Expected int64 kind, got %v", v.Kind())
+		v := refValueOf(&i).refElem()
+		if v.refKind() != tpInt64 {
+			t.Fatalf("Expected int64 kind, got %v", v.refKind())
 		}
-
-		v.SetInt(42)
+		v.refSetInt(42)
 		if i != 42 {
-			t.Errorf("SetInt failed: got %d, want %d", i, 42)
+			t.Errorf("refSetInt failed: got %d, want %d", i, 42)
 		}
 	})
 
 	// Test boolean setting
 	t.Run("SetBool", func(t *testing.T) {
 		var b bool
-		v := refValueOf(&b).Elem()
-		if v.Kind() != tpBool {
-			t.Fatalf("Expected bool kind, got %v", v.Kind())
+		v := refValueOf(&b).refElem()
+		if v.refKind() != tpBool {
+			t.Fatalf("Expected bool kind, got %v", v.refKind())
 		}
-
-		v.SetBool(true)
+		v.refSetBool(true)
 		if !b {
-			t.Errorf("SetBool failed: got %v, want %v", b, true)
+			t.Errorf("refSetBool failed: got %v, want %v", b, true)
 		}
 	})
 
 	// Test float setting
 	t.Run("SetFloat", func(t *testing.T) {
 		var f float64
-		v := refValueOf(&f).Elem()
-		if v.Kind() != tpFloat64 {
-			t.Fatalf("Expected float64 kind, got %v", v.Kind())
+		v := refValueOf(&f).refElem()
+		if v.refKind() != tpFloat64 {
+			t.Fatalf("Expected float64 kind, got %v", v.refKind())
 		}
-
-		v.SetFloat(3.14)
+		v.refSetFloat(3.14)
 		if f != 3.14 {
-			t.Errorf("SetFloat failed: got %f, want %f", f, 3.14)
+			t.Errorf("refSetFloat failed: got %f, want %f", f, 3.14)
 		}
 	})
 }
@@ -167,8 +164,8 @@ func TestRefValueGetters(t *testing.T) {
 	t.Run("Int", func(t *testing.T) {
 		i := int64(42)
 		v := refValueOf(i)
-		if got := v.Int(); got != i {
-			t.Errorf("Int() failed: got %d, want %d", got, i)
+		if got := v.refInt(); got != i {
+			t.Errorf("refInt() failed: got %d, want %d", got, i)
 		}
 	})
 
@@ -176,8 +173,8 @@ func TestRefValueGetters(t *testing.T) {
 	t.Run("Bool", func(t *testing.T) {
 		b := true
 		v := refValueOf(b)
-		if got := v.Bool(); got != b {
-			t.Errorf("Bool() failed: got %v, want %v", got, b)
+		if got := v.refBool(); got != b {
+			t.Errorf("refBool() failed: got %v, want %v", got, b)
 		}
 	})
 
@@ -185,8 +182,8 @@ func TestRefValueGetters(t *testing.T) {
 	t.Run("Float", func(t *testing.T) {
 		f := 3.14
 		v := refValueOf(f)
-		if got := v.Float(); got != f {
-			t.Errorf("Float() failed: got %f, want %f", got, f)
+		if got := v.refFloat(); got != f {
+			t.Errorf("refFloat() failed: got %f, want %f", got, f)
 		}
 	})
 }
@@ -201,34 +198,34 @@ func TestRefValueStructFields(t *testing.T) {
 	}
 
 	v := refValueOf(s)
-	if v.Kind() != tpStruct {
-		t.Fatalf("Expected struct kind, got %v", v.Kind())
+	if v.refKind() != tpStruct {
+		t.Fatalf("Expected struct kind, got %v", v.refKind())
 	}
 
-	// Test NumField
-	numFields := v.NumField()
+	// Test refNumField
+	numFields := v.refNumField()
 	if numFields != 4 {
-		t.Errorf("NumField() got %d, want %d", numFields, 4)
+		t.Errorf("refNumField() got %d, want %d", numFields, 4)
 	}
 
 	// Test individual field access
 	t.Run("Field0_A", func(t *testing.T) {
-		field := v.Field(0)
-		if field.Kind() != tpInt {
-			t.Errorf("Field(0) kind got %v, want %v", field.Kind(), tpInt)
+		field := v.refField(0)
+		if field.refKind() != tpInt {
+			t.Errorf("refField(0) kind got %v, want %v", field.refKind(), tpInt)
 		}
-		if got := int(field.Int()); got != s.A {
-			t.Errorf("Field(0) value got %d, want %d", got, s.A)
+		if got := int(field.refInt()); got != s.A {
+			t.Errorf("refField(0) value got %d, want %d", got, s.A)
 		}
 	})
 
 	t.Run("Field1_B", func(t *testing.T) {
-		field := v.Field(1)
-		if field.Kind() != tpString {
-			t.Errorf("Field(1) kind got %v, want %v", field.Kind(), tpString)
+		field := v.refField(1)
+		if field.refKind() != tpString {
+			t.Errorf("refField(1) kind got %v, want %v", field.refKind(), tpString)
 		}
 		if got := field.String(); got != s.B {
-			t.Errorf("Field(1) value got %q, want %q", got, s.B)
+			t.Errorf("refField(1) value got %q, want %q", got, s.B)
 		}
 	})
 }
@@ -236,30 +233,30 @@ func TestRefValueStructFields(t *testing.T) {
 // Test struct field setting through pointers
 func TestRefValueStructFieldSetting(t *testing.T) {
 	s := &TestStruct{}
-	v := refValueOf(s).Elem()
+	v := refValueOf(s).refElem()
 
-	if v.Kind() != tpStruct {
-		t.Fatalf("Expected struct kind, got %v", v.Kind())
+	if v.refKind() != tpStruct {
+		t.Fatalf("Expected struct kind, got %v", v.refKind())
 	}
 
 	// Set field A (int)
-	fieldA := v.Field(0)
-	if fieldA.Kind() != tpInt {
-		t.Fatalf("Field 0 expected int kind, got %v", fieldA.Kind())
+	fieldA := v.refField(0)
+	if fieldA.refKind() != tpInt {
+		t.Fatalf("refField 0 expected int kind, got %v", fieldA.refKind())
 	}
-	fieldA.SetInt(100)
+	fieldA.refSetInt(100)
 	if s.A != 100 {
-		t.Errorf("Field A setting failed: got %d, want %d", s.A, 100)
+		t.Errorf("refField A setting failed: got %d, want %d", s.A, 100)
 	}
 
 	// Set field B (string)
-	fieldB := v.Field(1)
-	if fieldB.Kind() != tpString {
-		t.Fatalf("Field 1 expected string kind, got %v", fieldB.Kind())
+	fieldB := v.refField(1)
+	if fieldB.refKind() != tpString {
+		t.Fatalf("refField 1 expected string kind, got %v", fieldB.refKind())
 	}
-	fieldB.SetString("test")
+	fieldB.refSetString("test")
 	if s.B != "test" {
-		t.Errorf("Field B setting failed: got %q, want %q", s.B, "test")
+		t.Errorf("refField B setting failed: got %q, want %q", s.B, "test")
 	}
 }
 
@@ -268,13 +265,13 @@ func TestRefValueNilPointer(t *testing.T) {
 	var p *int
 	v := refValueOf(p)
 
-	if v.Kind() != tpPointer {
-		t.Fatalf("Expected pointer kind, got %v", v.Kind())
+	if v.refKind() != tpPointer {
+		t.Fatalf("Expected pointer kind, got %v", v.refKind())
 	}
 
-	elem := v.Elem()
-	if elem.IsValid() {
-		t.Errorf("Elem() of nil pointer should not be valid")
+	elem := v.refElem()
+	if elem.refIsValid() {
+		t.Errorf("refElem() of nil pointer should not be valid")
 	}
 }
 
@@ -326,23 +323,23 @@ func TestRefValueBigStruct(t *testing.T) {
 	s := BigStruct{1, 2, 3, 4, 5}
 	v := refValueOf(s)
 
-	if v.Kind() != tpStruct {
-		t.Fatalf("Expected struct kind, got %v", v.Kind())
+	if v.refKind() != tpStruct {
+		t.Fatalf("Expected struct kind, got %v", v.refKind())
 	}
 
-	if numFields := v.NumField(); numFields != 5 {
-		t.Errorf("BigStruct NumField() got %d, want %d", numFields, 5)
+	if numFields := v.refNumField(); numFields != 5 {
+		t.Errorf("BigStruct refNumField() got %d, want %d", numFields, 5)
 	}
 
 	// Test getting values from all fields
 	for i := 0; i < 5; i++ {
-		field := v.Field(i)
-		if field.Kind() != tpInt64 {
-			t.Errorf("Field %d expected int64 kind, got %v", i, field.Kind())
+		field := v.refField(i)
+		if field.refKind() != tpInt64 {
+			t.Errorf("refField %d expected int64 kind, got %v", i, field.refKind())
 		}
 		expectedValue := int64(i + 1)
-		if got := field.Int(); got != expectedValue {
-			t.Errorf("Field %d got %d, want %d", i, got, expectedValue)
+		if got := field.refInt(); got != expectedValue {
+			t.Errorf("refField %d got %d, want %d", i, got, expectedValue)
 		}
 	}
 }
@@ -355,28 +352,28 @@ func TestRefValueDebugPointerChain(t *testing.T) {
 
 	// Test the full chain like in parseJsonIntoTarget
 	v1 := refValueOf(ptr)
-	t.Logf("Step 1 - refValueOf(&s): Kind=%v, IsValid=%v", v1.Kind(), v1.IsValid())
+	t.Logf("Step 1 - refValueOf(&s): refKind=%v, refIsValid=%v", v1.refKind(), v1.refIsValid())
 
-	if v1.Kind() != tpPointer {
-		t.Errorf("Expected pointer kind, got %v", v1.Kind())
+	if v1.refKind() != tpPointer {
+		t.Errorf("Expected pointer kind, got %v", v1.refKind())
 		return
 	}
 
-	v2 := v1.Elem()
-	t.Logf("Step 2 - v1.Elem(): Kind=%v, IsValid=%v", v2.Kind(), v2.IsValid())
+	v2 := v1.refElem()
+	t.Logf("Step 2 - v1.refElem(): refKind=%v, refIsValid=%v", v2.refKind(), v2.refIsValid())
 
-	if !v2.IsValid() {
-		t.Errorf("Elem() should be valid for non-nil pointer")
+	if !v2.refIsValid() {
+		t.Errorf("refElem() should be valid for non-nil pointer")
 		return
 	}
 
-	if v2.Kind() != tpString {
-		t.Errorf("Elem() expected string kind, got %v", v2.Kind())
+	if v2.refKind() != tpString {
+		t.Errorf("refElem() expected string kind, got %v", v2.refKind())
 		return
 	}
 
 	// Test setting through the chain
-	v2.SetString("test value")
+	v2.refSetString("test value")
 	if s != "test value" {
 		t.Errorf("Setting through reflection failed: got %q, want %q", s, "test value")
 	}
@@ -386,12 +383,12 @@ func TestRefValueDebugPointerChain(t *testing.T) {
 
 // Additional critical tests adapted from Go's internal/reflectlite/all_test.go
 
-// TestNilPtrValueSub tests Elem() behavior with nil pointers
+// TestNilPtrValueSub tests refElem() behavior with nil pointers
 func TestNilPtrValueSub(t *testing.T) {
 	var pi *int
 	pv := refValueOf(pi)
-	if pv.Elem().IsValid() {
-		t.Error("refValueOf((*int)(nil)).Elem().IsValid() should be false")
+	if pv.refElem().refIsValid() {
+		t.Error("refValueOf((*int)(nil)).refElem().refIsValid() should be false")
 	}
 }
 
@@ -401,19 +398,19 @@ func TestPtrSetNil(t *testing.T) {
 	ip := &i
 	vip := refValueOf(&ip)
 
-	// vip is **int32, vip.Elem() is *int32
-	if vip.Kind() != tpPointer {
-		t.Fatalf("Expected pointer to pointer, got %v", vip.Kind())
+	// vip is **int32, vip.refElem() is *int32
+	if vip.refKind() != tpPointer {
+		t.Fatalf("Expected pointer to pointer, got %v", vip.refKind())
 	}
 
-	elemValue := vip.Elem()
-	if elemValue.Kind() != tpPointer {
-		t.Fatalf("Expected pointer after Elem(), got %v", elemValue.Kind())
+	elemValue := vip.refElem()
+	if elemValue.refKind() != tpPointer {
+		t.Fatalf("Expected pointer after refElem(), got %v", elemValue.refKind())
 	}
 
 	// Set the *int32 to nil (zero value for pointer)
 	zeroPtr := refZero(elemValue.Type())
-	elemValue.Set(zeroPtr)
+	elemValue.refSet(zeroPtr)
 
 	if ip != nil {
 		t.Errorf("got non-nil (%d), want nil", *ip)
@@ -427,21 +424,21 @@ func TestPointerElem(t *testing.T) {
 	pi := &i
 	v := refValueOf(pi)
 
-	if v.Kind() != tpPointer {
-		t.Fatalf("Expected pointer, got %v", v.Kind())
+	if v.refKind() != tpPointer {
+		t.Fatalf("Expected pointer, got %v", v.refKind())
 	}
 
-	elem := v.Elem()
-	if !elem.IsValid() {
-		t.Fatal("Elem() should be valid for non-nil pointer")
+	elem := v.refElem()
+	if !elem.refIsValid() {
+		t.Fatal("refElem() should be valid for non-nil pointer")
 	}
 
-	if elem.Kind() != tpInt {
-		t.Errorf("Expected int after Elem(), got %v", elem.Kind())
+	if elem.refKind() != tpInt {
+		t.Errorf("Expected int after refElem(), got %v", elem.refKind())
 	}
 
-	if elem.Int() != 42 {
-		t.Errorf("Expected 42, got %d", elem.Int())
+	if elem.refInt() != 42 {
+		t.Errorf("Expected 42, got %d", elem.refInt())
 	}
 }
 
@@ -460,36 +457,36 @@ func TestStructPointerChain(t *testing.T) {
 
 	// Test accessing nested pointer through reflection
 	v := refValueOf(outer)
-	if v.Kind() != tpPointer {
-		t.Fatalf("Expected pointer to struct, got %v", v.Kind())
+	if v.refKind() != tpPointer {
+		t.Fatalf("Expected pointer to struct, got %v", v.refKind())
 	}
 
-	structValue := v.Elem()
-	if structValue.Kind() != tpStruct {
-		t.Fatalf("Expected struct after Elem(), got %v", structValue.Kind())
+	structValue := v.refElem()
+	if structValue.refKind() != tpStruct {
+		t.Fatalf("Expected struct after refElem(), got %v", structValue.refKind())
 	}
 
-	field0 := structValue.Field(0)
-	if field0.Kind() != tpPointer {
-		t.Fatalf("Expected pointer field, got %v", field0.Kind())
+	field0 := structValue.refField(0)
+	if field0.refKind() != tpPointer {
+		t.Fatalf("Expected pointer field, got %v", field0.refKind())
 	}
 
-	innerStruct := field0.Elem()
-	if !innerStruct.IsValid() {
+	innerStruct := field0.refElem()
+	if !innerStruct.refIsValid() {
 		t.Fatal("Inner struct should be valid")
 	}
 
-	if innerStruct.Kind() != tpStruct {
-		t.Fatalf("Expected struct after field Elem(), got %v", innerStruct.Kind())
+	if innerStruct.refKind() != tpStruct {
+		t.Fatalf("Expected struct after field refElem(), got %v", innerStruct.refKind())
 	}
 
-	valueField := innerStruct.Field(0)
-	if valueField.Kind() != tpInt {
-		t.Fatalf("Expected int field, got %v", valueField.Kind())
+	valueField := innerStruct.refField(0)
+	if valueField.refKind() != tpInt {
+		t.Fatalf("Expected int field, got %v", valueField.refKind())
 	}
 
-	if valueField.Int() != 123 {
-		t.Errorf("Expected 123, got %d", valueField.Int())
+	if valueField.refInt() != 123 {
+		t.Errorf("Expected 123, got %d", valueField.refInt())
 	}
 }
 
@@ -500,12 +497,12 @@ func TestInterfaceValue(t *testing.T) {
 	}
 	inter.E = 123.456
 	v1 := refValueOf(&inter)
-	v2 := v1.Elem().Field(0)
+	v2 := v1.refElem().refField(0)
 
 	// v2 should be interface{} containing float64
-	v3 := v2.Elem()
-	if v3.Kind() != tpFloat64 {
-		t.Errorf("Expected float64 in interface, got %v", v3.Kind())
+	v3 := v2.refElem()
+	if v3.refKind() != tpFloat64 {
+		t.Errorf("Expected float64 in interface, got %v", v3.refKind())
 	}
 
 	i3 := v2.Interface()
@@ -539,9 +536,9 @@ func TestSetValue(t *testing.T) {
 	}
 
 	for _, tt := range tests {
-		v := refValueOf(tt.ptr).Elem()
+		v := refValueOf(tt.ptr).refElem()
 		newVal := refValueOf(tt.newValue)
-		v.Set(newVal)
+		v.refSet(newVal)
 
 		// Verify the value was set correctly
 		result := v.Interface()
@@ -569,15 +566,15 @@ func TestPointerChainConsistency(t *testing.T) {
 			v := refValueOf(test.value)
 
 			// Should be pointer
-			if v.Kind() != tpPointer {
-				t.Errorf("Expected pointer type, got %v", v.Kind())
+			if v.refKind() != tpPointer {
+				t.Errorf("Expected pointer type, got %v", v.refKind())
 				return
 			}
 
-			// Elem() should work
-			elem := v.Elem()
-			if !elem.IsValid() {
-				t.Error("Elem() should be valid for non-nil pointer")
+			// refElem() should work
+			elem := v.refElem()
+			if !elem.refIsValid() {
+				t.Error("refElem() should be valid for non-nil pointer")
 				return
 			}
 
@@ -609,31 +606,31 @@ func TestPointerTypeElemAccess(t *testing.T) {
 			v := refValueOf(test.ptr)
 
 			// Validate pointer type
-			if v.Kind() != tpPointer {
-				t.Errorf("Expected pointer, got %v", v.Kind())
+			if v.refKind() != tpPointer {
+				t.Errorf("Expected pointer, got %v", v.refKind())
 				return
 			}
 
-			// Test type.Elem()
-			elemType := v.Type().Elem()
+			// Test type.refElem()
+			elemType := v.Type().refElem()
 			if elemType == nil {
-				t.Error("Type().Elem() should not be nil for pointer")
+				t.Error("Type().refElem() should not be nil for pointer")
 				return
 			}
 
-			if elemType.Kind() != test.elemKind {
-				t.Errorf("Type().Elem().Kind() expected %v, got %v", test.elemKind, elemType.Kind())
+			if elemType.refKind() != test.elemKind {
+				t.Errorf("Type().refElem().refKind() expected %v, got %v", test.elemKind, elemType.refKind())
 			}
 
-			// Test value.Elem()
-			elem := v.Elem()
-			if !elem.IsValid() {
-				t.Error("Elem() should be valid")
+			// Test value.refElem()
+			elem := v.refElem()
+			if !elem.refIsValid() {
+				t.Error("refElem() should be valid")
 				return
 			}
 
-			if elem.Kind() != test.elemKind {
-				t.Errorf("Elem().Kind() expected %v, got %v", test.elemKind, elem.Kind())
+			if elem.refKind() != test.elemKind {
+				t.Errorf("refElem().refKind() expected %v, got %v", test.elemKind, elem.refKind())
 			}
 		})
 	}
@@ -654,14 +651,14 @@ func TestStructStringFieldAccess(t *testing.T) {
 
 	// Test through reflection
 	v := refValueOf(s)
-	if v.Kind() != tpStruct {
-		t.Fatalf("Expected struct, got %v", v.Kind())
+	if v.refKind() != tpStruct {
+		t.Fatalf("Expected struct, got %v", v.refKind())
 	}
 
 	// Get Name field (field 0)
-	nameField := v.Field(0)
-	if nameField.Kind() != tpString {
-		t.Errorf("Expected string field, got %v", nameField.Kind())
+	nameField := v.refField(0)
+	if nameField.refKind() != tpString {
+		t.Errorf("Expected string field, got %v", nameField.refKind())
 	}
 
 	// Validate flagIndir is NOT set for string fields in structs
@@ -681,7 +678,7 @@ func TestStructStringFieldAccess(t *testing.T) {
 			t.Errorf("Direct memory access failed: got %q, want %q", directValue, s.Name)
 		}
 	} else {
-		t.Error("Field pointer should not be nil")
+		t.Error("refField pointer should not be nil")
 	}
 }
 
@@ -699,14 +696,14 @@ func TestComplexStructStringFields(t *testing.T) {
 	}
 
 	v := refValueOf(user)
-	if v.Kind() != tpStruct {
-		t.Fatalf("Expected struct, got %v", v.Kind())
+	if v.refKind() != tpStruct {
+		t.Fatalf("Expected struct, got %v", v.refKind())
 	}
 
 	// Test ReadStatus field
-	readStatusField := v.Field(0)
-	if readStatusField.Kind() != tpString {
-		t.Errorf("ReadStatus field should be string, got %v", readStatusField.Kind())
+	readStatusField := v.refField(0)
+	if readStatusField.refKind() != tpString {
+		t.Errorf("ReadStatus field should be string, got %v", readStatusField.refKind())
 	}
 
 	readStatus := readStatusField.String()
@@ -715,9 +712,9 @@ func TestComplexStructStringFields(t *testing.T) {
 	}
 
 	// Test OpenStat field
-	openStatField := v.Field(1)
-	if openStatField.Kind() != tpString {
-		t.Errorf("OpenStat field should be string, got %v", openStatField.Kind())
+	openStatField := v.refField(1)
+	if openStatField.refKind() != tpString {
+		t.Errorf("OpenStat field should be string, got %v", openStatField.refKind())
 	}
 
 	openStat := openStatField.String()
@@ -749,19 +746,19 @@ func TestStringFieldFlagConsistency(t *testing.T) {
 	v := refValueOf(s)
 
 	// Test string field (should NOT have flagIndir)
-	stringField := v.Field(0)
+	stringField := v.refField(0)
 	if stringField.flag&flagIndir != 0 {
 		t.Errorf("String field should not have flagIndir set")
 	}
 
 	// Test int field (should NOT have flagIndir)
-	intField := v.Field(1)
+	intField := v.refField(1)
 	if intField.flag&flagIndir != 0 {
 		t.Errorf("Int field should not have flagIndir set")
 	}
 
 	// Test pointer field (SHOULD have flagIndir)
-	pointerField := v.Field(2)
+	pointerField := v.refField(2)
 	if pointerField.flag&flagIndir == 0 {
 		t.Errorf("Pointer field should have flagIndir set")
 	}
@@ -771,14 +768,14 @@ func TestStringFieldFlagConsistency(t *testing.T) {
 		t.Errorf("String field value mismatch: got %q, want %q", stringField.String(), s.StringField)
 	}
 
-	if intField.Int() != int64(s.IntField) {
-		t.Errorf("Int field value mismatch: got %d, want %d", intField.Int(), s.IntField)
+	if intField.refInt() != int64(s.IntField) {
+		t.Errorf("Int field value mismatch: got %d, want %d", intField.refInt(), s.IntField)
 	}
 
 	// Validate pointer field dereferencing
-	pointerElem := pointerField.Elem()
-	if !pointerElem.IsValid() {
-		t.Error("Pointer field Elem() should be valid")
+	pointerElem := pointerField.refElem()
+	if !pointerElem.refIsValid() {
+		t.Error("Pointer field refElem() should be valid")
 	} else if pointerElem.String() != *s.PointerField {
 		t.Errorf("Pointer field dereferenced value mismatch: got %q, want %q", pointerElem.String(), *s.PointerField)
 	}

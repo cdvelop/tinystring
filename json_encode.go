@@ -1,7 +1,5 @@
 package tinystring
 
-import "unsafe"
-
 // JSON encoding implementation for TinyString
 // Uses our custom reflectlite integration for minimal binary size
 
@@ -54,11 +52,11 @@ func (c *conv) generateJsonBytes() ([]byte, error) {
 	switch c.vTpe {
 	case tpString:
 		return c.encodeJsonString()
-	case tpInt:
+	case tpInt, tpInt8, tpInt16, tpInt32, tpInt64:
 		return c.encodeJsonInt()
-	case tpUint:
+	case tpUint, tpUint8, tpUint16, tpUint32, tpUint64:
 		return c.encodeJsonUint()
-	case tpFloat64:
+	case tpFloat32, tpFloat64:
 		return c.encodeJsonFloat()
 	case tpBool:
 		return c.encodeJsonBool()
@@ -68,6 +66,8 @@ func (c *conv) generateJsonBytes() ([]byte, error) {
 		return c.encodeJsonStruct()
 	case tpSlice:
 		return c.encodeJsonSlice()
+	case tpPointer:
+		return c.encodeJsonPointer()
 	default:
 		return nil, Err(errUnsupportedType, "for JSON encoding")
 	}
@@ -131,28 +131,172 @@ func (c *conv) encodeJsonStringSlice() ([]byte, error) {
 
 // encodeJsonStruct encodes a struct to JSON using reflection
 func (c *conv) encodeJsonStruct() ([]byte, error) {
-	if !c.refVal.IsValid() {
+	if !c.refIsValid() {
 		return nil, Err(errInvalidJSON, "struct value is nil")
 	}
 
-	// Use our custom reflection to encode the struct
-	return c.encodeStructValueWithRefReflect(c.refVal)
+	// Use our custom reflection to encode the struct directly
+	return c.encodeStructValueWithConvReflect()
 }
 
 // encodeJsonSlice encodes a slice to JSON using reflection
 func (c *conv) encodeJsonSlice() ([]byte, error) {
-	if !c.refVal.IsValid() {
+	if !c.refIsValid() {
 		return []byte("[]"), nil
 	}
 
-	// Use our custom reflection to encode the slice
-	return c.encodeJsonSliceWithRefReflect(c.refVal)
+	if c.refKind() != tpSlice {
+		return []byte("[]"), nil
+	}
+
+	length := c.refLen()
+	if length == 0 {
+		return []byte("[]"), nil
+	}
+
+	result := make([]byte, 0, 256)
+	result = append(result, '[')
+
+	for i := range length {
+		if i > 0 {
+			result = append(result, ',')
+		}
+
+		// Get element at index i
+		elem := c.refIndex(i)
+		if !elem.refIsValid() {
+			result = append(result, []byte("null")...)
+			continue
+		}
+
+		// Encode the element recursively
+		var elemBytes []byte
+		var err error
+
+		switch elem.refKind() {
+		case tpString:
+			strVal := elem.refString()
+			elemBytes = c.quoteJsonString(strVal)
+		case tpInt, tpInt8, tpInt16, tpInt32, tpInt64:
+			intVal := elem.refInt()
+			tempConv := newConv(nil)
+			if tempConv.intToJsonString(intVal) {
+				elemBytes = []byte(tempConv.tmpStr)
+			} else {
+				elemBytes = []byte("0")
+			}
+		case tpUint, tpUint8, tpUint16, tpUint32, tpUint64:
+			uintVal := elem.refUint()
+			tempConv := newConv(nil)
+			if tempConv.uintToJsonString(uintVal) {
+				elemBytes = []byte(tempConv.tmpStr)
+			} else {
+				elemBytes = []byte("0")
+			}
+		case tpFloat32, tpFloat64:
+			floatVal := elem.refFloat()
+			tempConv := newConv(nil)
+			if tempConv.floatToJsonString(floatVal) {
+				elemBytes = []byte(tempConv.tmpStr)
+			} else {
+				elemBytes = []byte("0")
+			}
+		case tpBool:
+			boolVal := elem.refBool()
+			if boolVal {
+				elemBytes = []byte("true")
+			} else {
+				elemBytes = []byte("false")
+			}
+		case tpStruct:
+			// Handle struct elements recursively
+			elemBytes, err = elem.encodeStructValueWithConvReflect()
+			if err != nil {
+				elemBytes = []byte("{}")
+			}
+		case tpSlice:
+			// Handle nested slices recursively
+			elemBytes, err = elem.encodeJsonSlice()
+			if err != nil {
+				elemBytes = []byte("[]")
+			}
+		case tpPointer:
+			// Handle pointers by dereferencing
+			elemPtr := elem.refElem()
+			if !elemPtr.refIsValid() {
+				elemBytes = []byte("null")
+			} else {
+				// Recursively call slice encoding with the dereferenced element
+				switch elemPtr.refKind() {
+				case tpStruct:
+					elemBytes, err = elemPtr.encodeStructValueWithConvReflect()
+					if err != nil {
+						elemBytes = []byte("{}")
+					}
+				case tpSlice:
+					elemBytes, err = elemPtr.encodeJsonSlice()
+					if err != nil {
+						elemBytes = []byte("[]")
+					}
+				default:
+					// For basic types, encode directly
+					tempConv := newConv(nil)
+					if tempConv.encodeFieldValueToJson(elemPtr) {
+						elemBytes = []byte(tempConv.tmpStr)
+					} else {
+						elemBytes = []byte("null")
+					}
+				}
+			}
+		default:
+			elemBytes = []byte("null")
+		}
+
+		result = append(result, elemBytes...)
+	}
+
+	result = append(result, ']')
+	return result, nil
+}
+
+// encodeJsonPointer encodes a pointer value to JSON
+func (c *conv) encodeJsonPointer() ([]byte, error) {
+	// Handle nil pointer
+	if c.ptr == nil {
+		return []byte("null"), nil // Case 1: ptr is nil
+	}
+
+	// The current conv already represents the pointer, we need to get the element it points to
+	if c.refKind() != tpPointer {
+		return []byte("null"), nil // Case 2: not a pointer kind
+	}
+
+	// Get the element that the pointer points to using existing reflection
+	elem := c.refElem()
+	if !elem.refIsValid() {
+		return []byte("null"), nil // Case 3: element not valid
+	}
+
+	// Create a new conv for the pointed-to value and encode it
+	elemValue := elem.Interface()
+	if elemValue == nil {
+		return []byte("null"), nil // Case 4: element interface is nil
+	}
+
+	elemConv := Convert(elemValue)
+	return elemConv.generateJsonBytes() // Case 5: should work
 }
 
 // quoteJsonString quotes a string for JSON output with proper escaping
 func (c *conv) quoteJsonString(s string) []byte {
+	// Add safety check for string length
+	sLen := len(s)
+	if sLen < 0 || sLen > 1<<20 { // 1MB limit for safety
+		return []byte(`""`)
+	}
+
 	// Estimate capacity: original length + quotes + some escape characters
-	result := make([]byte, 0, len(s)+16)
+	result := make([]byte, 0, sLen+16)
 	result = append(result, '"')
 
 	for _, r := range s {
@@ -200,36 +344,128 @@ func (c *conv) quoteJsonString(s string) []byte {
 	return result
 }
 
-// encodeStructValueWithRefReflect encodes a struct using refValue directly
-func (c *conv) encodeStructValueWithRefReflect(rv refValue) ([]byte, error) {
-	// Handle pointer to struct
-	if rv.Kind() == tpPointer {
-		elem := rv.Elem()
-		if !elem.IsValid() {
-			return []byte("null"), nil
-		}
-		rv = elem
+// escapeAndQuoteJsonString escapes and quotes a string for JSON without heap allocation
+// Stores result directly in c.tmpStr
+func (c *conv) escapeAndQuoteJsonString(s string) {
+	// Use fixed buffer to avoid heap allocation
+	var buf [512]byte // Fixed size buffer for most strings
+	idx := 0
+
+	// Add opening quote
+	if idx < len(buf) {
+		buf[idx] = '"'
+		idx++
 	}
 
-	if rv.Kind() != tpStruct {
+	// Escape and copy characters
+	for _, r := range s {
+		if idx >= len(buf)-6 { // Reserve space for closing quote and escape sequences
+			break
+		}
+
+		switch r {
+		case '"':
+			buf[idx] = '\\'
+			buf[idx+1] = '"'
+			idx += 2
+		case '\\':
+			buf[idx] = '\\'
+			buf[idx+1] = '\\'
+			idx += 2
+		case '\b':
+			buf[idx] = '\\'
+			buf[idx+1] = 'b'
+			idx += 2
+		case '\f':
+			buf[idx] = '\\'
+			buf[idx+1] = 'f'
+			idx += 2
+		case '\n':
+			buf[idx] = '\\'
+			buf[idx+1] = 'n'
+			idx += 2
+		case '\r':
+			buf[idx] = '\\'
+			buf[idx+1] = 'r'
+			idx += 2
+		case '\t':
+			buf[idx] = '\\'
+			buf[idx+1] = 't'
+			idx += 2
+		default:
+			if r < 32 {
+				// Control characters need unicode escaping \u00XX
+				buf[idx] = '\\'
+				buf[idx+1] = 'u'
+				buf[idx+2] = '0'
+				buf[idx+3] = '0'
+				if r < 16 {
+					buf[idx+4] = '0'
+				} else {
+					buf[idx+4] = '1'
+					r -= 16
+				}
+				if r < 10 {
+					buf[idx+5] = byte('0' + r)
+				} else {
+					buf[idx+5] = byte('A' + r - 10)
+				}
+				idx += 6
+			} else {
+				// Regular character - convert rune to UTF-8 bytes
+				if r < 128 {
+					buf[idx] = byte(r)
+					idx++
+				} else {
+					// For non-ASCII, simplified handling
+					buf[idx] = '?' // Placeholder for complex UTF-8
+					idx++
+				}
+			}
+		}
+	}
+
+	// Add closing quote
+	if idx < len(buf) {
+		buf[idx] = '"'
+		idx++
+	}
+
+	// Copy to tmpStr
+	c.tmpStr = string(buf[:idx])
+}
+
+// encodeStructValueWithConvReflect encodes a struct using conv directly
+func (c *conv) encodeStructValueWithConvReflect() ([]byte, error) {
+	// Handle pointer to struct
+	if c.refKind() == tpPointer {
+		elem := c.refElem()
+		if !elem.refIsValid() {
+			return []byte("null"), nil
+		}
+		c = elem
+	}
+
+	if c.refKind() != tpStruct {
 		return nil, Err(errUnsupportedType, "not a struct")
 	}
 
 	result := make([]byte, 0, 256)
 	result = append(result, '{')
-
 	fieldCount := 0
-	numFields := rv.NumField()
+	numFields := c.refNumField()
 
 	for i := range numFields {
-		field := rv.Field(i)
+		field := c.refField(i)
 
 		// Skip invalid fields
-		if !field.IsValid() {
+		if !field.refIsValid() {
 			continue
-		} // Get field name from struct info - use original field name
+		}
+
+		// Get field name from struct info - use original field name
 		var structInfo refStructInfo
-		getStructInfo(rv.Type(), &structInfo)
+		getStructInfo(c.Type(), &structInfo)
 		if structInfo.refType == nil || i >= len(structInfo.fields) {
 			continue
 		}
@@ -244,13 +480,11 @@ func (c *conv) encodeStructValueWithRefReflect(rv refValue) ([]byte, error) {
 		// Add field name as quoted JSON key
 		quotedKey := c.quoteJsonString(jsonKey)
 		result = append(result, quotedKey...)
-		result = append(result, ':')
-
-		// Encode field value using our custom reflection
-		fieldJson, err := c.encodeFieldValueWithRefReflect(field)
-		if err != nil {
-			return nil, err
+		result = append(result, ':') // Encode field value using our custom reflection
+		if !c.encodeFieldValueToJson(field) {
+			return nil, c
 		}
+		fieldJson := c.tmpStr
 		result = append(result, fieldJson...)
 		fieldCount++
 	}
@@ -259,114 +493,72 @@ func (c *conv) encodeStructValueWithRefReflect(rv refValue) ([]byte, error) {
 	return result, nil
 }
 
-// encodeFieldValueWithRefReflect encodes a field value using our custom reflection
-func (c *conv) encodeFieldValueWithRefReflect(v refValue) ([]byte, error) {
-	switch v.Kind() {
+// encodeFieldValueToJson encodes a field value to JSON without heap allocation
+// Stores result in c.tmpStr and returns success status
+func (c *conv) encodeFieldValueToJson(fieldValue *conv) bool {
+	if fieldValue == nil || !fieldValue.refIsValid() {
+		c.tmpStr = "null"
+		return true
+	}
+
+	switch fieldValue.refKind() {
 	case tpString:
-		return c.quoteJsonString(v.String()), nil
+		strVal := fieldValue.refString() // Quote the string and store in tmpStr without heap allocation
+		c.escapeAndQuoteJsonString(strVal)
+		return true
+
 	case tpInt, tpInt8, tpInt16, tpInt32, tpInt64:
-		tempConv := Convert(v.Int())
-		return tempConv.encodeJsonInt()
+		intVal := fieldValue.refInt()
+		return c.intToJsonString(intVal)
+
 	case tpUint, tpUint8, tpUint16, tpUint32, tpUint64:
-		tempConv := Convert(v.Uint())
-		return tempConv.encodeJsonUint()
+		uintVal := fieldValue.refUint()
+		return c.uintToJsonString(uintVal)
+
 	case tpFloat32, tpFloat64:
-		tempConv := Convert(v.Float())
-		return tempConv.encodeJsonFloat()
+		floatVal := fieldValue.refFloat()
+		return c.floatToJsonString(floatVal)
+
 	case tpBool:
-		tempConv := Convert(v.Bool())
-		return tempConv.encodeJsonBool()
-	case tpStruct:
-		return c.encodeStructValueWithRefReflect(v)
+		boolVal := fieldValue.refBool()
+		if boolVal {
+			c.tmpStr = "true"
+		} else {
+			c.tmpStr = "false"
+		}
+		return true
 	case tpSlice:
-		return c.encodeJsonSliceWithRefReflect(v)
-	case tpMap, tpChan, tpFunc, tpUnsafePointer:
-		return nil, Err(errUnsupportedType, "unsupported type for JSON encoding: "+v.Kind().String())
-	case tpPointer:
-		elem := v.Elem()
-		if !elem.IsValid() {
-			return []byte("null"), nil
-		}
-		return c.encodeFieldValueWithRefReflect(elem)
-	default:
-		return []byte("null"), nil
-	}
-}
-
-// encodeJsonSliceWithRefReflect encodes a slice using our custom reflection
-func (c *conv) encodeJsonSliceWithRefReflect(v refValue) ([]byte, error) {
-	if v.Kind() != tpSlice {
-		return nil, Err(errUnsupportedType, "not a slice")
-	}
-
-	length := v.Len()
-	if length == 0 {
-		return []byte("[]"), nil
-	}
-
-	result := make([]byte, 0, 256)
-	result = append(result, '[')
-
-	for i := 0; i < length; i++ {
-		if i > 0 {
-			result = append(result, ',')
-		}
-
-		// Get the element at index i
-		elem := v.Index(i)
-
-		// Encode the element
-		elemJson, err := c.encodeFieldValueWithRefReflect(elem)
+		// Handle slices recursively by using reflection
+		// Create temporary result and call existing slice encoding
+		tempResult, err := fieldValue.encodeJsonSlice()
 		if err != nil {
-			return nil, err
+			c.tmpStr = "[]"
+		} else {
+			c.tmpStr = string(tempResult)
 		}
+		return true
 
-		result = append(result, elemJson...)
-	}
-
-	result = append(result, ']')
-	return result, nil
-}
-
-// Len returns the length of v if v is a slice, array, map, string, or channel
-func (v refValue) Len() int {
-	switch v.Kind() {
-	case tpSlice:
-		return (*refSliceHeader)(v.ptr).Len
-	case tpString:
-		ptr := v.ptr
-		if v.flag&flagIndir != 0 {
-			ptr = *(*unsafe.Pointer)(ptr)
+	case tpStruct:
+		// Handle nested structs recursively
+		tempResult, err := fieldValue.encodeStructValueWithConvReflect()
+		if err != nil {
+			c.tmpStr = "{}"
+		} else {
+			c.tmpStr = string(tempResult)
 		}
-		return len(*(*string)(ptr))
+		return true
+
+	case tpPointer:
+		// Handle pointers by dereferencing
+		elem := fieldValue.refElem()
+		if !elem.refIsValid() {
+			c.tmpStr = "null"
+			return true
+		}
+		return c.encodeFieldValueToJson(elem)
 	default:
-		panic("reflect: call of reflect.Value.Len on " + v.Kind().String() + " value")
-	}
-}
-
-// Index returns v's i'th element. It panics if v's Kind is not Array, Slice, or String or i is out of range.
-func (v refValue) Index(i int) refValue {
-	switch k := v.Kind(); k {
-	case tpSlice:
-		s := (*refSliceHeader)(v.ptr)
-		if i < 0 || i >= s.Len {
-			panic("reflect: slice index out of range")
-		}
-
-		// Get element type from slice type
-		elemType := v.typ.Elem()
-		if elemType == nil {
-			panic("reflect: slice element type is nil")
-		}
-
-		// Calculate element address
-		elemPtr := add(s.Data, uintptr(i)*elemType.Size(), "same as &s[i]")
-		// Create flags for the element
-		// Elements in slices are accessed directly, no flagIndir needed
-		fl := v.flag&flagRO | flagAddr | refFlag(elemType.Kind())
-
-		return refValue{elemType, elemPtr, fl}
-	default:
-		panic("reflect: call of reflect.Value.Index on " + k.String() + " value")
+		c.err = errUnsupportedType
+		c.tmpStr = "null"
+		return false
 	}
 }

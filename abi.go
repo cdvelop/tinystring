@@ -114,6 +114,11 @@ type refType struct {
 	ptrToThis typeOff // type for pointer to this type, may be zero
 }
 
+// refKind returns the Kind for this type (private version)
+func (t *refType) refKind() kind {
+	return t.Kind() // Delegate to the existing Kind() method
+}
+
 // refPtrType represents a pointer type
 type refPtrType struct {
 	refType
@@ -171,6 +176,11 @@ func (t *refType) Elem() *refType {
 	default:
 		return nil
 	}
+}
+
+// refElem returns the element type for pointer, array, channel, map, or slice types (private version)
+func (t *refType) refElem() *refType {
+	return t.Elem() // Delegate to the existing Elem() method
 }
 
 // refArrayType represents an array type

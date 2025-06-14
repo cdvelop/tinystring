@@ -1,16 +1,20 @@
 package tinystring
 
-import "strconv"
+import (
+	"unsafe"
+)
 
 // Import unified types from abi.go - no more duplication
 // kind is now defined in abi.go with tp prefix
 
 type conv struct {
-	// PRIMARY: Reflection-based value storage
-	refVal refValue // All values accessed via reflection
+	// PRIMARY: Reflection fields integrated from refValue
+	typ  *refType       // Reflection type information
+	ptr  unsafe.Pointer // Pointer to the actual data
+	flag refFlag        // Reflection flags for memory layout
 
 	// ESSENTIAL: Core operation fields only
-	vTpe         kind      // Type cache for performance
+	vTpe         kind      // Type cache for performance (redundant with flag but kept for compatibility)
 	roundDown    bool      // Operation flags
 	separator    string    // String operations
 	tmpStr       string    // String cache for performance
@@ -25,22 +29,39 @@ type conv struct {
 // Functional options pattern for conv construction
 type convOpt func(*conv)
 
-// withValue initializes conv with any value type using reflection-only approach
+// withValue initializes conv with any value type using unified reflection approach
 func withValue(v any) convOpt {
 	return func(c *conv) {
 		if v == nil {
-			c.refVal = refValue{} // Invalid refValue for nil
+			c.initFromValue(nil)
 			c.vTpe = tpString
 			return
 		}
 
-		c.refVal = refValueOf(v)
-		if !c.refVal.IsValid() {
+		c.initFromValue(v)
+		if !c.refIsValid() {
 			c.vTpe = tpString
 			return
 		}
 
-		c.vTpe = c.refVal.Kind()
+		// For Convert() function, automatically dereference pointers for convenience
+		// This allows Convert(ptr).JsonEncode() to work the same as Convert(value).JsonEncode()
+		originalKind := c.refKind()
+		if originalKind == tpPointer {
+			// Dereference the pointer and use the underlying value
+			elem := c.refElem()
+			if elem.refIsValid() {
+				// Copy the dereferenced value to our conv
+				c.typ = elem.typ
+				c.ptr = elem.ptr
+				c.flag = elem.flag
+				c.vTpe = elem.refKind()
+			} else {
+				c.vTpe = tpString // Handle nil pointer
+			}
+		} else {
+			c.vTpe = originalKind
+		}
 
 		// Handle special cases that need direct storage
 		switch val := v.(type) {
@@ -54,7 +75,7 @@ func withValue(v any) convOpt {
 			// All other types handled via reflection - no need for type switches
 			switch c.vTpe {
 			case tpStruct, tpSlice, tpArray, tpPointer:
-				// Complex types - value stored in refVal for JSON operations
+				// Complex types - value stored in integrated reflection
 			}
 		}
 	}
@@ -98,46 +119,46 @@ func Convert(v any) *conv {
 
 // Unified reflection-based value access methods
 func (c *conv) getInt64() int64 {
-	if c.refVal.IsValid() && (c.vTpe >= tpInt && c.vTpe <= tpInt64) {
-		return c.refVal.Int()
+	if c.refIsValid() && (c.vTpe >= tpInt && c.vTpe <= tpInt64) {
+		return c.refInt()
 	}
 	return 0
 }
 
 func (c *conv) getUint64() uint64 {
-	if c.refVal.IsValid() && (c.vTpe >= tpUint && c.vTpe <= tpUintptr) {
-		return c.refVal.Uint()
+	if c.refIsValid() && (c.vTpe >= tpUint && c.vTpe <= tpUintptr) {
+		return c.refUint()
 	}
 	return 0
 }
 
 func (c *conv) getFloat64() float64 {
-	if !c.refVal.IsValid() {
+	if !c.refIsValid() {
 		return 0
 	}
 
 	switch c.vTpe {
 	case tpFloat32, tpFloat64:
-		return c.refVal.Float()
+		return c.refFloat()
 	case tpInt, tpInt8, tpInt16, tpInt32, tpInt64:
-		return float64(c.refVal.Int())
+		return float64(c.refInt())
 	case tpUint, tpUint8, tpUint16, tpUint32, tpUint64, tpUintptr:
-		return float64(c.refVal.Uint())
+		return float64(c.refUint())
 	default:
 		return 0
 	}
 }
 
 func (c *conv) getBool() bool {
-	if c.refVal.IsValid() && c.vTpe == tpBool {
-		return c.refVal.Bool()
+	if c.refIsValid() && c.vTpe == tpBool {
+		return c.refBool()
 	}
 	return false
 }
 
 func (c *conv) getStringDirect() string {
-	if c.refVal.IsValid() && c.vTpe == tpString {
-		return c.refVal.String()
+	if c.refIsValid() && c.refKind() == tpString {
+		return c.refString()
 	}
 	return ""
 }
@@ -187,15 +208,26 @@ func isLetter(r rune) bool {
 func (t *conv) getString() string {
 	if t.vTpe == tpErr {
 		return ""
+	} // Use cached string if available and type hasn't changed
+	// For TinyString special types (tpStrPtr, tpStrSlice, etc.), always use vTpe
+	// For struct fields and reflection values, use refKind()
+	var currentKind kind
+	if t.vTpe == tpStrPtr || t.vTpe == tpStrSlice || t.vTpe == tpErr {
+		// TinyString special types - use vTpe
+		currentKind = t.vTpe
+	} else if t.refIsValid() && t.typ != nil {
+		// Reflection-based types - use refKind()
+		currentKind = t.refKind()
+	} else {
+		// Fallback to vTpe
+		currentKind = t.vTpe
 	}
 
-	// Use cached string if available and type hasn't changed
-	if t.tmpStr != "" && t.lastConvType == t.vTpe {
+	if t.tmpStr != "" && t.lastConvType == currentKind {
 		return t.tmpStr
 	}
-
 	// Convert to string using reflection-based methods
-	switch t.vTpe {
+	switch currentKind {
 	case tpString:
 		t.tmpStr = t.getStringDirect()
 	case tpStrPtr:
@@ -212,29 +244,27 @@ func (t *conv) getString() string {
 			t.tmpStr = t.joinSlice(" ")
 		}
 	case tpInt, tpInt8, tpInt16, tpInt32, tpInt64:
-		// Use reflection to get int value and direct string formatting
+		// Use manual implementation instead of strconv
 		intVal := t.getInt64()
 		if intVal == 0 {
 			t.tmpStr = "0"
 		} else {
-			t.tmpStr = strconv.FormatInt(intVal, 10)
+			t.fmtIntGeneric(intVal, 10, true)
 		}
 	case tpUint, tpUint8, tpUint16, tpUint32, tpUint64, tpUintptr:
-		// Use reflection to get uint value and direct string formatting
+		// Use manual implementation instead of strconv
 		uintVal := t.getUint64()
 		if uintVal == 0 {
 			t.tmpStr = "0"
 		} else {
-			t.tmpStr = strconv.FormatUint(uintVal, 10)
+			t.fmtIntGeneric(int64(uintVal), 10, false)
 		}
 	case tpFloat32:
-		// Handle float32 with appropriate precision to match original behavior
-		floatVal := t.getFloat64()
-		t.tmpStr = strconv.FormatFloat(floatVal, 'g', 7, 32) // Use 32-bit precision
+		// Use manual implementation with float32 precision
+		t.f2s()
 	case tpFloat64:
-		// Use reflection to get float value and direct string formatting
-		floatVal := t.getFloat64()
-		t.tmpStr = strconv.FormatFloat(floatVal, 'g', -1, 64)
+		// Use manual implementation for float64
+		t.f2s()
 	case tpBool:
 		if t.getBool() {
 			t.tmpStr = trueStr
@@ -244,9 +274,8 @@ func (t *conv) getString() string {
 	default:
 		t.tmpStr = ""
 	}
-
 	// Update cache state
-	t.lastConvType = t.vTpe
+	t.lastConvType = currentKind
 	return t.tmpStr
 }
 
@@ -266,18 +295,24 @@ func addRne2Buf(buf []byte, r rune) []byte {
 
 // setString converts to string type and stores the value using reflection
 func (t *conv) setString(s string) {
-	// Update refVal to hold the new string value
-	t.refVal = refValueOf(s)
+	// Preserve original pointer information before reinitializing
+	originalVTpe := t.vTpe
+	originalStringPtrVal := t.stringPtrVal
 
-	// If working with string pointer, update the original string
-	if t.vTpe == tpStrPtr && t.stringPtrVal != nil {
-		*t.stringPtrVal = s
-		// Keep the vTpe as stringPtr to maintain the pointer relationship
+	// Update conv to hold the new string value directly
+	t.initFromValue(s)
+
+	// If working with string pointer, restore pointer info and update the original string
+	if originalVTpe == tpStrPtr && originalStringPtrVal != nil {
+		t.vTpe = tpStrPtr
+		t.stringPtrVal = originalStringPtrVal
+		*originalStringPtrVal = s
+		// Keep the vTpe as tpStrPtr to maintain the pointer relationship
 	} else {
 		t.vTpe = tpString
 	}
 
-	// Clear slice values to save memory - other values handled by refVal
+	// Clear slice values to save memory - other values handled by reflection
 	t.stringSliceVal = nil
 
 	// Invalidate cache since we changed the string
@@ -314,6 +349,45 @@ func (t *conv) joinSlice(separator string) string {
 	return string(result)
 }
 
+// refEface is the header for an interface{} value
+type refEface struct {
+	typ  *refType
+	data unsafe.Pointer
+}
+
+// initFromValue initializes conv fields from any value (replaces refValueOf)
+func (c *conv) initFromValue(v any) {
+	if v == nil {
+		c.typ = nil
+		c.ptr = nil
+		c.flag = 0
+		c.vTpe = tpString
+		return
+	}
+
+	e := (*refEface)(unsafe.Pointer(&v))
+	c.typ = e.typ
+	c.ptr = e.data
+	c.flag = refFlag(c.typ.Kind())
+
+	// Determine flagIndir according to type
+	switch c.typ.Kind() {
+	case tpBool, tpInt, tpInt8, tpInt16, tpInt32, tpInt64,
+		tpUint, tpUint8, tpUint16, tpUint32, tpUint64, tpUintptr,
+		tpFloat32, tpFloat64, tpPointer, tpUnsafePointer:
+		// These basic types are stored directly in interface - no flagIndir
+	case tpString:
+		// Strings are stored directly in interface on most architectures
+	default:
+		// For other types (struct, slice, array, etc.), check if stored indirectly
+		if ifaceIndir(c.typ) {
+			c.flag |= flagIndir
+		}
+	}
+	// Cache vTpe for compatibility
+	c.vTpe = c.typ.Kind()
+}
+
 // Internal conversion methods - centralized in conv to minimize allocations
 // These methods modify the conv struct directly instead of returning values
 
@@ -336,22 +410,20 @@ func (t *conv) any2s(v any) {
 		}
 	default:
 		// Handle all other types using reflection
-		rv := refValueOf(v)
-		if !rv.IsValid() {
+		t.initFromValue(v)
+		if !t.refIsValid() {
 			t.tmpStr = ""
 			return
 		}
-
-		switch rv.Kind() {
+		switch t.refKind() {
 		case tpInt, tpInt8, tpInt16, tpInt32, tpInt64:
-			intVal := rv.Int()
+			intVal := t.refInt()
 			t.fmtIntGeneric(intVal, 10, true)
 		case tpUint, tpUint8, tpUint16, tpUint32, tpUint64, tpUintptr:
-			uintVal := rv.Uint()
+			uintVal := t.refUint()
 			t.fmtIntGeneric(int64(uintVal), 10, false)
 		case tpFloat32, tpFloat64:
-			// Store value in refVal for f2s to work
-			t.refVal = rv
+			// Float value already stored in t by initFromValue
 			t.f2s()
 		default:
 			// Fallback for unknown types

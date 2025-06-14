@@ -8,12 +8,8 @@ import (
 // This file contains essential reflection capabilities adapted from internal/reflectlite
 // All functions and types are prefixed with 'ref' to avoid API pollution
 
-// refValue represents a value and its type information
-type refValue struct {
-	typ  *refType
-	ptr  unsafe.Pointer
-	flag refFlag
-}
+// NOTE: refValue struct has been completely eliminated and fused into conv
+// This maintains separation of concerns while eliminating duplication
 
 // refFlag holds metadata about the value
 type refFlag uintptr
@@ -31,168 +27,148 @@ const (
 	flagRO          refFlag = flagStickyRO | flagEmbedRO
 )
 
-// refValueOf returns a new refValue initialized to the concrete value stored in i
-func refValueOf(i any) refValue {
+// refValueOf returns a new conv initialized to the concrete value stored in i
+// This replaces the old refValue-based function
+func refValueOf(i any) *conv {
+	c := &conv{separator: "_"}
 	if i == nil {
-		return refValue{}
+		return c
 	}
-	return unpackEface(i)
+	c.initFromValue(i)
+	return c
 }
 
 // refEface is the header for an interface{} value
+// NOTE: This definition is now in convert.go - commenting out to avoid duplication
+/*
 type refEface struct {
 	typ  *refType
 	data unsafe.Pointer
 }
-
-// unpackEface converts an interface{} to a refValue
-func unpackEface(i any) refValue {
-	e := (*refEface)(unsafe.Pointer(&i))
-	t := e.typ
-	if t == nil {
-		return refValue{}
-	}
-	f := refFlag(t.Kind())
-
-	// For basic types, we need to determine if they are stored directly or indirectly
-	// Basic types like int, string, bool, float64 etc. are typically stored directly
-	// in interface{} when they fit in the interface data field
-	switch t.Kind() {
-	case tpBool, tpInt, tpInt8, tpInt16, tpInt32, tpInt64,
-		tpUint, tpUint8, tpUint16, tpUint32, tpUint64, tpUintptr,
-		tpFloat32, tpFloat64, tpPointer, tpUnsafePointer:
-		// These basic types are stored directly in interface - no flagIndir
-		// The e.data pointer points directly to the value
-	case tpString:
-		// Strings are stored directly in interface on most architectures
-		// The e.data pointer points to the string header
-	default:
-		// For other types (struct, slice, array, etc.), check if stored indirectly
-		if ifaceIndir(t) {
-			f |= flagIndir
-		}
-	}
-
-	return refValue{t, e.data, f}
-}
+*/
 
 // ifaceIndir reports whether t is stored indirectly in an interface value
 func ifaceIndir(t *refType) bool {
 	return t.kind&kindDirectIface == 0
 }
 
-// Kind returns the kind of value v contains
-func (v refValue) Kind() kind {
-	return kind(v.flag & flagKindMask)
-}
-
 // Type returns the type of v
-func (v refValue) Type() *refType {
-	return v.typ
+func (c *conv) Type() *refType {
+	return c.typ
 }
 
-// IsValid reports whether v represents a value
-func (v refValue) IsValid() bool {
-	return v.flag != 0
-}
-
-// Elem returns the value that the interface v contains or that the pointer v points to
-// Elem returns the value that the interface v contains or that the pointer v points to
-func (v refValue) Elem() refValue {
-	k := v.Kind()
+// refElem returns the value that the interface c contains or that the pointer c points to
+func (c *conv) refElem() *conv {
+	k := c.refKind()
 	switch k {
 	case tpInterface:
 		var eface refEface
-		if v.typ.kind&kindDirectIface != 0 {
-			eface = refEface{typ: nil, data: v.ptr}
+		if c.typ.kind&kindDirectIface != 0 {
+			eface = refEface{typ: nil, data: c.ptr}
 		} else {
-			eface = *(*refEface)(v.ptr)
+			eface = *(*refEface)(c.ptr)
 		}
 		if eface.typ == nil {
-			return refValue{}
+			return &conv{}
 		}
-		fl := refFlag(eface.typ.Kind())
+		result := &conv{separator: "_"}
+		result.typ = eface.typ
+		result.ptr = eface.data
+		result.flag = refFlag(eface.typ.Kind())
 		if ifaceIndir(eface.typ) {
-			fl |= flagIndir
+			result.flag |= flagIndir
 		}
-		return refValue{eface.typ, eface.data, fl}
+		return result
 	case tpPointer:
 		// Handle pointer dereferencing
 		var ptr unsafe.Pointer
-		if v.flag&flagIndir != 0 {
+		if c.flag&flagIndir != 0 {
 			// This is a pointer field from a struct - need to dereference to get the actual pointer
-			ptr = *(*unsafe.Pointer)(v.ptr)
+			ptr = *(*unsafe.Pointer)(c.ptr)
 		} else {
 			// This is a direct pointer from interface{}
-			// v.ptr contains the pointer value itself (the address it points to)
-			ptr = v.ptr
+			// c.ptr contains the pointer value itself (the address it points to)
+			ptr = c.ptr
 		}
 
 		if ptr == nil {
-			return refValue{}
+			return &conv{}
 		}
 
-		elemType := v.typ.Elem()
+		elemType := c.typ.Elem()
 		if elemType == nil {
-			return refValue{}
-		} // Create proper flags for the element
+			return &conv{}
+		}
+
+		// Create proper flags for the element
 		// The element is addressable since we're dereferencing a pointer
-		fl := v.flag&flagRO | flagAddr | refFlag(elemType.Kind())
+		fl := c.flag&flagRO | flagAddr | refFlag(elemType.Kind())
 
 		// For elements accessed through pointers, we don't need flagIndir
 		// because ptr already points to the actual data
-		return refValue{elemType, ptr, fl}
+		result := &conv{separator: "_"}
+		result.typ = elemType
+		result.ptr = ptr
+		result.flag = fl
+		return result
 	}
-	panic("reflect: call of reflect.Value.Elem on " + v.Type().Kind().String() + " value")
+	panic("reflect: call of reflect.Value.Elem on " + c.Type().Kind().String() + " value")
 }
 
-// NumField returns the number of fields in the struct v
-func (v refValue) NumField() int {
-	v.mustBe(tpStruct)
-	tt := (*refStructType)(unsafe.Pointer(v.typ))
+// refNumField returns the number of fields in the struct c
+func (c *conv) refNumField() int {
+	c.mustBe(tpStruct)
+	tt := (*refStructType)(unsafe.Pointer(c.typ))
 	return len(tt.fields)
 }
 
-// Field returns the i'th field of the struct v
-func (v refValue) Field(i int) refValue {
-	if v.Kind() != tpStruct {
-		panic("reflect: call of reflect.Value.Field on " + v.Kind().String() + " value")
+// refField returns the i'th field of the struct c
+func (c *conv) refField(i int) *conv {
+	if c.refKind() != tpStruct {
+		panic("reflect: call of reflect.Value.Field on " + c.refKind().String() + " value")
 	}
-	tt := (*refStructType)(unsafe.Pointer(v.typ))
+	tt := (*refStructType)(unsafe.Pointer(c.typ))
 	if uint(i) >= uint(len(tt.fields)) {
 		panic("reflect: Field index out of range")
 	}
 	field := &tt.fields[i]
-	ptr := add(v.ptr, field.offset, "same as non-reflect &v.field") // Inherit read-only flags from parent, but allow assignment if parent allows it
-	fl := v.flag&(flagRO) | refFlag(field.typ.Kind()) | flagAddr
+	ptr := add(c.ptr, field.offset, "same as non-reflect &v.field")
+
+	// Inherit read-only flags from parent, but allow assignment if parent allows it
+	fl := c.flag&(flagRO) | refFlag(field.typ.Kind()) | flagAddr
 	// For struct fields, flagIndir is needed only for pointer fields
 	// because ptr points to the field location containing the pointer.
 	// For other field types, ptr points directly to the field value.
 	if field.typ.Kind() == tpPointer {
 		fl |= flagIndir
 	}
-	return refValue{field.typ, ptr, fl}
+
+	result := &conv{separator: "_"}
+	result.typ = field.typ
+	result.ptr = ptr
+	result.flag = fl
+	return result
 }
 
-// SetString sets v's underlying value to x
-func (v refValue) SetString(x string) {
-	v.mustBeAssignable()
-	v.mustBe(tpString)
-	ptr := v.ptr
-	if v.flag&flagIndir != 0 {
+// refSetString sets c's underlying value to x
+func (c *conv) refSetString(x string) {
+	c.mustBeAssignable()
+	c.mustBe(tpString)
+	ptr := c.ptr
+	if c.flag&flagIndir != 0 {
 		ptr = *(*unsafe.Pointer)(ptr)
 	}
 	*(*string)(ptr) = x
 }
 
-// SetInt sets v's underlying value to x
-func (v refValue) SetInt(x int64) {
-	v.mustBeAssignable()
-	ptr := v.ptr
-	if v.flag&flagIndir != 0 {
+// refSetInt sets c's underlying value to x
+func (c *conv) refSetInt(x int64) {
+	c.mustBeAssignable()
+	ptr := c.ptr
+	if c.flag&flagIndir != 0 {
 		ptr = *(*unsafe.Pointer)(ptr)
 	}
-	switch v.Kind() {
+	switch c.refKind() {
 	case tpInt:
 		*(*int)(ptr) = int(x)
 	case tpInt8:
@@ -204,18 +180,18 @@ func (v refValue) SetInt(x int64) {
 	case tpInt64:
 		*(*int64)(ptr) = x
 	default:
-		panic("reflect: call of reflect.Value.SetInt on " + v.Kind().String() + " value")
+		panic("reflect: call of reflect.Value.SetInt on " + c.refKind().String() + " value")
 	}
 }
 
-// SetUint sets v's underlying value to x
-func (v refValue) SetUint(x uint64) {
-	v.mustBeAssignable()
-	ptr := v.ptr
-	if v.flag&flagIndir != 0 {
+// refSetUint sets c's underlying value to x
+func (c *conv) refSetUint(x uint64) {
+	c.mustBeAssignable()
+	ptr := c.ptr
+	if c.flag&flagIndir != 0 {
 		ptr = *(*unsafe.Pointer)(ptr)
 	}
-	switch v.Kind() {
+	switch c.refKind() {
 	case tpUint:
 		*(*uint)(ptr) = uint(x)
 	case tpUint8:
@@ -229,71 +205,83 @@ func (v refValue) SetUint(x uint64) {
 	case tpUintptr:
 		*(*uintptr)(ptr) = uintptr(x)
 	default:
-		panic("reflect: call of reflect.Value.SetUint on " + v.Kind().String() + " value")
+		c.err = errorType("reflect: call of reflect.Value.SetUint on " + c.refKind().String() + " value")
 	}
 }
 
-// SetFloat sets v's underlying value to x
-func (v refValue) SetFloat(x float64) {
-	v.mustBeAssignable()
-	ptr := v.ptr
-	if v.flag&flagIndir != 0 {
+// refSetFloat sets c's underlying value to x
+func (c *conv) refSetFloat(x float64) {
+	c.mustBeAssignable()
+	ptr := c.ptr
+	if c.flag&flagIndir != 0 {
 		ptr = *(*unsafe.Pointer)(ptr)
 	}
-	switch v.Kind() {
+	switch c.refKind() {
 	case tpFloat32:
 		*(*float32)(ptr) = float32(x)
 	case tpFloat64:
 		*(*float64)(ptr) = x
 	default:
-		panic("reflect: call of reflect.Value.SetFloat on " + v.Kind().String() + " value")
+		c.err = errorType("reflect: call of reflect.Value.SetFloat on " + c.refKind().String() + " value")
 	}
 }
 
-// SetBool sets v's underlying value to x
-func (v refValue) SetBool(x bool) {
-	v.mustBeAssignable()
-	v.mustBe(tpBool)
-	ptr := v.ptr
-	if v.flag&flagIndir != 0 {
+// refSetBool sets c's underlying value to x
+func (c *conv) refSetBool(x bool) {
+	c.mustBeAssignable()
+	c.mustBe(tpBool)
+	ptr := c.ptr
+	if c.flag&flagIndir != 0 {
 		ptr = *(*unsafe.Pointer)(ptr)
 	}
 	*(*bool)(ptr) = x
 }
 
-// Set assigns x to the value v
-// v must be addressable and must not have been obtained by accessing unexported struct fields
-func (v refValue) Set(x refValue) {
-	v.mustBeAssignable()
+// refSet assigns x to the value c
+// c must be addressable and must not have been obtained by accessing unexported struct fields
+func (c *conv) refSet(x *conv) {
+	c.mustBeAssignable()
+	if c.err != "" {
+		return
+	}
 	x.mustBeExported() // do not let unexported x leak
+	if x.err != "" {
+		c.err = x.err
+		return
+	}
 
 	// For pointer types, we need to copy the pointer value itself
-	if v.kind() == tpPointer {
-		// v.ptr points to the pointer variable
+	if c.refKind() == tpPointer {
+		// c.ptr points to the pointer variable
 		// We need to set the pointer variable to the value that x represents
-		if x.kind() == tpPointer {
-			// Copy pointer value from x to v
-			*(*unsafe.Pointer)(v.ptr) = *(*unsafe.Pointer)(x.ptr)
+		if x.refKind() == tpPointer {
+			// Copy pointer value from x to c
+			*(*unsafe.Pointer)(c.ptr) = *(*unsafe.Pointer)(x.ptr)
 		} else {
 			// x is not a pointer, this shouldn't happen in normal cases
-			typedmemmove(v.typ, v.ptr, x.ptr)
+			typedmemmove(c.typ, c.ptr, x.ptr)
 		}
 	} else {
 		// For non-pointer types, copy the value
-		typedmemmove(v.typ, v.ptr, x.ptr)
+		typedmemmove(c.typ, c.ptr, x.ptr)
 	}
 }
 
-// refZero returns a Value representing the zero value for the specified type
-func refZero(typ *refType) refValue {
+// refZero returns a conv representing the zero value for the specified type
+func refZero(typ *refType) *conv {
 	if typ == nil {
-		panic("reflect: Zero(nil)")
+		return &conv{err: errorType("reflect: Zero(nil)")}
 	}
+
+	c := &conv{separator: "_"}
 
 	// For pointer types, zero value is nil pointer
 	if typ.Kind() == tpPointer {
 		var nilPtr unsafe.Pointer // This is nil
-		return refValue{typ, unsafe.Pointer(&nilPtr), refFlag(tpPointer)}
+		c.typ = typ
+		c.ptr = unsafe.Pointer(&nilPtr)
+		c.flag = refFlag(tpPointer)
+		return c
 	}
 
 	// For struct and other types, allocate memory for the zero value
@@ -312,34 +300,51 @@ func refZero(typ *refType) refValue {
 	memclr(ptr, size)
 
 	// Return the zero value with correct type and kind
-	// Use the kind directly in the flag without shifting
-	return refValue{
-		typ:  typ,
-		ptr:  ptr,
-		flag: refFlag(typ.Kind()) | flagAddr,
+	c.typ = typ
+	c.ptr = ptr
+	c.flag = refFlag(typ.Kind()) | flagAddr
+
+	return c
+}
+
+// mustBeExported sets error if c was obtained using an unexported field
+func (c *conv) mustBeExported() {
+	if c.err != "" {
+		return
+	}
+	if c.flag&flagRO != 0 {
+		c.err = errorType("reflect: use of unexported field")
 	}
 }
 
-// mustBeExported panics if f records that the value was obtained using an unexported field
-func (v refValue) mustBeExported() {
-	if v.flag&flagRO != 0 {
-		panic("reflect: " + "use of unexported field")
+// mustBeAssignable sets error if c is not assignable
+func (c *conv) mustBeAssignable() {
+	if c.err != "" {
+		return
+	}
+	if c.flag&flagRO != 0 {
+		c.err = errorType("reflect: cannot set value")
+		return
+	}
+	if c.flag&flagAddr == 0 {
+		c.err = errorType("reflect: cannot assign to value")
+		return
 	}
 }
 
-// mustBeAssignable panics if v is not assignable
-func (v refValue) mustBeAssignable() {
-	if v.flag&flagRO != 0 {
-		panic("reflect: " + "cannot set value")
+// mustBe sets error if c's kind is not expected
+func (c *conv) mustBe(expected kind) {
+	if c.err != "" {
+		return
 	}
-	if v.flag&flagAddr == 0 {
-		panic("reflect: " + "cannot assign to value")
+	if c.refKind() != expected {
+		c.err = errorType("reflect: call of reflect.Value method on " + expected.String() + " value")
 	}
 }
 
-// kind returns the Kind without the flags
-func (v refValue) kind() kind {
-	return kind(v.flag & flagKindMask)
+// refKind returns the Kind without the flags
+func (c *conv) refKind() kind {
+	return kind(c.flag & flagKindMask)
 }
 
 // typedmemmove copies a value of type t to dst from src
@@ -361,29 +366,23 @@ func memmove(dst, src unsafe.Pointer, size uintptr) {
 	}
 }
 
-// String returns the string v's underlying value, as a string
-func (v refValue) String() string {
-	switch k := v.Kind(); k {
-	case tpString:
-		ptr := v.ptr
-		if v.flag&flagIndir != 0 {
-			ptr = *(*unsafe.Pointer)(ptr)
-		}
-		return *(*string)(ptr)
-	default:
-		// Return a descriptive string instead of panicking
-		return "<" + v.Type().Kind().String() + " Value>"
-	}
+// refIsValid reports whether c represents a value
+func (c *conv) refIsValid() bool {
+	return c.flag != 0
 }
 
-// Int returns v's underlying value, as an int64
-func (v refValue) Int() int64 {
-	ptr := v.ptr
-	if v.flag&flagIndir != 0 {
+// refInt returns c's underlying value, as an int64
+func (c *conv) refInt() int64 {
+	if c.err != "" {
+		return 0
+	}
+
+	ptr := c.ptr
+	if c.flag&flagIndir != 0 {
 		ptr = *(*unsafe.Pointer)(ptr)
 	}
 
-	switch k := v.Kind(); k {
+	switch k := c.refKind(); k {
 	case tpInt:
 		return int64(*(*int)(ptr))
 	case tpInt8:
@@ -395,18 +394,23 @@ func (v refValue) Int() int64 {
 	case tpInt64:
 		return *(*int64)(ptr)
 	default:
-		panic("reflect: call of reflect.Value.Int on " + v.Kind().String() + " value")
+		c.err = errorType("reflect: call of reflect.Value.Int on " + c.refKind().String() + " value")
+		return 0
 	}
 }
 
-// Uint returns v's underlying value, as a uint64
-func (v refValue) Uint() uint64 {
-	ptr := v.ptr
-	if v.flag&flagIndir != 0 {
+// refUint returns c's underlying value, as a uint64
+func (c *conv) refUint() uint64 {
+	if c.err != "" {
+		return 0
+	}
+
+	ptr := c.ptr
+	if c.flag&flagIndir != 0 {
 		ptr = *(*unsafe.Pointer)(ptr)
 	}
 
-	switch k := v.Kind(); k {
+	switch k := c.refKind(); k {
 	case tpUint:
 		return uint64(*(*uint)(ptr))
 	case tpUint8:
@@ -420,136 +424,137 @@ func (v refValue) Uint() uint64 {
 	case tpUintptr:
 		return uint64(*(*uintptr)(ptr))
 	default:
-		panic("reflect: call of reflect.Value.Uint on " + v.Kind().String() + " value")
+		c.err = errorType("reflect: call of reflect.Value.Uint on " + c.refKind().String() + " value")
+		return 0
 	}
 }
 
-// Float returns v's underlying value, as a float64
-func (v refValue) Float() float64 {
-	ptr := v.ptr
-	if v.flag&flagIndir != 0 {
+// refFloat returns c's underlying value, as a float64
+func (c *conv) refFloat() float64 {
+	if c.err != "" {
+		return 0
+	}
+
+	ptr := c.ptr
+	if c.flag&flagIndir != 0 {
 		ptr = *(*unsafe.Pointer)(ptr)
 	}
 
-	switch k := v.Kind(); k {
+	switch k := c.refKind(); k {
 	case tpFloat32:
 		return float64(*(*float32)(ptr))
 	case tpFloat64:
 		return *(*float64)(ptr)
 	default:
-		panic("reflect: call of reflect.Value.Float on " + v.Kind().String() + " value")
+		c.err = errorType("reflect: call of reflect.Value.Float on " + c.refKind().String() + " value")
+		return 0
 	}
 }
 
-// Bool returns v's underlying value
-func (v refValue) Bool() bool {
-	v.mustBe(tpBool)
-	ptr := v.ptr
-	if v.flag&flagIndir != 0 {
+// refBool returns c's underlying value
+func (c *conv) refBool() bool {
+	if c.err != "" {
+		return false
+	}
+
+	c.mustBe(tpBool)
+	if c.err != "" {
+		return false
+	}
+
+	ptr := c.ptr
+	if c.flag&flagIndir != 0 {
 		ptr = *(*unsafe.Pointer)(ptr)
 	}
 	return *(*bool)(ptr)
 }
 
-// Interface returns v's current value as an interface{}
-func (v refValue) Interface() any {
-	if v.flag&flagRO != 0 {
-		// Read-only value, we can still interface it
+// refString returns c's underlying value, as a string
+func (c *conv) refString() string {
+	if c.err != "" {
+		return ""
 	}
-	switch v.Kind() {
+
+	if !c.refIsValid() {
+		return ""
+	}
+
+	// Don't enforce mustBe() - allow reading strings from struct fields
+	if c.refKind() != tpString {
+		return ""
+	}
+
+	ptr := c.ptr
+	if c.flag&flagIndir != 0 {
+		ptr = *(*unsafe.Pointer)(ptr)
+	}
+	return *(*string)(ptr)
+}
+
+// Interface returns c's current value as an interface{}
+func (c *conv) Interface() any {
+	if c.err != "" {
+		return nil
+	}
+
+	if !c.refIsValid() {
+		return nil
+	}
+
+	switch c.refKind() {
 	case tpString:
-		return v.String()
+		return c.refString()
 	case tpInt:
-		return int(v.Int())
+		return int(c.refInt())
 	case tpInt8:
-		return int8(v.Int())
+		return int8(c.refInt())
 	case tpInt16:
-		return int16(v.Int())
+		return int16(c.refInt())
 	case tpInt32:
-		return int32(v.Int())
+		return int32(c.refInt())
 	case tpInt64:
-		return v.Int()
+		return c.refInt()
 	case tpUint:
-		return uint(v.Uint())
+		return uint(c.refUint())
 	case tpUint8:
-		return uint8(v.Uint())
+		return uint8(c.refUint())
 	case tpUint16:
-		return uint16(v.Uint())
+		return uint16(c.refUint())
 	case tpUint32:
-		return uint32(v.Uint())
+		return uint32(c.refUint())
 	case tpUint64:
-		return v.Uint()
+		return c.refUint()
+	case tpUintptr:
+		return uintptr(c.refUint())
 	case tpFloat32:
-		return float32(v.Float())
+		return float32(c.refFloat())
 	case tpFloat64:
-		return v.Float()
+		return c.refFloat()
 	case tpBool:
-		return v.Bool()
+		return c.refBool()
 	case tpInterface:
-		// For interface{} fields, extract the actual contained value
-		if v.ptr == nil {
-			return nil
+		// For interface{} types, extract the contained value directly
+		var eface refEface
+		if c.typ.kind&kindDirectIface != 0 {
+			eface = refEface{typ: nil, data: c.ptr}
+		} else {
+			eface = *(*refEface)(c.ptr)
 		}
-		eface := *(*refEface)(v.ptr)
 		if eface.typ == nil {
 			return nil
 		}
-		// Reconstruct the interface{} from the eface
-		return packEface(eface)
-	case tpStruct:
-		// For struct types, we need to reconstruct the original Go value
-		// This requires careful handling of the type and memory layout
-		return v.packStructEface()
+
+		// Create a new interface{} with the contained value
+		return *(*any)(unsafe.Pointer(&eface))
+	case tpStruct: // For struct types, create an interface{} with the struct value
+		// The struct data is stored at c.ptr
+		var eface refEface
+		eface.typ = c.typ
+		eface.data = c.ptr
+		return *(*any)(unsafe.Pointer(&eface))
 	default:
-		// For other complex types like slice, etc.
-		// This is a simplified approach - in a full implementation,
-		// we would need to reconstruct the appropriate interface{} value
-		return v.ptr // This is a fallback
-	}
-}
-
-// packEface reconstructs an interface{} value from a refEface
-func packEface(eface refEface) any {
-	// Reconstruct the interface{} value by casting back
-	// This is a simplified approach - create a new interface{} with the same structure
-	var result any
-	resultEface := (*refEface)(unsafe.Pointer(&result))
-	*resultEface = eface
-	return result
-}
-
-// packStructEface reconstructs an interface{} value for a struct
-func (v refValue) packStructEface() any {
-	// For struct values, we need to reconstruct the original value
-	// This is based on Go's reflect.packEface logic
-
-	// Create a new interface{} header
-	var result any
-	resultEface := (*refEface)(unsafe.Pointer(&result))
-	resultEface.typ = v.typ
-
-	// Handle memory layout depending on whether the struct is stored indirectly
-	if ifaceIndir(v.typ) {
-		// For larger structs stored indirectly, we need to copy the data
-		// Allocate new memory for the struct
-		size := v.typ.Size()
-		newPtr := unsafe.Pointer(&make([]byte, size)[0])
-
-		// Copy the struct data
-		memmove(newPtr, v.ptr, size)
-		resultEface.data = newPtr
-	} else {
-		// For small structs stored directly in interface
-		resultEface.data = v.ptr
-	}
-
-	return result
-}
-
-// mustBe panics if f's kind is not expected
-func (v refValue) mustBe(expected kind) {
-	if v.Kind() != expected {
-		panic("reflect: call of reflect.Value method on " + expected.String() + " value")
+		// For complex types, return nil for now
+		return nil
 	}
 }
 
@@ -630,6 +635,7 @@ func getStructInfo(typ *refType, out *refStructInfo) {
 func clearRefStructsCache() {
 	refStructsInfo = refStructsInfo[:0] // Clear slice while preserving capacity
 }
+
 func getTypeName(typ *refType) string {
 	if typ == nil {
 		return "nil"
@@ -661,143 +667,6 @@ func getTypeName(typ *refType) string {
 	return kindStr + "_" + sizeStr + "_" + ptrStr
 }
 
-// refNew returns a new pointer to a zero value of the given type
-// Similar to reflect.New()
-func refNew(typ *refType) refValue {
-	if typ == nil {
-		return refValue{}
-	}
-
-	// Allocate memory for the type and zero it
-	ptr := refAllocate(typ.size)
-
-	// Create pointer type that points to the original type
-	ptrType := &refPtrType{
-		refType: refType{
-			size:       unsafe.Sizeof(ptr),
-			kind:       uint8(tpPointer),
-			align:      uint8(unsafe.Alignof(ptr)),
-			fieldAlign: uint8(unsafe.Alignof(ptr)),
-		},
-		elem: typ,
-	}
-
-	return refValue{
-		typ:  &ptrType.refType,
-		ptr:  unsafe.Pointer(&ptr), // ptr to the allocated memory
-		flag: flagIndir | flagAddr | refFlag(tpPointer),
-	}
-}
-
-// refAppend appends values to a slice
-// Similar to reflect.Append()
-func refAppend(slice refValue, values ...refValue) refValue {
-	if slice.Kind() != tpSlice {
-		panic("refAppend: not a slice")
-	}
-
-	if len(values) == 0 {
-		return slice
-	}
-
-	// For now, implement simple case with one value
-	if len(values) != 1 {
-		panic("refAppend: multiple values not implemented")
-	}
-
-	value := values[0]
-
-	// Get slice header
-	sliceHeader := (*refSliceHeader)(slice.ptr)
-	elemType := slice.Type().Elem()
-	elemSize := elemType.Size()
-
-	// Create new slice with increased capacity
-	newLen := sliceHeader.Len + 1
-	newCap := sliceHeader.Cap
-	if newCap < newLen {
-		newCap = newLen * 2
-	}
-
-	// Allocate new data array
-	newData := refAllocateArray(elemType, newCap)
-
-	// Copy existing elements
-	if sliceHeader.Len > 0 {
-		refCopySlice(newData, sliceHeader.Data, sliceHeader.Len, elemSize)
-	}
-
-	// Copy new element to the end
-	destPtr := unsafe.Add(newData, uintptr(sliceHeader.Len)*elemSize)
-	refCopyValue(destPtr, value.ptr, elemType)
-
-	// Create new slice value
-	newSliceHeader := &refSliceHeader{
-		Data: newData,
-		Len:  newLen,
-		Cap:  newCap,
-	}
-
-	return refValue{
-		typ:  slice.typ,
-		ptr:  unsafe.Pointer(newSliceHeader),
-		flag: slice.flag,
-	}
-}
-
-// Helper functions for memory operations
-
-// refAllocate allocates memory for a type
-func refAllocate(size uintptr) unsafe.Pointer {
-	if size == 0 {
-		return unsafe.Pointer(&zerobase)
-	}
-	// Use make([]byte, size) and return pointer to first element
-	data := make([]byte, size)
-	return unsafe.Pointer(&data[0])
-}
-
-// refAllocateArray allocates memory for an array of elements
-func refAllocateArray(elemType *refType, count int) unsafe.Pointer {
-	if count == 0 {
-		return unsafe.Pointer(&zerobase)
-	}
-	size := elemType.Size() * uintptr(count)
-	return refAllocate(size)
-}
-
-// refCopySlice copies slice elements
-func refCopySlice(dest, src unsafe.Pointer, count int, elemSize uintptr) {
-	if count <= 0 {
-		return
-	}
-	// Simple byte copy
-	srcBytes := (*[1 << 30]byte)(src)
-	destBytes := (*[1 << 30]byte)(dest)
-	totalSize := uintptr(count) * elemSize
-	copy(destBytes[:totalSize], srcBytes[:totalSize])
-}
-
-// refCopyValue copies a single value
-func refCopyValue(dest, src unsafe.Pointer, typ *refType) {
-	if typ.Size() == 0 {
-		return
-	}
-	srcBytes := (*[1 << 20]byte)(src)
-	destBytes := (*[1 << 20]byte)(dest)
-	copy(destBytes[:typ.Size()], srcBytes[:typ.Size()])
-}
-
-// refSliceHeader represents the runtime representation of a slice
-type refSliceHeader struct {
-	Data unsafe.Pointer
-	Len  int
-	Cap  int
-}
-
-// zerobase is used for zero-sized allocations
-var zerobase uintptr
-
 // memclr clears memory at ptr with size bytes
 func memclr(ptr unsafe.Pointer, size uintptr) {
 	// Simple implementation - zero out the memory
@@ -805,4 +674,72 @@ func memclr(ptr unsafe.Pointer, size uintptr) {
 	for i := range slice {
 		slice[i] = 0
 	}
+}
+
+// refLen returns the length of c
+// It panics if c's Kind is not Slice
+func (c *conv) refLen() int {
+	if c.err != "" {
+		return 0
+	}
+	k := c.refKind()
+	switch k {
+	case tpSlice:
+		// For slices, the length is stored in the slice header
+		return (*sliceHeader)(c.ptr).Len
+	default:
+		c.err = errorType("reflect: call of reflect.Value.Len on " + k.String() + " value")
+		return 0
+	}
+}
+
+// refIndex returns c's i'th element
+// It panics if c's Kind is not Slice or if i is out of range
+func (c *conv) refIndex(i int) *conv {
+	if c.err != "" {
+		return &conv{err: c.err}
+	}
+	k := c.refKind()
+	switch k {
+	case tpSlice:
+		s := (*sliceHeader)(c.ptr)
+		if i < 0 || i >= s.Len {
+			c.err = errorType("reflect: slice index out of range")
+			return &conv{err: c.err}
+		}
+
+		// Get element type
+		elemType := c.typ.Elem()
+		if elemType == nil {
+			return &conv{err: errorType("reflect: slice element type is nil")}
+		}
+
+		elemSize := elemType.Size()
+
+		// Calculate pointer to element
+		elemPtr := unsafe.Pointer(uintptr(s.Data) + uintptr(i)*elemSize)
+
+		// Create new conv for the element
+		result := &conv{separator: "_"}
+		result.typ = elemType
+		result.ptr = elemPtr
+		result.flag = refFlag(elemType.Kind())
+
+		// If element is stored indirectly, set the flag
+		if elemType.kind&kindDirectIface == 0 {
+			result.flag |= flagIndir
+		}
+
+		return result
+	default:
+		c.err = errorType("reflect: call of reflect.Value.Index on " + k.String() + " value")
+		return &conv{err: c.err}
+	}
+}
+
+// sliceHeader is the runtime representation of a slice
+type sliceHeader struct {
+	Data unsafe.Pointer
+	Len  int
+	Cap  int
 }

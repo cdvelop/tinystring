@@ -279,7 +279,7 @@ func TestJsonEncodeStructSlice(t *testing.T) {
 	}
 }
 
-// Field name conversion tests
+// refField name conversion tests
 func TestJsonFieldNameConversion(t *testing.T) {
 	type TestStruct struct {
 		FirstName  string

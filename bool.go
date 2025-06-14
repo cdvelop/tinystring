@@ -22,12 +22,12 @@ func (t *conv) ToBool() (bool, error) {
 		switch inp {
 		case "true", "True", "TRUE", "1", "t", "T":
 			// Set boolean value via reflection
-			t.refVal = refValueOf(true)
+			t.initFromValue(true)
 			t.vTpe = tpBool
 			return true, nil
 		case "false", "False", "FALSE", "0", "f", "F":
 			// Set boolean value via reflection
-			t.refVal = refValueOf(false)
+			t.initFromValue(false)
 			t.vTpe = tpBool
 			return false, nil
 		default:
@@ -36,7 +36,7 @@ func (t *conv) ToBool() (bool, error) {
 			if t.err == "" {
 				intVal := t.getInt64()
 				boolResult := intVal != 0
-				t.refVal = refValueOf(boolResult)
+				t.initFromValue(boolResult)
 				t.vTpe = tpBool
 				t.err = "" // Clear any errors since we successfully converted
 				return boolResult, nil
@@ -48,7 +48,7 @@ func (t *conv) ToBool() (bool, error) {
 			if t.err == "" {
 				floatVal := t.getFloat64()
 				boolResult := floatVal != 0.0
-				t.refVal = refValueOf(boolResult)
+				t.initFromValue(boolResult)
 				t.vTpe = tpBool
 				t.err = "" // Clear any errors since we successfully converted
 				return boolResult, nil
