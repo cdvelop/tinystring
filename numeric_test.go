@@ -271,3 +271,118 @@ func TestFixedNegativeNumbers(t *testing.T) {
 		t.Error("ToInt(-123, base 16) should have failed but didn't")
 	}
 }
+
+func TestFloatStringConversion(t *testing.T) {
+	// Test string float conversion - validates the internal s2Float conversion path
+	t.Run("String to float conversion", func(t *testing.T) {
+		result, err := Convert("123.789").ToFloat()
+		if err != nil {
+			t.Errorf("ToFloat() failed: %v", err)
+		}
+		expected := 123.789
+		tolerance := 1e-6
+		if result < expected-tolerance || result > expected+tolerance {
+			t.Errorf("ToFloat() = %v, want %v", result, expected)
+		}
+	})
+
+	// Test string to int conversion with float input (truncation)
+	t.Run("String float to int truncation", func(t *testing.T) {
+		result, err := Convert("123.789").ToInt()
+		if err != nil {
+			t.Errorf("ToInt() failed: %v", err)
+		}
+		expected := 123
+		if result != expected {
+			t.Errorf("ToInt() = %v, want %v", result, expected)
+		}
+	})
+
+	// Test edge case: empty string
+	t.Run("Empty string conversion", func(t *testing.T) {
+		_, err := Convert("").ToFloat()
+		if err == nil {
+			t.Error("ToFloat() should fail for empty string")
+		}
+	})
+
+	// Test edge case: invalid float string
+	t.Run("Invalid float string", func(t *testing.T) {
+		_, err := Convert("not-a-number").ToFloat()
+		if err == nil {
+			t.Error("ToFloat() should fail for invalid string")
+		}
+	})
+}
+
+func TestRoundDecimalsNonNumericInput(t *testing.T) {
+	// Test RoundDecimals behavior with non-numeric input
+	testCases := []struct {
+		name     string
+		input    any
+		decimals int
+		expected string
+	}{
+		{
+			name:     "Non-numeric string should become 0.00",
+			input:    "hello",
+			decimals: 2,
+			expected: "0.00",
+		},
+		{
+			name:     "Invalid string with 3 decimals",
+			input:    "not-a-number",
+			decimals: 3,
+			expected: "0.000",
+		},
+		{
+			name:     "Empty string with 1 decimal",
+			input:    "",
+			decimals: 1,
+			expected: "0.0",
+		},
+		{
+			name:     "Special characters with 0 decimals",
+			input:    "!@#$%",
+			decimals: 0,
+			expected: "0",
+		},
+	}
+
+	for _, tc := range testCases {
+		t.Run(tc.name, func(t *testing.T) {
+			result := Convert(tc.input).RoundDecimals(tc.decimals).String()
+			if result != tc.expected {
+				t.Errorf("Convert(%v).RoundDecimals(%d).String() = %q, want %q",
+					tc.input, tc.decimals, result, tc.expected)
+			}
+		})
+	}
+}
+
+func TestRoundDecimalsEdgeCases(t *testing.T) {
+	// Test additional edge cases for RoundDecimals
+	t.Run("Mixed valid and invalid conversions", func(t *testing.T) {
+		// Valid conversion first
+		result1 := Convert("123.456").RoundDecimals(2).String()
+		expected1 := "123.46"
+		if result1 != expected1 {
+			t.Errorf("Valid conversion failed: got %q, want %q", result1, expected1)
+		}
+
+		// Invalid conversion after valid one
+		result2 := Convert("invalid").RoundDecimals(2).String()
+		expected2 := "0.00"
+		if result2 != expected2 {
+			t.Errorf("Invalid conversion failed: got %q, want %q", result2, expected2)
+		}
+	})
+
+	t.Run("Zero decimals with non-numeric", func(t *testing.T) {
+		result := Convert("text").RoundDecimals(0).String()
+		expected := "0"
+		if result != expected {
+			t.Errorf("Zero decimals failed: got %q, want %q", result, expected)
+		}
+	})
+}

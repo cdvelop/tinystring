@@ -171,8 +171,8 @@ func TestJsonConvertPointerHandling(t *testing.T) {
 	if conv1.vTpe != tpStruct {
 		t.Errorf("Direct struct conv type: expected %v, got %v", tpStruct, conv1.vTpe)
 	}
-	if conv1.anyVal == nil {
-		t.Error("Direct struct anyVal should not be nil")
+	if !conv1.refVal.IsValid() {
+		t.Error("Direct struct refVal should be valid")
 	}
 
 	// Test pointer to struct
@@ -181,8 +181,8 @@ func TestJsonConvertPointerHandling(t *testing.T) {
 	if conv2.vTpe != tpStruct {
 		t.Errorf("Pointer conv type: expected %v, got %v", tpStruct, conv2.vTpe)
 	}
-	if conv2.anyVal == nil {
-		t.Error("Pointer conv anyVal should not be nil")
+	if !conv2.refVal.IsValid() {
+		t.Error("Pointer conv refVal should be valid")
 	}
 
 	// Both should produce same JSON

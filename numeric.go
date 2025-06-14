@@ -16,16 +16,19 @@ var smallInts = [...]string{
 
 // Shared helper methods to reduce code duplication between numeric.go and format.go
 
-// saveState saves the current string value and type for later restoration
+// saveState saves the current string value and type for later restoration using reflection
 func (t *conv) saveState() (string, kind) {
-	return t.stringVal, t.vTpe
+	return t.getString(), t.vTpe
 }
 
-// restoreState restores previously saved string value and type
+// restoreState restores previously saved string value and type using reflection
 func (t *conv) restoreState(savedVal string, savedType kind) {
-	t.stringVal = savedVal
+	t.refVal = refValueOf(savedVal)
 	t.vTpe = savedType
 	t.err = "" // Reset error when restoring state
+	// Clear the string cache to force regeneration
+	t.tmpStr = ""
+	t.lastConvType = kind(0)
 }
 
 // tryParseAs attempts to parse content as the specified numeric type with fallback to float
@@ -50,21 +53,23 @@ func (t *conv) tryParseAs(parseType kind, base int) bool {
 	if base != 10 && len(oSV) > 0 && oSV[0] == '-' {
 		return false
 	}
-
 	// If that fails, restore state and try to parse as float then convert
 	t.restoreState(oSV, oVT)
 	t.s2Float()
 	if t.err == "" {
+		floatVal := t.getFloat64()
 		switch parseType {
 		case tpInt:
-			t.intVal = int64(t.floatVal)
+			intVal := int64(floatVal)
+			t.refVal = refValueOf(intVal)
 			t.vTpe = tpInt
 		case tpUint:
-			if t.floatVal < 0 {
+			if floatVal < 0 {
 				t.err = errNegativeUnsigned
 				return false
 			}
-			t.uintVal = uint64(t.floatVal)
+			uintVal := uint64(floatVal)
+			t.refVal = refValueOf(uintVal)
 			t.vTpe = tpUint
 		}
 		return true
@@ -131,22 +136,24 @@ func (t *conv) ToInt(base ...int) (int, error) {
 	if t.err != "" {
 		return 0, t
 	}
-
 	b := 10 // default base
 	if len(base) > 0 {
 		b = base[0]
 	}
 	switch t.vTpe {
-	case tpInt:
-		return int(t.intVal), nil // Direct return for integer values
-	case tpUint:
-		return int(t.uintVal), nil // Direct conversion from uint
-	case tpFloat64:
-		return int(t.floatVal), nil // Direct truncation from float
+	case tpInt, tpInt8, tpInt16, tpInt32, tpInt64:
+		return int(t.getInt64()), nil // Use reflection to get integer value
+	case tpUint, tpUint8, tpUint16, tpUint32, tpUint64, tpUintptr:
+		return int(t.getUint64()), nil // Use reflection to get uint value
+	case tpFloat32, tpFloat64:
+		return int(t.getFloat64()), nil // Use reflection to get float value
+	case tpBool:
+		// Boolean values cannot be converted to integers
+		return 0, t
 	default:
 		// For string types and other types, use shared helper method for parsing with fallback
 		if t.tryParseAs(tpInt, b) {
-			return int(t.intVal), nil
+			return int(t.getInt64()), nil
 		}
 		// Return error if parsing failed
 		return 0, t
@@ -214,7 +221,7 @@ func (t *conv) ToInt64(base ...int) (int64, error) {
 	}
 	// Use shared helper method for parsing with fallback
 	if t.tryParseAs(tpInt, b) {
-		return t.intVal, nil
+		return t.getInt64(), nil
 	}
 
 	// Return error if parsing failed
@@ -275,26 +282,30 @@ func (t *conv) ToUint(base ...int) (uint, error) {
 	if len(base) > 0 {
 		b = base[0]
 	}
-
 	switch t.vTpe {
 	case tpUint:
-		return uint(t.uintVal), nil // Direct return for uint values
+		return uint(t.getUint64()), nil // Direct return for uint values
 	case tpInt:
-		if t.intVal < 0 {
-			t.NewErr(errNegativeUnsigned, t.intVal)
+		intVal := t.getInt64()
+		if intVal < 0 {
+			t.NewErr(errNegativeUnsigned, intVal)
 			return 0, t
 		}
-		return uint(t.intVal), nil // Direct conversion from int if positive
+		return uint(intVal), nil // Direct conversion from int if positive
 	case tpFloat64:
-		if t.floatVal < 0 {
-			t.NewErr(errNegativeUnsigned, t.floatVal)
+		floatVal := t.getFloat64()
+		if floatVal < 0 {
+			t.NewErr(errNegativeUnsigned, floatVal)
 			return 0, t
 		}
-		return uint(t.floatVal), nil // Direct truncation from float if positive
+		return uint(floatVal), nil // Direct truncation from float if positive
+	case tpBool:
+		// Boolean values cannot be converted to unsigned integers
+		return 0, t
 	default:
 		// For string types and other types, use shared helper method for parsing with fallback
 		if t.tryParseAs(tpUint, b) {
-			return uint(t.uintVal), nil
+			return uint(t.getUint64()), nil
 		}
 		// Return error if parsing failed
 		return 0, t
@@ -343,21 +354,20 @@ func (t *conv) ToFloat() (float64, error) {
 	if t.err != "" {
 		return 0, t
 	}
-
 	switch t.vTpe {
 	case tpFloat64:
-		return t.floatVal, nil // Direct return for float values
+		return t.getFloat64(), nil // Direct return for float values
 	case tpInt:
-		return float64(t.intVal), nil // Direct conversion from int
+		return float64(t.getInt64()), nil // Direct conversion from int
 	case tpUint:
-		return float64(t.uintVal), nil // Direct conversion from uint
+		return float64(t.getUint64()), nil // Direct conversion from uint
 	default:
 		// For string types and other types, parse as float
 		t.s2Float()
 		if t.err != "" {
 			return 0, t
 		}
-		return t.floatVal, nil
+		return t.getFloat64(), nil
 	}
 }
 
@@ -390,11 +400,12 @@ func (t *conv) s2IntGeneric(base int) {
 	if t.err != "" {
 		return
 	}
-
 	if isNeg {
-		t.intVal = -int64(t.uintVal)
+		intVal := -int64(t.getUint64())
+		t.refVal = refValueOf(intVal)
 	} else {
-		t.intVal = int64(t.uintVal)
+		intVal := int64(t.getUint64())
+		t.refVal = refValueOf(intVal)
 	}
 	t.vTpe = tpInt
 }
@@ -489,7 +500,7 @@ func (t *conv) s2Float() {
 	if isNeg {
 		result = -result
 	}
-	t.floatVal = result
+	t.refVal = refValueOf(result)
 	t.vTpe = tpFloat64
 }
 
@@ -529,8 +540,7 @@ func (t *conv) s2n(base int) {
 
 		res = res*uint64(base) + uint64(d)
 	}
-
-	t.uintVal = res
+	t.refVal = refValueOf(res)
 	t.vTpe = tpUint
 }
 
@@ -558,19 +568,19 @@ func fmtUint2Str(val uint64, base int, buf []byte) (string, int) {
 
 // fmtInt converts integer to string and stores in tmpStr
 func (t *conv) fmtInt(base int) {
-	t.fmtIntGeneric(t.intVal, base, true)
+	t.fmtIntGeneric(t.getInt64(), base, true)
 }
 
 // fmtUint converts unsigned integer to string and stores in tmpStr
 func (t *conv) fmtUint(base int) {
-	t.fmtIntGeneric(int64(t.uintVal), base, false)
+	t.fmtIntGeneric(int64(t.getUint64()), base, false)
 }
 
 // fmtIntGeneric converts integer to string with unified logic
 func (t *conv) fmtIntGeneric(val int64, base int, allowNegative bool) {
 	if val == 0 {
 		t.tmpStr = "0"
-		t.stringVal = t.tmpStr
+		t.setString(t.tmpStr)
 		return
 	}
 
@@ -588,28 +598,28 @@ func (t *conv) fmtIntGeneric(val int64, base int, allowNegative bool) {
 	}
 
 	t.tmpStr = string(buf[idx:])
-	t.stringVal = t.tmpStr
+	t.setString(t.tmpStr)
 }
 
 // i2s converts int64 to string with minimal allocations and stores in tmpStr
 func (t *conv) i2s() {
-	val := t.intVal
+	val := t.getInt64()
 	// Handle common small numbers using lookup table
 	if val >= 0 && val < int64(len(smallInts)) {
 		t.tmpStr = smallInts[val]
-		t.stringVal = t.tmpStr
+		t.setString(t.tmpStr)
 		return
 	}
 
 	// Handle special cases
 	if val == 0 {
 		t.tmpStr = zeroStr
-		t.stringVal = t.tmpStr
+		t.setString(t.tmpStr)
 		return
 	}
 	if val == 1 {
 		t.tmpStr = oneStr
-		t.stringVal = t.tmpStr
+		t.setString(t.tmpStr)
 		return
 	}
 	// Fall back to standard conversion for larger numbers
@@ -618,23 +628,23 @@ func (t *conv) i2s() {
 
 // u2s converts uint64 to string with minimal allocations and stores in tmpStr
 func (t *conv) u2s() {
-	val := t.uintVal
+	val := t.getUint64()
 	// Handle common small numbers using lookup table
 	if val < uint64(len(smallInts)) {
 		t.tmpStr = smallInts[val]
-		t.stringVal = t.tmpStr
+		t.setString(t.tmpStr)
 		return
 	}
 
 	// Handle special cases
 	if val == 0 {
 		t.tmpStr = zeroStr
-		t.stringVal = t.tmpStr
+		t.setString(t.tmpStr)
 		return
 	}
 	if val == 1 {
 		t.tmpStr = oneStr
-		t.stringVal = t.tmpStr
+		t.setString(t.tmpStr)
 		return
 	}
 
@@ -645,14 +655,13 @@ func (t *conv) u2s() {
 // f2s converts float to string and stores in tmpStr
 // Uses simplified float-to-string conversion for basic numeric.go operations
 func (t *conv) f2s() {
-	val := t.floatVal
+	val := t.getFloat64()
 	// Handle special cases
 	if val != val { // NaN
 		t.tmpStr = "NaN"
-		t.stringVal = t.tmpStr
+		t.setString(t.tmpStr)
 		return
 	}
-
 	// Handle infinity
 	if val > 1e308 || val < -1e308 {
 		if val < 0 {
@@ -660,14 +669,14 @@ func (t *conv) f2s() {
 		} else {
 			t.tmpStr = "Inf"
 		}
-		t.stringVal = t.tmpStr
+		t.setString(t.tmpStr)
 		return
 	}
 
 	// Handle zero
 	if val == 0 {
 		t.tmpStr = "0"
-		t.stringVal = t.tmpStr
+		t.setString(t.tmpStr)
 		return
 	}
 
@@ -720,9 +729,8 @@ func (t *conv) f2s() {
 	if isNegative {
 		result = "-" + result
 	}
-
 	t.tmpStr = result
-	t.stringVal = result
+	t.setString(result)
 }
 
 // validateIntParam validates and converts an any parameter to int

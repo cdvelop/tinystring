@@ -102,7 +102,7 @@ func (c *conv) encodeJsonFloat() ([]byte, error) {
 
 // encodeJsonBool encodes a boolean value to JSON
 func (c *conv) encodeJsonBool() ([]byte, error) {
-	if c.boolVal {
+	if c.getBool() {
 		return []byte("true"), nil
 	}
 	return []byte("false"), nil
@@ -131,24 +131,22 @@ func (c *conv) encodeJsonStringSlice() ([]byte, error) {
 
 // encodeJsonStruct encodes a struct to JSON using reflection
 func (c *conv) encodeJsonStruct() ([]byte, error) {
-	if c.anyVal == nil {
+	if !c.refVal.IsValid() {
 		return nil, Err(errInvalidJSON, "struct value is nil")
 	}
 
 	// Use our custom reflection to encode the struct
-	rv := refValueOf(c.anyVal)
-	return c.encodeStructValueWithRefReflect(rv)
+	return c.encodeStructValueWithRefReflect(c.refVal)
 }
 
 // encodeJsonSlice encodes a slice to JSON using reflection
 func (c *conv) encodeJsonSlice() ([]byte, error) {
-	if c.anyVal == nil {
+	if !c.refVal.IsValid() {
 		return []byte("[]"), nil
 	}
 
 	// Use our custom reflection to encode the slice
-	rv := refValueOf(c.anyVal)
-	return c.encodeJsonSliceWithRefReflect(rv)
+	return c.encodeJsonSliceWithRefReflect(c.refVal)
 }
 
 // quoteJsonString quotes a string for JSON output with proper escaping

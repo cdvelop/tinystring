@@ -30,45 +30,33 @@ func (c *conv) formatValue(value any) {
 	}
 }
 
-// formatAny2Int consolidates all integer type formatting
+// formatAny2Int consolidates all integer type formatting using reflection
 func (c *conv) formatAny2Int(val any) {
-	switch v := val.(type) {
-	case int:
-		genFormatInt(c, v)
-	case int8:
-		genFormatInt(c, v)
-	case int16:
-		genFormatInt(c, v)
-	case int32:
-		genFormatInt(c, v)
-	case int64:
-		genFormatInt(c, v)
+	rv := refValueOf(val)
+	if rv.IsValid() && (rv.Kind() >= tpInt && rv.Kind() <= tpInt64) {
+		c.refVal = rv
+		c.vTpe = rv.Kind()
+		c.i2s()
 	}
 }
 
-// formatAny2Uint consolidates all unsigned integer type formatting
+// formatAny2Uint consolidates all unsigned integer type formatting using reflection
 func (c *conv) formatAny2Uint(val any) {
-	switch v := val.(type) {
-	case uint:
-		genFormatUint(c, v)
-	case uint8:
-		genFormatUint(c, v)
-	case uint16:
-		genFormatUint(c, v)
-	case uint32:
-		genFormatUint(c, v)
-	case uint64:
-		genFormatUint(c, v)
+	rv := refValueOf(val)
+	if rv.IsValid() && (rv.Kind() >= tpUint && rv.Kind() <= tpUintptr) {
+		c.refVal = rv
+		c.vTpe = rv.Kind()
+		c.u2s()
 	}
 }
 
-// formatAny2Float consolidates all float type formatting
+// formatAny2Float consolidates all float type formatting using reflection
 func (c *conv) formatAny2Float(val any) {
-	switch v := val.(type) {
-	case float32:
-		genFormatFloat(c, v)
-	case float64:
-		genFormatFloat(c, v)
+	rv := refValueOf(val)
+	if rv.IsValid() && (rv.Kind() == tpFloat32 || rv.Kind() == tpFloat64) {
+		c.refVal = rv
+		c.vTpe = rv.Kind()
+		c.f2sMan(-1)
 	}
 }
 
@@ -87,20 +75,27 @@ func (t *conv) RoundDecimals(decimals int) *conv {
 	if t.err != "" {
 		return t
 	}
-	// If we already have a float value, use it directly to avoid string conversion
-	var val float64
-	if t.vTpe == tpFloat64 {
-		val = t.floatVal
-	} else {
-		// Parse current string content as float without creating temporary conv
-		t.parseFloat()
+	// If it's a string, try to parse it as a float first
+	if t.vTpe == tpString {
+		t.s2Float()
 		if t.err != "" {
-			// If cannot parse as number, set to 0 and continue with formatting
-			val = 0
-			t.err = ""
-		} else {
-			val = t.floatVal
+			// If parsing fails, treat as 0 and continue
+			val := 0.0
+			// Update the current conv object directly using reflection
+			t.refVal = refValueOf(val)
+			t.vTpe = tpFloat64
+			t.f2sMan(decimals)
+			t.err = "" // Clear error after handling
+			return t
 		}
+	}
+
+	// Get float value using reflection
+	val := t.getFloat64()
+	if val == 0 && t.err != "" {
+		// If cannot parse as number, set to 0 and continue with formatting
+		val = 0
+		t.err = ""
 	}
 
 	// Apply rounding directly without creating temporary objects
@@ -140,8 +135,8 @@ func (t *conv) RoundDecimals(decimals int) *conv {
 		}
 	}
 
-	// Update the current conv object directly instead of creating a new one
-	t.floatVal = rounded
+	// Update the current conv object directly using reflection
+	t.refVal = refValueOf(rounded)
 	t.vTpe = tpFloat64
 	t.f2sMan(decimals)
 	t.err = ""
@@ -166,7 +161,7 @@ func (t *conv) Down() *conv {
 		result.roundDown = true
 		return result
 	}
-	val := tempConv.floatVal
+	val := tempConv.getFloat64()
 	// Detect decimal places from the current content
 	decimalPlaces := 0
 	str := t.getString()
@@ -215,17 +210,11 @@ func (t *conv) Down() *conv {
 func (t *conv) FormatNumber() *conv {
 	if t.err != "" {
 		return t
-	}
-	// Try to use existing values directly to avoid string conversions
-	if t.vTpe == tpInt { // We already have an integer value, use it directly
-		t.i2s()
-		t.fmtNum()
-		t.err = ""
-		return t
-	}
-	if t.vTpe == tpUint {
-		// Convert uint to int64 and format
-		t.intVal = int64(t.uintVal)
+	} // Try to use existing values directly to avoid string conversions
+	if t.vTpe == tpInt || t.vTpe == tpUint {
+		// Use reflection-based conversion
+		intVal := t.getInt64()
+		t.refVal = refValueOf(intVal)
 		t.vTpe = tpInt
 		t.i2s()
 		t.fmtNum()
@@ -258,9 +247,8 @@ func (t *conv) FormatNumber() *conv {
 		t.err = ""
 		return t
 	} // For string values, parse them directly using existing methods
-	str := t.getString()
-	// Save original state BEFORE any parsing attempts
-	oVal := t.stringVal
+	str := t.getString() // Save original state BEFORE any parsing attempts
+	oVal := t.getString()
 	oType := t.vTpe
 	// Try to parse as integer first using existing s2Int
 	t.setString(str)
@@ -310,9 +298,8 @@ func (t *conv) FormatNumber() *conv {
 		}
 		t.err = ""
 		return t
-	} else {
-		// Restore original state if parsing failed
-		t.stringVal = oVal
+	} else { // Restore original state if parsing failed
+		t.setString(oVal)
 		t.vTpe = oType
 		t.err = ""
 	}
@@ -426,7 +413,7 @@ func (c *conv) parseFloat() {
 // This is an internal conv method that modifies the struct instead of returning values.
 // Optimized to avoid string concatenations and reduce allocations.
 func (c *conv) f2sMan(precision int) {
-	value := c.floatVal
+	value := c.getFloat64()
 
 	if value == 0 {
 		if precision > 0 {
@@ -560,7 +547,7 @@ func (c *conv) f2sMan(precision int) {
 // i2sBase converts an int64 to a string with specified base and stores in conv struct.
 // This is an internal conv method that modifies the struct instead of returning values.
 func (c *conv) i2sBase(base int) {
-	number := c.intVal
+	number := c.getInt64()
 
 	if number == 0 {
 		c.setString("0")
@@ -730,7 +717,7 @@ func (c *conv) sprintf(format string, args ...any) {
 						tempConv := newConv(withValue(format[start:i]))
 						tempConv.s2Int(10)
 						if tempConv.err == "" {
-							precision = int(tempConv.intVal)
+							precision = int(tempConv.getInt64())
 						}
 					}
 				} // Handle format specifiers

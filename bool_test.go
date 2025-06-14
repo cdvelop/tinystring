@@ -142,3 +142,49 @@ func TestBoolChaining(t *testing.T) {
 		t.Errorf("Expected true, got false")
 	}
 }
+
+func TestBooleanToIntegerConversion(t *testing.T) {
+	// Test that boolean values cannot be converted to integers (should return error)
+	t.Run("Boolean true to int should fail", func(t *testing.T) {
+		result, err := Convert(true).ToInt()
+		if err == nil {
+			t.Error("ToInt() should fail for boolean input")
+		}
+		if result != 0 {
+			t.Errorf("ToInt() should return 0 for failed conversion, got %v", result)
+		}
+	})
+
+	t.Run("Boolean false to int should fail", func(t *testing.T) {
+		result, err := Convert(false).ToInt()
+		if err == nil {
+			t.Error("ToInt() should fail for boolean input")
+		}
+		if result != 0 {
+			t.Errorf("ToInt() should return 0 for failed conversion, got %v", result)
+		}
+	})
+
+	t.Run("Boolean to uint should fail", func(t *testing.T) {
+		result, err := Convert(true).ToUint()
+		if err == nil {
+			t.Error("ToUint() should fail for boolean input")
+		}
+		if result != 0 {
+			t.Errorf("ToUint() should return 0 for failed conversion, got %v", result)
+		}
+	})
+
+	// Test that boolean to string conversion works correctly
+	t.Run("Boolean to string conversion", func(t *testing.T) {
+		trueResult := Convert(true).String()
+		if trueResult != "true" {
+			t.Errorf("Convert(true).String() = %q, want \"true\"", trueResult)
+		}
+
+		falseResult := Convert(false).String()
+		if falseResult != "false" {
+			t.Errorf("Convert(false).String() = %q, want \"false\"", falseResult)
+		}
+	})
+}
