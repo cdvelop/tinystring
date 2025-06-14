@@ -2,6 +2,7 @@ package tinystring
 
 import (
 	"testing"
+	"unsafe"
 )
 
 func TestDebugPointerEncoding(t *testing.T) {
@@ -16,28 +17,39 @@ func TestDebugPointerEncoding(t *testing.T) {
 	}
 
 	// Test pointer to struct
+	// Note: Convert() automatically dereferences pointers for convenience
 	ptrS := &s
 	conv2 := Convert(ptrS)
-	t.Logf("Pointer: vTpe=%s, refKind=%s", conv2.vTpe.String(), conv2.refKind().String())
-	t.Logf("Pointer refIsValid: %v", conv2.refIsValid())
-	t.Logf("Pointer ptr nil: %v", conv2.ptr == nil)
+	t.Logf("After Convert(&struct): vTpe=%s, refKind=%s", conv2.vTpe.String(), conv2.refKind().String())
+	t.Logf("refIsValid: %v", conv2.refIsValid())
+	t.Logf("ptr nil: %v", conv2.ptr == nil)
 
-	// Debug step by step
-	t.Logf("Step 1: c.ptr == nil? %v", conv2.ptr == nil)
-	t.Logf("Step 2: c.refKind() == tpPointer? %v", conv2.refKind() == tpPointer)
+	// Debug: Convert() automatically dereferences pointers
+	// So conv2 now contains the struct, not the pointer
+	t.Logf("Step 1: After Convert(), kind is struct (auto-dereferenced): %v", conv2.refKind() == tpStruct)
+	// Test that we can access struct fields
+	if conv2.refKind() == tpStruct && conv2.refIsValid() {
+		numFields := conv2.refNumField()
+		t.Logf("Step 2: Number of struct fields: %d", numFields)
 
-	elem := conv2.refElem()
-	t.Logf("Step 3: elem.refIsValid()? %v", elem.refIsValid())
-
-	if elem.refIsValid() {
-		elemValue := elem.Interface()
-		t.Logf("Step 4: elemValue == nil? %v", elemValue == nil)
-		t.Logf("Step 4b: elemValue type: %T", elemValue)
-		t.Logf("Step 4c: elemValue: %+v", elemValue)
+		// Access individual fields
+		tt := (*refStructType)(unsafe.Pointer(conv2.Type()))
+		for i := 0; i < numFields; i++ {
+			field := conv2.refField(i)
+			fieldInfo := tt.fields[i]
+			fieldName := fieldInfo.name.Name()
+			t.Logf("Step 3.%d: Field %s (type %s)", i, fieldName, field.refKind().String())
+		}
 	}
 
-	// Now test JSON encoding
+	// Test JSON encoding of the dereferenced struct
 	jsonBytes, err := conv2.JsonEncode()
 	t.Logf("JSON encode err: %v", err)
 	t.Logf("JSON result: %s", string(jsonBytes))
+
+	// Verify JSON contains expected values
+	expectedJSON := `{"Value":42,"Name":"test"}`
+	if err == nil && string(jsonBytes) != expectedJSON {
+		t.Errorf("Expected JSON: %s, got: %s", expectedJSON, string(jsonBytes))
+	}
 }
