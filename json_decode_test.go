@@ -556,27 +556,38 @@ func TestJsonDecodeEmptySlicesAndNulls(t *testing.T) {
 // Test error handling with invalid JSON
 func TestJsonDecodeInvalidComplexJSON(t *testing.T) {
 	clearRefStructsCache()
-
-	invalidJSONTests := []string{
-		// Malformed JSON
-		`{"id": "user_1", "username": "test", "email": "test@example.com"`,
-		// Wrong types
-		`{"id": 123, "username": true, "email": ["not", "valid"]}`,
-		// Missing required structure
-		`{"id": "test"}`,
-		// Truncated nested structure
-		`{"id": "test", "profile": {"first_name": "John", "last_name":`,
-		// Invalid coordinates
-		`{"id": "test", "profile": {"addresses": [{"coordinates": "invalid"}]}}`,
+	invalidJSONTests := []struct {
+		json        string
+		description string
+		shouldFail  bool
+	}{
+		// Malformed JSON - should fail
+		{`{"id": "user_1", "username": "test", "email": "test@example.com"`, "malformed JSON (missing closing brace)", true},
+		// Wrong types - should fail
+		{`{"id": 123, "username": true, "email": ["not", "valid"]}`, "wrong types", true},
+		// Partial JSON - should NOT fail (valid but incomplete)
+		{`{"id": "test"}`, "partial JSON with valid field", false},
+		// Truncated nested structure - should fail
+		{`{"id": "test", "profile": {"first_name": "John", "last_name":`, "truncated nested structure", true},
+		// Invalid coordinates - should fail
+		{`{"id": "test", "profile": {"addresses": [{"coordinates": "invalid"}]}}`, "invalid coordinates", true},
 	}
 
-	for i, invalidJSON := range invalidJSONTests {
+	for i, test := range invalidJSONTests {
 		var result ComplexUser
-		err := Convert(invalidJSON).JsonDecode(&result)
-		if err == nil {
-			t.Errorf("Test %d: JsonDecode should return error for invalid JSON: %s", i, invalidJSON)
+		err := Convert(test.json).JsonDecode(&result)
+		if test.shouldFail {
+			if err == nil {
+				t.Errorf("Test %d (%s): JsonDecode should return error for invalid JSON: %s", i, test.description, test.json)
+			} else {
+				t.Logf("Test %d (%s): Correctly rejected invalid JSON with error: %v", i, test.description, err)
+			}
 		} else {
-			t.Logf("Test %d: Correctly rejected invalid JSON with error: %v", i, err)
+			if err != nil {
+				t.Errorf("Test %d (%s): JsonDecode should NOT return error for valid JSON: %s, got error: %v", i, test.description, test.json, err)
+			} else {
+				t.Logf("Test %d (%s): Correctly accepted valid JSON", i, test.description)
+			}
 		}
 	}
 }

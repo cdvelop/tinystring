@@ -71,18 +71,15 @@ func (t *conv) Trim() *conv {
 	if str == "" {
 		return t
 	}
-
-	// Remove spaces at the beginning
+	// Remove whitespace at the beginning
 	start := 0
-	for start < len(str) && str[start] == ' ' {
+	for start < len(str) && (str[start] == ' ' || str[start] == '\n' || str[start] == '\t' || str[start] == '\r') {
 		start++
 	}
-
-	// Remove spaces at the end and at the end of each line
+	// Remove whitespace at the end
 	end := len(str) - 1
-	for end >= 0 && (str[end] == ' ' || str[end] == '\n' || str[end] == '\t') {
+	for end >= 0 && (str[end] == ' ' || str[end] == '\n' || str[end] == '\t' || str[end] == '\r') {
 		end--
-
 	}
 
 	// Special case: empty string
