@@ -57,6 +57,8 @@ func (c *conv) NewErr(values ...any) *conv {
 // Example: tinystring.Errorf("invalid value: %s", value).Error()
 func Errorf(format string, args ...any) *conv {
 	result := unifiedFormat(format, args...)
+	// Store the formatted string in the err field for Error() method
+	result.err = errorType(result.getString())
 	result.vTpe = tpErr
 	return result
 }

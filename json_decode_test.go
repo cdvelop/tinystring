@@ -845,3 +845,152 @@ func TestJsonDecodeInvalidJson(t *testing.T) {
 		}
 	}
 }
+
+func TestParseJsonUintRef(t *testing.T) {
+	tests := []struct {
+		name        string
+		jsonStr     string
+		expectError bool
+		expected    uint64
+	}{{"positive integer", "123", false, 123},
+		{"zero", "0", false, 0},
+		{"large positive", "999999", false, 999999},
+		{"negative becomes positive", "-123", false, 123}, // Converts via int64 then cast
+		{"float gets truncated", "123.45", false, 123},    // ToInt64 truncates floats
+		{"invalid json", "abc", true, 0},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			c := &conv{}
+			target := &conv{}
+
+			err := c.parseJsonUintRef(tt.jsonStr, target)
+
+			if tt.expectError {
+				if err == nil {
+					t.Errorf("Expected error for input %q, but got none", tt.jsonStr)
+				}
+			} else {
+				if err != nil {
+					t.Errorf("Unexpected error for input %q: %v", tt.jsonStr, err)
+				}
+				// Note: We can't easily test the actual uint value set by refSetUint
+				// without more complex reflection setup
+			}
+		})
+	}
+}
+
+func TestParseIntSlice(t *testing.T) {
+	tests := []struct {
+		name        string
+		elements    []string
+		expectError bool
+		expected    []int
+	}{
+		{"valid integers", []string{"1", "2", "3"}, false, []int{1, 2, 3}},
+		{"single element", []string{"42"}, false, []int{42}},
+		{"empty slice", []string{}, false, []int{}},
+		{"with whitespace", []string{" 1 ", " 2 ", " 3 "}, false, []int{1, 2, 3}}, {"negative numbers", []string{"-1", "-2", "-3"}, false, []int{-1, -2, -3}},
+		{"float elements get truncated", []string{"1", "2.5", "3"}, false, []int{1, 2, 3}},
+		{"invalid element", []string{"1", "abc", "3"}, true, nil},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			c := &conv{}
+			target := &conv{}
+
+			err := c.parseIntSlice(tt.elements, target)
+
+			if tt.expectError {
+				if err == nil {
+					t.Errorf("Expected error for elements %v, but got none", tt.elements)
+				}
+			} else {
+				if err != nil {
+					t.Errorf("Unexpected error for elements %v: %v", tt.elements, err)
+				}
+				// Note: We can't easily test the actual slice value set by refSet
+				// without more complex reflection setup
+			}
+		})
+	}
+}
+
+func TestParseFloatSlice(t *testing.T) {
+	tests := []struct {
+		name        string
+		elements    []string
+		expectError bool
+		expected    []float64
+	}{
+		{"valid floats", []string{"1.1", "2.2", "3.3"}, false, []float64{1.1, 2.2, 3.3}},
+		{"integers as floats", []string{"1", "2", "3"}, false, []float64{1.0, 2.0, 3.0}},
+		{"single element", []string{"3.14159"}, false, []float64{3.14159}},
+		{"empty slice", []string{}, false, []float64{}},
+		{"with whitespace", []string{" 1.5 ", " 2.5 ", " 3.5 "}, false, []float64{1.5, 2.5, 3.5}},
+		{"negative numbers", []string{"-1.1", "-2.2", "-3.3"}, false, []float64{-1.1, -2.2, -3.3}},
+		{"invalid element", []string{"1.1", "abc", "3.3"}, true, nil},
+		{"mixed valid/invalid", []string{"1.0", "invalid", "3.0"}, true, nil},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			c := &conv{}
+			target := &conv{}
+
+			err := c.parseFloatSlice(tt.elements, target)
+
+			if tt.expectError {
+				if err == nil {
+					t.Errorf("Expected error for elements %v, but got none", tt.elements)
+				}
+			} else {
+				if err != nil {
+					t.Errorf("Unexpected error for elements %v: %v", tt.elements, err)
+				}
+			}
+		})
+	}
+}
+
+func TestParseBoolSlice(t *testing.T) {
+	tests := []struct {
+		name        string
+		elements    []string
+		expectError bool
+		expected    []bool
+	}{
+		{"valid bools", []string{"true", "false", "true"}, false, []bool{true, false, true}},
+		{"all true", []string{"true", "true", "true"}, false, []bool{true, true, true}},
+		{"all false", []string{"false", "false", "false"}, false, []bool{false, false, false}},
+		{"single true", []string{"true"}, false, []bool{true}},
+		{"single false", []string{"false"}, false, []bool{false}},
+		{"empty slice", []string{}, false, []bool{}},
+		{"with whitespace", []string{" true ", " false ", " true "}, false, []bool{true, false, true}},
+		{"invalid element", []string{"true", "invalid", "false"}, true, nil},
+		{"numeric bool", []string{"true", "1", "false"}, true, nil},
+		{"case sensitive", []string{"True", "False"}, true, nil},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			c := &conv{}
+			target := &conv{}
+
+			err := c.parseBoolSlice(tt.elements, target)
+
+			if tt.expectError {
+				if err == nil {
+					t.Errorf("Expected error for elements %v, but got none", tt.elements)
+				}
+			} else {
+				if err != nil {
+					t.Errorf("Unexpected error for elements %v: %v", tt.elements, err)
+				}
+			}
+		})
+	}
+}

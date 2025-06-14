@@ -121,7 +121,7 @@ func TestReflectFieldSetterOperations(t *testing.T) {
 
 	// Test setting a pointer field to a new struct instance
 	newContainer.Coords = &TestCoords{Lat: 1.0, Lng: 2.0, Alt: 3}
-	
+
 	// Get the coords field and verify we can access it
 	coordsField := newElem.refField(1)
 	if coordsField.refKind() != tpPointer {

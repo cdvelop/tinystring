@@ -386,3 +386,75 @@ func TestRoundDecimalsEdgeCases(t *testing.T) {
 		}
 	})
 }
+
+func TestToIntInvalidBase(t *testing.T) {
+	tests := []struct {
+		name        string
+		input       string
+		base        int
+		expectError bool
+	}{
+		// These tests use strings that can't fall back to float parsing
+		// and must go through base validation
+		{"base 1 invalid with ABC", "ABC", 1, true},
+		{"base 0 invalid with ABC", "ABC", 0, true},
+		{"base -1 invalid with ABC", "ABC", -1, true},
+		{"base 37 invalid with ABC", "ABC", 37, true},
+		{"base 100 invalid with ABC", "ABC", 100, true},
+		{"base 2 valid with 101", "101", 2, false},
+		{"base 16 valid with ABC", "ABC", 16, false},
+		{"base 36 valid with ZZ", "ZZ", 36, false},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			_, err := Convert(tt.input).ToInt(tt.base)
+
+			if tt.expectError {
+				if err == nil {
+					t.Errorf("Expected error for base %d with input %q, but got none", tt.base, tt.input)
+				}
+			} else {
+				if err != nil {
+					t.Errorf("Unexpected error for base %d with input %q: %v", tt.base, tt.input, err)
+				}
+			}
+		})
+	}
+}
+
+func TestToUintInvalidBase(t *testing.T) {
+	tests := []struct {
+		name        string
+		input       string
+		base        int
+		expectError bool
+	}{
+		// These tests use strings that can't fall back to float parsing
+		// and must go through base validation
+		{"base 1 invalid with ABC", "ABC", 1, true},
+		{"base 0 invalid with ABC", "ABC", 0, true},
+		{"base -1 invalid with ABC", "ABC", -1, true},
+		{"base 37 invalid with ABC", "ABC", 37, true},
+		{"base 100 invalid with ABC", "ABC", 100, true},
+		{"base 2 valid with 101", "101", 2, false},
+		{"base 16 valid with ABC", "ABC", 16, false},
+		{"base 36 valid with ZZ", "ZZ", 36, false},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			_, err := Convert(tt.input).ToUint(tt.base)
+
+			if tt.expectError {
+				if err == nil {
+					t.Errorf("Expected error for base %d with input %q, but got none", tt.base, tt.input)
+				}
+			} else {
+				if err != nil {
+					t.Errorf("Unexpected error for base %d with input %q: %v", tt.base, tt.input, err)
+				}
+			}
+		})
+	}
+}

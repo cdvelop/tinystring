@@ -327,3 +327,159 @@ func TestJsonFieldNameConversion(t *testing.T) {
 		}
 	}
 }
+
+// Test JSON string escaping functionality
+func TestJsonStringEscaping(t *testing.T) {
+	tests := []struct {
+		name     string
+		input    string
+		expected string
+	}{
+		{"Simple string", "hello", `"hello"`},
+		{"String with quotes", `hello "world"`, `"hello \"world\""`},
+		{"String with backslash", `hello\world`, `"hello\\world"`},
+		{"String with newline", "hello\nworld", `"hello\nworld"`},
+		{"String with tab", "hello\tworld", `"hello\tworld"`},
+		{"String with carriage return", "hello\rworld", `"hello\rworld"`},
+		{"String with backspace", "hello\bworld", `"hello\bworld"`},
+		{"String with form feed", "hello\fworld", `"hello\fworld"`},
+		{"Empty string", "", `""`},
+		{"String with control characters", "hello\u0001world", `"hello\u0001world"`},
+		{"Complex escaped string", "\"test\"\n\t\\", `"\"test\"\n\t\\"`},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			// Test via struct JSON encoding to trigger string escaping
+			type TestStruct struct {
+				Value string
+			}
+
+			s := TestStruct{Value: tt.input}
+			jsonBytes, err := Convert(&s).JsonEncode()
+			if err != nil {
+				t.Fatalf("JSON encoding failed: %v", err)
+			}
+
+			jsonStr := string(jsonBytes)
+
+			// Check if the expected escaped string is in the JSON output
+			if !Contains(jsonStr, tt.expected) {
+				t.Errorf("Expected JSON to contain %s, got %s", tt.expected, jsonStr)
+			}
+		})
+	}
+}
+
+// Test JSON encoding with various data types
+func TestJsonEncodingDataTypes(t *testing.T) {
+	tests := []struct {
+		name     string
+		input    any
+		contains []string
+	}{
+		{"String value", "test string", []string{`"test string"`}},
+		{"Integer value", 42, []string{"42"}},
+		{"Float value", 3.14, []string{"3.14"}},
+		{"Boolean true", true, []string{"true"}},
+		{"Boolean false", false, []string{"false"}},
+		{"Uint value", uint(255), []string{"255"}},
+		{"Int64 value", int64(9223372036854775807), []string{"9223372036854775807"}},
+		{"Float32 value", float32(2.5), []string{"2.5"}},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			jsonBytes, err := Convert(tt.input).JsonEncode()
+			if err != nil {
+				t.Fatalf("JSON encoding failed: %v", err)
+			}
+
+			jsonStr := string(jsonBytes)
+
+			for _, expectedSubstr := range tt.contains {
+				if !Contains(jsonStr, expectedSubstr) {
+					t.Errorf("Expected JSON to contain %s, got %s", expectedSubstr, jsonStr)
+				}
+			}
+		})
+	}
+}
+
+// Test JSON encoding with slices to improve encodeJsonSlice coverage
+func TestJsonSliceEncoding(t *testing.T) {
+	tests := []struct {
+		name     string
+		input    any
+		expected []string
+	}{{"String slice", []string{"a", "b", "c"}, []string{`["a","b","c"]`}},
+		{"Empty string slice", []string{}, []string{`[]`}},
+		{"Single element string slice", []string{"single"}, []string{`["single"]`}},
+		{"String slice with special chars", []string{"hello\nworld", "test\"quote"}, []string{`["hello\nworld","test\"quote"]`}},
+		{"Mixed content slice via struct",
+			struct{ Items []string }{Items: []string{"hello", "world"}},
+			[]string{`"Items":["hello","world"]`}},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			jsonBytes, err := Convert(tt.input).JsonEncode()
+			if err != nil {
+				t.Fatalf("JSON encoding failed: %v", err)
+			}
+
+			jsonStr := string(jsonBytes)
+
+			for _, expectedSubstr := range tt.expected {
+				if !Contains(jsonStr, expectedSubstr) {
+					t.Errorf("Expected JSON to contain %s, got %s", expectedSubstr, jsonStr)
+				}
+			}
+
+			t.Logf("JSON result: %s", jsonStr)
+		})
+	}
+}
+
+func TestEncodeJsonPointer(t *testing.T) {
+	// Test encodeJsonPointer by creating conv objects with pointer types manually
+	// since Convert() auto-dereferences pointers
+
+	t.Run("nil pointer", func(t *testing.T) {
+		// Create a conv with nil pointer
+		c := &conv{ptr: nil}
+		result, err := c.encodeJsonPointer()
+		if err != nil {
+			t.Errorf("encodeJsonPointer() error: %v", err)
+			return
+		}
+		expected := "null"
+		if string(result) != expected {
+			t.Errorf("encodeJsonPointer() = %q, expected %q", string(result), expected)
+		}
+	})
+
+	t.Run("non-pointer kind", func(t *testing.T) {
+		// Create a conv that's not a pointer kind
+		c := Convert("test")
+		result, err := c.encodeJsonPointer()
+		if err != nil {
+			t.Errorf("encodeJsonPointer() error: %v", err)
+			return
+		}
+		expected := "null"
+		if string(result) != expected {
+			t.Errorf("encodeJsonPointer() = %q, expected %q", string(result), expected)
+		}
+	})
+
+	// Note: Testing the actual pointer dereferencing path is complex because
+	// it requires setting up proper reflection structures with pointer types
+	// The function is mainly tested through the main JSON encoding path
+}
+
+// Helper functions for creating pointers
+func intPtr(i int) *int           { return &i }
+func stringPtr(s string) *string  { return &s }
+func boolPtr(b bool) *bool        { return &b }
+func floatPtr(f float64) *float64 { return &f }

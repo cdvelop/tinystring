@@ -41,7 +41,6 @@ func (t *conv) Join(sep ...string) *conv {
 		if start < len(runes) {
 			parts = append(parts, string(runes[start:]))
 		}
-
 		// Join parts with the separator using pre-allocated buffer
 		if len(parts) > 0 {
 			tL := 0
@@ -58,6 +57,9 @@ func (t *conv) Join(sep ...string) *conv {
 				}
 			}
 			t.setString(string(buf))
+		} else {
+			// If no parts found (only whitespace), set to empty string
+			t.setString("")
 		}
 	}
 

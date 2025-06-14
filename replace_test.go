@@ -193,7 +193,7 @@ func TestStringOperations(t *testing.T) {
 			{"Tabs and newlines", "hello\tworld\ntest", "", []string{"hello", "world", "test"}},
 			{"Empty string", "", "", []string{}},
 			{"Single word", "hello", "", []string{"hello"}},
-			
+
 			// Split by custom separator
 			{"Comma separator", "apple,banana,cherry", ",", []string{"apple", "banana", "cherry"}},
 			{"Semicolon separator", "one;two;three", ";", []string{"one", "two", "three"}},
@@ -201,7 +201,7 @@ func TestStringOperations(t *testing.T) {
 			{"No separator found", "hello world", ",", []string{"hello world"}},
 			{"Empty separator characters", "hello", "", []string{"h", "e", "l", "l", "o"}},
 			{"Short string", "hi", ",", []string{"hi"}}, // Less than 3 chars
-			
+
 			// Edge cases
 			{"Separator at start", ",apple,banana", ",", []string{"", "apple", "banana"}},
 			{"Separator at end", "apple,banana,", ",", []string{"apple", "banana", ""}},
@@ -211,21 +211,21 @@ func TestStringOperations(t *testing.T) {
 		for _, test := range tests {
 			t.Run(test.name, func(t *testing.T) {
 				var result []string
-				if test.name == "Whitespace split" || test.name == "Multiple spaces" || 
-				   test.name == "Tabs and newlines" || test.name == "Empty string" || 
-				   test.name == "Single word" {
+				if test.name == "Whitespace split" || test.name == "Multiple spaces" ||
+					test.name == "Tabs and newlines" || test.name == "Empty string" ||
+					test.name == "Single word" {
 					// These tests should use Split without separator (whitespace split)
 					result = Split(test.input)
 				} else {
 					// These tests should use Split with separator
 					result = Split(test.input, test.separator)
 				}
-				
+
 				if len(result) != len(test.expected) {
 					t.Errorf("Length mismatch: expected %d, got %d", len(test.expected), len(result))
 					return
 				}
-				
+
 				for i, expected := range test.expected {
 					if result[i] != expected {
 						t.Errorf("Element %d: expected %q, got %q", i, expected, result[i])
@@ -259,7 +259,7 @@ func TestStringOperations(t *testing.T) {
 				} else {
 					result = Convert(test.input).Join(test.separator).String()
 				}
-				
+
 				if result != test.expected {
 					t.Errorf("Expected %q, got %q", test.expected, result)
 				}
@@ -308,7 +308,7 @@ func TestStringOperations(t *testing.T) {
 			{"Unicode whitespace mixed", "  \t hello world \n\r  ", "hello world"},
 			{"Single space", " ", ""},
 			{"Content with internal whitespace", "  hello   world  ", "hello   world"},
-			
+
 			// JSON-specific trim cases
 			{"JSON field name", "    \"fieldName\"    ", "\"fieldName\""},
 			{"JSON value", "\t\t\"some value\"\n\n", "\"some value\""},
@@ -342,12 +342,12 @@ func TestStringOperations(t *testing.T) {
 			{"Replace at start", "hello world", "hello", "hi", -1, "hi world"},
 			{"Replace at end", "hello world", "world", "earth", -1, "hello earth"},
 			{"Overlapping matches", "aaa", "aa", "b", -1, "ba"},
-			
+
 			// Type conversion tests
 			{"Number to string", "value: 42", 42, "forty-two", -1, "value: forty-two"},
 			{"Bool to string", "enabled: true", true, "yes", -1, "enabled: yes"},
 			{"Float to string", "pi: 3.14", 3.14, "π", -1, "pi: π"},
-			
+
 			// Limit tests
 			{"Zero limit", "abc abc abc", "abc", "123", 0, "abc abc abc"},
 			{"Partial replace", "the the the", "the", "a", 2, "a a the"},
@@ -385,7 +385,7 @@ func TestStringOperations(t *testing.T) {
 			{"Prefix - exact match", "prefix", "hello", "hello", ""},
 			{"Prefix - longer remove", "prefix", "hi", "hello", "hi"},
 			{"Prefix - case sensitive", "prefix", "Hello", "hello", "Hello"},
-			
+
 			// TrimSuffix edge cases
 			{"Suffix - empty input", "suffix", "", "ing", ""},
 			{"Suffix - empty remove", "suffix", "hello", "", "hello"},
@@ -407,7 +407,7 @@ func TestStringOperations(t *testing.T) {
 				}
 
 				if result != test.expected {
-					t.Errorf("Input: %q, Remove: %q, Expected: %q, Got: %q", 
+					t.Errorf("Input: %q, Remove: %q, Expected: %q, Got: %q",
 						test.input, test.remove, test.expected, result)
 				}
 			})

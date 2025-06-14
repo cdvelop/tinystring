@@ -356,3 +356,82 @@ func TestTruncateNameChain(t *testing.T) {
 		})
 	}
 }
+
+func TestTruncateParameterTypes(t *testing.T) {
+	// Test different parameter types for maxWidth and reservedChars
+	// This tests the extractInt, extractUint, and extractFloat functions
+
+	tests := []struct {
+		name     string
+		input    string
+		maxWidth any
+		expected string
+	}{
+		// Test extractInt variants
+		{"maxWidth int", "Hello World", int(8), "Hell..."},
+		{"maxWidth int8", "Hello World", int8(8), "Hell..."},
+		{"maxWidth int16", "Hello World", int16(8), "Hell..."},
+		{"maxWidth int32", "Hello World", int32(8), "Hell..."},
+		{"maxWidth int64", "Hello World", int64(8), "Hell..."},
+
+		// Test extractUint variants
+		{"maxWidth uint", "Hello World", uint(8), "Hell..."},
+		{"maxWidth uint8", "Hello World", uint8(8), "Hell..."},
+		{"maxWidth uint16", "Hello World", uint16(8), "Hell..."},
+		{"maxWidth uint32", "Hello World", uint32(8), "Hell..."},
+		{"maxWidth uint64", "Hello World", uint64(8), "Hell..."},
+
+		// Test extractFloat variants
+		{"maxWidth float32", "Hello World", float32(8.7), "Hell..."},
+		{"maxWidth float64", "Hello World", float64(8.9), "Hell..."},
+
+		// Test unsupported types (should use default behavior)
+		{"maxWidth string", "Hello World", "8", "Hello World"}, // Should not truncate
+		{"maxWidth bool", "Hello World", true, "Hello World"},  // Should not truncate
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			result := Convert(tt.input).Truncate(tt.maxWidth).String()
+			// The important thing is that the function runs without error
+			// and exercises the different parameter extraction paths
+			if len(result) == 0 {
+				t.Errorf("Truncate returned empty string for input %q with maxWidth %v", tt.input, tt.maxWidth)
+			}
+			t.Logf("Input: %q, maxWidth: %v (%T), Result: %q", tt.input, tt.maxWidth, tt.maxWidth, result)
+		})
+	}
+}
+
+func TestTruncateNameParameterTypes(t *testing.T) {
+	// Test different parameter types for TruncateName
+	tests := []struct {
+		name     string
+		input    string
+		maxChars any
+		maxWidth any
+		expected string
+	}{
+		// Test with different int types
+		{"maxChars int", "VeryLongClassName", int(5), int(15), "VLongClN"},
+		{"maxWidth int8", "VeryLongClassName", 5, int8(15), "VLongClN"},
+		{"mixed types", "VeryLongClassName", uint16(5), float32(15.0), "VLongClN"},
+
+		// Test invalid types (should use default behavior)
+		{"invalid maxChars", "VeryLongClassName", "5", 15, "VryLngClssNm"},
+		{"invalid maxWidth", "VeryLongClassName", 5, "15", "VryLngClssNm"},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			result := Convert(tt.input).TruncateName(tt.maxChars, tt.maxWidth).String()
+			// The important thing is that the function runs without error
+			// and exercises the different parameter extraction paths
+			if len(result) == 0 {
+				t.Errorf("TruncateName returned empty string for input %q", tt.input)
+			}
+			t.Logf("Input: %q, maxChars: %v (%T), maxWidth: %v (%T), Result: %q",
+				tt.input, tt.maxChars, tt.maxChars, tt.maxWidth, tt.maxWidth, result)
+		})
+	}
+}

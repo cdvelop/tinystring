@@ -32,6 +32,7 @@ func (t *conv) ToBool() (bool, error) {
 			return false, nil
 		default:
 			// Try to parse as numeric - non-zero numbers are true
+			savedVal, savedType := t.saveState()
 			t.s2Int(10)
 			if t.err == "" {
 				intVal := t.getInt64()
@@ -42,8 +43,8 @@ func (t *conv) ToBool() (bool, error) {
 				return boolResult, nil
 			}
 
-			// Reset error and try float
-			t.err = ""
+			// Reset error and restore state, then try float
+			t.restoreState(savedVal, savedType)
 			t.s2Float()
 			if t.err == "" {
 				floatVal := t.getFloat64()
@@ -54,7 +55,7 @@ func (t *conv) ToBool() (bool, error) {
 				return boolResult, nil
 			}
 
-			t.NewErr(errInvalidBool, inp)
+			t.err = errInvalidBool
 			return false, t
 		}
 	}

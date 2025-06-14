@@ -308,3 +308,166 @@ func TestRoundDecimalsAPI(t *testing.T) {
 		}
 	})
 }
+
+// Test for internal formatting functions
+func TestFormatValueInternal(t *testing.T) {
+	tests := []struct {
+		name     string
+		input    any
+		expected string
+	}{
+		// Test formatAny2Int
+		{
+			name:     "int type",
+			input:    int(42),
+			expected: "42",
+		},
+		{
+			name:     "int8 type",
+			input:    int8(42),
+			expected: "42",
+		},
+		{
+			name:     "int16 type",
+			input:    int16(42),
+			expected: "42",
+		},
+		{
+			name:     "int32 type",
+			input:    int32(42),
+			expected: "42",
+		},
+		{
+			name:     "int64 type",
+			input:    int64(42),
+			expected: "42",
+		},
+		// Test formatAny2Uint
+		{
+			name:     "uint type",
+			input:    uint(42),
+			expected: "42",
+		},
+		{
+			name:     "uint8 type",
+			input:    uint8(42),
+			expected: "42",
+		},
+		{
+			name:     "uint16 type",
+			input:    uint16(42),
+			expected: "42",
+		},
+		{
+			name:     "uint32 type",
+			input:    uint32(42),
+			expected: "42",
+		},
+		{
+			name:     "uint64 type",
+			input:    uint64(42),
+			expected: "42",
+		},
+		// Test formatAny2Float
+		{
+			name:     "float32 type",
+			input:    float32(3.14),
+			expected: "3.14",
+		},
+		{
+			name:     "float64 type",
+			input:    float64(3.14159),
+			expected: "3.14159",
+		},
+		// Test formatUnsupported
+		{
+			name:     "complex type",
+			input:    complex(1, 2),
+			expected: "<unsupported>",
+		},
+		{
+			name:     "struct type",
+			input:    struct{ Name string }{Name: "test"},
+			expected: "<unsupported>",
+		},
+		{
+			name:     "slice type",
+			input:    []int{1, 2, 3},
+			expected: "<unsupported>",
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			// Use Format with %v to trigger formatValue internally
+			result := Format("%v", tt.input).String()
+			if result != tt.expected {
+				t.Errorf("Format(%%v, %T(%v)) = %q, want %q", tt.input, tt.input, result, tt.expected)
+			}
+		})
+	}
+}
+
+// Test for Errorf function
+func TestErrorfFormatting(t *testing.T) {
+	tests := []struct {
+		name     string
+		format   string
+		args     []any
+		expected string
+	}{
+		{
+			name:     "Simple error message",
+			format:   "error occurred",
+			args:     []any{},
+			expected: "error occurred",
+		},
+		{
+			name:     "Error with string argument",
+			format:   "invalid value: %s",
+			args:     []any{"test"},
+			expected: "invalid value: test",
+		},
+		{
+			name:     "Error with integer argument",
+			format:   "error code: %d",
+			args:     []any{404},
+			expected: "error code: 404",
+		},
+		{
+			name:     "Error with multiple arguments",
+			format:   "error at line %d, column %d: %s",
+			args:     []any{10, 5, "syntax error"},
+			expected: "error at line 10, column 5: syntax error",
+		},
+		{
+			name:     "Error with float argument",
+			format:   "temperature %.1f°C is too high",
+			args:     []any{85.7},
+			expected: "temperature 85.7°C is too high",
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			err := Errorf(tt.format, tt.args...)
+
+			// Test that it returns an error type
+			if err.vTpe != tpErr {
+				t.Errorf("Errorf should set vTpe to tpErr, got %v", err.vTpe)
+			}
+
+			// Test Error() method
+			result := err.Error()
+			if result != tt.expected {
+				t.Errorf("Errorf(%q, %v).Error() = %q, want %q", tt.format, tt.args, result, tt.expected)
+			}
+
+			// Test String() method for compatibility
+			resultStr := err.String()
+			if resultStr != tt.expected {
+				t.Errorf("Errorf(%q, %v).String() = %q, want %q", tt.format, tt.args, resultStr, tt.expected)
+			}
+		})
+	}
+}

@@ -207,7 +207,7 @@ func isLetter(r rune) bool {
 // Optimized with string caching to avoid repeated conversions using reflection-only approach
 func (t *conv) getString() string {
 	if t.vTpe == tpErr {
-		return ""
+		return string(t.err)
 	} // Use cached string if available and type hasn't changed
 	// For TinyString special types (tpStrPtr, tpStrSlice, etc.), always use vTpe
 	// For struct fields and reflection values, use refKind()
@@ -271,6 +271,9 @@ func (t *conv) getString() string {
 		} else {
 			t.tmpStr = falseStr
 		}
+	case tpErr:
+		// For error types, return the error message
+		t.tmpStr = string(t.err)
 	default:
 		t.tmpStr = ""
 	}

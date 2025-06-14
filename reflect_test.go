@@ -780,3 +780,151 @@ func TestStringFieldFlagConsistency(t *testing.T) {
 		t.Errorf("Pointer field dereferenced value mismatch: got %q, want %q", pointerElem.String(), *s.PointerField)
 	}
 }
+
+func TestRefSetUint(t *testing.T) {
+	tests := []struct {
+		name        string
+		createVar   func() any
+		setValue    uint64
+		expectError bool
+	}{
+		{"uint", func() any { var v uint; return &v }, 42, false},
+		{"uint8", func() any { var v uint8; return &v }, 255, false},
+		{"uint16", func() any { var v uint16; return &v }, 65535, false},
+		{"uint32", func() any { var v uint32; return &v }, 4294967295, false},
+		{"uint64", func() any { var v uint64; return &v }, 18446744073709551615, false},
+		{"uintptr", func() any { var v uintptr; return &v }, 12345, false},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			// Create a variable and get its reflection
+			variable := tt.createVar()
+			rv := refValueOf(variable)
+
+			// Get the element (dereferenced pointer)
+			elem := rv.refElem()
+			if !elem.refIsValid() {
+				t.Fatalf("Element not valid for %s", tt.name)
+			} // Set the uint value
+			elem.refSetUint(tt.setValue)
+
+			// Check if there was an error
+			if elem.err != errNone {
+				if !tt.expectError {
+					t.Errorf("Unexpected error for %s: %v", tt.name, elem.err)
+				}
+			} else {
+				if tt.expectError {
+					t.Errorf("Expected error for %s, but got none", tt.name)
+				}
+			}
+		})
+	}
+}
+
+func TestRefSetUintInvalidTypes(t *testing.T) {
+	// Test setting uint on invalid types (should set error)
+	tests := []struct {
+		name      string
+		createVar func() any
+	}{
+		{"string", func() any { var v string; return &v }},
+		{"int", func() any { var v int; return &v }},
+		{"float64", func() any { var v float64; return &v }},
+		{"bool", func() any { var v bool; return &v }},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			variable := tt.createVar()
+			rv := refValueOf(variable)
+			elem := rv.refElem() // This should set an error
+			elem.refSetUint(42)
+
+			if elem.err == errNone {
+				t.Errorf("Expected error when setting uint on %s, but got none", tt.name)
+			}
+		})
+	}
+}
+
+func TestRefZeroComprehensive(t *testing.T) {
+	tests := []struct {
+		name     string
+		input    any
+		testDesc string
+	}{
+		{"int", 42, "zero value of int"},
+		{"string", "hello", "zero value of string"},
+		{"bool", true, "zero value of bool"},
+		{"float64", 3.14, "zero value of float64"},
+		{"pointer to int", &[]int{1}[0], "zero value of pointer"},
+		{"struct", TestStruct{A: 1, B: "test"}, "zero value of struct"},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			// Get the type of the input
+			rv := refValueOf(tt.input)
+			typ := rv.Type()
+
+			// Create zero value
+			zero := refZero(typ)
+
+			if zero.err != errNone {
+				t.Errorf("refZero() error: %v", zero.err)
+				return
+			}
+
+			if !zero.refIsValid() {
+				t.Errorf("refZero() returned invalid value")
+				return
+			}
+
+			// The zero value should have the same type
+			if zero.refKind() != rv.refKind() {
+				t.Errorf("refZero() kind mismatch: expected %v, got %v",
+					rv.refKind(), zero.refKind())
+			}
+
+			t.Logf("%s: kind=%v, valid=%v", tt.testDesc, zero.refKind(), zero.refIsValid())
+		})
+	}
+}
+
+func TestRefZeroNilType(t *testing.T) {
+	// Test refZero with nil type (should return error)
+	zero := refZero(nil)
+
+	if zero.err == errNone {
+		t.Error("refZero(nil) should return an error")
+	}
+
+	expectedErr := "reflect: Zero(nil)"
+	if string(zero.err) != expectedErr {
+		t.Errorf("refZero(nil) error: expected %q, got %q", expectedErr, string(zero.err))
+	}
+}
+
+func TestRefZeroLargeType(t *testing.T) {
+	// Test refZero with a reasonably sized type to ensure it works
+	type LargeStruct struct {
+		Data [100]int
+	}
+
+	large := LargeStruct{}
+	rv := refValueOf(large)
+	typ := rv.Type()
+
+	zero := refZero(typ)
+
+	if zero.err != errNone {
+		t.Errorf("refZero() error with large struct: %v", zero.err)
+		return
+	}
+
+	if !zero.refIsValid() {
+		t.Error("refZero() returned invalid value for large struct")
+	}
+}

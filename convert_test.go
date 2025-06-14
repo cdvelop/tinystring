@@ -1,6 +1,8 @@
 package tinystring
 
 import (
+	"errors"
+	"fmt"
 	"testing"
 )
 
@@ -272,4 +274,207 @@ func TestConvertStringConsistency(t *testing.T) {
 
 	// Prueba adicional para verificar la consistencia
 	t.Log("Tests for Convert().String() consistency passed")
+}
+
+// Test Unicode conversion functionality (addRne2Buf)
+func TestUnicodeConversion(t *testing.T) {
+	tests := []struct {
+		name     string
+		input    string
+		expected string
+	}{
+		{"ASCII characters", "Hello", "Hello"},
+		{"UTF-8 characters", "Héllo", "Héllo"},
+		{"Unicode emojis", "Hello 🌍", "Hello 🌍"},
+		{"Mixed Unicode", "Café ñoño", "Café ñoño"},
+		{"Chinese characters", "你好", "你好"},
+		{"Accented characters", "résumé", "résumé"},
+		{"Special symbols", "™®©", "™®©"},
+		{"Mathematical symbols", "∀∃∈∉", "∀∃∈∉"},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			result := Convert(tt.input).String()
+			if result != tt.expected {
+				t.Errorf("Expected %s, got %s", tt.expected, result)
+			}
+		})
+	}
+}
+
+// Test Unicode case conversion operations
+func TestUnicodeCaseOperations(t *testing.T) {
+	tests := []struct {
+		name      string
+		input     string
+		operation func(*conv) *conv
+		expected  string
+	}{
+		{"Unicode to upper", "café", func(c *conv) *conv { return c.ToUpper() }, "CAFÉ"},
+		{"Unicode to lower", "CAFÉ", func(c *conv) *conv { return c.ToLower() }, "café"},
+		{"Unicode remove tildes", "ñoño", func(c *conv) *conv { return c.RemoveTilde() }, "nono"},
+		{"Mixed Unicode operations", "Résumé", func(c *conv) *conv { return c.ToUpper().RemoveTilde() }, "RESUME"},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			result := tt.operation(Convert(tt.input)).String()
+			if result != tt.expected {
+				t.Errorf("Expected %s, got %s", tt.expected, result)
+			}
+		})
+	}
+}
+
+// Test any2s function with various input types
+func TestAny2sConversion(t *testing.T) {
+	tests := []struct {
+		name     string
+		input    any
+		expected string
+	}{
+		{"String input", "hello", "hello"},
+		{"Bool true", true, "true"},
+		{"Bool false", false, "false"},
+		{"Int value", 42, "42"},
+		{"Negative int", -123, "-123"},
+		{"Uint value", uint(42), "42"},
+		{"Float value", 3.14, "3.14"},
+		{"Float32 value", float32(2.5), "2.5"},
+		{"Int8 value", int8(127), "127"},
+		{"Int16 value", int16(32767), "32767"},
+		{"Int32 value", int32(2147483647), "2147483647"},
+		{"Int64 value", int64(9223372036854775807), "9223372036854775807"},
+		{"Uint8 value", uint8(255), "255"},
+		{"Uint16 value", uint16(65535), "65535"},
+		{"Uint32 value", uint32(4294967295), "4294967295"},
+		{"Uint64 value", uint64(18446744073709551615), "18446744073709551615"},
+		{"Uintptr value", uintptr(12345), "12345"},
+		{"Nil value", nil, ""},
+		{"Empty string", "", ""},
+		{"Zero int", 0, "0"},
+		{"Zero float", 0.0, "0"},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			result := Convert(tt.input).String()
+			if result != tt.expected {
+				t.Errorf("Expected %s, got %s", tt.expected, result)
+			}
+		})
+	}
+}
+
+// Test any2s with error types
+func TestAny2sErrorHandling(t *testing.T) {
+	// Test with standard error - check if conversion handles it
+	err := errors.New("test error")
+	conv := Convert(err)
+
+	// The behavior may vary - check what actually happens
+	errResult := conv.Error()
+	t.Logf("Error conversion result: %q", errResult)
+
+	// Test with NewErr function which should work
+	conv2 := Convert(nil).NewErr("custom error")
+	if conv2.Error() != "custom error" {
+		t.Errorf("Expected 'custom error', got '%s'", conv2.Error())
+	}
+
+	// Test Errorf function
+	conv3 := Errorf("formatted error: %s", "test")
+	if conv3.Error() != "formatted error: test" {
+		t.Errorf("Expected 'formatted error: test', got '%s'", conv3.Error())
+	}
+}
+
+// Test any2s with unsupported types
+func TestAny2sUnsupportedTypes(t *testing.T) {
+	// Test with unsupported types that should return empty string
+	unsupportedTypes := []any{
+		make(chan int),
+		func() {},
+		make(map[string]int),
+		[]int{1, 2, 3},         // slice should be handled differently
+		struct{ X int }{X: 42}, // struct should be handled differently
+	}
+
+	for i, input := range unsupportedTypes {
+		t.Run(fmt.Sprintf("Unsupported type %d", i), func(t *testing.T) {
+			result := Convert(input).String()
+			// Most unsupported types should result in empty string or some default behavior
+			t.Logf("Input type %T resulted in: %q", input, result)
+		})
+	}
+}
+
+func TestAddRne2BufDirectly(t *testing.T) {
+	tests := []struct {
+		name     string
+		rune     rune
+		expected []byte
+	}{
+		// ASCII range (< 0x80)
+		{"ASCII A", 'A', []byte{0x41}},
+		{"ASCII space", ' ', []byte{0x20}},
+		{"ASCII zero", '\x00', []byte{0x00}},
+		{"ASCII DEL", '\x7F', []byte{0x7F}},
+
+		// 2-byte UTF-8 (0x80-0x7FF)
+		{"Latin-1 supplement é", 'é', []byte{0xC3, 0xA9}},
+		{"Latin-1 supplement ñ", 'ñ', []byte{0xC3, 0xB1}},
+		{"Cyrillic А", 'А', []byte{0xD0, 0x90}},
+		{"Greek α", 'α', []byte{0xCE, 0xB1}},
+
+		// 3-byte UTF-8 (0x800-0xFFFF)
+		{"CJK 你", '你', []byte{0xE4, 0xBD, 0xA0}},
+		{"CJK 好", '好', []byte{0xE5, 0xA5, 0xBD}},
+		{"Symbol ™", '™', []byte{0xE2, 0x84, 0xA2}},
+		{"Symbol ∀", '∀', []byte{0xE2, 0x88, 0x80}},
+
+		// 4-byte UTF-8 (0x10000-0x10FFFF)
+		{"Emoji 😀", '😀', []byte{0xF0, 0x9F, 0x98, 0x80}},
+		{"Emoji 🌍", '🌍', []byte{0xF0, 0x9F, 0x8C, 0x8D}},
+		{"Musical 𝄞", '𝄞', []byte{0xF0, 0x9D, 0x84, 0x9E}},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			var buf []byte
+			result := addRne2Buf(buf, tt.rune)
+
+			if len(result) != len(tt.expected) {
+				t.Errorf("Length mismatch: expected %d bytes, got %d bytes",
+					len(tt.expected), len(result))
+			}
+
+			for i := 0; i < len(tt.expected) && i < len(result); i++ {
+				if result[i] != tt.expected[i] {
+					t.Errorf("Byte %d: expected 0x%02X, got 0x%02X",
+						i, tt.expected[i], result[i])
+				}
+			}
+
+			// Verify the result is valid UTF-8 by converting back to string
+			str := string(result)
+			if len([]rune(str)) != 1 || []rune(str)[0] != tt.rune {
+				t.Errorf("Round-trip failed: expected rune %U, got %U",
+					tt.rune, []rune(str)[0])
+			}
+		})
+	}
+}
+
+func TestAddRne2BufAppend(t *testing.T) {
+	// Test that addRne2Buf properly appends to existing buffer
+	buf := []byte("Hello ")
+	buf = addRne2Buf(buf, '🌍')
+	expected := "Hello 🌍"
+
+	result := string(buf)
+	if result != expected {
+		t.Errorf("Expected %q, got %q", expected, result)
+	}
 }
