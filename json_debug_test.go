@@ -287,12 +287,12 @@ func TestJsonDebugStruct(t *testing.T) {
 		t.Logf("refField %d: refKind=%v, Valid=%v, String=%v", i, field.refKind(), field.refIsValid(), field.String())
 	}
 	// Test struct info
-	var structInfo refStructInfo
+	var structInfo refStructType
 	getStructInfo(rv.Type(), &structInfo)
 	if structInfo.refType != nil {
 		t.Logf("StructInfo fields count: %d", len(structInfo.fields))
 		for i, f := range structInfo.fields {
-			t.Logf("StructInfo field %d: name=%s, snakeName=%s", i, f.name, f.snakeName)
+			t.Logf("StructInfo field %d: name=%s", i, f.name)
 		}
 	} else {
 		t.Log("StructInfo.refType is nil!")
@@ -317,12 +317,12 @@ func TestJsonDebugStruct(t *testing.T) {
 	rv2 := refValueOf(address)
 	t.Logf("Address refValue kind: %v", rv2.refKind())
 	t.Logf("Address refNumField(): %d", rv2.refNumField())
-	var structInfo2 refStructInfo
+	var structInfo2 refStructType
 	getStructInfo(rv2.Type(), &structInfo2)
 	if structInfo2.refType != nil {
 		t.Logf("Address StructInfo fields count: %d", len(structInfo2.fields))
 		for i, f := range structInfo2.fields {
-			t.Logf("Address StructInfo field %d: name=%s, snakeName=%s", i, f.name, f.snakeName)
+			t.Logf("Address StructInfo field %d: name=%s", i, f.name)
 		}
 	}
 

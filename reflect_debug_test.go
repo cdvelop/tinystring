@@ -215,7 +215,7 @@ func TestReflectFieldCorruption(t *testing.T) {
 	// Check each field
 	for i := 0; i < len(tt.fields); i++ {
 		field := &tt.fields[i]
-		fieldName := field.name.Name()
+		fieldName := field.name
 
 		// Get field value using reflection
 		fieldVal := rv.refField(i)

@@ -97,7 +97,22 @@ func (c *conv) parseJsonValueWithRefReflect(jsonStr string, target *conv) error 
 
 // parseJsonStringRef parses a JSON string using our custom reflection
 func (c *conv) parseJsonStringRef(jsonStr string, target *conv) error {
+	jsonStr = Convert(jsonStr).Trim().String()
+
+	// Strict validation: must be a quoted string
 	if len(jsonStr) < 2 || jsonStr[0] != '"' || jsonStr[len(jsonStr)-1] != '"' {
+		// Check if this is actually a different type that should be rejected
+		if jsonStr == "true" || jsonStr == "false" || jsonStr == "null" {
+			return Err(errInvalidJSON, "expected string but got "+jsonStr)
+		}
+		// Check if it's a number
+		if len(jsonStr) > 0 && (jsonStr[0] >= '0' && jsonStr[0] <= '9' || jsonStr[0] == '-') {
+			return Err(errInvalidJSON, "expected string but got number: "+jsonStr)
+		}
+		// Check if it's an array or object
+		if len(jsonStr) > 0 && (jsonStr[0] == '[' || jsonStr[0] == '{') {
+			return Err(errInvalidJSON, "expected string but got complex type")
+		}
 		return Err(errInvalidJSON, "invalid JSON string format")
 	}
 
@@ -113,9 +128,21 @@ func (c *conv) parseJsonStringRef(jsonStr string, target *conv) error {
 
 // parseJsonIntRef parses a JSON integer using our custom reflection
 func (c *conv) parseJsonIntRef(jsonStr string, target *conv) error {
+	jsonStr = Convert(jsonStr).Trim().String()
+
+	// Strict validation: must be a number, not a string or other type
+	if len(jsonStr) > 0 && jsonStr[0] == '"' {
+		return Err(errInvalidJSON, "expected number but got string: "+jsonStr)
+	}
+	if jsonStr == "true" || jsonStr == "false" {
+		return Err(errInvalidJSON, "expected number but got boolean: "+jsonStr)
+	}
+	if len(jsonStr) > 0 && (jsonStr[0] == '[' || jsonStr[0] == '{') {
+		return Err(errInvalidJSON, "expected number but got complex type")
+	}
 	intVal, err := Convert(jsonStr).ToInt64()
 	if err != nil {
-		return err
+		return Err(errInvalidJSON, "invalid number: "+jsonStr)
 	}
 	target.refSetInt(intVal)
 	return nil
@@ -143,6 +170,19 @@ func (c *conv) parseJsonFloatRef(jsonStr string, target *conv) error {
 
 // parseJsonBoolRef parses a JSON boolean using our custom reflection
 func (c *conv) parseJsonBoolRef(jsonStr string, target *conv) error {
+	jsonStr = Convert(jsonStr).Trim().String()
+
+	// Strict validation: must be exactly true or false
+	if len(jsonStr) > 0 && jsonStr[0] == '"' {
+		return Err(errInvalidJSON, "expected boolean but got string: "+jsonStr)
+	}
+	if len(jsonStr) > 0 && (jsonStr[0] >= '0' && jsonStr[0] <= '9' || jsonStr[0] == '-') {
+		return Err(errInvalidJSON, "expected boolean but got number: "+jsonStr)
+	}
+	if len(jsonStr) > 0 && (jsonStr[0] == '[' || jsonStr[0] == '{') {
+		return Err(errInvalidJSON, "expected boolean but got complex type")
+	}
+
 	switch jsonStr {
 	case "true":
 		target.refSetBool(true)
@@ -171,7 +211,7 @@ func (c *conv) parseJsonStructRef(jsonStr string, target *conv) error {
 		return nil // empty object, nothing to set
 	}
 	// Get struct information
-	var structInfo refStructInfo
+	var structInfo refStructType
 	getStructInfo(target.Type(), &structInfo)
 	if structInfo.refType == nil {
 		return Err(errUnsupportedType, "cannot get struct information")
@@ -456,7 +496,7 @@ func (c *conv) unescapeJsonString(s string) (string, error) {
 }
 
 // parseJsonObjectContent parses the content of a JSON object (without outer braces)
-func (c *conv) parseJsonObjectContent(content string, target *conv, structInfo *refStructInfo) error {
+func (c *conv) parseJsonObjectContent(content string, target *conv, structInfo *refStructType) error {
 	if content == "" {
 		return nil // empty content
 	}
@@ -528,7 +568,7 @@ func (c *conv) splitJsonFields(content string) []string {
 }
 
 // parseJsonFieldPair parses a single "key":"value" pair
-func (c *conv) parseJsonFieldPair(pair string, target *conv, structInfo *refStructInfo) error {
+func (c *conv) parseJsonFieldPair(pair string, target *conv, structInfo *refStructType) error {
 	pair = Convert(pair).Trim().String()
 
 	// Find the colon separator
@@ -577,14 +617,69 @@ func (c *conv) findJsonColon(pair string) int {
 }
 
 // findStructFieldByJsonName finds the field index by JSON field name
-func (c *conv) findStructFieldByJsonName(jsonKey string, structInfo *refStructInfo) int {
-	// Match using original field names (no case conversion)
+func (c *conv) findStructFieldByJsonName(jsonKey string, structInfo *refStructType) int {
+	// First try to match using JSON tags
+	for i, field := range structInfo.fields {
+		if jsonName := field.tag.Get("json"); jsonName != "" {
+			// Handle json:",omitempty" and similar tags
+			if commaIndex := indexByte(jsonName, ','); commaIndex != -1 {
+				jsonName = jsonName[:commaIndex]
+			}
+			if jsonName == jsonKey {
+				return i
+			}
+		}
+	}
+
+	// Fallback to original field names (case-sensitive match)
 	for i, field := range structInfo.fields {
 		if field.name == jsonKey {
 			return i
 		}
 	}
+
+	// Fallback to case-insensitive match for common patterns
+	for i, field := range structInfo.fields {
+		// Convert PascalCase to snake_case for comparison
+		snakeCase := toSnakeCase(field.name)
+		if snakeCase == jsonKey {
+			return i
+		}
+	}
+
 	return -1
+}
+
+// indexByte returns the index of the first instance of c in s, or -1 if c is not present in s
+func indexByte(s string, c byte) int {
+	for i := 0; i < len(s); i++ {
+		if s[i] == c {
+			return i
+		}
+	}
+	return -1
+}
+
+// toSnakeCase converts PascalCase to snake_case
+func toSnakeCase(s string) string {
+	if s == "" {
+		return ""
+	}
+
+	result := make([]byte, 0, len(s)+5) // Pre-allocate with some extra space
+	for i, r := range s {
+		// If uppercase and not first character, add underscore
+		if r >= 'A' && r <= 'Z' {
+			if i > 0 {
+				result = append(result, '_')
+			}
+			// Convert to lowercase
+			result = append(result, byte(r-'A'+'a'))
+		} else {
+			result = append(result, byte(r))
+		}
+	}
+	return string(result)
 }
 
 // appendRune adds a rune to the current conv value

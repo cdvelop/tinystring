@@ -464,7 +464,7 @@ func (c *conv) encodeStructValueWithConvReflect() ([]byte, error) {
 		}
 
 		// Get field name from struct info - use original field name
-		var structInfo refStructInfo
+		var structInfo refStructType
 		getStructInfo(c.Type(), &structInfo)
 		if structInfo.refType == nil || i >= len(structInfo.fields) {
 			continue

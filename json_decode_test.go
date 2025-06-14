@@ -631,6 +631,46 @@ func TestJsonDecodeFieldNameMapping(t *testing.T) {
 	}
 }
 
+// TestFieldMappingDebug tests field name mapping issue
+func TestFieldMappingDebug(t *testing.T) {
+	clearRefStructsCache()
+
+	type TestStruct struct {
+		ID       string `json:"id"`
+		Username string `json:"username"`
+	}
+
+	// Debug the field mapping
+	var test TestStruct
+	target := refValueOf(&test)
+	elem := target.refElem()
+
+	var structInfo refStructType
+	getStructInfo(elem.Type(), &structInfo)
+
+	t.Logf("Struct fields count: %d", len(structInfo.fields))
+	for i, field := range structInfo.fields {
+		t.Logf("  Field %d: name='%s'", i, field.name)
+	}
+
+	// Test specific field lookups that should work
+	conv := &conv{}
+
+	// These should find the fields
+	index1 := conv.findStructFieldByJsonName("ID", &structInfo)
+	t.Logf("Looking for 'ID': found at index %d", index1)
+
+	index2 := conv.findStructFieldByJsonName("Username", &structInfo)
+	t.Logf("Looking for 'Username': found at index %d", index2)
+
+	// These are what the JSON actually contains
+	index3 := conv.findStructFieldByJsonName("id", &structInfo)
+	t.Logf("Looking for 'id': found at index %d", index3)
+
+	index4 := conv.findStructFieldByJsonName("username", &structInfo)
+	t.Logf("Looking for 'username': found at index %d", index4)
+}
+
 // findInString simple helper to find substring
 func findInString(s, substr string) int {
 	for i := 0; i <= len(s)-len(substr); i++ {

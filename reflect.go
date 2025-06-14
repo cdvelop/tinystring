@@ -118,7 +118,7 @@ func (c *conv) refElem() *conv {
 // refNumField returns the number of fields in the struct c
 func (c *conv) refNumField() int {
 	c.mustBe(tpStruct)
-	tt := (*refStructType)(unsafe.Pointer(c.typ))
+	tt := (*refStructMeta)(unsafe.Pointer(c.typ))
 	return len(tt.fields)
 }
 
@@ -127,13 +127,12 @@ func (c *conv) refField(i int) *conv {
 	if c.refKind() != tpStruct {
 		panic("reflect: call of reflect.Value.Field on " + c.refKind().String() + " value")
 	}
-	tt := (*refStructType)(unsafe.Pointer(c.typ))
+	tt := (*refStructMeta)(unsafe.Pointer(c.typ))
 	if uint(i) >= uint(len(tt.fields)) {
 		panic("reflect: Field index out of range")
 	}
 	field := &tt.fields[i]
 	ptr := add(c.ptr, field.offset, "same as non-reflect &v.field")
-
 	// Inherit read-only flags from parent, but allow assignment if parent allows it
 	fl := c.flag&(flagRO) | refFlag(field.typ.Kind()) | flagAddr
 	// For struct fields, flagIndir is needed only for pointer fields
@@ -565,63 +564,48 @@ func add(p unsafe.Pointer, x uintptr, whySafe string) unsafe.Pointer {
 
 // Global cache for struct type information
 // Using slice instead of map for TinyGo compatibility
-var refStructsInfo []refStructInfo
+var refStructsInfo []refStructType
 
 // refStructInfo contains cached information about a struct type for JSON operations
 type refStructInfo struct {
-	snakeName string         // snake_case name of the type
-	refType   *refType       // reference to the type information
-	fields    []refFieldInfo // cached field information
-}
-
-// refFieldInfo contains information about a struct field for JSON operations
-type refFieldInfo struct {
-	name      string   // original field name (e.g., "BirthDate")
-	snakeName string   // snake_case name of the field (e.g., "birth_date")
-	refType   *refType // type of the field
-	offset    uintptr  // byte offset in the struct
-	index     int      // field index
+	name    string         // name of the type
+	refType *refType       // reference to the type information
+	fields  []refFieldType // cached field information
 }
 
 // getStructInfo fills struct information if not cached, assigns to provided pointer
-func getStructInfo(typ *refType, out *refStructInfo) {
+func getStructInfo(typ *refType, out *refStructType) {
 	if typ.Kind() != tpStruct {
 		return
 	}
 
 	// Get unique type name for caching
 	typeName := getTypeName(typ)
-
 	// Search in cache first
 	for i := range refStructsInfo {
-		if refStructsInfo[i].snakeName == typeName {
+		if refStructsInfo[i].name == typeName {
 			*out = refStructsInfo[i]
 			return
 		}
-	}
-
-	// Not in cache, create new struct info
-	structType := (*refStructType)(unsafe.Pointer(typ))
-	fields := make([]refFieldInfo, len(structType.fields))
-
+	} // Not in cache, create new struct info
+	structType := (*refStructMeta)(unsafe.Pointer(typ))
+	fields := make([]refFieldType, len(structType.fields))
 	for i, f := range structType.fields {
 		fieldName := f.name.Name()
-		snakeName := Convert(fieldName).ToSnakeCaseLower().String()
-
-		fields[i] = refFieldInfo{
-			name:      fieldName,
-			snakeName: snakeName,
-			refType:   f.typ,
-			offset:    f.offset,
-			index:     i,
+		fieldTag := f.name.Tag() // Get the tag string
+		fields[i] = refFieldType{
+			name:    fieldName,
+			refType: f.typ,
+			offset:  f.offset,
+			index:   i,
+			tag:     refStructTag(fieldTag),
 		}
 	}
-
 	// Create new struct info
-	newInfo := refStructInfo{
-		snakeName: typeName,
-		refType:   typ,
-		fields:    fields,
+	newInfo := refStructType{
+		name:    typeName,
+		refType: typ,
+		fields:  fields,
 	}
 
 	// Add to cache

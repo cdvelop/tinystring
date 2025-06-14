@@ -125,18 +125,123 @@ type refPtrType struct {
 	elem *refType // pointer element (pointed at) type
 }
 
-// refStructField represents a field in a struct type
-type refStructField struct {
-	name   refName  // name is always non-empty
-	typ    *refType // type of field
-	offset uintptr  // byte offset of field
+// refFieldType contains information about a struct field for JSON operations
+type refFieldType struct {
+	name    string       // original field name (e.g., "BirthDate")
+	refType *refType     // type of the field
+	offset  uintptr      // byte offset in the struct
+	index   int          // field index
+	tag     refStructTag // field tag string (e.g., `json:"birth_date"`)
 }
 
-// refStructType represents a struct type
-type refStructType struct {
+// refFieldMeta represents the original ABI field structure with refName
+type refFieldMeta struct {
+	name   refName  // encoded field name with tag info
+	typ    *refType // type of the field
+	offset uintptr  // byte offset in the struct
+}
+
+// refStructTag is the tag string in a struct field (similar to reflect.StructTag)
+type refStructTag string
+
+// Get returns the value associated with key in the tag string.
+// If there is no such key in the tag, Get returns the empty string.
+func (tag refStructTag) Get(key string) string {
+	value, _ := tag.Lookup(key)
+	return value
+}
+
+// Lookup returns the value associated with key in the tag string.
+// If the key is present in the tag the value (which may be empty)
+// is returned. Otherwise the returned value will be the empty string.
+// The ok return value reports whether the value was explicitly set in
+// the tag string.
+func (tag refStructTag) Lookup(key string) (value string, ok bool) {
+	// Simplified implementation based on Go's reflect.StructTag
+	for tag != "" {
+		// Skip leading space
+		i := 0
+		for i < len(tag) && tag[i] == ' ' {
+			i++
+		}
+		tag = tag[i:]
+		if tag == "" {
+			break
+		}
+
+		// Scan to colon. A space, a quote or a control character is a syntax error.
+		i = 0
+		for i < len(tag) && tag[i] > ' ' && tag[i] != ':' && tag[i] != '"' && tag[i] != 0x7f {
+			i++
+		}
+		if i == 0 || i+1 >= len(tag) || tag[i] != ':' || tag[i+1] != '"' {
+			break
+		}
+		name := string(tag[:i])
+		tag = tag[i+1:]
+
+		// Scan quoted string to find value
+		i = 1
+		for i < len(tag) && tag[i] != '"' {
+			if tag[i] == '\\' {
+				i++
+			}
+			i++
+		}
+		if i >= len(tag) {
+			break
+		}
+		qvalue := string(tag[:i+1])
+		tag = tag[i+1:]
+
+		if key == name {
+			// Unquote the value
+			if len(qvalue) >= 2 && qvalue[0] == '"' && qvalue[len(qvalue)-1] == '"' {
+				value = qvalue[1 : len(qvalue)-1]
+				// Simple unescape for basic cases
+				result := ""
+				for j := 0; j < len(value); j++ {
+					if value[j] == '\\' && j+1 < len(value) {
+						switch value[j+1] {
+						case 'n':
+							result += "\n"
+						case 't':
+							result += "\t"
+						case 'r':
+							result += "\r"
+						case '\\':
+							result += "\\"
+						case '"':
+							result += "\""
+						default:
+							result += string(value[j])
+							continue
+						}
+						j++ // skip the escaped character
+					} else {
+						result += string(value[j])
+					}
+				}
+				return result, true
+			}
+			return qvalue, true
+		}
+	}
+	return "", false
+}
+
+// refStructMeta represents a struct type with runtime metadata
+type refStructMeta struct {
 	refType
 	pkgPath refName
-	fields  []refStructField
+	fields  []refFieldMeta
+}
+
+// refStructType contains cached information about a struct type for JSON operations
+type refStructType struct {
+	name    string         // name of the type
+	refType *refType       // reference to the type information
+	fields  []refFieldType // cached field information
 }
 
 // refSliceType represents a slice type
@@ -190,17 +295,17 @@ type refArrayType struct {
 	len  uintptr
 }
 
-// NumField returns the number of fields in a struct type
-func (t *refStructType) NumField() int {
+// NumField returns the number of fields in a struct meta
+func (t *refStructMeta) NumField() int {
 	return len(t.fields)
 }
 
-// Field returns the i'th field of the struct type
-func (t *refStructType) Field(i int) refStructField {
+// Field returns the i'th field of the struct meta
+func (t *refStructMeta) Field(i int) *refFieldMeta {
 	if i < 0 || i >= len(t.fields) {
 		panic("reflect: Field index out of range")
 	}
-	return t.fields[i]
+	return &t.fields[i]
 }
 
 // Name returns the name string for refName
@@ -210,6 +315,32 @@ func (n refName) Name() string {
 	}
 	i, l := n.readVarint(1)
 	return unsafe.String(n.dataChecked(1+i, "non-empty string"), l)
+}
+
+// Tag returns the tag string associated with the name
+func (n refName) Tag() string {
+	if n.bytes == nil {
+		return ""
+	}
+	// Tags are typically stored after the name data
+	// This is a simplified implementation - in the real Go runtime,
+	// tags are stored with more complex encoding
+	i, l := n.readVarint(1)
+	if l == 0 {
+		return ""
+	}
+	// Skip the name string
+	nameStart := 1 + i
+	nameEnd := nameStart + l
+
+	// Check if there's tag data after the name
+	if nameEnd < 100 { // Safety check to prevent reading too far
+		tagI, tagL := n.readVarint(nameEnd)
+		if tagL > 0 {
+			return unsafe.String(n.dataChecked(nameEnd+tagI, "tag string"), tagL)
+		}
+	}
+	return ""
 }
 
 // IsExported returns whether the name is exported
