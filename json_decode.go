@@ -258,31 +258,63 @@ func (c *conv) parseStructSlice(elements []string, target *conv, elemType *refTy
 	if elemType.Kind() != tpStruct {
 		return Err(errUnsupportedType, "element type is not a struct")
 	}
+	// FIXED: Use correct slice type instead of []interface{}
+	// The problem was creating []interface{} instead of the proper slice type
 
-	// Create a slice to hold the parsed structs
-	// We'll build this using reflection
-	var parsedStructs []interface{}
+	sliceLen := len(elements)
 
-	for _, elem := range elements {
-		// Create a new instance of the struct type
-		structValue := refZero(elemType)
-		if !structValue.refIsValid() {
-			return Err(errUnsupportedType, "cannot create struct instance")
+	if sliceLen == 0 {
+		// Create empty slice of the correct type
+		emptySlice := &sliceHeader{
+			Data: nil,
+			Len:  0,
+			Cap:  0,
+		}
+		*(*sliceHeader)(target.ptr) = *emptySlice
+		return nil
+	}
+
+	// Allocate memory for the slice elements
+	elemSize := elemType.Size()
+	dataPtr := mallocSliceData(elemSize, sliceLen)
+
+	// Set up slice header
+	sliceHead := &sliceHeader{
+		Data: dataPtr,
+		Len:  sliceLen,
+		Cap:  sliceLen,
+	}
+
+	// Set the slice header in target
+	*(*sliceHeader)(target.ptr) = *sliceHead
+
+	// Parse each element directly into the allocated memory
+	for i, elem := range elements {
+		// Get the i-th element of the target slice
+		elemValue := target.refIndex(i)
+		if !elemValue.refIsValid() {
+			return Err(errInvalidJSON, "cannot access slice element")
 		}
 
-		// Parse the JSON object into the struct
-		err := c.parseJsonStructRef(elem, structValue)
+		// Parse the JSON object into the struct element
+		err := c.parseJsonStructRef(elem, elemValue)
 		if err != nil {
 			return err
 		}
-
-		// Add to our slice
-		parsedStructs = append(parsedStructs, structValue.Interface())
 	}
 
-	// Set the target to our parsed slice
-	target.refSet(refValueOf(parsedStructs))
 	return nil
+}
+
+// mallocSliceData allocates memory for slice data
+func mallocSliceData(elemSize uintptr, count int) unsafe.Pointer {
+	if count == 0 {
+		return nil
+	}
+	totalSize := elemSize * uintptr(count)
+	// Use make to allocate properly initialized memory
+	data := make([]byte, totalSize)
+	return unsafe.Pointer(&data[0])
 }
 
 // parseIntSlice, parseFloatSlice, parseBoolSlice implementations

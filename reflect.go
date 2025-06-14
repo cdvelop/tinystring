@@ -718,7 +718,6 @@ func (c *conv) refIndex(i int) *conv {
 
 		// Calculate pointer to element
 		elemPtr := unsafe.Pointer(uintptr(s.Data) + uintptr(i)*elemSize)
-
 		// Create new conv for the element
 		result := &conv{separator: "_"}
 		result.typ = elemType
@@ -726,7 +725,8 @@ func (c *conv) refIndex(i int) *conv {
 		result.flag = refFlag(elemType.Kind())
 
 		// If element is stored indirectly, set the flag
-		if elemType.kind&kindDirectIface == 0 {
+		// Note: strings should never be indirect in slices
+		if elemType.Kind() != tpString && elemType.kind&kindDirectIface == 0 {
 			result.flag |= flagIndir
 		}
 
