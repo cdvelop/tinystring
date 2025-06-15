@@ -11,14 +11,14 @@ func (t *conv) Quote() *conv {
 // Integrated from tinystrconv QuoteString function - optimized for minimal allocations
 func (c *conv) quoteString() {
 	inp := c.getString()
-	if inp == "" {
-		c.setString("\"\"")
+	if isEmpty(inp) {
+		c.setString(quoteStr)
 		return
 	}
 
 	// Pre-allocate with estimated size (input length + 20% buffer for escapes + 2 for quotes)
 	eSz := len(inp) + (len(inp) / 5) + 2
-	result := make([]byte, 0, eSz)
+	result := makeBuf(eSz)
 
 	result = append(result, '"')
 	for _, char := range inp {

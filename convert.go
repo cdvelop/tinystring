@@ -43,19 +43,6 @@ type conv struct {
 	err            errorType // Error type from error.go
 }
 
-// struct to store mappings to remove accents and diacritics
-type charMapping struct {
-	from rune
-	to   rune
-}
-
-type wordTransform int
-
-const (
-	toLower wordTransform = iota
-	toUpper
-)
-
 // Functional options pattern for conv construction
 type convOpt func(*conv)
 
@@ -84,18 +71,7 @@ func withValue(v any) convOpt {
 			c.setErrorVal(val)
 		default:
 			// Handle numeric types using generics
-			switch val := val.(type) {
-			case int, int8, int16, int32, int64:
-				c.handleIntType(val)
-			case uint, uint8, uint16, uint32, uint64:
-				c.handleUintType(val)
-			case float32, float64:
-				c.handleFloatType(val)
-			default:
-				// Fallback to string conversion for unknown types
-				c.vTpe = typeStr
-				c.any2s(val)
-			}
+			c.handleAnyType(val)
 		}
 	}
 }
@@ -117,52 +93,41 @@ func Convert(v any) *conv {
 	return newConv(withValue(v))
 }
 
-// Generic functions to handle numeric types without repetitive switches
-func genInt[T anyInt](c *conv, v T) {
+// Consolidated generic functions - single function per type with operation parameter
+func genInt[T anyInt](c *conv, v T, op int) {
 	c.intVal = int64(v)
-	c.vTpe = typeInt
+	switch op {
+	case 0:
+		c.vTpe = typeInt // setValue
+	case 1:
+		c.fmtInt(10) // any2s
+	case 2:
+		c.i2s() // format
+	}
 }
 
-func genUint[T anyUint](c *conv, v T) {
+func genUint[T anyUint](c *conv, v T, op int) {
 	c.uintVal = uint64(v)
-	c.vTpe = typeUint
+	switch op {
+	case 0:
+		c.vTpe = typeUint // setValue
+	case 1:
+		c.fmtUint(10) // any2s
+	case 2:
+		c.u2s() // format
+	}
 }
 
-func genFloat[T anyFloat](c *conv, v T) {
+func genFloat[T anyFloat](c *conv, v T, op int) {
 	c.floatVal = float64(v)
-	c.vTpe = typeFloat
-}
-
-// Generic functions for any2s operations
-func genAny2sInt[T anyInt](c *conv, v T) {
-	c.intVal = int64(v)
-	c.fmtInt(10)
-}
-
-func genAny2sUint[T anyUint](c *conv, v T) {
-	c.uintVal = uint64(v)
-	c.fmtUint(10)
-}
-
-func genAny2sFloat[T anyFloat](c *conv, v T) {
-	c.floatVal = float64(v)
-	c.f2s()
-}
-
-// Generic functions for format operations
-func genFormatInt[T anyInt](c *conv, v T) {
-	c.intVal = int64(v)
-	c.i2s()
-}
-
-func genFormatUint[T anyUint](c *conv, v T) {
-	c.uintVal = uint64(v)
-	c.u2s()
-}
-
-func genFormatFloat[T anyFloat](c *conv, v T) {
-	c.floatVal = float64(v)
-	c.f2sMan(-1)
+	switch op {
+	case 0:
+		c.vTpe = typeFloat // setValue
+	case 1:
+		c.f2s() // any2s
+	case 2:
+		c.f2sMan(-1) // format
+	}
 }
 
 // setBoolVal sets the bool value and updates the vTpe
@@ -285,6 +250,19 @@ func addRne2Buf(buf []byte, r rune) []byte {
 	}
 }
 
+// newBuf creates an optimally-sized buffer for common string operations
+func (t *conv) newBuf(sizeMultiplier int) (string, []byte) {
+	str := t.getString()
+	if isEmpty(str) {
+		return str, nil
+	}
+	bufSize := len(str) * sizeMultiplier
+	if bufSize < 16 {
+		bufSize = 16 // Minimum useful buffer size
+	}
+	return str, make([]byte, 0, bufSize)
+}
+
 // setString converts to string type and stores the value
 func (t *conv) setString(s string) {
 	t.stringVal = s
@@ -326,7 +304,7 @@ func (t *conv) joinSlice(separator string) string {
 	tl += len(separator) * (len(t.stringSliceVal) - 1)
 
 	// Build result string efficiently using slice of bytes
-	result := make([]byte, 0, tl) // result
+	result := makeBuf(tl) // result
 
 	for i, s := range t.stringSliceVal {
 		if i > 0 {
@@ -362,102 +340,68 @@ func (t *conv) any2s(v any) {
 		t.stringVal = t.tmpStr
 	default:
 		// Handle numeric types using generics for any2s
-		switch v := v.(type) {
-		case int, int8, int16, int32, int64:
-			t.handleIntTypeForAny2s(v)
-		case uint, uint8, uint16, uint32, uint64:
-			t.handleUintTypeForAny2s(v)
-		case float32, float64:
-			t.handleFloatTypeForAny2s(v)
-		default:
-			// Fallback for unknown types
-			t.tmpStr = ""
-			t.stringVal = t.tmpStr
-		}
+		t.handleAnyTypeForAny2s(v)
 	}
 }
 
 // handleIntType processes integer types using generics
-func (c *conv) handleIntType(val any) {
+// handleAnyType processes any numeric type using generics
+func (c *conv) handleAnyType(val any) {
 	switch v := val.(type) {
 	case int:
-		genInt(c, v)
+		genInt(c, v, 0)
 	case int8:
-		genInt(c, v)
+		genInt(c, v, 0)
 	case int16:
-		genInt(c, v)
+		genInt(c, v, 0)
 	case int32:
-		genInt(c, v)
+		genInt(c, v, 0)
 	case int64:
-		genInt(c, v)
-	}
-}
-
-// handleUintType processes unsigned integer types using generics
-func (c *conv) handleUintType(val any) {
-	switch v := val.(type) {
+		genInt(c, v, 0)
 	case uint:
-		genUint(c, v)
+		genUint(c, v, 0)
 	case uint8:
-		genUint(c, v)
+		genUint(c, v, 0)
 	case uint16:
-		genUint(c, v)
+		genUint(c, v, 0)
 	case uint32:
-		genUint(c, v)
+		genUint(c, v, 0)
 	case uint64:
-		genUint(c, v)
-	}
-}
-
-// handleFloatType processes float types using generics
-func (c *conv) handleFloatType(val any) {
-	switch v := val.(type) {
+		genUint(c, v, 0)
 	case float32:
-		genFloat(c, v)
+		genFloat(c, v, 0)
 	case float64:
-		genFloat(c, v)
+		genFloat(c, v, 0)
 	}
 }
 
-// handleIntTypeForAny2s processes integer types for any2s using generics
-func (c *conv) handleIntTypeForAny2s(val any) {
+// handleAnyTypeForAny2s processes any numeric type for any2s using generics
+func (c *conv) handleAnyTypeForAny2s(val any) {
 	switch v := val.(type) {
 	case int:
-		genAny2sInt(c, v)
+		genInt(c, v, 1)
 	case int8:
-		genAny2sInt(c, v)
+		genInt(c, v, 1)
 	case int16:
-		genAny2sInt(c, v)
+		genInt(c, v, 1)
 	case int32:
-		genAny2sInt(c, v)
+		genInt(c, v, 1)
 	case int64:
-		genAny2sInt(c, v)
-	}
-}
-
-// handleUintTypeForAny2s processes unsigned integer types for any2s using generics
-func (c *conv) handleUintTypeForAny2s(val any) {
-	switch v := val.(type) {
+		genInt(c, v, 1)
 	case uint:
-		genAny2sUint(c, v)
+		genUint(c, v, 1)
 	case uint8:
-		genAny2sUint(c, v)
+		genUint(c, v, 1)
 	case uint16:
-		genAny2sUint(c, v)
+		genUint(c, v, 1)
 	case uint32:
-		genAny2sUint(c, v)
+		genUint(c, v, 1)
 	case uint64:
-		genAny2sUint(c, v)
-	}
-}
-
-// handleFloatTypeForAny2s processes float types for any2s using generics
-func (c *conv) handleFloatTypeForAny2s(val any) {
-	switch v := val.(type) {
+		genUint(c, v, 1)
 	case float32:
-		genAny2sFloat(c, v)
+		genFloat(c, v, 1)
 	case float64:
-		genAny2sFloat(c, v)
+		genFloat(c, v, 1)
 	}
 }
 

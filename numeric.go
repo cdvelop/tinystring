@@ -32,11 +32,10 @@ func (t *conv) restoreState(savedVal string, savedType vTpe) {
 func (t *conv) tryParseAs(parseType vTpe, base int) bool {
 	// Save original state
 	oSV, oVT := t.saveState()
-
 	// Try direct parsing based on type
 	switch parseType {
 	case typeInt:
-		t.s2Int(base)
+		t.s2IntGeneric(base)
 	case typeUint:
 		t.s2Uint(oSV, base)
 	}
@@ -50,7 +49,6 @@ func (t *conv) tryParseAs(parseType vTpe, base int) bool {
 	if base != 10 && len(oSV) > 0 && oSV[0] == '-' {
 		return false
 	}
-
 	// If that fails, restore state and try to parse as float then convert
 	t.restoreState(oSV, oVT)
 	t.s2Float()
@@ -346,25 +344,16 @@ func (t *conv) ToFloat() (float64, error) {
 
 	switch t.vTpe {
 	case typeFloat:
-		return t.floatVal, nil // Direct return for float values
-	case typeInt:
-		return float64(t.intVal), nil // Direct conversion from int
+		return t.floatVal, nil // Direct return for float values	case typeInt:
 	case typeUint:
 		return float64(t.uintVal), nil // Direct conversion from uint
-	default:
-		// For string types and other types, parse as float
+	default: // For string types and other types, parse as float
 		t.s2Float()
 		if t.err != "" {
 			return 0, t
 		}
 		return t.floatVal, nil
 	}
-}
-
-// s2Int converts string to int with specified base and stores in conv struct.
-// This is an internal conv method that modifies the struct instead of returning values.
-func (t *conv) s2Int(base int) {
-	t.s2IntGeneric(base)
 }
 
 // s2IntGeneric converts string to signed integer with specified base and stores in conv struct.
@@ -381,11 +370,9 @@ func (t *conv) s2IntGeneric(base int) {
 			t.NewErr(errInvalidBase, "negative numbers are not supported for non-decimal bases")
 			return
 		}
-		isNeg = true
-		// Update the conv struct with the string without the negative sign
+		isNeg = true // Update the conv struct with the string without the negative sign
 		t.setString(inp[1:])
 	}
-
 	t.s2n(base)
 	if t.err != "" {
 		return
@@ -536,7 +523,7 @@ func (t *conv) s2n(base int) {
 
 // isEmptyString checks if the input string is empty and sets an error if it is.
 func (t *conv) isEmptyString(inp string) bool {
-	if inp == "" {
+	if isEmpty(inp) {
 		t.err = errEmptyString
 		return true
 	}
@@ -569,7 +556,7 @@ func (t *conv) fmtUint(base int) {
 // fmtIntGeneric converts integer to string with unified logic
 func (t *conv) fmtIntGeneric(val int64, base int, allowNegative bool) {
 	if val == 0 {
-		t.tmpStr = "0"
+		t.tmpStr = zeroStr
 		t.stringVal = t.tmpStr
 		return
 	}
@@ -663,10 +650,9 @@ func (t *conv) f2s() {
 		t.stringVal = t.tmpStr
 		return
 	}
-
 	// Handle zero
 	if val == 0 {
-		t.tmpStr = "0"
+		t.tmpStr = zeroStr
 		t.stringVal = t.tmpStr
 		return
 	}
@@ -676,7 +662,6 @@ func (t *conv) f2s() {
 	if isNegative {
 		val = -val
 	}
-
 	// Extract integer and fractional parts
 	integerPart := int64(val)
 	fractionalPart := val - float64(integerPart)
@@ -684,7 +669,7 @@ func (t *conv) f2s() {
 	// Convert integer part
 	var result string
 	if integerPart == 0 {
-		result = "0"
+		result = zeroStr
 	} else {
 		// Convert integer to string
 		temp := integerPart
@@ -727,25 +712,10 @@ func (t *conv) f2s() {
 
 // validateIntParam validates and converts an any parameter to int
 func (t *conv) validateIntParam(param any, allowZero bool) (int, bool) {
-	var val int
-	var ok bool
-
-	// Convert to int using consolidated type switch
-	switch v := param.(type) {
-	case int, int8, int16, int32, int64:
-		val, ok = t.extractInt(v)
-	case uint, uint8, uint16, uint32, uint64:
-		val, ok = t.extractUint(v)
-	case float32, float64:
-		val, ok = t.extractFloat(v)
-	default:
-		return 0, false
-	}
-
+	val, ok := extractInt(param)
 	if !ok {
 		return 0, false
 	}
-
 	// Unified validation logic
 	if allowZero {
 		return val, val >= 0
@@ -753,43 +723,42 @@ func (t *conv) validateIntParam(param any, allowZero bool) (int, bool) {
 	return val, val > 0
 }
 
-// extractInt extracts integer value from signed integer types
-func (t *conv) extractInt(v any) (int, bool) {
+// extractInt extracts integer value from any numeric type using generics
+func extractInt(v any) (int, bool) {
 	switch val := v.(type) {
-	case int:
-		return val, true
-	case int8:
-		return int(val), true
-	case int16:
-		return int(val), true
-	case int32:
-		return int(val), true
-	case int64:
-		return int(val), true
-	}
-	return 0, false
-}
-
-// extractUint extracts integer value from unsigned integer types
-func (t *conv) extractUint(v any) (int, bool) {
-	switch val := v.(type) {
-	case uint:
-		return int(val), true
-	case uint8:
-		return int(val), true
-	case uint16:
-		return int(val), true
-	case uint32:
-		return int(val), true
-	case uint64:
-		return int(val), true
-	}
-	return 0, false
-}
-
-// extractFloat extracts integer value from float types
-func (t *conv) extractFloat(v any) (int, bool) {
-	switch val := v.(type) {
+	case int, int8, int16, int32, int64:
+		// Use type assertion to handle all integer types
+		if i, ok := v.(int); ok {
+			return i, true
+		}
+		if i8, ok := v.(int8); ok {
+			return int(i8), true
+		}
+		if i16, ok := v.(int16); ok {
+			return int(i16), true
+		}
+		if i32, ok := v.(int32); ok {
+			return int(i32), true
+		}
+		if i64, ok := v.(int64); ok {
+			return int(i64), true
+		}
+	case uint, uint8, uint16, uint32, uint64:
+		if u, ok := v.(uint); ok {
+			return int(u), true
+		}
+		if u8, ok := v.(uint8); ok {
+			return int(u8), true
+		}
+		if u16, ok := v.(uint16); ok {
+			return int(u16), true
+		}
+		if u32, ok := v.(uint32); ok {
+			return int(u32), true
+		}
+		if u64, ok := v.(uint64); ok {
+			return int(u64), true
+		}
 	case float32:
 		return int(val), true
 	case float64:

@@ -8,19 +8,15 @@ func (t *conv) Replace(oldAny, newAny any, n ...int) *conv {
 	// Convert parameters to strings using the consistent Convert pattern
 	old := Convert(oldAny).String()
 	newStr := Convert(newAny).String()
-
-	str := t.getString()
-	if len(old) == 0 || str == "" {
+	str, buf := t.newBuf(2)
+	if isEmpty(old) || isEmpty(str) {
 		return t
 	}
-
 	// Default behavior: replace all occurrences (n = -1)
 	maxReps := -1
-	if len(n) > 0 {
+	if hasLength(n) {
 		maxReps = n[0]
 	}
-	// Use pre-allocated buffer for efficient string construction
-	buf := make([]byte, 0, len(str)+len(newStr)*10) // Pre-allocate
 
 	rep := 0
 	for i := 0; i < len(str); i++ {
@@ -68,7 +64,7 @@ func (t *conv) TrimPrefix(prefix string) *conv {
 // eg: "  hello world  " will return "hello world"
 func (t *conv) Trim() *conv {
 	str := t.getString()
-	if str == "" {
+	if isEmpty(str) {
 		return t
 	}
 
@@ -83,9 +79,7 @@ func (t *conv) Trim() *conv {
 	for end >= 0 && (str[end] == ' ' || str[end] == '\n' || str[end] == '\t') {
 		end--
 
-	}
-
-	// Special case: empty string
+	} // Special case: empty string
 	if start > end {
 		t.setString("")
 		return t

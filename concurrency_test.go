@@ -256,3 +256,546 @@ func TestConcurrentStringManipulation(t *testing.T) {
 		})
 	}
 }
+
+// TestConcurrentNumericOperations tests numeric conversion and formatting operations
+// under concurrent access patterns.
+func TestConcurrentNumericOperations(t *testing.T) {
+	const numGoroutines = 150
+
+	testCases := []struct {
+		name     string
+		function func() (string, error)
+		expected string
+	}{
+		{
+			name: "ToInt Conversion",
+			function: func() (string, error) {
+				val, err := Convert("12345").ToInt()
+				if err != nil {
+					return "", err
+				}
+				return Convert(val).String(), nil
+			},
+			expected: "12345",
+		},
+		{
+			name: "ToFloat Conversion",
+			function: func() (string, error) {
+				val, err := Convert("123.45").ToFloat()
+				if err != nil {
+					return "", err
+				}
+				return Convert(val).String(), nil
+			},
+			expected: "123.45",
+		},
+		{
+			name: "ToBool Conversion",
+			function: func() (string, error) {
+				val, err := Convert("true").ToBool()
+				if err != nil {
+					return "", err
+				}
+				return Convert(val).String(), nil
+			},
+			expected: "true",
+		},
+		{
+			name: "RoundDecimals Operation",
+			function: func() (string, error) {
+				result := Convert(123.456789).RoundDecimals(2).String()
+				return result, nil
+			},
+			expected: "123.46",
+		},
+		{
+			name: "RoundDecimals Down Operation",
+			function: func() (string, error) {
+				result := Convert(123.456789).RoundDecimals(2).Down().String()
+				return result, nil
+			},
+			expected: "123.45",
+		}, {
+			name: "FormatNumber Operation",
+			function: func() (string, error) {
+				result := Convert(1234567).FormatNumber().String()
+				return result, nil
+			},
+			expected: "1.234.567",
+		},
+	}
+
+	for _, tc := range testCases {
+		tc := tc // capture range variable
+		t.Run(tc.name, func(t *testing.T) {
+			var wg sync.WaitGroup
+			wg.Add(numGoroutines)
+
+			var counter safeCounter
+
+			done := make(chan struct{})
+			go func() {
+				wg.Wait()
+				close(done)
+			}()
+
+			for i := 0; i < numGoroutines; i++ {
+				go func(id int) {
+					defer wg.Done()
+					result, err := tc.function()
+					if err != nil {
+						counter.addError(Format("goroutine %d: error: %v", id, err).String())
+					}
+					if result != tc.expected {
+						counter.addError(Format("goroutine %d: got %q, want %q", id, result, tc.expected).String())
+					}
+				}(i)
+			}
+
+			select {
+			case <-done:
+				if counter.count > 0 {
+					t.Errorf("Failed with %d errors:\n%s", counter.count, Convert(counter.errs).Join("\n").String())
+				}
+			case <-time.After(5 * time.Second):
+				t.Fatal("Test timed out after 5 seconds")
+			}
+		})
+	}
+}
+
+// TestConcurrentStringPointerOperations tests Apply() method and pointer operations
+// under concurrent access to ensure thread safety when modifying original strings.
+func TestConcurrentStringPointerOperations(t *testing.T) {
+	const numGoroutines = 100
+
+	t.Run("Apply Operation", func(t *testing.T) {
+		var wg sync.WaitGroup
+		wg.Add(numGoroutines)
+
+		var counter safeCounter
+
+		done := make(chan struct{})
+		go func() {
+			wg.Wait()
+			close(done)
+		}()
+
+		for i := 0; i < numGoroutines; i++ {
+			go func(id int) {
+				defer wg.Done()
+
+				// Each goroutine works with its own string pointer
+				originalText := "Él Múrcielago Rápido"
+				testText := originalText
+
+				Convert(&testText).
+					RemoveTilde().
+					CamelCaseLower().
+					Apply()
+
+				expected := "elMurcielagoRapido"
+				if testText != expected {
+					counter.addError(Format("goroutine %d: got %q, want %q", id, testText, expected).String())
+				}
+			}(i)
+		}
+
+		select {
+		case <-done:
+			if counter.count > 0 {
+				t.Errorf("Failed with %d errors:\n%s", counter.count, Convert(counter.errs).Join("\n").String())
+			}
+		case <-time.After(5 * time.Second):
+			t.Fatal("Test timed out after 5 seconds")
+		}
+	})
+}
+
+// TestConcurrentFormattingOperations tests Format function and related operations
+// under concurrent access patterns.
+func TestConcurrentFormattingOperations(t *testing.T) {
+	const numGoroutines = 120
+
+	testCases := []struct {
+		name     string
+		function func() string
+		expected string
+	}{
+		{
+			name: "Format with String",
+			function: func() string {
+				return Format("Hello %s", "World").String()
+			},
+			expected: "Hello World",
+		},
+		{
+			name: "Format with Integer",
+			function: func() string {
+				return Format("Number: %d", 42).String()
+			},
+			expected: "Number: 42",
+		},
+		{
+			name: "Format with Float",
+			function: func() string {
+				return Format("Pi: %.2f", 3.14159).String()
+			},
+			expected: "Pi: 3.14",
+		},
+		{
+			name: "Quote Operation",
+			function: func() string {
+				return Convert("Hello \"World\"").Quote().String()
+			},
+			expected: "\"Hello \\\"World\\\"\"",
+		},
+	}
+
+	for _, tc := range testCases {
+		tc := tc // capture range variable
+		t.Run(tc.name, func(t *testing.T) {
+			var wg sync.WaitGroup
+			wg.Add(numGoroutines)
+
+			var counter safeCounter
+
+			done := make(chan struct{})
+			go func() {
+				wg.Wait()
+				close(done)
+			}()
+
+			for i := 0; i < numGoroutines; i++ {
+				go func(id int) {
+					defer wg.Done()
+					result := tc.function()
+					if result != tc.expected {
+						counter.addError(Format("goroutine %d: got %q, want %q", id, result, tc.expected).String())
+					}
+				}(i)
+			}
+
+			select {
+			case <-done:
+				if counter.count > 0 {
+					t.Errorf("Failed with %d errors:\n%s", counter.count, Convert(counter.errs).Join("\n").String())
+				}
+			case <-time.After(5 * time.Second):
+				t.Fatal("Test timed out after 5 seconds")
+			}
+		})
+	}
+}
+
+// TestConcurrentAdvancedCaseOperations tests case conversion operations
+// that are not covered in basic tests.
+func TestConcurrentAdvancedCaseOperations(t *testing.T) {
+	const numGoroutines = 100
+
+	testCases := []struct {
+		name     string
+		function func() string
+		expected string
+	}{
+		{
+			name: "ToSnakeCaseLower",
+			function: func() string {
+				return Convert("HelloWorldTest").ToSnakeCaseLower().String()
+			},
+			expected: "hello_world_test",
+		}, {
+			name: "ToSnakeCaseUpper",
+			function: func() string {
+				return Convert("HelloWorldTest").ToSnakeCaseLower().ToUpper().String()
+			},
+			expected: "HELLO_WORLD_TEST",
+		},
+		{
+			name: "Capitalize Words",
+			function: func() string {
+				return Convert("hello world test").Capitalize().String()
+			},
+			expected: "Hello World Test",
+		},
+		{
+			name: "ToLower",
+			function: func() string {
+				return Convert("HELLO WORLD").ToLower().String()
+			},
+			expected: "hello world",
+		},
+		{
+			name: "ToUpper",
+			function: func() string {
+				return Convert("hello world").ToUpper().String()
+			},
+			expected: "HELLO WORLD",
+		},
+	}
+
+	for _, tc := range testCases {
+		tc := tc // capture range variable
+		t.Run(tc.name, func(t *testing.T) {
+			var wg sync.WaitGroup
+			wg.Add(numGoroutines)
+
+			var counter safeCounter
+
+			done := make(chan struct{})
+			go func() {
+				wg.Wait()
+				close(done)
+			}()
+
+			for i := 0; i < numGoroutines; i++ {
+				go func(id int) {
+					defer wg.Done()
+					result := tc.function()
+					if result != tc.expected {
+						counter.addError(Format("goroutine %d: got %q, want %q", id, result, tc.expected).String())
+					}
+				}(i)
+			}
+
+			select {
+			case <-done:
+				if counter.count > 0 {
+					t.Errorf("Failed with %d errors:\n%s", counter.count, Convert(counter.errs).Join("\n").String())
+				}
+			case <-time.After(5 * time.Second):
+				t.Fatal("Test timed out after 5 seconds")
+			}
+		})
+	}
+}
+
+// TestConcurrentTruncateOperations tests Truncate and TruncateName operations
+// under concurrent access patterns.
+func TestConcurrentTruncateOperations(t *testing.T) {
+	const numGoroutines = 80
+
+	testCases := []struct {
+		name     string
+		function func() string
+		expected string
+	}{
+		{
+			name: "Truncate Basic",
+			function: func() string {
+				return Convert("This is a very long string that needs truncation").Truncate(20).String()
+			},
+			expected: "This is a very lo...",
+		},
+		{
+			name: "Truncate With Reserved Chars",
+			function: func() string {
+				return Convert("This is a long string").Truncate(15, 5).String()
+			},
+			expected: "This is...",
+		}, {
+			name: "TruncateName",
+			function: func() string {
+				return Convert("VeryLongFirstName VeryLongLastName").TruncateName(8, 20).String()
+			},
+			expected: "VeryLong. VeryLon...",
+		},
+	}
+
+	for _, tc := range testCases {
+		tc := tc // capture range variable
+		t.Run(tc.name, func(t *testing.T) {
+			var wg sync.WaitGroup
+			wg.Add(numGoroutines)
+
+			var counter safeCounter
+
+			done := make(chan struct{})
+			go func() {
+				wg.Wait()
+				close(done)
+			}()
+
+			for i := 0; i < numGoroutines; i++ {
+				go func(id int) {
+					defer wg.Done()
+					result := tc.function()
+					if result != tc.expected {
+						counter.addError(Format("goroutine %d: got %q, want %q", id, result, tc.expected).String())
+					}
+				}(i)
+			}
+
+			select {
+			case <-done:
+				if counter.count > 0 {
+					t.Errorf("Failed with %d errors:\n%s", counter.count, Convert(counter.errs).Join("\n").String())
+				}
+			case <-time.After(5 * time.Second):
+				t.Fatal("Test timed out after 5 seconds")
+			}
+		})
+	}
+}
+
+// TestConcurrentUtilityOperations tests less-covered utility operations
+// like Repeat, Join, and Trim operations.
+func TestConcurrentUtilityOperations(t *testing.T) {
+	const numGoroutines = 100
+
+	testCases := []struct {
+		name     string
+		function func() string
+		expected string
+	}{
+		{
+			name: "Repeat Operation",
+			function: func() string {
+				return Convert("Hi").Repeat(3).String()
+			},
+			expected: "HiHiHi",
+		},
+		{
+			name: "Join Operation",
+			function: func() string {
+				return Convert([]string{"apple", "banana", "cherry"}).Join(",").String()
+			},
+			expected: "apple,banana,cherry",
+		},
+		{
+			name: "Trim Operation",
+			function: func() string {
+				return Convert("   hello world   ").Trim().String()
+			},
+			expected: "hello world",
+		},
+		{
+			name: "TrimPrefix Operation",
+			function: func() string {
+				return Convert("prefixHello").TrimPrefix("prefix").String()
+			},
+			expected: "Hello",
+		},
+		{
+			name: "TrimSuffix Operation",
+			function: func() string {
+				return Convert("HelloSuffix").TrimSuffix("Suffix").String()
+			},
+			expected: "Hello",
+		},
+	}
+
+	for _, tc := range testCases {
+		tc := tc // capture range variable
+		t.Run(tc.name, func(t *testing.T) {
+			var wg sync.WaitGroup
+			wg.Add(numGoroutines)
+
+			var counter safeCounter
+
+			done := make(chan struct{})
+			go func() {
+				wg.Wait()
+				close(done)
+			}()
+
+			for i := 0; i < numGoroutines; i++ {
+				go func(id int) {
+					defer wg.Done()
+					result := tc.function()
+					if result != tc.expected {
+						counter.addError(Format("goroutine %d: got %q, want %q", id, result, tc.expected).String())
+					}
+				}(i)
+			}
+
+			select {
+			case <-done:
+				if counter.count > 0 {
+					t.Errorf("Failed with %d errors:\n%s", counter.count, Convert(counter.errs).Join("\n").String())
+				}
+			case <-time.After(5 * time.Second):
+				t.Fatal("Test timed out after 5 seconds")
+			}
+		})
+	}
+}
+
+// TestRaceConditionInComplexChaining tests for race conditions in complex
+// chaining scenarios with high contention.
+func TestRaceConditionInComplexChaining(t *testing.T) {
+	const numGoroutines = 200
+	const iterations = 10
+
+	t.Run("Complex Race Condition Test", func(t *testing.T) {
+		var wg sync.WaitGroup
+		wg.Add(numGoroutines)
+
+		var counter safeCounter
+
+		// Shared test data for high contention scenarios
+		testInputs := []string{
+			"Él Múrcielago Rápido",
+			"JAVASCRIPT TYPESCRIPT",
+			"user_name_with_underscores",
+			"CamelCaseString",
+			"  spaces  everywhere  ",
+		}
+
+		done := make(chan struct{})
+		go func() {
+			wg.Wait()
+			close(done)
+		}()
+
+		for i := 0; i < numGoroutines; i++ {
+			go func(id int) {
+				defer wg.Done()
+
+				for j := 0; j < iterations; j++ {
+					input := testInputs[j%len(testInputs)]
+
+					// Complex chaining operation that exercises multiple code paths
+					result := Convert(input).
+						RemoveTilde().
+						Trim().
+						Replace("_", " ").
+						Replace("  ", " "). // Remove double spaces
+						Capitalize().
+						Replace(" ", "_").
+						ToLower().
+						String()
+
+					// Verify the result is consistent
+					if len(result) == 0 && len(input) > 0 {
+						counter.addError(Format("goroutine %d, iteration %d: got empty result for input %q",
+							id, j, input).String())
+					}
+
+					// Additional validation for specific inputs
+					switch input {
+					case "Él Múrcielago Rápido":
+						if result != "el_murcielago_rapido" {
+							counter.addError(Format("goroutine %d, iteration %d: got %q, want %q",
+								id, j, result, "el_murcielago_rapido").String())
+						}
+					case "  spaces  everywhere  ":
+						if result != "spaces_everywhere" {
+							counter.addError(Format("goroutine %d, iteration %d: got %q, want %q",
+								id, j, result, "spaces_everywhere").String())
+						}
+					}
+				}
+			}(i)
+		}
+
+		select {
+		case <-done:
+			if counter.count > 0 {
+				t.Errorf("Failed with %d errors:\n%s", counter.count, Convert(counter.errs).Join("\n").String())
+			}
+		case <-time.After(10 * time.Second):
+			t.Fatal("Test timed out after 10 seconds")
+		}
+	})
+}

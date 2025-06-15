@@ -19,7 +19,7 @@ func ParseKeyValue(in string, delimiters ...string) (value string, err error) {
 	d := ":"
 
 	// Check for a custom delimiter
-	if len(delimiters) > 0 {
+	if hasLength(delimiters) {
 		if len(delimiters) > 1 {
 			return "", Err(errInvalidFormat, "only one delimiter is allowed")
 		}

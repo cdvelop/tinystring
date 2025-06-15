@@ -506,21 +506,21 @@ fmt.Println(originalText)  // Output: "el murcielago rapido" (modified)
 [Standard Library Example](benchmark/bench-binary-size/standard-lib/main.go) | [TinyString Example](benchmark/bench-binary-size/tinystring-lib/main.go)
 
 <!-- This table is automatically generated from build-and-measure.sh -->
-*Last updated: 2025-06-09 14:44:50*
+*Last updated: 2025-06-15 19:29:31*
 
 | Build Type | Parameters | Standard Library<br/>`go build` | TinyString<br/>`tinygo build` | Size Reduction | Performance |
 |------------|------------|------------------|------------|----------------|-------------|
-| 🖥️ **Default Native** | `-ldflags="-s -w"` | 1.6 MB | 983.5 KB | **-605.5 KB** | ✅ **38.1%** |
-| 🌐 **Default WASM** | `(default -opt=z)` | 879.1 KB | 206.2 KB | **-673.0 KB** | 🏆 **76.5%** |
-| 🌐 **Ultra WASM** | `-no-debug -panic=trap -scheduler=none -gc=leaking -target wasm` | 200.6 KB | 24.9 KB | **-175.7 KB** | 🏆 **87.6%** |
-| 🌐 **Speed WASM** | `-opt=2 -target wasm` | 1.3 MB | 271.7 KB | **-1019.0 KB** | 🏆 **79.0%** |
-| 🌐 **Debug WASM** | `-opt=0 -target wasm` | 3.0 MB | 666.1 KB | **-2.4 MB** | 🏆 **78.3%** |
+| 🖥️ **Default Native** | `-ldflags="-s -w"` | 1.6 MB | 978.0 KB | **-611.0 KB** | ✅ **38.5%** |
+| 🌐 **Default WASM** | `(default -opt=z)` | 879.1 KB | 210.4 KB | **-668.8 KB** | 🏆 **76.1%** |
+| 🌐 **Ultra WASM** | `-no-debug -panic=trap -scheduler=none -gc=leaking -target wasm` | 200.6 KB | 25.8 KB | **-174.8 KB** | 🏆 **87.1%** |
+| 🌐 **Speed WASM** | `-opt=2 -target wasm` | 1.3 MB | 273.9 KB | **-1016.8 KB** | 🏆 **78.8%** |
+| 🌐 **Debug WASM** | `-opt=0 -target wasm` | 3.0 MB | 642.1 KB | **-2.4 MB** | 🏆 **79.1%** |
 
 ### 🎯 Performance Summary
 
-- 🏆 **Peak Reduction: 87.6%** (Best optimization)
+- 🏆 **Peak Reduction: 87.1%** (Best optimization)
 - ✅ **Average WebAssembly Reduction: 80.3%**
-- ✅ **Average Native Reduction: 38.1%**
+- ✅ **Average Native Reduction: 38.5%**
 - 📦 **Total Size Savings: 4.8 MB across all builds**
 
 #### Performance Legend
@@ -535,24 +535,24 @@ fmt.Println(originalText)  // Output: "el murcielago rapido" (modified)
 [Standard Library Example](benchmark/bench-memory-alloc/standard) | [TinyString Example](benchmark/bench-memory-alloc/tinystring)
 
 <!-- This table is automatically generated from memory-benchmark.sh -->
-*Last updated: 2025-06-09 14:45:19*
+*Last updated: 2025-06-15 19:29:59*
 
 Performance benchmarks comparing memory allocation patterns between standard Go library and TinyString:
 
 | 🧪 **Benchmark Category** | 📚 **Library** | 💾 **Memory/Op** | 🔢 **Allocs/Op** | ⏱️ **Time/Op** | 📈 **Memory Trend** | 🎯 **Alloc Trend** | 🏆 **Performance** |
 |----------------------------|----------------|-------------------|-------------------|-----------------|---------------------|---------------------|--------------------|
-| 📝 **String Processing** | 📊 Standard | `1.2 KB` | `48` | `3.2μs` | - | - | - |
-| | 🚀 TinyString | `2.3 KB` | `46` | `9.4μs` | ❌ **96.7% more** | ➖ **4.2% less** | ❌ **Poor** |
-| 🔢 **Number Processing** | 📊 Standard | `1.2 KB` | `132` | `4.4μs` | - | - | - |
-| | 🚀 TinyString | `2.5 KB` | `120` | `3.9μs` | ❌ **110.7% more** | ✅ **9.1% less** | ❌ **Poor** |
-| 🔄 **Mixed Operations** | 📊 Standard | `546 B` | `44` | `2.2μs` | - | - | - |
-| | 🚀 TinyString | `1.2 KB` | `46` | `3.7μs` | ❌ **119.8% more** | ➖ **4.5% more** | ❌ **Poor** |
-| 📝 **String Processing (Pointer Optimization)** | 📊 Standard | `1.2 KB` | `48` | `3.2μs` | - | - | - |
-| | 🚀 TinyString | `2.2 KB` | `38` | `9.3μs` | ❌ **86.0% more** | 🏆 **20.8% less** | ⚠️ **Caution** |
+| 📝 **String Processing** | 📊 Standard | `1.2 KB` | `48` | `3.0μs` | - | - | - |
+| | 🚀 TinyString | `2.3 KB` | `46` | `9.0μs` | ❌ **96.7% more** | ➖ **4.2% less** | ❌ **Poor** |
+| 🔢 **Number Processing** | 📊 Standard | `1.2 KB` | `132` | `4.1μs` | - | - | - |
+| | 🚀 TinyString | `2.6 KB` | `120` | `3.8μs` | ❌ **121.3% more** | ✅ **9.1% less** | ❌ **Poor** |
+| 🔄 **Mixed Operations** | 📊 Standard | `546 B` | `44` | `2.1μs` | - | - | - |
+| | 🚀 TinyString | `1.2 KB` | `46` | `3.4μs` | ❌ **125.6% more** | ➖ **4.5% more** | ❌ **Poor** |
+| 📝 **String Processing (Pointer Optimization)** | 📊 Standard | `1.2 KB` | `48` | `3.0μs` | - | - | - |
+| | 🚀 TinyString | `2.2 KB` | `38` | `8.8μs` | ❌ **86.0% more** | 🏆 **20.8% less** | ⚠️ **Caution** |
 
 ### 🎯 Performance Summary
 
-- 💾 **Memory Efficiency**: ❌ **Poor** (Significant overhead) (103.3% average change)
+- 💾 **Memory Efficiency**: ❌ **Poor** (Significant overhead) (107.4% average change)
 - 🔢 **Allocation Efficiency**: ✅ **Good** (Allocation efficient) (-7.4% average change)
 - 📊 **Benchmarks Analyzed**: 4 categories
 - 🎯 **Optimization Focus**: Binary size reduction vs runtime efficiency

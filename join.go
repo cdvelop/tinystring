@@ -50,7 +50,7 @@ func (t *conv) Join(sep ...string) *conv {
 			}
 			tL += (len(parts) - 1) * len(separator)
 
-			buf := make([]byte, 0, tL)
+			buf := makeBuf(tL)
 			for i, part := range parts {
 				buf = append(buf, part...)
 				if i < len(parts)-1 {

@@ -10,7 +10,56 @@ const (
 	falseStr = "false"
 	zeroStr  = "0"
 	oneStr   = "1"
+	// Common punctuation
+	dotStr      = "."
+	spaceStr    = " "
+	ellipsisStr = "..."
+	quoteStr    = "\"\""
+	// ASCII case conversion constant
+	asciiCaseDiff = 32
+	// Buffer capacity constants
+	smallBufCap   = 4  // small arrays/words
+	mediumBufCap  = 10 // medium text operations
+	defaultBufCap = 16 // default buffer size
 )
+
+// Helper function to check if error is empty (reduces repeated == "" checks)
+// Helper function to check if string is empty (reduces repeated len() calls)
+func isEmpty(s string) bool {
+	return len(s) == 0
+}
+
+// Helper function to check if slice/string has content (reduces repeated len() > 0 checks)
+func hasLength(s any) bool {
+	switch v := s.(type) {
+	case string:
+		return len(v) > 0
+	case []string:
+		return len(v) > 0
+	case []int:
+		return len(v) > 0
+	case []any:
+		return len(v) > 0
+	default:
+		return false
+	}
+}
+
+// Helper function to create byte buffer with estimated capacity
+func makeBuf(cap int) []byte {
+	if cap < defaultBufCap {
+		cap = defaultBufCap
+	}
+	return make([]byte, 0, cap)
+}
+
+// Helper function to create rune buffer with estimated capacity
+func makeRuneBuf(cap int) []rune {
+	if cap < defaultBufCap {
+		cap = defaultBufCap
+	}
+	return make([]rune, 0, cap)
+}
 
 // Index-based character mapping for maximum efficiency
 var (
@@ -28,7 +77,7 @@ var (
 func toUpperRune(r rune) rune {
 	// ASCII fast path
 	if r >= 'a' && r <= 'z' {
-		return r - 32
+		return r - asciiCaseDiff
 	}
 	// Accent conversion using index lookup
 	for i, char := range aL {
@@ -43,7 +92,7 @@ func toUpperRune(r rune) rune {
 func toLowerRune(r rune) rune {
 	// ASCII fast path
 	if r >= 'A' && r <= 'Z' {
-		return r + 32
+		return r + asciiCaseDiff
 	}
 	// Accent conversion using index lookup
 	for i, char := range aU {
@@ -56,8 +105,7 @@ func toLowerRune(r rune) rune {
 
 // RemoveTilde removes accents and diacritics using index-based lookup
 func (t *conv) RemoveTilde() *conv {
-	str := t.getString()
-	buf := make([]byte, 0, len(str)*2)
+	str, buf := t.newBuf(2)
 	hc := false
 	for _, r := range str {
 		// Find accent and replace with base character using index lookup

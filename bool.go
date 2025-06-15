@@ -30,7 +30,7 @@ func (t *conv) ToBool() (bool, error) {
 			return false, nil
 		default:
 			// Try to parse as numeric - non-zero numbers are true
-			t.s2Int(10)
+			t.s2IntGeneric(10)
 			if t.err == "" {
 				t.boolVal = t.intVal != 0
 				t.vTpe = typeBool

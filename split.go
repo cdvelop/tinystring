@@ -49,9 +49,8 @@ func Split(data string, separator ...string) (result []string) {
 	if len(data) < 3 {
 		return []string{data}
 	}
-
 	// Handle empty separator
-	if sep == "" {
+	if isEmpty(sep) {
 		result = make([]string, 0, len(data))
 		for _, ch := range data {
 			result = append(result, string(ch))

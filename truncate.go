@@ -1,15 +1,14 @@
 package tinystring
 
-const ellipsis = "..."
+// Using shared constants from mapping.go for consistency
 
 // processWordForName applies the maxCharsPerWord rule to a word for name truncation
-func (t *conv) processWordForName(word string, wordIndex int, totalWords int, maxCharsPerWord int) string {
-	// Last word doesn't get truncated by maxCharsPerWord
+func (t *conv) processWordForName(word string, wordIndex int, totalWords int, maxCharsPerWord int) string { // Last word doesn't get truncated by maxCharsPerWord
 	if wordIndex < totalWords-1 && len(word) > maxCharsPerWord {
-		return word[:maxCharsPerWord] + "."
+		return word[:maxCharsPerWord] + dotStr
 	} else if wordIndex == 0 && len(word) == 1 {
 		// Special case: single letter first word gets a period
-		return word + "."
+		return word + dotStr
 	}
 	return word
 }
@@ -43,19 +42,18 @@ func (t *conv) Truncate(maxWidth any, reservedChars ...any) *conv {
 		if rCI > mWI {
 			rCI = mWI
 		}
-
 		// Calculate the width available for the conv itself, excluding reserved chars
 		eW := max(mWI-rCI, 0)
-		ellipsisLen := len(ellipsis)
+		ellipsisLen := len(ellipsisStr)
 
 		if rCI > 0 && mWI >= ellipsisLen && eW >= ellipsisLen {
 			// Case 1: Reserved chars specified, and ellipsis fits within the effective width
 			cTK := min(max(eW-ellipsisLen, 0), oL)
-			t.setString(conv[:cTK] + ellipsis)
+			t.setString(conv[:cTK] + ellipsisStr)
 		} else if rCI == 0 && mWI >= ellipsisLen {
 			// Case 2: No reserved chars, ellipsis fits within maxWidth
 			cTK := min(max(mWI-ellipsisLen, 0), oL)
-			t.setString(conv[:cTK] + ellipsis)
+			t.setString(conv[:cTK] + ellipsisStr)
 		} else {
 			// Case 3: Ellipsis doesn't fit or reserved chars prevent it, just truncate
 			cTK := min(mWI, oL)
@@ -79,7 +77,7 @@ func (t *conv) Truncate(maxWidth any, reservedChars ...any) *conv {
 //   - Convert("Ana Maria Rodriguez").TruncateName(2, 10) => "An. Mar..."
 //   - Convert("Juan").TruncateName(3, 5) => "Juan"
 func (t *conv) TruncateName(maxCharsPerWord, maxWidth any) *conv {
-	if t.getString() == "" {
+	if isEmpty(t.getString()) {
 		return t
 	}
 	// Validate parameters
@@ -96,13 +94,11 @@ func (t *conv) TruncateName(maxCharsPerWord, maxWidth any) *conv {
 	words := Split(t.getString())
 	if len(words) == 0 {
 		return t
-	}
-
-	// Step 1: Apply maxCharsPerWord rule to each word
+	} // Step 1: Apply maxCharsPerWord rule to each word
 	var res string
 	for i, word := range words {
 		if i > 0 {
-			res += " " // Add space separator
+			res += spaceStr // Add space separator
 		}
 		res += t.processWordForName(word, i, len(words), mC)
 	}
@@ -126,12 +122,11 @@ func (t *conv) applyMaxWidthConstraint(words []string, mC, mT int) *conv {
 		if len(words) > 2 {
 			minNeeded = mC + 1 + 1 + mC + 1 // "Abc. D..." for 3+ words
 		}
-
 		// If we can't fit the normal pattern, use all space for first word
 		if mT < minNeeded && mT >= 4 { // minimum "X..." is 4 chars
-			availableForFirstWord := mT - len(ellipsis)
+			availableForFirstWord := mT - len(ellipsisStr)
 			if len(words[0]) > availableForFirstWord {
-				t.setString(words[0][:availableForFirstWord] + ellipsis)
+				t.setString(words[0][:availableForFirstWord] + ellipsisStr)
 				return t
 			}
 		}
@@ -139,13 +134,12 @@ func (t *conv) applyMaxWidthConstraint(words []string, mC, mT int) *conv {
 
 	// Build result with remaining space tracking
 	var res string
-	remaining := mT - len(ellipsis) // Reserve space for "..." suffix
+	remaining := mT - len(ellipsisStr) // Reserve space for "..." suffix
 
-	for i, word := range words {
-		// Check if we need to add a space
+	for i, word := range words { // Check if we need to add a space
 		if i > 0 {
 			if remaining > 0 {
-				res += " "
+				res += spaceStr
 				remaining--
 			} else {
 				break // No more space left
@@ -166,9 +160,8 @@ func (t *conv) applyMaxWidthConstraint(words []string, mC, mT int) *conv {
 			break
 		}
 	}
-
 	// Add the suffix
-	res += ellipsis
+	res += ellipsisStr
 	t.setString(res)
 	return t
 }

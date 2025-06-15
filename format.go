@@ -18,66 +18,41 @@ func (c *conv) formatValue(value any) {
 		}
 	case string:
 		c.setString(val)
-	case int, int8, int16, int32, int64:
-		c.formatAny2Int(val)
-	case uint, uint8, uint16, uint32, uint64:
-		c.formatAny2Uint(val)
-	case float32, float64:
-		c.formatAny2Float(val)
 	default:
-		// Handle unsupported types
-		c.formatUnsupported(value)
+		c.formatAnyNumeric(value)
 	}
 }
 
-// formatAny2Int consolidates all integer type formatting
-func (c *conv) formatAny2Int(val any) {
+// formatAnyNumeric consolidates all numeric type formatting
+func (c *conv) formatAnyNumeric(val any) {
 	switch v := val.(type) {
 	case int:
-		genFormatInt(c, v)
+		genInt(c, v, 2)
 	case int8:
-		genFormatInt(c, v)
+		genInt(c, v, 2)
 	case int16:
-		genFormatInt(c, v)
+		genInt(c, v, 2)
 	case int32:
-		genFormatInt(c, v)
+		genInt(c, v, 2)
 	case int64:
-		genFormatInt(c, v)
-	}
-}
-
-// formatAny2Uint consolidates all unsigned integer type formatting
-func (c *conv) formatAny2Uint(val any) {
-	switch v := val.(type) {
+		genInt(c, v, 2)
 	case uint:
-		genFormatUint(c, v)
+		genUint(c, v, 2)
 	case uint8:
-		genFormatUint(c, v)
+		genUint(c, v, 2)
 	case uint16:
-		genFormatUint(c, v)
+		genUint(c, v, 2)
 	case uint32:
-		genFormatUint(c, v)
+		genUint(c, v, 2)
 	case uint64:
-		genFormatUint(c, v)
-	}
-}
-
-// formatAny2Float consolidates all float type formatting
-func (c *conv) formatAny2Float(val any) {
-	switch v := val.(type) {
+		genUint(c, v, 2)
 	case float32:
-		genFormatFloat(c, v)
+		genFloat(c, v, 2)
 	case float64:
-		genFormatFloat(c, v)
+		genFloat(c, v, 2)
+	default:
+		c.setString("<unsupported>")
 	}
-}
-
-// formatUnsupported formats unsupported types and stores in conv struct.
-// This is an internal conv method that modifies the struct instead of returning values.
-func (c *conv) formatUnsupported(value any) {
-	// Replace reflection with simple unsupported message
-	// This eliminates the reflect package dependency for significant size reduction
-	c.setString("<unsupported>")
 }
 
 // RoundDecimals rounds a numeric value to the specified number of decimal places
@@ -91,9 +66,8 @@ func (t *conv) RoundDecimals(decimals int) *conv {
 	var val float64
 	if t.vTpe == typeFloat {
 		val = t.floatVal
-	} else {
-		// Parse current string content as float without creating temporary conv
-		t.parseFloat()
+	} else { // Parse current string content as float without creating temporary conv
+		t.s2Float()
 		if t.err != "" {
 			// If cannot parse as number, set to 0 and continue with formatting
 			val = 0
@@ -261,17 +235,18 @@ func (t *conv) FormatNumber() *conv {
 	str := t.getString()
 	// Save original state BEFORE any parsing attempts
 	oVal := t.stringVal
-	oType := t.vTpe
-	// Try to parse as integer first using existing s2Int
+	oType := t.vTpe // Try to parse as integer first using existing s2Int
 	t.setString(str)
-	t.s2Int(10)
+	t.s2IntGeneric(10)
 	if t.err == "" { // Use the parsed integer value
 		t.vTpe = typeInt
 		t.i2s()
 		t.fmtNum()
 		t.err = ""
 		return t
-	} // Try to parse as float using existing parseFloatManual
+	}
+
+	// Try to parse as float using existing parseFloatManual
 	t.err = "" // Reset error before trying float parsing
 	t.setString(str)
 	t.parseFloat()
@@ -378,13 +353,12 @@ func (c *conv) fmtNum() {
 		// No formatting needed for numbers with 3 or fewer digits
 		return
 	}
-
 	// Calculate exact buffer size needed
 	separatorCount := (len(workingStr) - 1) / 3
-	totalSize := len(numStr) + separatorCount
+	tSz := len(numStr) + separatorCount
 
 	// Use fixed buffer instead of pooled builder
-	buf := make([]byte, 0, totalSize)
+	buf := makeBuf(tSz)
 
 	if negative {
 		buf = append(buf, '-')
@@ -431,7 +405,7 @@ func (c *conv) f2sMan(precision int) {
 	if value == 0 {
 		if precision > 0 {
 			// Pre-calculate buffer size for "0.000..."
-			buf := make([]byte, 0, 2+precision)
+			buf := makeBuf(2 + precision)
 			buf = append(buf, '0', '.')
 			for i := 0; i < precision; i++ {
 				buf = append(buf, '0')
@@ -483,7 +457,7 @@ func (c *conv) f2sMan(precision int) {
 	}
 
 	// Single allocation for the entire result
-	result := make([]byte, 0, resultSize)
+	result := makeBuf(resultSize)
 
 	// Add negative sign if needed
 	if isNegative {
@@ -610,77 +584,50 @@ func (c *conv) extractArg(args []any, argIndex int, formatSpec string) (any, boo
 	return args[argIndex], true
 }
 
-// Helper function to handle integer format specifiers (d, o, b, x)
-func (c *conv) handleIntFormat(args []any, argIndex *int, base int, formatSpec string) ([]byte, bool) {
+// Unified handler for all format specifiers
+func (c *conv) handleFormat(args []any, argIndex *int, formatType rune, param int, formatSpec string) ([]byte, bool) {
 	arg, ok := c.extractArg(args, *argIndex, formatSpec)
 	if !ok {
 		return nil, false
 	}
 
-	intVal, ok := arg.(int)
-	if !ok {
-		c.NewErr(errFormatWrongType, formatSpec)
-		return nil, false
+	var str string
+	switch formatType {
+	case 'd', 'o', 'b', 'x':
+		if intVal, ok := arg.(int); ok {
+			tempConv := newConv(withValue(int64(intVal)))
+			if param == 10 {
+				tempConv.i2s()
+			} else {
+				tempConv.i2sBase(param)
+			}
+			str = tempConv.getString()
+		} else {
+			c.NewErr(errFormatWrongType, formatSpec)
+			return nil, false
+		}
+	case 'f':
+		if floatVal, ok := arg.(float64); ok {
+			tempConv := newConv(withValue(floatVal))
+			tempConv.f2sMan(param)
+			str = tempConv.getString()
+		} else {
+			c.NewErr(errFormatWrongType, formatSpec)
+			return nil, false
+		}
+	case 's':
+		if strVal, ok := arg.(string); ok {
+			str = strVal
+		} else {
+			c.NewErr(errFormatWrongType, formatSpec)
+			return nil, false
+		}
+	case 'v':
+		tempConv := newConv(withValue(""))
+		tempConv.formatValue(arg)
+		str = tempConv.getString()
 	}
 
-	tempConv := newConv(withValue(int64(intVal)))
-	if base == 10 {
-		tempConv.i2s()
-	} else {
-		tempConv.i2sBase(base)
-	}
-	str := tempConv.getString()
-	*argIndex++
-	return []byte(str), true
-}
-
-// Helper function to handle float format specifiers (f)
-func (c *conv) handleFloatFormat(args []any, argIndex *int, precision int, formatSpec string) ([]byte, bool) {
-	arg, ok := c.extractArg(args, *argIndex, formatSpec)
-	if !ok {
-		return nil, false
-	}
-
-	floatVal, ok := arg.(float64)
-	if !ok {
-		c.NewErr(errFormatWrongType, formatSpec)
-		return nil, false
-	}
-
-	tempConv := newConv(withValue(floatVal))
-	tempConv.f2sMan(precision)
-	str := tempConv.getString()
-	*argIndex++
-	return []byte(str), true
-}
-
-// Helper function to handle string format specifiers (s)
-func (c *conv) handleStringFormat(args []any, argIndex *int, formatSpec string) ([]byte, bool) {
-	arg, ok := c.extractArg(args, *argIndex, formatSpec)
-	if !ok {
-		return nil, false
-	}
-
-	strVal, ok := arg.(string)
-	if !ok {
-		c.NewErr(errFormatWrongType, formatSpec)
-		return nil, false
-	}
-
-	*argIndex++
-	return []byte(strVal), true
-}
-
-// Helper function to handle generic format specifiers (v)
-func (c *conv) handleGenericFormat(args []any, argIndex *int, formatSpec string) ([]byte, bool) {
-	arg, ok := c.extractArg(args, *argIndex, formatSpec)
-	if !ok {
-		return nil, false
-	}
-
-	tempConv := newConv(withValue(""))
-	tempConv.formatValue(arg)
-	str := tempConv.getString()
 	*argIndex++
 	return []byte(str), true
 }
@@ -692,24 +639,23 @@ func unifiedFormat(format string, args ...any) *conv {
 	return result
 }
 
-func (c *conv) sprintf(format string, args ...any) {
-	// Pre-calculate buffer size to reduce reallocations
-	estimatedSize := len(format)
+func (c *conv) sprintf(format string, args ...any) { // Pre-calculate buffer size to reduce reallocations
+	eSz := len(format)
 	for _, arg := range args {
 		switch arg.(type) {
 		case string:
-			estimatedSize += 32 // Estimate for strings
+			eSz += 32 // Estimate for strings
 		case int, int64, int32:
-			estimatedSize += 16 // Estimate for integers
+			eSz += 16 // Estimate for integers
 		case float64, float32:
-			estimatedSize += 24 // Estimate for floats
+			eSz += 24 // Estimate for floats
 		default:
-			estimatedSize += 16 // Default estimate
+			eSz += 16 // Default estimate
 		}
 	}
 
 	// Use pre-allocated buffer instead of builder pool
-	buf := make([]byte, 0, estimatedSize)
+	buf := makeBuf(eSz)
 	argIndex := 0
 
 	for i := 0; i < len(format); i++ {
@@ -728,51 +674,52 @@ func (c *conv) sprintf(format string, args ...any) {
 					if start < i {
 						// Parse precision
 						tempConv := newConv(withValue(format[start:i]))
-						tempConv.s2Int(10)
+						tempConv.s2IntGeneric(10)
 						if tempConv.err == "" {
 							precision = int(tempConv.intVal)
 						}
 					}
-				} // Handle format specifiers
+				}
+				// Handle format specifiers
 				switch format[i] {
 				case 'd':
-					if str, ok := c.handleIntFormat(args, &argIndex, 10, "%d"); ok {
+					if str, ok := c.handleFormat(args, &argIndex, 'd', 10, "%d"); ok {
 						buf = append(buf, str...)
 					} else {
 						return
 					}
 				case 'f':
-					if str, ok := c.handleFloatFormat(args, &argIndex, precision, "%f"); ok {
+					if str, ok := c.handleFormat(args, &argIndex, 'f', precision, "%f"); ok {
 						buf = append(buf, str...)
 					} else {
 						return
 					}
 				case 'o':
-					if str, ok := c.handleIntFormat(args, &argIndex, 8, "%o"); ok {
+					if str, ok := c.handleFormat(args, &argIndex, 'o', 8, "%o"); ok {
 						buf = append(buf, str...)
 					} else {
 						return
 					}
 				case 'b':
-					if str, ok := c.handleIntFormat(args, &argIndex, 2, "%b"); ok {
+					if str, ok := c.handleFormat(args, &argIndex, 'b', 2, "%b"); ok {
 						buf = append(buf, str...)
 					} else {
 						return
 					}
 				case 'x':
-					if str, ok := c.handleIntFormat(args, &argIndex, 16, "%x"); ok {
+					if str, ok := c.handleFormat(args, &argIndex, 'x', 16, "%x"); ok {
 						buf = append(buf, str...)
 					} else {
 						return
 					}
 				case 'v':
-					if str, ok := c.handleGenericFormat(args, &argIndex, "%v"); ok {
+					if str, ok := c.handleFormat(args, &argIndex, 'v', 0, "%v"); ok {
 						buf = append(buf, str...)
 					} else {
 						return
 					}
 				case 's':
-					if str, ok := c.handleStringFormat(args, &argIndex, "%s"); ok {
+					if str, ok := c.handleFormat(args, &argIndex, 's', 0, "%s"); ok {
 						buf = append(buf, str...)
 					} else {
 						return
@@ -796,3 +743,4 @@ func (c *conv) sprintf(format string, args ...any) {
 }
 
 // Helper functions for formatValue type handling using generics
+// These are now consolidated in convert.go to avoid duplication

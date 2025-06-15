@@ -5,19 +5,18 @@ package tinystring
 // For example: "  hello   world  " -> "Hello World"
 func (t *conv) Capitalize() *conv {
 	str := t.getString()
-	if len(str) == 0 {
+	if isEmpty(str) {
 		return t
 	}
-
 	// First pass: normalize whitespace and build word list
-	words := make([][]rune, 0, 4)      // estimate 4 words
-	currentWord := make([]rune, 0, 10) // estimate 10 chars per word
+	words := make([][]rune, 0, smallBufCap)  // estimate words
+	currentWord := makeRuneBuf(mediumBufCap) // estimate chars per word
 
 	for _, r := range str {
 		if r == ' ' || r == '\t' || r == '\n' || r == '\r' {
 			if len(currentWord) > 0 {
 				words = append(words, currentWord)
-				currentWord = make([]rune, 0, 10)
+				currentWord = makeRuneBuf(10)
 			}
 		} else {
 			currentWord = append(currentWord, r)
@@ -26,7 +25,6 @@ func (t *conv) Capitalize() *conv {
 	if len(currentWord) > 0 {
 		words = append(words, currentWord)
 	}
-
 	if len(words) == 0 {
 		t.setString("")
 		return t
@@ -49,7 +47,7 @@ func (t *conv) Capitalize() *conv {
 	}
 
 	// Third pass: build final string
-	buf := make([]rune, 0, totalLen)
+	buf := makeRuneBuf(totalLen)
 	for i, word := range words {
 		if i > 0 {
 			buf = append(buf, ' ')
@@ -63,32 +61,29 @@ func (t *conv) Capitalize() *conv {
 
 // convert to lower case eg: "HELLO WORLD" -> "hello world"
 func (t *conv) ToLower() *conv {
-	str := t.getString()
-	if len(str) == 0 {
-		return t
-	}
-
-	// Optimized: use rune slice and single string conversion - Phase 3
-	runes := []rune(str)
-	for i, r := range runes {
-		runes[i] = toLowerRune(r)
-	}
-
-	t.setString(string(runes))
-	return t
+	return t.changeCase(true)
 }
 
 // convert to upper case eg: "hello world" -> "HELLO WORLD"
 func (t *conv) ToUpper() *conv {
+	return t.changeCase(false)
+}
+
+// changeCase consolidates ToLower and ToUpper functionality
+func (t *conv) changeCase(toLower bool) *conv {
 	str := t.getString()
-	if len(str) == 0 {
+	if isEmpty(str) {
 		return t
 	}
 
-	// Optimized: use rune slice and single string conversion - Phase 3
+	// Optimized: use rune slice and single string conversion
 	runes := []rune(str)
 	for i, r := range runes {
-		runes[i] = toUpperRune(r)
+		if toLower {
+			runes[i] = toLowerRune(r)
+		} else {
+			runes[i] = toUpperRune(r)
+		}
 	}
 
 	t.setString(string(runes))
@@ -127,13 +122,12 @@ func (t *conv) ToSnakeCaseUpper(sep ...string) *conv {
 // Minimal implementation without pools or builders - optimized for minimal allocations
 func (t *conv) toCaseTransformMinimal(firstWordLower bool, separator string) *conv {
 	str := t.getString()
-	if len(str) == 0 {
+	if isEmpty(str) {
 		return t
 	}
-
 	// Pre-allocate buffer with estimated size
-	estimatedSize := len(str) + (len(separator) * 5) // Extra space for separators
-	result := make([]byte, 0, estimatedSize)
+	eSz := len(str) + (len(separator) * 5) // Extra space for separators
+	result := makeBuf(eSz)
 	// Advanced word boundary detection for camelCase and snake_case
 	wordIndex := 0
 	var pWU, pWL, pWD, pWS bool
