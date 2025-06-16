@@ -66,17 +66,20 @@ func (t *conv) changeCase(toLower bool) *conv {
 		return t
 	}
 
-	// Optimized: use rune slice and single string conversion
-	runes := []rune(str)
-	for i, r := range runes {
+	// Use rune buffer pool for better memory efficiency
+	buf := getRuneBuffer(len(str))
+	defer putRuneBuffer(&buf)
+
+	// Convert to runes and process
+	for _, r := range str {
 		if toLower {
-			runes[i] = toLowerRune(r)
+			buf = append(buf, toLowerRune(r))
 		} else {
-			runes[i] = toUpperRune(r)
+			buf = append(buf, toUpperRune(r))
 		}
 	}
 
-	t.setString(string(runes))
+	t.setString(string(buf))
 	return t
 }
 
@@ -178,9 +181,15 @@ func (t *conv) toCaseTransformMinimal(firstWordLower bool, separator string) *co
 			// Rest of letters in word - always lowercase
 			transformedRune = toLowerRune(r)
 		}
-
-		// Add the character
-		result = append(result, string(transformedRune)...)
+		// Add the character - use bytes buffer for efficiency
+		// Convert rune to bytes directly instead of string(rune)
+		if transformedRune < 128 {
+			// ASCII optimization
+			result = append(result, byte(transformedRune))
+		} else {
+			// Use UTF-8 encoding for multi-byte runes
+			result = append(result, string(transformedRune)...)
+		}
 
 		// Update state for next iteration
 		pWU = cIU

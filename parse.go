@@ -35,8 +35,13 @@ func ParseKeyValue(in string, delimiters ...string) (value string, err error) {
 
 	// Check if delimiter exists in the in
 	if !Contains(in, d) {
-		em := "delimiter '" + d + "' not found in string " + in
-		return "", Err(errInvalidFormat, em)
+		// Use buffer for error message instead of string concatenation
+		buf := makeBuf(len("delimiter '") + len(d) + len("' not found in string ") + len(in))
+		buf = append(buf, "delimiter '"...)
+		buf = append(buf, d...)
+		buf = append(buf, "' not found in string "...)
+		buf = append(buf, in...)
+		return "", Err(errInvalidFormat, string(buf))
 	}
 	// Extract value part (everything after the first occurrence of the delimiter)
 	// Find the position of the first delimiter

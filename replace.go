@@ -8,10 +8,18 @@ func (t *conv) Replace(oldAny, newAny any, n ...int) *conv {
 	// Convert parameters to strings using the consistent Convert pattern
 	old := Convert(oldAny).String()
 	newStr := Convert(newAny).String()
-	str, buf := t.newBuf(2)
+	str := t.getString()
 	if isEmpty(old) || isEmpty(str) {
 		return t
 	}
+	// Estimate buffer capacity based on replacement patterns
+	estimatedCap := len(str)
+	if len(newStr) > len(old) {
+		// If new string is longer, estimate extra space needed
+		estimatedCap += (len(newStr) - len(old)) * 5 // Assume up to 5 replacements
+	}
+	buf := makeBuf(estimatedCap)
+
 	// Default behavior: replace all occurrences (n = -1)
 	maxReps := -1
 	if hasLength(n) {
