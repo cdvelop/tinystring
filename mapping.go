@@ -54,11 +54,9 @@ func makeBuf(cap int) []byte {
 }
 
 // Helper function to create rune buffer with estimated capacity
+// Phase 11 Optimization: Use rune buffer pool to reduce allocations
 func makeRuneBuf(cap int) []rune {
-	if cap < defaultBufCap {
-		cap = defaultBufCap
-	}
-	return make([]rune, 0, cap)
+	return getRuneBuffer(cap)
 }
 
 // Index-based character mapping for maximum efficiency

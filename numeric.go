@@ -14,9 +14,10 @@ var smallInts = [...]string{
 	"90", "91", "92", "93", "94", "95", "96", "97", "98", "99",
 }
 
-// Phase 8.5: Fast parsing for common small integers (0-999)
+// Phase 11: Extended fast parsing for common integers (0-99999)
 // parseSmallInt optimizes parsing of small integers using direct byte access
 // Returns the parsed integer and nil if successful, otherwise returns 0 and non-nil error
+// Expanded from 999 to 99999 to handle more common integer patterns
 func parseSmallInt(s string) (int, errorType) {
 	if len(s) == 0 {
 		return 0, errEmptyString
@@ -48,8 +49,8 @@ func parseSmallInt(s string) (int, errorType) {
 
 		digit := int(s[i] - '0')
 
-		// Check for overflow before multiplying
-		if result > (999-digit)/10 {
+		// Phase 11: Extended overflow check for 99999 limit
+		if result > (99999-digit)/10 {
 			return 0, errOverflow
 		}
 
@@ -537,9 +538,8 @@ func (t *conv) s2n(base int) {
 	inp := t.getString()
 	if !t.validateBase(base) {
 		return
-	}
-	// Phase 8.5: Fast path for common small numbers (0-999) in base 10
-	if base == 10 && len(inp) <= 3 && len(inp) > 0 {
+	} // Phase 11: Extended fast path for common numbers (0-99999) in base 10
+	if base == 10 && len(inp) <= 5 && len(inp) > 0 {
 		if num, err := parseSmallInt(inp); err == errNone {
 			t.uintVal = uint64(num)
 			t.vTpe = typeUint

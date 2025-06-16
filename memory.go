@@ -159,43 +159,47 @@ func bytesEqual(a, b []byte) bool {
 	return true
 }
 
-// internString attempts to return a cached string if available, otherwise caches and returns the string
-func internString(s string) string {
-	// Only intern small strings (most common case)
-	if len(s) > 32 || len(s) == 0 {
-		return s
-	}
+// Phase 11: Rune Buffer Pool for memory optimization
+// Reuse rune buffers to eliminate makeRuneBuf() allocation hotspot
+var runeBufferPool = sync.Pool{
+	New: func() interface{} {
+		// Start with a reasonable default capacity
+		return make([]rune, 0, defaultBufCap)
+	},
+}
 
-	// Fast read-only check first
-	stringCacheMu.RLock()
-	for i := range stringCache {
-		if stringCache[i].str == s {
-			stringCacheMu.RUnlock()
-			return stringCache[i].ref
+// getRuneBuffer gets a reusable rune buffer from the pool
+func getRuneBuffer(capacity int) []rune {
+	bufInterface := runeBufferPool.Get()
+	buf := bufInterface.([]rune)
+
+	// Reset the buffer
+	buf = buf[:0]
+
+	// Grow if needed
+	if capacity > cap(buf) {
+		// If requested capacity is much larger, allocate new buffer
+		if capacity > cap(buf)*2 {
+			runeBufferPool.Put(buf) // Return the old buffer to pool
+			return make([]rune, 0, capacity)
 		}
-	}
-	stringCacheMu.RUnlock()
-
-	// Not found, try to add to cache (with write lock)
-	stringCacheMu.Lock()
-	defer stringCacheMu.Unlock()
-
-	// Double-check in case another goroutine added it
-	for i := range stringCache {
-		if stringCache[i].str == s {
-			return stringCache[i].ref
-		}
+		// Otherwise, grow the buffer
+		runeBufferPool.Put(buf) // Return the old buffer to pool
+		return make([]rune, 0, capacity)
 	}
 
-	// Add to cache if not full
-	if len(stringCache) < maxCacheSize {
-		stringCache = append(stringCache, cachedString{
-			str: s,
-			ref: s,
-		})
-	}
+	return buf
+}
 
-	return s
+// putRuneBuffer returns a rune buffer to the pool
+func putRuneBuffer(buf *[]rune) {
+	if buf == nil {
+		return
+	}
+	// Only pool buffers that aren't too large to avoid memory leaks
+	if cap(*buf) <= defaultBufCap*4 {
+		runeBufferPool.Put((*buf)[:0])
+	}
 }
 
 // newBuf creates an optimally-sized buffer for common string operations

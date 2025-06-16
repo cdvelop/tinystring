@@ -2,57 +2,47 @@ package tinystring
 
 // Capitalize transforms the first letter of each word to uppercase and the rest to lowercase.
 // Also normalizes whitespace (collapses multiple spaces into single space and trims).
+// Phase 11 Optimization: Reduced buffer allocations through pooling
 // For example: "  hello   world  " -> "Hello World"
 func (t *conv) Capitalize() *conv {
 	str := t.getString()
 	if isEmpty(str) {
 		return t
 	}
-	// First pass: normalize whitespace and build word list
-	words := make([][]rune, 0, smallBufCap)  // estimate words
-	currentWord := makeRuneBuf(mediumBufCap) // estimate chars per word
 
-	for _, r := range str {
-		if r == ' ' || r == '\t' || r == '\n' || r == '\r' {
-			if len(currentWord) > 0 {
-				words = append(words, currentWord)
-				currentWord = makeRuneBuf(10)
-			}
-		} else {
-			currentWord = append(currentWord, r)
-		}
-	}
-	if len(currentWord) > 0 {
-		words = append(words, currentWord)
-	}
-	if len(words) == 0 {
-		t.setString("")
+	// Phase 11: Use single buffer approach to reduce allocations
+	runes := []rune(str)
+	if len(runes) == 0 {
 		return t
 	}
+	// Get pooled buffer for result
+	buf := getRuneBuffer(len(runes))
+	defer putRuneBuffer(&buf)
+	inWord := false
+	addSpace := false // Flag to add space before next word
 
-	// Second pass: capitalize words and calculate total length
-	totalLen := 0
-	for i, word := range words {
-		// Capitalize first letter, lowercase the rest
-		if len(word) > 0 {
-			word[0] = toUpperRune(word[0])
-			for j := 1; j < len(word); j++ {
-				word[j] = toLowerRune(word[j])
+	for _, r := range runes {
+		if r == ' ' || r == '\t' || r == '\n' || r == '\r' {
+			if inWord {
+				// End of word, mark that we need a space before next word
+				addSpace = true
+				inWord = false
 			}
-			totalLen += len(word)
-			if i > 0 {
-				totalLen++ // space between words
+			// Skip multiple whitespaces
+		} else {
+			if !inWord {
+				// Start of new word
+				if addSpace && len(buf) > 0 {
+					buf = append(buf, ' ')
+				}
+				buf = append(buf, toUpperRune(r))
+				inWord = true
+				addSpace = false
+			} else {
+				// Lowercase other letters in word
+				buf = append(buf, toLowerRune(r))
 			}
 		}
-	}
-
-	// Third pass: build final string
-	buf := makeRuneBuf(totalLen)
-	for i, word := range words {
-		if i > 0 {
-			buf = append(buf, ' ')
-		}
-		buf = append(buf, word...)
 	}
 
 	t.setString(string(buf))
