@@ -41,6 +41,9 @@ type conv struct {
 	tmpStr         string    // Cache for temp string conversion to avoid repeated work
 	lastConvType   vTpe      // Track last converted type for cache validation
 	err            errorType // Error type from error.go
+	
+	// Phase 6.2: Buffer reuse optimization
+	buf            []byte    // Reusable buffer for string operations
 }
 
 // Functional options pattern for conv construction
@@ -314,6 +317,49 @@ func (t *conv) joinSlice(separator string) string {
 	}
 
 	return string(result)
+}
+
+// Phase 6.2: Buffer reuse methods for memory optimization
+// ensureCapacity ensures the buffer has at least the specified capacity
+func (c *conv) ensureCapacity(capacity int) {
+	if cap(c.buf) < capacity {
+		newCap := capacity
+		if newCap < 32 {
+			newCap = 32
+		}
+		// Double the capacity if we need significant growth
+		if newCap > cap(c.buf)*2 {
+			newCap = capacity
+		} else if cap(c.buf) > 0 {
+			newCap = cap(c.buf) * 2
+			if newCap < capacity {
+				newCap = capacity
+			}
+		}
+		newBuf := make([]byte, len(c.buf), newCap)
+		copy(newBuf, c.buf)
+		c.buf = newBuf
+	}
+}
+
+// resetBuffer resets the buffer length while keeping capacity
+func (c *conv) resetBuffer() {
+	c.buf = c.buf[:0]
+}
+
+// getReusableBuffer returns a buffer with specified capacity, reusing existing if possible
+func (c *conv) getReusableBuffer(capacity int) []byte {
+	c.ensureCapacity(capacity)
+	c.resetBuffer()
+	return c.buf
+}
+
+// bufferToString converts buffer to string efficiently
+func (c *conv) bufferToString() string {
+	if len(c.buf) == 0 {
+		return ""
+	}
+	return string(c.buf)
 }
 
 // Internal conversion methods - centralized in conv to minimize allocations

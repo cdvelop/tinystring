@@ -362,24 +362,22 @@ func (c *conv) fmtNum() {
 	// Calculate exact buffer size needed
 	separatorCount := (len(workingStr) - 1) / 3
 	tSz := len(numStr) + separatorCount
-
-	// Use fixed buffer instead of pooled builder
-	buf := makeBuf(tSz)
+	// Use reusable buffer instead of makeBuf
+	c.buf = c.getReusableBuffer(tSz)
 
 	if negative {
-		buf = append(buf, '-')
+		c.buf = append(c.buf, '-')
 	}
-
 	// Add periods from right to left (European style)
 	// Process each character directly from the working string
 	for i := 0; i < len(workingStr); i++ {
 		if i > 0 && (len(workingStr)-i)%3 == 0 {
-			buf = append(buf, '.')
+			c.buf = append(c.buf, '.')
 		}
-		buf = append(buf, workingStr[i])
+		c.buf = append(c.buf, workingStr[i])
 	}
 
-	c.setString(string(buf))
+	c.setString(c.bufferToString())
 }
 
 // splitFloat splits a float string into integer and decimal parts.
@@ -407,16 +405,16 @@ func (c *conv) parseFloat() {
 // Optimized to avoid string concatenations and reduce allocations.
 func (c *conv) f2sMan(precision int) {
 	value := c.floatVal
-
+	
 	if value == 0 {
 		if precision > 0 {
-			// Pre-calculate buffer size for "0.000..."
-			buf := makeBuf(2 + precision)
-			buf = append(buf, '0', '.')
+			// Use reusable buffer instead of makeBuf
+			c.getReusableBuffer(2 + precision)
+			c.buf = append(c.buf, '0', '.')
 			for i := 0; i < precision; i++ {
-				buf = append(buf, '0')
+				c.buf = append(c.buf, '0')
 			}
-			c.setString(string(buf))
+			c.setString(c.bufferToString())
 		} else {
 			c.setString("0")
 		}
@@ -459,60 +457,64 @@ func (c *conv) f2sMan(precision int) {
 	} else if precision > 0 {
 		hasFraction = true
 		resultSize++ // For decimal point
-		resultSize += precision
-	}
-
-	// Single allocation for the entire result
-	result := makeBuf(resultSize)
+		resultSize += precision	}
+	// Use reusable buffer instead of makeBuf
+	c.getReusableBuffer(resultSize)
 
 	// Add negative sign if needed
 	if isNegative {
-		result = append(result, '-')
+		c.buf = append(c.buf, '-')
 	}
 
 	// Convert integer part directly to buffer
 	if integerPart == 0 {
-		result = append(result, '0')
+		c.buf = append(c.buf, '0')
 	} else {
-		// Reverse the digits as we calculate them
-		intDigits := make([]byte, intDigitCount)
+		// Write digits directly to buffer instead of temporary array
+		start := len(c.buf)
+		c.ensureCapacity(len(c.buf) + intDigitCount)
+		c.buf = c.buf[:len(c.buf)+intDigitCount]
+		
 		temp := integerPart
 		for i := intDigitCount - 1; i >= 0; i-- {
-			intDigits[i] = byte('0' + temp%10)
+			c.buf[start+i] = byte('0' + temp%10)
 			temp /= 10
 		}
-		result = append(result, intDigits...)
 	}
-
 	// Convert fractional part if needed
 	if hasFraction {
-		result = append(result, '.')
+		c.buf = append(c.buf, '.')
 
 		if precision == -1 {
 			// Auto precision: use 6 digits and trim trailing zeros
 			multiplier := 1e6
 			fracPart := int64(fractionalPart*multiplier + 0.5)
 
-			// Convert to digits
-			fracDigits := make([]byte, 6)
+			// Write digits directly to buffer instead of temporary array
+			fracStart := len(c.buf)
+			c.ensureCapacity(len(c.buf) + 6)
+			c.buf = c.buf[:len(c.buf)+6]
+			
 			temp := fracPart
 			for i := 5; i >= 0; i-- {
-				fracDigits[i] = byte('0' + temp%10)
+				c.buf[fracStart+i] = byte('0' + temp%10)
 				temp /= 10
 			}
 
-			// Find the last non-zero digit
+			// Find the last non-zero digit and trim buffer
 			lastNonZero := -1
 			for i := 5; i >= 0; i-- {
-				if fracDigits[i] != '0' {
+				if c.buf[fracStart+i] != '0' {
 					lastNonZero = i
 					break
 				}
 			}
 
-			// Add significant digits
+			// Trim to significant digits
 			if lastNonZero >= 0 {
-				result = append(result, fracDigits[:lastNonZero+1]...)
+				c.buf = c.buf[:fracStart+lastNonZero+1]
+			} else {
+				c.buf = c.buf[:fracStart] // All zeros, remove decimal part
 			}
 		} else if precision > 0 {
 			multiplier := 1.0
@@ -521,19 +523,20 @@ func (c *conv) f2sMan(precision int) {
 			}
 			fracPart := int64(fractionalPart*multiplier + 0.5) // Round to nearest
 
-			// Convert to digits with specified precision
-			fracDigits := make([]byte, precision)
+			// Write digits directly to buffer instead of temporary array
+			fracStart := len(c.buf)
+			c.ensureCapacity(len(c.buf) + precision)
+			c.buf = c.buf[:len(c.buf)+precision]
+			
 			temp := fracPart
 			for i := precision - 1; i >= 0; i-- {
-				fracDigits[i] = byte('0' + temp%10)
+				c.buf[fracStart+i] = byte('0' + temp%10)
 				temp /= 10
 			}
-
-			result = append(result, fracDigits...)
 		}
 	}
 
-	c.setString(string(result))
+	c.setString(c.bufferToString())
 	c.vTpe = typeStr
 }
 
@@ -600,11 +603,15 @@ func (c *conv) handleFormat(args []any, argIndex *int, formatType rune, param in
 	switch formatType {
 	case 'd', 'o', 'b', 'x':
 		if intVal, ok := arg.(int); ok {
-			// Reuse existing conv for temporary calculation
+			// Save current state including buffer
 			oldIntVal := c.intVal
 			oldVTpe := c.vTpe
 			oldStringVal := c.stringVal
+			oldBuf := make([]byte, len(c.buf))
+			copy(oldBuf, c.buf)
 			
+			// Perform calculation with isolated buffer
+			c.resetBuffer()
 			c.intVal = int64(intVal)
 			c.vTpe = typeInt
 			if param == 10 {
@@ -614,30 +621,38 @@ func (c *conv) handleFormat(args []any, argIndex *int, formatType rune, param in
 			}
 			str = c.getString()
 			
-			// Restore original state
+			// Restore original state including buffer
 			c.intVal = oldIntVal
 			c.vTpe = oldVTpe
 			c.stringVal = oldStringVal
+			c.buf = oldBuf
 		} else {
 			c.NewErr(errFormatWrongType, formatSpec)
 			return nil, false
 		}
 	case 'f':
 		if floatVal, ok := arg.(float64); ok {
-			// Reuse existing conv for temporary calculation
+			// Save current state including buffer
 			oldFloatVal := c.floatVal
 			oldVTpe := c.vTpe
 			oldStringVal := c.stringVal
+			oldTmpStr := c.tmpStr
+			oldBuf := make([]byte, len(c.buf))
+			copy(oldBuf, c.buf)
 			
+			// Perform calculation with isolated buffer
+			c.resetBuffer()
 			c.floatVal = floatVal
 			c.vTpe = typeFloat
 			c.f2sMan(param)
 			str = c.getString()
 			
-			// Restore original state
+			// Restore original state including buffer
 			c.floatVal = oldFloatVal
 			c.vTpe = oldVTpe
 			c.stringVal = oldStringVal
+			c.tmpStr = oldTmpStr
+			c.buf = oldBuf
 		} else {
 			c.NewErr(errFormatWrongType, formatSpec)
 			return nil, false
@@ -650,17 +665,22 @@ func (c *conv) handleFormat(args []any, argIndex *int, formatType rune, param in
 			return nil, false
 		}
 	case 'v':
-		// Reuse existing conv for temporary calculation
+		// Save current state including buffer
 		oldStringVal := c.stringVal
 		oldVTpe := c.vTpe
+		oldBuf := make([]byte, len(c.buf))
+		copy(oldBuf, c.buf)
 		
+		// Perform calculation with isolated buffer
+		c.resetBuffer()
 		c.stringVal = ""
 		c.formatValue(arg)
 		str = c.getString()
 		
-		// Restore original state
+		// Restore original state including buffer
 		c.stringVal = oldStringVal
 		c.vTpe = oldVTpe
+		c.buf = oldBuf
 	}
 
 	*argIndex++
@@ -676,7 +696,11 @@ func unifiedFormat(format string, args ...any) *conv {
 	return result
 }
 
-func (c *conv) sprintf(format string, args ...any) { // Pre-calculate buffer size to reduce reallocations
+func (c *conv) sprintf(format string, args ...any) { 
+	// Reset buffer at start to avoid concatenation issues
+	c.resetBuffer()
+	
+	// Pre-calculate buffer size to reduce reallocations
 	eSz := len(format)
 	for _, arg := range args {
 		switch arg.(type) {
@@ -688,11 +712,9 @@ func (c *conv) sprintf(format string, args ...any) { // Pre-calculate buffer siz
 			eSz += 24 // Estimate for floats
 		default:
 			eSz += 16 // Default estimate
-		}
-	}
-
-	// Use pre-allocated buffer instead of builder pool
-	buf := makeBuf(eSz)
+		}	}
+	// Initialize reusable buffer with estimated size
+	c.getReusableBuffer(eSz)
 	argIndex := 0
 
 	for i := 0; i < len(format); i++ {
@@ -716,66 +738,65 @@ func (c *conv) sprintf(format string, args ...any) { // Pre-calculate buffer siz
 							}
 						}
 					}
-				}
-				// Handle format specifiers
+				}				// Handle format specifiers
 				switch format[i] {
 				case 'd':
 					if str, ok := c.handleFormat(args, &argIndex, 'd', 10, "%d"); ok {
-						buf = append(buf, str...)
+						c.buf = append(c.buf, str...)
 					} else {
 						return
 					}
 				case 'f':
 					if str, ok := c.handleFormat(args, &argIndex, 'f', precision, "%f"); ok {
-						buf = append(buf, str...)
+						c.buf = append(c.buf, str...)
 					} else {
 						return
 					}
 				case 'o':
 					if str, ok := c.handleFormat(args, &argIndex, 'o', 8, "%o"); ok {
-						buf = append(buf, str...)
+						c.buf = append(c.buf, str...)
 					} else {
 						return
 					}
 				case 'b':
 					if str, ok := c.handleFormat(args, &argIndex, 'b', 2, "%b"); ok {
-						buf = append(buf, str...)
+						c.buf = append(c.buf, str...)
 					} else {
 						return
 					}
 				case 'x':
 					if str, ok := c.handleFormat(args, &argIndex, 'x', 16, "%x"); ok {
-						buf = append(buf, str...)
+						c.buf = append(c.buf, str...)
 					} else {
 						return
 					}
 				case 'v':
 					if str, ok := c.handleFormat(args, &argIndex, 'v', 0, "%v"); ok {
-						buf = append(buf, str...)
+						c.buf = append(c.buf, str...)
 					} else {
 						return
 					}
 				case 's':
 					if str, ok := c.handleFormat(args, &argIndex, 's', 0, "%s"); ok {
-						buf = append(buf, str...)
+						c.buf = append(c.buf, str...)
 					} else {
 						return
 					}
 				case '%':
-					buf = append(buf, '%')
+					c.buf = append(c.buf, '%')
 				default:
 					c.NewErr(errFormatUnsupported, format[i])
 					return
 				}
 			} else {
-				buf = append(buf, format[i])
+				c.buf = append(c.buf, format[i])
 			}
 		} else {
-			buf = append(buf, format[i])
+			c.buf = append(c.buf, format[i])
 		}
 	}
 
-	c.setString(string(buf))
+	c.setString(c.bufferToString())
 	c.vTpe = typeStr
 }
 
