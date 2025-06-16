@@ -43,6 +43,21 @@ func processNumbersWithTinyString(numbers []float64) []string {
 	return results
 }
 
+// processNumbersWithTinyStringPool simulates number processing using object pool (Phase 7)
+func processNumbersWithTinyStringPool(numbers []float64) []string {
+	results := make([]string, len(numbers))
+	for i, num := range numbers {
+		// Convert and format using TinyString with pool optimization
+		c := tinystring.ConvertWithPool(num)
+		formatted := c.RoundDecimals(2).
+			FormatNumber().
+			String()
+		c.Release() // Return to pool for reuse
+		results[i] = formatted
+	}
+	return results
+}
+
 func main() {
 	println("TinyString benchmark main function - used for testing only")
 }

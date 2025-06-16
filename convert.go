@@ -1,5 +1,7 @@
 package tinystring
 
+import "sync"
+
 // vTpe represents the type of value stored in conv
 type vTpe uint8
 
@@ -77,6 +79,59 @@ func withValue(v any) convOpt {
 			c.handleAnyType(val)
 		}
 	}
+}
+
+// Phase 7: Conv Pool for memory optimization
+// Reuse conv objects to eliminate the 53.67% allocation hotspot from newConv()
+var convPool = sync.Pool{
+	New: func() interface{} {
+		return &conv{
+			separator: "_", // default separator
+		}
+	},
+}
+
+// getConv gets a reusable conv from the pool
+func getConv() *conv {
+	return convPool.Get().(*conv)
+}
+
+// putConv returns a conv to the pool after resetting it
+func (c *conv) putConv() {
+	// Reset all fields to default state
+	c.stringVal = ""
+	c.intVal = 0
+	c.uintVal = 0
+	c.floatVal = 0
+	c.boolVal = false
+	c.stringSliceVal = nil
+	c.stringPtrVal = nil
+	c.vTpe = typeStr
+	c.roundDown = false
+	c.separator = "_"
+	c.tmpStr = ""
+	c.lastConvType = typeStr
+	c.err = ""
+	c.resetBuffer()
+
+	convPool.Put(c)
+}
+
+// Release returns the conv object to the pool for reuse (Phase 7 optimization)
+// Call this when you're done with the conv object to improve memory efficiency
+// Example:
+//   c := ConvertWithPool(123)
+//   result := c.FormatNumber().String()
+//   c.Release() // Return to pool
+func (c *conv) Release() {
+	c.putConv()
+}
+
+// ConvertWithPool creates a conv using the object pool (Phase 7 optimization)
+func ConvertWithPool(v any) *conv {
+	c := getConv()
+	withValue(v)(c)
+	return c
 }
 
 // newConv creates a new conv with functional options

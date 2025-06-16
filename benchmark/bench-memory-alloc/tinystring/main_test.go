@@ -59,6 +59,13 @@ func BenchmarkNumberProcessing(b *testing.B) {
 	}
 }
 
+func BenchmarkNumberProcessingWithPool(b *testing.B) {
+	b.ResetTimer()
+	for i := 0; i < b.N; i++ {
+		_ = processNumbersWithTinyStringPool(testNumbers)
+	}
+}
+
 func BenchmarkMixedOperations(b *testing.B) {
 	b.ResetTimer()
 	for i := 0; i < b.N; i++ {
