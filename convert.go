@@ -117,38 +117,12 @@ func (c *conv) putConv() {
 	convPool.Put(c)
 }
 
-// Release returns the conv object to the pool for reuse (Phase 7 optimization)
-// Call this when you're done with the conv object to improve memory efficiency
-// Example:
-//   c := ConvertWithPool(123)
-//   result := c.FormatNumber().String()
-//   c.Release() // Return to pool
-func (c *conv) Release() {
-	c.putConv()
-}
-
-// ConvertWithPool creates a conv using the object pool (Phase 7 optimization)
-func ConvertWithPool(v any) *conv {
+// Convert initializes a new conv struct with any type of value for string,bool and number manipulation.
+// Phase 7: Uses object pool internally for memory optimization (transparent to user)
+func Convert(v any) *conv {
 	c := getConv()
 	withValue(v)(c)
 	return c
-}
-
-// newConv creates a new conv with functional options
-func newConv(opts ...convOpt) *conv {
-	c := &conv{
-		separator: "_", // default separator
-	}
-	for _, opt := range opts {
-		opt(c)
-	}
-	return c
-}
-
-// Convert initializes a new conv struct with any type of value for string,bool and number manipulation.
-// Uses the functional options pattern internally.
-func Convert(v any) *conv {
-	return newConv(withValue(v))
 }
 
 // Consolidated generic functions - single function per type with operation parameter
@@ -208,26 +182,40 @@ func (t *conv) separatorCase(sep ...string) string {
 	return t.separator
 }
 
-// Apply updates the original string pointer with the current content.
+// Apply updates the original string pointer with the current content and auto-releases to pool.
 // This method should be used when you want to modify the original string directly
 // without additional allocations.
 func (t *conv) Apply() {
 	if t.vTpe == typeStrPtr && t.stringPtrVal != nil {
 		*t.stringPtrVal = t.getString()
 	}
+	// Auto-release back to pool for memory efficiency
+	t.putConv()
 }
 
-// String method to return the content of the conv without modifying any original pointers
+// String method to return the content of the conv and automatically returns object to pool
+// Phase 7: Auto-release makes pool usage completely transparent to user
 func (t *conv) String() string {
-	return t.getString()
+	result := t.getString()
+	// Auto-release back to pool for memory efficiency
+	t.putConv()
+	return result
 }
 
-// StringError returns the content of the conv along with any error that occurred during processing
+// StringError returns the content of the conv along with any error and auto-releases to pool
 func (t *conv) StringError() (string, error) {
+	var result string
+	var err error
 	if t.vTpe == typeErr {
-		return t.getString(), t
+		result = t.getString()
+		err = t
+	} else {
+		result = t.getString()
+		err = nil
 	}
-	return t.getString(), nil
+	// Auto-release back to pool for memory efficiency
+	t.putConv()
+	return result, err
 }
 
 // Helper function to check if a rune is a digit
@@ -415,6 +403,17 @@ func (c *conv) bufferToString() string {
 		return ""
 	}
 	return string(c.buf)
+}
+
+// Phase 8 Optimization: Direct buffer-to-string assignment without intermediate allocation
+func (c *conv) setStringFromBuffer() {
+	if len(c.buf) == 0 {
+		c.stringVal = ""
+	} else {
+		c.stringVal = string(c.buf)
+	}
+	c.vTpe = typeStr
+	c.buf = c.buf[:0] // Reset buffer length, keep capacity
 }
 
 // Internal conversion methods - centralized in conv to minimize allocations

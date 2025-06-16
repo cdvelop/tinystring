@@ -218,33 +218,36 @@ func (t *conv) FormatNumber() *conv {
 		fStr := t.getString()
 		fStr = rmZeros(fStr) // Remove trailing zeros after decimal point
 		t.setString(fStr)
-		parts := t.splitFloat()
+		// Phase 8.2 Optimization: Use optimized split without extra allocations
+		intPart, decPart, hasDecimal := t.splitFloatIndices()
 		// Format the integer part with commas directly
-		if len(parts) > 0 {
-			// Use current conv object for integer formatting to avoid allocation
-			t.setString(parts[0])
-			t.fmtNum()
-			iPart := t.getString()
+		t.setString(intPart)
+		t.fmtNum()
+		iPart := t.getString()
 
-			// Reconstruct the number
-			var result string
-			if len(parts) > 1 && parts[1] != "" {
-				result = iPart + "." + parts[1]
-			} else {
-				result = iPart
-			}
-			t.setString(result)
+		// Reconstruct the number
+		var result string
+		if hasDecimal && decPart != "" {
+			result = iPart + "." + decPart
+		} else {
+			result = iPart
 		}
+		t.setString(result)
 		t.err = ""
 		return t
-	} // For string values, parse them directly using existing methods
+	}
+
+	// For string values, parse them directly using existing methods
 	str := t.getString()
 	// Save original state BEFORE any parsing attempts
 	oVal := t.stringVal
-	oType := t.vTpe // Try to parse as integer first using existing s2Int
+	oType := t.vTpe
+
+	// Try to parse as integer first using existing s2Int
 	t.setString(str)
 	t.s2IntGeneric(10)
-	if t.err == "" { // Use the parsed integer value
+	if t.err == "" {
+		// Use the parsed integer value
 		t.vTpe = typeInt
 		t.i2s()
 		t.fmtNum()
@@ -263,18 +266,19 @@ func (t *conv) FormatNumber() *conv {
 		fStr := t.getString()
 		fStr = rmZeros(fStr) // Remove trailing zeros after decimal point
 		t.setString(fStr)
-		parts := t.splitFloat()
+		// Phase 8.2 Optimization: Use optimized split without allocations
+		intPart, decPart, hasDecimal := t.splitFloatIndices()
 		// Format the integer part with commas directly
-		if len(parts) > 0 {
-			t.setString(parts[0])
+		if intPart != "" {
+			t.setString(intPart)
 			t.fmtNum()
 			iPart := t.getString()
 
 			// Reconstruct the number with formatted decimal part
 			var result string
-			if len(parts) > 1 && parts[1] != "" {
+			if hasDecimal && decPart != "" {
 				// Also format the decimal part with commas for consistency with test expectation
-				dPart := parts[1]
+				dPart := decPart
 				if len(dPart) > 3 { // Save current state
 					sIP := t.getString()
 					t.setString(dPart)
@@ -377,19 +381,19 @@ func (c *conv) fmtNum() {
 		c.buf = append(c.buf, workingStr[i])
 	}
 
-	c.setString(c.bufferToString())
+	c.setStringFromBuffer()
 }
 
 // splitFloat splits a float string into integer and decimal parts.
-// This is an internal conv method that returns the parts as slice.
-func (c *conv) splitFloat() []string {
+// Phase 8.2: Optimized version that returns split indices without allocating new strings
+func (c *conv) splitFloatIndices() (intPart, decPart string, hasDecimal bool) {
 	str := c.getString()
 	for i, char := range str {
 		if char == '.' {
-			return []string{str[:i], str[i+1:]}
+			return str[:i], str[i+1:], true
 		}
 	}
-	return []string{str}
+	return str, "", false
 }
 
 // parseFloat converts a string to a float64 and stores in conv struct.
@@ -414,7 +418,7 @@ func (c *conv) f2sMan(precision int) {
 			for i := 0; i < precision; i++ {
 				c.buf = append(c.buf, '0')
 			}
-			c.setString(c.bufferToString())
+			c.setStringFromBuffer()
 		} else {
 			c.setString("0")
 		}
@@ -528,7 +532,6 @@ func (c *conv) f2sMan(precision int) {
 			fracStart := len(c.buf)
 			c.ensureCapacity(len(c.buf) + precision)
 			c.buf = c.buf[:len(c.buf)+precision]
-
 			temp := fracPart
 			for i := precision - 1; i >= 0; i-- {
 				c.buf[fracStart+i] = byte('0' + temp%10)
@@ -537,7 +540,7 @@ func (c *conv) f2sMan(precision int) {
 		}
 	}
 
-	c.setString(c.bufferToString())
+	c.setStringFromBuffer()
 	c.vTpe = typeStr
 }
 
@@ -798,7 +801,7 @@ func (c *conv) sprintf(format string, args ...any) {
 		}
 	}
 
-	c.setString(c.bufferToString())
+	c.setStringFromBuffer()
 	c.vTpe = typeStr
 }
 
