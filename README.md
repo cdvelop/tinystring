@@ -327,21 +327,21 @@ tinystring.Convert(&originalText).RemoveTilde().ToLower().Apply()
 [Standard Library Example](benchmark/bench-binary-size/standard-lib/main.go) | [TinyString Example](benchmark/bench-binary-size/tinystring-lib/main.go)
 
 <!-- This table is automatically generated from build-and-measure.sh -->
-*Last updated: 2025-06-16 11:51:46*
+*Last updated: 2025-06-16 13:50:58*
 
 | Build Type | Parameters | Standard Library<br/>`go build` | TinyString<br/>`tinygo build` | Size Reduction | Performance |
 |------------|------------|------------------|------------|----------------|-------------|
-| 🖥️ **Default Native** | `-ldflags="-s -w"` | 1.3 MB | 984.0 KB | **-329.5 KB** | ✅ **25.1%** |
-| 🌐 **Default WASM** | `(default -opt=z)` | 580.8 KB | 202.8 KB | **-378.1 KB** | ✅ **65.1%** |
-| 🌐 **Ultra WASM** | `-no-debug -panic=trap -scheduler=none -gc=leaking -target wasm` | 141.3 KB | 22.1 KB | **-119.1 KB** | 🏆 **84.3%** |
-| 🌐 **Speed WASM** | `-opt=2 -target wasm` | 827.0 KB | 244.3 KB | **-582.7 KB** | 🏆 **70.5%** |
-| 🌐 **Debug WASM** | `-opt=0 -target wasm` | 1.8 MB | 642.3 KB | **-1.2 MB** | ✅ **65.0%** |
+| 🖥️ **Default Native** | `-ldflags="-s -w"` | 1.3 MB | 986.0 KB | **-327.5 KB** | ✅ **24.9%** |
+| 🌐 **Default WASM** | `(default -opt=z)` | 580.8 KB | 206.7 KB | **-374.2 KB** | ✅ **64.4%** |
+| 🌐 **Ultra WASM** | `-no-debug -panic=trap -scheduler=none -gc=leaking -target wasm` | 141.3 KB | 22.9 KB | **-118.4 KB** | 🏆 **83.8%** |
+| 🌐 **Speed WASM** | `-opt=2 -target wasm` | 827.0 KB | 253.0 KB | **-574.0 KB** | ✅ **69.4%** |
+| 🌐 **Debug WASM** | `-opt=0 -target wasm` | 1.8 MB | 650.6 KB | **-1.2 MB** | ✅ **64.5%** |
 
 ### 🎯 Performance Summary
 
-- 🏆 **Peak Reduction: 84.3%** (Best optimization)
-- ✅ **Average WebAssembly Reduction: 71.2%**
-- ✅ **Average Native Reduction: 25.1%**
+- 🏆 **Peak Reduction: 83.8%** (Best optimization)
+- ✅ **Average WebAssembly Reduction: 70.5%**
+- ✅ **Average Native Reduction: 24.9%**
 - 📦 **Total Size Savings: 2.5 MB across all builds**
 
 #### Performance Legend
@@ -356,23 +356,23 @@ tinystring.Convert(&originalText).RemoveTilde().ToLower().Apply()
 [Standard Library Example](benchmark/bench-memory-alloc/standard) | [TinyString Example](benchmark/bench-memory-alloc/tinystring)
 
 <!-- This table is automatically generated from memory-benchmark.sh -->
-*Last updated: 2025-06-16 11:52:04*
+*Last updated: 2025-06-16 13:51:16*
 
 Performance benchmarks comparing memory allocation patterns between standard Go library and TinyString:
 
 | 🧪 **Benchmark Category** | 📚 **Library** | 💾 **Memory/Op** | 🔢 **Allocs/Op** | ⏱️ **Time/Op** | 📈 **Memory Trend** | 🎯 **Alloc Trend** | 🏆 **Performance** |
 |----------------------------|----------------|-------------------|-------------------|-----------------|---------------------|---------------------|--------------------|
 | 📝 **String Processing** | 📊 Standard | `1.2 KB` | `48` | `3.1μs` | - | - | - |
-| | 🚀 TinyString | `5.9 KB` | `94` | `12.9μs` | ❌ **402.3% more** | ❌ **95.8% more** | ❌ **Poor** |
+| | 🚀 TinyString | `2.8 KB` | `96` | `12.7μs` | ❌ **136.1% more** | ❌ **100.0% more** | ❌ **Poor** |
 | 🔢 **Number Processing** | 📊 Standard | `912 B` | `42` | `2.4μs` | - | - | - |
-| | 🚀 TinyString | `496 B` | `32` | `2.8μs` | 🏆 **45.6% less** | 🏆 **23.8% less** | 🏆 **Excellent** |
+| | 🚀 TinyString | `496 B` | `32` | `2.6μs` | 🏆 **45.6% less** | 🏆 **23.8% less** | 🏆 **Excellent** |
 | 🔄 **Mixed Operations** | 📊 Standard | `512 B` | `26` | `1.7μs` | - | - | - |
-| | 🚀 TinyString | `1.6 KB` | `36` | `4.3μs` | ❌ **218.9% more** | ❌ **38.5% more** | ❌ **Poor** |
+| | 🚀 TinyString | `846 B` | `36` | `4.1μs` | ❌ **65.2% more** | ❌ **38.5% more** | ❌ **Poor** |
 
 ### 🎯 Performance Summary
 
-- 💾 **Memory Efficiency**: ❌ **Poor** (Significant overhead) (191.9% average change)
-- 🔢 **Allocation Efficiency**: ❌ **Poor** (Excessive allocations) (36.8% average change)
+- 💾 **Memory Efficiency**: ❌ **Poor** (Significant overhead) (51.9% average change)
+- 🔢 **Allocation Efficiency**: ❌ **Poor** (Excessive allocations) (38.2% average change)
 - 📊 **Benchmarks Analyzed**: 3 categories
 - 🎯 **Optimization Focus**: Binary size reduction vs runtime efficiency
 
