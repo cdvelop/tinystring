@@ -130,7 +130,7 @@ func (t *conv) Down() *conv {
 	if t.err != "" {
 		return t
 	}
-	
+
 	// Parse the current value directly into existing conv
 	var val float64
 	if t.vTpe == typeFloat {
@@ -145,7 +145,7 @@ func (t *conv) Down() *conv {
 		}
 		val = t.floatVal
 	}
-	
+
 	// Detect decimal places from the current content
 	decimalPlaces := 0
 	str := t.getString()
@@ -180,7 +180,7 @@ func (t *conv) Down() *conv {
 			adjustedVal = val - 1.0
 		}
 	}
-	
+
 	// Update the current conv object directly instead of creating new ones
 	t.floatVal = adjustedVal
 	t.vTpe = typeFloat
@@ -405,7 +405,7 @@ func (c *conv) parseFloat() {
 // Optimized to avoid string concatenations and reduce allocations.
 func (c *conv) f2sMan(precision int) {
 	value := c.floatVal
-	
+
 	if value == 0 {
 		if precision > 0 {
 			// Use reusable buffer instead of makeBuf
@@ -457,7 +457,8 @@ func (c *conv) f2sMan(precision int) {
 	} else if precision > 0 {
 		hasFraction = true
 		resultSize++ // For decimal point
-		resultSize += precision	}
+		resultSize += precision
+	}
 	// Use reusable buffer instead of makeBuf
 	c.getReusableBuffer(resultSize)
 
@@ -474,7 +475,7 @@ func (c *conv) f2sMan(precision int) {
 		start := len(c.buf)
 		c.ensureCapacity(len(c.buf) + intDigitCount)
 		c.buf = c.buf[:len(c.buf)+intDigitCount]
-		
+
 		temp := integerPart
 		for i := intDigitCount - 1; i >= 0; i-- {
 			c.buf[start+i] = byte('0' + temp%10)
@@ -494,7 +495,7 @@ func (c *conv) f2sMan(precision int) {
 			fracStart := len(c.buf)
 			c.ensureCapacity(len(c.buf) + 6)
 			c.buf = c.buf[:len(c.buf)+6]
-			
+
 			temp := fracPart
 			for i := 5; i >= 0; i-- {
 				c.buf[fracStart+i] = byte('0' + temp%10)
@@ -527,7 +528,7 @@ func (c *conv) f2sMan(precision int) {
 			fracStart := len(c.buf)
 			c.ensureCapacity(len(c.buf) + precision)
 			c.buf = c.buf[:len(c.buf)+precision]
-			
+
 			temp := fracPart
 			for i := precision - 1; i >= 0; i-- {
 				c.buf[fracStart+i] = byte('0' + temp%10)
@@ -609,7 +610,7 @@ func (c *conv) handleFormat(args []any, argIndex *int, formatType rune, param in
 			oldStringVal := c.stringVal
 			oldBuf := make([]byte, len(c.buf))
 			copy(oldBuf, c.buf)
-			
+
 			// Perform calculation with isolated buffer
 			c.resetBuffer()
 			c.intVal = int64(intVal)
@@ -620,7 +621,7 @@ func (c *conv) handleFormat(args []any, argIndex *int, formatType rune, param in
 				c.i2sBase(param)
 			}
 			str = c.getString()
-			
+
 			// Restore original state including buffer
 			c.intVal = oldIntVal
 			c.vTpe = oldVTpe
@@ -639,14 +640,14 @@ func (c *conv) handleFormat(args []any, argIndex *int, formatType rune, param in
 			oldTmpStr := c.tmpStr
 			oldBuf := make([]byte, len(c.buf))
 			copy(oldBuf, c.buf)
-			
+
 			// Perform calculation with isolated buffer
 			c.resetBuffer()
 			c.floatVal = floatVal
 			c.vTpe = typeFloat
 			c.f2sMan(param)
 			str = c.getString()
-			
+
 			// Restore original state including buffer
 			c.floatVal = oldFloatVal
 			c.vTpe = oldVTpe
@@ -670,13 +671,13 @@ func (c *conv) handleFormat(args []any, argIndex *int, formatType rune, param in
 		oldVTpe := c.vTpe
 		oldBuf := make([]byte, len(c.buf))
 		copy(oldBuf, c.buf)
-		
+
 		// Perform calculation with isolated buffer
 		c.resetBuffer()
 		c.stringVal = ""
 		c.formatValue(arg)
 		str = c.getString()
-		
+
 		// Restore original state including buffer
 		c.stringVal = oldStringVal
 		c.vTpe = oldVTpe
@@ -696,10 +697,10 @@ func unifiedFormat(format string, args ...any) *conv {
 	return result
 }
 
-func (c *conv) sprintf(format string, args ...any) { 
+func (c *conv) sprintf(format string, args ...any) {
 	// Reset buffer at start to avoid concatenation issues
 	c.resetBuffer()
-	
+
 	// Pre-calculate buffer size to reduce reallocations
 	eSz := len(format)
 	for _, arg := range args {
@@ -712,7 +713,8 @@ func (c *conv) sprintf(format string, args ...any) {
 			eSz += 24 // Estimate for floats
 		default:
 			eSz += 16 // Default estimate
-		}	}
+		}
+	}
 	// Initialize reusable buffer with estimated size
 	c.getReusableBuffer(eSz)
 	argIndex := 0
@@ -720,7 +722,7 @@ func (c *conv) sprintf(format string, args ...any) {
 	for i := 0; i < len(format); i++ {
 		if format[i] == '%' {
 			if i+1 < len(format) {
-				i++				// Handle precision for floats (e.g., "%.2f")
+				i++ // Handle precision for floats (e.g., "%.2f")
 				precision := -1
 				if format[i] == '.' {
 					i++
@@ -738,7 +740,7 @@ func (c *conv) sprintf(format string, args ...any) {
 							}
 						}
 					}
-				}				// Handle format specifiers
+				} // Handle format specifiers
 				switch format[i] {
 				case 'd':
 					if str, ok := c.handleFormat(args, &argIndex, 'd', 10, "%d"); ok {

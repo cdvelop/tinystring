@@ -41,9 +41,9 @@ type conv struct {
 	tmpStr         string    // Cache for temp string conversion to avoid repeated work
 	lastConvType   vTpe      // Track last converted type for cache validation
 	err            errorType // Error type from error.go
-	
+
 	// Phase 6.2: Buffer reuse optimization
-	buf            []byte    // Reusable buffer for string operations
+	buf []byte // Reusable buffer for string operations
 }
 
 // Functional options pattern for conv construction
