@@ -195,20 +195,17 @@ func (t *conv) Down() *conv {
 func (t *conv) FormatNumber() *conv {
 	if t.err != "" {
 		return t
-	}
-	// Try to use existing values directly to avoid string conversions
+	} // Try to use existing values directly to avoid string conversions
 	if t.vTpe == typeInt { // We already have an integer value, use it directly
-		t.i2s()
-		t.fmtNum()
+		// Phase 10 Optimization: Direct int64 to formatted string conversion
+		t.formatIntDirectly(t.intVal)
 		t.err = ""
 		return t
 	}
 	if t.vTpe == typeUint {
-		// Convert uint to int64 and format
-		t.intVal = int64(t.uintVal)
-		t.vTpe = typeInt
-		t.i2s()
-		t.fmtNum()
+		// Convert uint to int64 and format directly
+		// Phase 10 Optimization: Direct uint64 to formatted string conversion
+		t.formatIntDirectly(int64(t.uintVal))
 		t.err = ""
 		return t
 	}
@@ -242,15 +239,12 @@ func (t *conv) FormatNumber() *conv {
 	// Save original state BEFORE any parsing attempts
 	oVal := t.stringVal
 	oType := t.vTpe
-
 	// Try to parse as integer first using existing s2Int
 	t.setString(str)
 	t.s2IntGeneric(10)
 	if t.err == "" {
-		// Use the parsed integer value
-		t.vTpe = typeInt
-		t.i2s()
-		t.fmtNum()
+		// Phase 10 Optimization: Use direct formatting for parsed integer
+		t.formatIntDirectly(t.intVal)
 		t.err = ""
 		return t
 	}
@@ -803,6 +797,92 @@ func (c *conv) sprintf(format string, args ...any) {
 
 	c.setStringFromBuffer()
 	c.vTpe = typeStr
+}
+
+// formatIntDirectly converts int64 directly to string with thousand separators
+// Phase 10 Optimization: Eliminate fmtIntGeneric() allocation completely
+func (c *conv) formatIntDirectly(val int64) {
+	if val == 0 {
+		c.setString("0")
+		return
+	}
+
+	// Handle small positive numbers using lookup table (no separators needed)
+	if val > 0 && val < 1000 {
+		if val < int64(len(smallInts)) {
+			c.tmpStr = smallInts[val]
+			c.stringVal = c.tmpStr
+			return
+		}
+	}
+
+	// Handle negative numbers
+	negative := val < 0
+	if negative {
+		val = -val
+	}
+
+	// For small negative numbers (no separators needed)
+	if val < 1000 {
+		if val < int64(len(smallInts)) {
+			if negative {
+				c.setString("-" + smallInts[val])
+			} else {
+				c.tmpStr = smallInts[val]
+				c.stringVal = c.tmpStr
+			}
+			return
+		}
+	}
+
+	// Convert to string directly to buffer (avoiding fmtIntGeneric allocation)
+	var buf [32]byte // Enough for int64 + separators + sign
+	idx := len(buf)
+
+	// Convert digits
+	for val > 0 {
+		idx--
+		buf[idx] = byte('0' + val%10)
+		val /= 10
+	}
+
+	// Now add thousand separators using the proven fmtNum algorithm
+	numStr := string(buf[idx:])
+
+	// Apply separators using existing proven logic from fmtNum()
+	if len(numStr) <= 3 {
+		// No formatting needed for numbers with 3 or fewer digits
+		if negative {
+			c.setString("-" + numStr)
+		} else {
+			c.setString(numStr)
+		}
+		return
+	}
+
+	// Calculate exact buffer size needed
+	separatorCount := (len(numStr) - 1) / 3
+	tSz := len(numStr) + separatorCount
+	if negative {
+		tSz++
+	}
+
+	// Use reusable buffer
+	c.buf = c.getReusableBuffer(tSz)
+
+	if negative {
+		c.buf = append(c.buf, '-')
+	}
+
+	// Add periods using the exact same logic as fmtNum()
+	for i := 0; i < len(numStr); i++ {
+		if i > 0 && (len(numStr)-i)%3 == 0 {
+			c.buf = append(c.buf, '.')
+		}
+		c.buf = append(c.buf, numStr[i])
+	}
+
+	c.setStringFromBuffer()
 }
 
 // Helper functions for formatValue type handling using generics

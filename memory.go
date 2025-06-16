@@ -73,15 +73,14 @@ func (c *conv) getReusableBuffer(capacity int) []byte {
 	return c.buf
 }
 
-// Phase 8.5 Architecture: Advanced buffer management with string interning
+// Phase 9: Optimized buffer management with direct string interning
 func (c *conv) setStringFromBuffer() {
 	if len(c.buf) == 0 {
 		c.stringVal = ""
 	} else {
-		// Try string interning for small strings (common case optimization)
+		// Direct string interning for small strings to avoid double allocation
 		if len(c.buf) <= 32 {
-			bufStr := string(c.buf)            // Create temporary string
-			c.stringVal = internString(bufStr) // Try to get from cache
+			c.stringVal = internStringFromBytes(c.buf) // Direct from bytes, no temp string
 		} else {
 			// For large strings, direct allocation is still better
 			c.stringVal = string(c.buf)
@@ -105,8 +104,62 @@ var (
 	maxCacheSize  = 64                          // Maximum cache entries
 )
 
+// internStringFromBytes attempts to return a cached string from bytes if available,
+// otherwise creates, caches and returns the string. This avoids temporary string allocation.
+func internStringFromBytes(b []byte) string {
+	// Only intern small strings (most common case)
+	if len(b) > 32 || len(b) == 0 {
+		return string(b)
+	}
+
+	// Fast read-only check first - compare bytes directly to avoid string allocation
+	stringCacheMu.RLock()
+	for i := range stringCache {
+		if len(stringCache[i].str) == len(b) && bytesEqual([]byte(stringCache[i].str), b) {
+			stringCacheMu.RUnlock()
+			return stringCache[i].ref
+		}
+	}
+	stringCacheMu.RUnlock()
+
+	// Not found, create string and try to add to cache (with write lock)
+	s := string(b) // Single string allocation here
+
+	stringCacheMu.Lock()
+	defer stringCacheMu.Unlock()
+
+	// Double-check in case another goroutine added it
+	for i := range stringCache {
+		if stringCache[i].str == s {
+			return stringCache[i].ref
+		}
+	}
+
+	// Add to cache if not full
+	if len(stringCache) < maxCacheSize {
+		stringCache = append(stringCache, cachedString{
+			str: s,
+			ref: s,
+		})
+	}
+
+	return s
+}
+
+// bytesEqual compares two byte slices for equality without allocating
+func bytesEqual(a, b []byte) bool {
+	if len(a) != len(b) {
+		return false
+	}
+	for i := range a {
+		if a[i] != b[i] {
+			return false
+		}
+	}
+	return true
+}
+
 // internString attempts to return a cached string if available, otherwise caches and returns the string
-// This reduces memory allocations for frequently used small strings
 func internString(s string) string {
 	// Only intern small strings (most common case)
 	if len(s) > 32 || len(s) == 0 {
