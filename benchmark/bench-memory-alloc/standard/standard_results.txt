@@ -1,0 +1,9 @@
+goos: windows
+goarch: amd64
+pkg: memory-bench-standard
+cpu: 11th Gen Intel(R) Core(TM) i7-11800H @ 2.30GHz
+BenchmarkStringProcessing-16    	  347995	      3118 ns/op	    1200 B/op	      48 allocs/op
+BenchmarkNumberProcessing-16    	  286244	      4204 ns/op	    1200 B/op	     132 allocs/op
+BenchmarkMixedOperations-16     	  571129	      2143 ns/op	     546 B/op	      44 allocs/op
+PASS
+ok  	memory-bench-standard	3.632s

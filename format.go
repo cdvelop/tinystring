@@ -130,17 +130,22 @@ func (t *conv) Down() *conv {
 	if t.err != "" {
 		return t
 	}
-	// Parse the current value
-	tempConv := newConv(withValue(t.getString()))
-	tempConv.parseFloat()
-	if tempConv.err != "" {
-		// Not a number, just set the flag
-		result := newConv(withValue(t.getString()))
-		result.err = t.err
-		result.roundDown = true
-		return result
+	
+	// Parse the current value directly into existing conv
+	var val float64
+	if t.vTpe == typeFloat {
+		val = t.floatVal
+	} else {
+		// Parse current string content as float directly
+		t.s2Float()
+		if t.err != "" {
+			// Not a number, just set the flag and return
+			t.roundDown = true
+			return t
+		}
+		val = t.floatVal
 	}
-	val := tempConv.floatVal
+	
 	// Detect decimal places from the current content
 	decimalPlaces := 0
 	str := t.getString()
@@ -174,14 +179,15 @@ func (t *conv) Down() *conv {
 			// For negative integers, subtract 1 to make it more negative
 			adjustedVal = val - 1.0
 		}
-	} // Format the result
-	conv := newConv(withValue(adjustedVal))
-	conv.f2sMan(decimalPlaces)
-	result := conv.getString()
-	finalResult := newConv(withValue(result))
-	finalResult.err = ""
-	finalResult.roundDown = true
-	return finalResult
+	}
+	
+	// Update the current conv object directly instead of creating new ones
+	t.floatVal = adjustedVal
+	t.vTpe = typeFloat
+	t.f2sMan(decimalPlaces)
+	t.err = ""
+	t.roundDown = true
+	return t
 }
 
 // FormatNumber formats a numeric value with thousand separators
@@ -590,27 +596,48 @@ func (c *conv) handleFormat(args []any, argIndex *int, formatType rune, param in
 	if !ok {
 		return nil, false
 	}
-
 	var str string
 	switch formatType {
 	case 'd', 'o', 'b', 'x':
 		if intVal, ok := arg.(int); ok {
-			tempConv := newConv(withValue(int64(intVal)))
+			// Reuse existing conv for temporary calculation
+			oldIntVal := c.intVal
+			oldVTpe := c.vTpe
+			oldStringVal := c.stringVal
+			
+			c.intVal = int64(intVal)
+			c.vTpe = typeInt
 			if param == 10 {
-				tempConv.i2s()
+				c.i2s()
 			} else {
-				tempConv.i2sBase(param)
+				c.i2sBase(param)
 			}
-			str = tempConv.getString()
+			str = c.getString()
+			
+			// Restore original state
+			c.intVal = oldIntVal
+			c.vTpe = oldVTpe
+			c.stringVal = oldStringVal
 		} else {
 			c.NewErr(errFormatWrongType, formatSpec)
 			return nil, false
 		}
 	case 'f':
 		if floatVal, ok := arg.(float64); ok {
-			tempConv := newConv(withValue(floatVal))
-			tempConv.f2sMan(param)
-			str = tempConv.getString()
+			// Reuse existing conv for temporary calculation
+			oldFloatVal := c.floatVal
+			oldVTpe := c.vTpe
+			oldStringVal := c.stringVal
+			
+			c.floatVal = floatVal
+			c.vTpe = typeFloat
+			c.f2sMan(param)
+			str = c.getString()
+			
+			// Restore original state
+			c.floatVal = oldFloatVal
+			c.vTpe = oldVTpe
+			c.stringVal = oldStringVal
 		} else {
 			c.NewErr(errFormatWrongType, formatSpec)
 			return nil, false
@@ -623,9 +650,17 @@ func (c *conv) handleFormat(args []any, argIndex *int, formatType rune, param in
 			return nil, false
 		}
 	case 'v':
-		tempConv := newConv(withValue(""))
-		tempConv.formatValue(arg)
-		str = tempConv.getString()
+		// Reuse existing conv for temporary calculation
+		oldStringVal := c.stringVal
+		oldVTpe := c.vTpe
+		
+		c.stringVal = ""
+		c.formatValue(arg)
+		str = c.getString()
+		
+		// Restore original state
+		c.stringVal = oldStringVal
+		c.vTpe = oldVTpe
 	}
 
 	*argIndex++
@@ -634,7 +669,9 @@ func (c *conv) handleFormat(args []any, argIndex *int, formatType rune, param in
 
 // unifiedFormat creates a formatted string using sprintf, shared by Format and Errorf
 func unifiedFormat(format string, args ...any) *conv {
-	result := newConv(withValue(""))
+	result := &conv{
+		separator: "_", // default separator
+	}
 	result.sprintf(format, args...)
 	return result
 }
@@ -661,9 +698,7 @@ func (c *conv) sprintf(format string, args ...any) { // Pre-calculate buffer siz
 	for i := 0; i < len(format); i++ {
 		if format[i] == '%' {
 			if i+1 < len(format) {
-				i++
-
-				// Handle precision for floats (e.g., "%.2f")
+				i++				// Handle precision for floats (e.g., "%.2f")
 				precision := -1
 				if format[i] == '.' {
 					i++
@@ -672,11 +707,13 @@ func (c *conv) sprintf(format string, args ...any) { // Pre-calculate buffer siz
 						i++
 					}
 					if start < i {
-						// Parse precision
-						tempConv := newConv(withValue(format[start:i]))
-						tempConv.s2IntGeneric(10)
-						if tempConv.err == "" {
-							precision = int(tempConv.intVal)
+						// Parse precision directly without creating new conv
+						precisionStr := format[start:i]
+						precision = 0
+						for _, char := range precisionStr {
+							if char >= '0' && char <= '9' {
+								precision = precision*10 + int(char-'0')
+							}
 						}
 					}
 				}
