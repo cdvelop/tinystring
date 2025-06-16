@@ -2,31 +2,32 @@ package main
 
 import (
 	"fmt"
+	"strconv"
 	"strings"
 )
 
-// processTextWithStandardLib simulates conv processing using standard library
+// processTextWithStandardLib simulates text processing using standard library
 func processTextWithStandardLib(texts []string) []string {
 	results := make([]string, len(texts))
-	for i, conv := range texts {
-		// Simulate common string operations using standard library
-		lowered := strings.ToLower(conv)
+	for i, text := range texts {
+		// EQUIVALENT OPERATIONS: ToLower + simple character replacement + basic word processing
+		lowered := strings.ToLower(text)
+
+		// Simple character replacements (equivalent to RemoveTilde)
 		replaced := strings.ReplaceAll(lowered, "á", "a")
 		replaced = strings.ReplaceAll(replaced, "é", "e")
 		replaced = strings.ReplaceAll(replaced, "í", "i")
 		replaced = strings.ReplaceAll(replaced, "ó", "o")
 		replaced = strings.ReplaceAll(replaced, "ú", "u")
+		replaced = strings.ReplaceAll(replaced, "ñ", "n")
 
-		// Additional processing
+		// Simple word processing - split, capitalize first word, join
 		words := strings.Fields(replaced)
-		if len(words) > 0 {
-			// Capitalize first letter of first word
-			if len(words[0]) > 0 {
-				words[0] = strings.ToUpper(words[0][:1]) + words[0][1:]
-			}
-			replaced = strings.Join(words, "")
+		if len(words) > 0 && len(words[0]) > 0 {
+			words[0] = strings.ToUpper(words[0][:1]) + words[0][1:]
 		}
-		results[i] = replaced
+		result := strings.Join(words, "")
+		results[i] = result
 	}
 	return results
 }
@@ -35,23 +36,24 @@ func processTextWithStandardLib(texts []string) []string {
 func processNumbersWithStandardLib(numbers []float64) []string {
 	results := make([]string, len(numbers))
 	for i, num := range numbers {
-		// Convert to string and format
-		formatted := fmt.Sprintf("%.2f", num)
-		// Add thousand separators using standard library
+		// EQUIVALENT OPERATIONS: Format with 2 decimals + add thousand separators
+		formatted := strconv.FormatFloat(num, 'f', 2, 64)
+
+		// Add thousand separators (equivalent to FormatNumber)
 		parts := strings.Split(formatted, ".")
 		integer := parts[0]
 		decimal := parts[1]
 
-		// Add thousand separators
+		// Simple thousand separator logic
 		if len(integer) > 3 {
-			result := ""
+			var result strings.Builder
 			for j, char := range integer {
 				if j > 0 && (len(integer)-j)%3 == 0 {
-					result += ","
+					result.WriteString(".")
 				}
-				result += string(char)
+				result.WriteRune(char)
 			}
-			formatted = result + "." + decimal
+			formatted = result.String() + "," + decimal
 		}
 		results[i] = formatted
 	}

@@ -3,52 +3,29 @@ package main
 import "github.com/cdvelop/tinystring"
 
 func main() {
-	// Realistic complex operations using TinyString's chaining capabilities
-	conv := "MÍ téxtO cön AcÉntos Y MÁS TEXTO"
-	// Complex chained transformations (TinyString's strength)
-	processed := tinystring.Convert(conv).
-		ToLower().
-		RemoveTilde().
-		Replace(" ", "_").
-		CamelCaseLower().
-		Capitalize().
-		String()
+	// EQUIVALENT FUNCTIONALITY TEST - Same operations, same complexity
+	// Both implementations should do EXACTLY the same work
 
-	// Number processing with chaining
-	prices := []any{1234.567, 9876.54, 42.0}
-	formattedPrices := make([]string, len(prices))
-	for i, price := range prices {
-		formattedPrices[i] = tinystring.Convert(price).
-			RoundDecimals(2).
-			FormatNumber().
-			String()
-	}
+	// Test 1: Basic string operations
+	text1 := "Hello World Example"
+	result1 := tinystring.Convert(text1).ToLower().Replace(" ", "_").String()
 
-	// Complex string operations with chaining
-	userInput := "  Hello@World#2024!  "
-	cleaned := tinystring.Convert(userInput).
-		Trim().
-		Replace("@", "_at_").
-		Replace("#", "_hash_").
-		Replace("!", "").
-		ToLower().
-		String()
+	// Test 2: Number formatting
+	num1 := 1234.567
+	result2 := tinystring.Convert(num1).RoundDecimals(2).String()
 
-	// Advanced formatting and joining
-	priceList := tinystring.Convert(formattedPrices).Join(", ")
-	finalResult := tinystring.Format(
-		"Processed: %s | Cleaned: %s | Prices: %s",
-		processed, cleaned, priceList,
-	)
-	// Additional complex transformations
-	mixedText := "José María-González_2024"
-	normalized := tinystring.Convert(mixedText).
-		RemoveTilde().
-		Replace("-", "_").
-		ToSnakeCaseLower().
-		String()
+	// Test 3: Multiple string operations
+	text2 := "Processing Multiple Strings"
+	result3 := tinystring.Convert(text2).ToUpper().Replace(" ", "-").String()
 
-	// Final comprehensive result
-	result := tinystring.Format("%s | Normalized: %s", finalResult, normalized)
-	_ = result
+	// Test 4: Join operations
+	items := []string{"item1", "item2", "item3"}
+	result4 := tinystring.Convert(items).Join(", ").String()
+
+	// Test 5: Format operations
+	result5 := tinystring.Format("Result: %s | Number: %s | Upper: %s | List: %s",
+		result1, result2, result3, result4)
+
+	// Use results to prevent optimization
+	_ = result5
 }

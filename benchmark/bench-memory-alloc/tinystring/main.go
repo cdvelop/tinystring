@@ -4,55 +4,38 @@ import (
 	"github.com/cdvelop/tinystring"
 )
 
-// processTextWithTinyString simulates conv processing using TinyString
+// processTextWithTinyString simulates text processing using TinyString (equivalent to standard lib)
 func processTextWithTinyString(texts []string) []string {
 	results := make([]string, len(texts))
-	for i, conv := range texts {
-		// Process using TinyString with chained operations
-		processed := tinystring.Convert(conv).
+	for i, text := range texts {
+		// EQUIVALENT OPERATIONS: Same logic as standard library but using TinyString
+		processed := tinystring.Convert(text).
+			ToLower().
 			RemoveTilde().
-			CamelCaseLower().
 			String()
-		results[i] = processed
+
+		// Split into words and capitalize first letter of first word, then join
+		words := tinystring.Split(processed, " ")
+		if len(words) > 0 && len(words[0]) > 0 {
+			words[0] = tinystring.Convert(words[0]).Capitalize().String()
+		}
+
+		// Join words without spaces (equivalent to standard lib behavior)
+		result := tinystring.Convert(words).Join().String()
+		results[i] = result
 	}
 	return results
 }
 
-// processTextWithTinyStringPointers uses pointer approach for efficiency
-func processTextWithTinyStringPointers(texts []string) {
-	for i := range texts {
-		// Modify in place using pointer approach
-		tinystring.Convert(&texts[i]).
-			RemoveTilde().
-			CamelCaseLower().
-			Apply()
-	}
-}
-
-// processNumbersWithTinyString simulates number processing
+// processNumbersWithTinyString simulates number processing (equivalent to standard lib)
 func processNumbersWithTinyString(numbers []float64) []string {
 	results := make([]string, len(numbers))
 	for i, num := range numbers {
-		// Convert and format using TinyString
+		// EQUIVALENT OPERATIONS: Same formatting as standard library
 		formatted := tinystring.Convert(num).
 			RoundDecimals(2).
 			FormatNumber().
 			String()
-		results[i] = formatted
-	}
-	return results
-}
-
-// processNumbersWithTinyStringPool simulates number processing using object pool (Phase 7)
-func processNumbersWithTinyStringPool(numbers []float64) []string {
-	results := make([]string, len(numbers))
-	for i, num := range numbers {
-		// Convert and format using TinyString with pool optimization
-		c := tinystring.ConvertWithPool(num)
-		formatted := c.RoundDecimals(2).
-			FormatNumber().
-			String()
-		c.Release() // Return to pool for reuse
 		results[i] = formatted
 	}
 	return results

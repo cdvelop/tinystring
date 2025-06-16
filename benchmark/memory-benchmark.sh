@@ -28,11 +28,6 @@ echo "📊 Running TinyString benchmarks..."
 cd "$MEMORY_BENCH_DIR/tinystring"
 TINYSTRING_RESULTS=$(go test -bench=. -benchmem 2>/dev/null | grep -E '^Benchmark')
 
-# Run pointer comparison benchmarks
-echo "📊 Running pointer comparison benchmarks..."
-cd "$MEMORY_BENCH_DIR/pointer-comparison"
-POINTER_RESULTS=$(go test -bench=. -benchmem 2>/dev/null | grep -E '^Benchmark')
-
 # Generate memory benchmark section for README
 echo "📝 Generating memory benchmark results..."
 
@@ -52,11 +47,6 @@ $STANDARD_RESULTS
 
 TinyString:
 $TINYSTRING_RESULTS
-\`\`\`
-
-#### Pointer Optimization Comparison
-\`\`\`
-$POINTER_RESULTS
 \`\`\`
 
 ### Performance Analysis
