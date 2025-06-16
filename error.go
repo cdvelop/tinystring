@@ -10,7 +10,6 @@ type errorType string
 const (
 	errNone              errorType = ""
 	errEmptyString       errorType = "empty string"
-	errInvalidNumber     errorType = "invalid number"
 	errNegativeUnsigned  errorType = "negative numbers are not supported for unsigned integers"
 	errInvalidBase       errorType = "invalid base"
 	errOverflow          errorType = "number overflow"

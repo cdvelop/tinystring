@@ -14,6 +14,56 @@ var smallInts = [...]string{
 	"90", "91", "92", "93", "94", "95", "96", "97", "98", "99",
 }
 
+// Phase 8.5: Fast parsing for common small integers (0-999)
+// parseSmallInt optimizes parsing of small integers using direct byte access
+// Returns the parsed integer and nil if successful, otherwise returns 0 and non-nil error
+func parseSmallInt(s string) (int, errorType) {
+	if len(s) == 0 {
+		return 0, errEmptyString
+	}
+
+	var result int
+	var negative bool
+
+	// Check for negative sign
+	i := 0
+	if s[0] == '-' {
+		negative = true
+		i = 1
+		if len(s) == 1 {
+			return 0, errInvalidFormat
+		}
+	} else if s[0] == '+' {
+		i = 1
+		if len(s) == 1 {
+			return 0, errInvalidFormat
+		}
+	}
+
+	// Parse digits
+	for ; i < len(s); i++ {
+		if s[i] < '0' || s[i] > '9' {
+			return 0, errInvalidFormat
+		}
+
+		digit := int(s[i] - '0')
+
+		// Check for overflow before multiplying
+		if result > (999-digit)/10 {
+			return 0, errOverflow
+		}
+
+		result = result*10 + digit
+	}
+
+	// Apply negative sign
+	if negative {
+		result = -result
+	}
+
+	return result, errNone
+}
+
 // Shared helper methods to reduce code duplication between numeric.go and format.go
 
 // saveState saves the current string value and type for later restoration
@@ -482,11 +532,19 @@ func (t *conv) s2Float() {
 
 // s2n converts string to number with specified base and stores in conv struct.
 // This is an internal conv method that modifies the struct instead of returning values.
-// Phase 8.4 Optimization: Use direct byte access for base 10 to avoid UTF-8 overhead
+// Phase 8.5 Architecture: Use common number cache + optimized byte access
 func (t *conv) s2n(base int) {
 	inp := t.getString()
 	if !t.validateBase(base) {
 		return
+	}
+	// Phase 8.5: Fast path for common small numbers (0-999) in base 10
+	if base == 10 && len(inp) <= 3 && len(inp) > 0 {
+		if num, err := parseSmallInt(inp); err == errNone {
+			t.uintVal = uint64(num)
+			t.vTpe = typeUint
+			return
+		}
 	}
 
 	var res uint64 // result

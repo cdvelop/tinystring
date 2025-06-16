@@ -1,8 +1,6 @@
 package tinystring
 
-import (
-	"sync"
-)
+import ()
 
 // vTpe represents the type of value stored in conv
 type vTpe uint8
@@ -81,42 +79,6 @@ func withValue(v any) convOpt {
 			c.handleAnyType(val)
 		}
 	}
-}
-
-// Phase 7: Conv Pool for memory optimization
-// Reuse conv objects to eliminate the 53.67% allocation hotspot from newConv()
-var convPool = sync.Pool{
-	New: func() interface{} {
-		return &conv{
-			separator: "_", // default separator
-		}
-	},
-}
-
-// getConv gets a reusable conv from the pool
-func getConv() *conv {
-	return convPool.Get().(*conv)
-}
-
-// putConv returns a conv to the pool after resetting it
-func (c *conv) putConv() {
-	// Reset all fields to default state
-	c.stringVal = ""
-	c.intVal = 0
-	c.uintVal = 0
-	c.floatVal = 0
-	c.boolVal = false
-	c.stringSliceVal = nil
-	c.stringPtrVal = nil
-	c.vTpe = typeStr
-	c.roundDown = false
-	c.separator = "_"
-	c.tmpStr = ""
-	c.lastConvType = typeStr
-	c.err = ""
-	c.resetBuffer()
-
-	convPool.Put(c)
 }
 
 // Convert initializes a new conv struct with any type of value for string,bool and number manipulation.
@@ -298,19 +260,6 @@ func addRne2Buf(buf []byte, r rune) []byte {
 	}
 }
 
-// newBuf creates an optimally-sized buffer for common string operations
-func (t *conv) newBuf(sizeMultiplier int) (string, []byte) {
-	str := t.getString()
-	if isEmpty(str) {
-		return str, nil
-	}
-	bufSize := len(str) * sizeMultiplier
-	if bufSize < 16 {
-		bufSize = 16 // Minimum useful buffer size
-	}
-	return str, make([]byte, 0, bufSize)
-}
-
 // setString converts to string type and stores the value
 func (t *conv) setString(s string) {
 	t.stringVal = s
@@ -362,54 +311,6 @@ func (t *conv) joinSlice(separator string) string {
 	}
 
 	return string(result)
-}
-
-// Phase 6.2: Buffer reuse methods for memory optimization
-// ensureCapacity ensures the buffer has at least the specified capacity
-func (c *conv) ensureCapacity(capacity int) {
-	if cap(c.buf) < capacity {
-		newCap := capacity
-		if newCap < 32 {
-			newCap = 32
-		}
-		// Double the capacity if we need significant growth
-		if newCap > cap(c.buf)*2 {
-			newCap = capacity
-		} else if cap(c.buf) > 0 {
-			newCap = cap(c.buf) * 2
-			if newCap < capacity {
-				newCap = capacity
-			}
-		}
-		newBuf := make([]byte, len(c.buf), newCap)
-		copy(newBuf, c.buf)
-		c.buf = newBuf
-	}
-}
-
-// resetBuffer resets the buffer length while keeping capacity
-func (c *conv) resetBuffer() {
-	c.buf = c.buf[:0]
-}
-
-// getReusableBuffer returns a buffer with specified capacity, reusing existing if possible
-func (c *conv) getReusableBuffer(capacity int) []byte {
-	c.ensureCapacity(capacity)
-	c.resetBuffer()
-	return c.buf
-}
-
-// Phase 8.3 Optimization: Use unsafe to avoid string allocation in buffer-to-string conversion
-func (c *conv) setStringFromBuffer() {
-	if len(c.buf) == 0 {
-		c.stringVal = ""
-	} else {
-		// Create string copy to avoid issues with buffer reuse
-		// This is still more efficient than the old double-allocation pattern
-		c.stringVal = string(c.buf)
-	}
-	c.vTpe = typeStr
-	c.buf = c.buf[:0] // Reset buffer length, keep capacity
 }
 
 // Internal conversion methods - centralized in conv to minimize allocations
@@ -500,5 +401,3 @@ func (c *conv) handleAnyTypeForAny2s(val any) {
 		genFloat(c, v, 1)
 	}
 }
-
-// Generic helper functions are all defined above

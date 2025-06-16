@@ -5,3 +5,4 @@
 benchmark/bench-binary-size/standard-lib/standard
 benchmark/bench-binary-size/tinystring-lib/tinystring
 benchmark/memory_benchmark_results.md
+*.prof
