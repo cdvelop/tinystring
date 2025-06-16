@@ -799,3 +799,131 @@ func TestRaceConditionInComplexChaining(t *testing.T) {
 		}
 	})
 }
+
+// TestConcurrentStringInterning tests the string interning functionality
+// under high concurrency to detect race conditions in the cache.
+// This test specifically targets the race condition that was found in
+// internStringFromBytes() function in memory.go
+func TestConcurrentStringInterning(t *testing.T) {
+	const numGoroutines = 500
+	const iterations = 20
+
+	t.Run("String Interning Race Condition", func(t *testing.T) {
+		var wg sync.WaitGroup
+		wg.Add(numGoroutines)
+
+		var counter safeCounter
+
+		// Use the same small strings that would trigger the interning cache
+		testStrings := []string{
+			"Hello World",
+			"Pi: 3.14",
+			"Number: 42",
+			"Format test",
+			"Cache test",
+			"Race condition",
+			"Memory optimization",
+			"TinyString",
+		}
+
+		done := make(chan struct{})
+		go func() {
+			wg.Wait()
+			close(done)
+		}()
+
+		for i := 0; i < numGoroutines; i++ {
+			go func(id int) {
+				defer wg.Done()
+
+				// Each goroutine performs multiple formatting operations that
+				// trigger string interning through Format() -> sprintf() -> internStringFromBytes()
+				for j := 0; j < iterations; j++ {
+					testStr := testStrings[j%len(testStrings)]
+
+					// This triggers the internStringFromBytes() path that had the race condition
+					result1 := Format("Test %s %d", testStr, j).String()
+					result2 := Format("Data: %s=%d", testStr, id).String()
+
+					// Verify results are correct
+					expected1 := "Test " + testStr + " " + Convert(j).String()
+					expected2 := "Data: " + testStr + "=" + Convert(id).String()
+
+					if result1 != expected1 {
+						counter.addError(Format("goroutine %d, iteration %d: result1 got %q, want %q", id, j, result1, expected1).String())
+					}
+					if result2 != expected2 {
+						counter.addError(Format("goroutine %d, iteration %d: result2 got %q, want %q", id, j, result2, expected2).String())
+					}
+				}
+			}(i)
+		}
+
+		// Wait with timeout
+		select {
+		case <-done:
+			if counter.count > 0 {
+				t.Errorf("String interning race condition detected with %d errors:\n%s",
+					counter.count, Convert(counter.errs).Join("\n").String())
+			}
+		case <-time.After(10 * time.Second):
+			t.Fatal("Test timed out after 10 seconds")
+		}
+	})
+}
+
+// TestConcurrentStringCacheStress tests the string cache under extreme stress
+// to ensure it remains thread-safe under high contention scenarios
+func TestConcurrentStringCacheStress(t *testing.T) {
+	const numGoroutines = 200
+	const iterations = 50
+
+	t.Run("String Cache Stress Test", func(t *testing.T) {
+		var wg sync.WaitGroup
+		wg.Add(numGoroutines)
+
+		var counter safeCounter
+
+		done := make(chan struct{})
+		go func() {
+			wg.Wait()
+			close(done)
+		}()
+
+		for i := 0; i < numGoroutines; i++ {
+			go func(id int) {
+				defer wg.Done()
+
+				for j := 0; j < iterations; j++ {
+					// Mix of operations that trigger string interning
+					operations := []func() string{
+						func() string { return Format("ID_%d_ITER_%d", id, j).String() },
+						func() string { return Convert(id).FormatNumber().String() },
+						func() string { return Convert(Format("goroutine_%d", id).String()).ToUpper().String() },
+						func() string { return Format("%.2f", float64(j)/10.0).String() },
+						func() string { return Convert("cache_test").Repeat(2).String() },
+					}
+
+					// Execute random operation
+					op := operations[j%len(operations)]
+					result := op()
+
+					// Basic validation - ensure result is not empty
+					if result == "" {
+						counter.addError(Format("goroutine %d, iteration %d: got empty result", id, j).String())
+					}
+				}
+			}(i)
+		}
+
+		select {
+		case <-done:
+			if counter.count > 0 {
+				t.Errorf("String cache stress test failed with %d errors:\n%s",
+					counter.count, Convert(counter.errs).Join("\n").String())
+			}
+		case <-time.After(15 * time.Second):
+			t.Fatal("Stress test timed out after 15 seconds")
+		}
+	})
+}

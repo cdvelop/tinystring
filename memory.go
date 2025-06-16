@@ -99,9 +99,10 @@ type cachedString struct {
 }
 
 var (
-	stringCache   = make([]cachedString, 0, 64) // Cache for interned strings - slice based
-	stringCacheMu sync.RWMutex                  // Protect the cache
-	maxCacheSize  = 64                          // Maximum cache entries
+	stringCache    [64]cachedString // Fixed-size array for interned strings - thread safe
+	stringCacheLen int              // Current number of entries in cache
+	stringCacheMu  sync.RWMutex     // Protect the cache
+	maxCacheSize   = 64             // Maximum cache entries
 )
 
 // internStringFromBytes attempts to return a cached string from bytes if available,
@@ -112,51 +113,40 @@ func internStringFromBytes(b []byte) string {
 		return string(b)
 	}
 
-	// Fast read-only check first - compare bytes directly to avoid string allocation
+	// Create string once to avoid multiple allocations
+	s := string(b)
+
+	// Fast read-only check first - most cache hits happen here
 	stringCacheMu.RLock()
-	for i := range stringCache {
-		if len(stringCache[i].str) == len(b) && bytesEqual([]byte(stringCache[i].str), b) {
+	for i := 0; i < stringCacheLen; i++ {
+		if stringCache[i].str == s {
 			stringCacheMu.RUnlock()
 			return stringCache[i].ref
 		}
 	}
 	stringCacheMu.RUnlock()
 
-	// Not found, create string and try to add to cache (with write lock)
-	s := string(b) // Single string allocation here
-
+	// Not found, try to add to cache with write lock
 	stringCacheMu.Lock()
 	defer stringCacheMu.Unlock()
 
-	// Double-check in case another goroutine added it
-	for i := range stringCache {
+	// Double-check pattern: another goroutine might have added it while we waited
+	for i := 0; i < stringCacheLen; i++ {
 		if stringCache[i].str == s {
 			return stringCache[i].ref
 		}
 	}
 
 	// Add to cache if not full
-	if len(stringCache) < maxCacheSize {
-		stringCache = append(stringCache, cachedString{
+	if stringCacheLen < maxCacheSize {
+		stringCache[stringCacheLen] = cachedString{
 			str: s,
 			ref: s,
-		})
+		}
+		stringCacheLen++
 	}
 
 	return s
-}
-
-// bytesEqual compares two byte slices for equality without allocating
-func bytesEqual(a, b []byte) bool {
-	if len(a) != len(b) {
-		return false
-	}
-	for i := range a {
-		if a[i] != b[i] {
-			return false
-		}
-	}
-	return true
 }
 
 // Phase 11: Rune Buffer Pool for memory optimization
@@ -175,16 +165,15 @@ func getRuneBuffer(capacity int) []rune {
 
 	// Reset the buffer
 	buf = buf[:0]
-
 	// Grow if needed
 	if capacity > cap(buf) {
 		// If requested capacity is much larger, allocate new buffer
 		if capacity > cap(buf)*2 {
-			runeBufferPool.Put(buf) // Return the old buffer to pool
+			runeBufferPool.Put(buf[:0]) // SA6002: sync.Pool expects interface{}
 			return make([]rune, 0, capacity)
 		}
 		// Otherwise, grow the buffer
-		runeBufferPool.Put(buf) // Return the old buffer to pool
+		runeBufferPool.Put(buf[:0]) // SA6002: sync.Pool expects interface{}
 		return make([]rune, 0, capacity)
 	}
 
@@ -198,7 +187,8 @@ func putRuneBuffer(buf *[]rune) {
 	}
 	// Only pool buffers that aren't too large to avoid memory leaks
 	if cap(*buf) <= defaultBufCap*4 {
-		runeBufferPool.Put((*buf)[:0])
+		resetBuf := (*buf)[:0]
+		runeBufferPool.Put(resetBuf) // SA6002: sync.Pool expects interface{}
 	}
 }
 
