@@ -826,7 +826,11 @@ func (c *conv) formatIntDirectly(val int64) {
 	if val < 1000 {
 		if val < int64(len(smallInts)) {
 			if negative {
-				c.setString("-" + smallInts[val])
+				// Phase 11: Use buffer instead of string concatenation to avoid allocation
+				c.buf = c.getReusableBuffer(1 + len(smallInts[val]))
+				c.buf = append(c.buf, '-')
+				c.buf = append(c.buf, smallInts[val]...)
+				c.setStringFromBuffer()
 			} else {
 				c.tmpStr = smallInts[val]
 				c.stringVal = c.tmpStr
@@ -848,12 +852,15 @@ func (c *conv) formatIntDirectly(val int64) {
 
 	// Now add thousand separators using the proven fmtNum algorithm
 	numStr := string(buf[idx:])
-
 	// Apply separators using existing proven logic from fmtNum()
 	if len(numStr) <= 3 {
 		// No formatting needed for numbers with 3 or fewer digits
 		if negative {
-			c.setString("-" + numStr)
+			// Phase 11: Use buffer instead of string concatenation to avoid allocation
+			c.buf = c.getReusableBuffer(1 + len(numStr))
+			c.buf = append(c.buf, '-')
+			c.buf = append(c.buf, numStr...)
+			c.setStringFromBuffer()
 		} else {
 			c.setString(numStr)
 		}

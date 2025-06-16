@@ -45,15 +45,22 @@ func (t *conv) Truncate(maxWidth any, reservedChars ...any) *conv {
 		// Calculate the width available for the conv itself, excluding reserved chars
 		eW := max(mWI-rCI, 0)
 		ellipsisLen := len(ellipsisStr)
-
 		if rCI > 0 && mWI >= ellipsisLen && eW >= ellipsisLen {
 			// Case 1: Reserved chars specified, and ellipsis fits within the effective width
 			cTK := min(max(eW-ellipsisLen, 0), oL)
-			t.setString(conv[:cTK] + ellipsisStr)
+			// Phase 11: Use buffer instead of string concatenation to avoid allocation
+			t.buf = t.getReusableBuffer(cTK + len(ellipsisStr))
+			t.buf = append(t.buf, conv[:cTK]...)
+			t.buf = append(t.buf, ellipsisStr...)
+			t.setStringFromBuffer()
 		} else if rCI == 0 && mWI >= ellipsisLen {
 			// Case 2: No reserved chars, ellipsis fits within maxWidth
 			cTK := min(max(mWI-ellipsisLen, 0), oL)
-			t.setString(conv[:cTK] + ellipsisStr)
+			// Phase 11: Use buffer instead of string concatenation to avoid allocation
+			t.buf = t.getReusableBuffer(cTK + len(ellipsisStr))
+			t.buf = append(t.buf, conv[:cTK]...)
+			t.buf = append(t.buf, ellipsisStr...)
+			t.setStringFromBuffer()
 		} else {
 			// Case 3: Ellipsis doesn't fit or reserved chars prevent it, just truncate
 			cTK := min(mWI, oL)
@@ -121,12 +128,15 @@ func (t *conv) applyMaxWidthConstraint(words []string, mC, mT int) *conv {
 		minNeeded := mC + 1 + 1 + min(mC+1, len(words[1])) // "Abc. D..." pattern
 		if len(words) > 2 {
 			minNeeded = mC + 1 + 1 + mC + 1 // "Abc. D..." for 3+ words
-		}
-		// If we can't fit the normal pattern, use all space for first word
+		} // If we can't fit the normal pattern, use all space for first word
 		if mT < minNeeded && mT >= 4 { // minimum "X..." is 4 chars
 			availableForFirstWord := mT - len(ellipsisStr)
 			if len(words[0]) > availableForFirstWord {
-				t.setString(words[0][:availableForFirstWord] + ellipsisStr)
+				// Phase 11: Use buffer instead of string concatenation to avoid allocation
+				t.buf = t.getReusableBuffer(availableForFirstWord + len(ellipsisStr))
+				t.buf = append(t.buf, words[0][:availableForFirstWord]...)
+				t.buf = append(t.buf, ellipsisStr...)
+				t.setStringFromBuffer()
 				return t
 			}
 		}
