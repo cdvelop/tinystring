@@ -9,6 +9,7 @@ import (
 )
 
 func main() {
+
 	// Realistic complex operations using standard library (multiple separate calls)
 	conv := "MÍ téxtO cön AcÉntos Y MÁS TEXTO"
 
