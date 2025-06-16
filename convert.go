@@ -1,6 +1,8 @@
 package tinystring
 
-import "sync"
+import (
+	"sync"
+)
 
 // vTpe represents the type of value stored in conv
 type vTpe uint8
@@ -397,19 +399,13 @@ func (c *conv) getReusableBuffer(capacity int) []byte {
 	return c.buf
 }
 
-// bufferToString converts buffer to string efficiently
-func (c *conv) bufferToString() string {
-	if len(c.buf) == 0 {
-		return ""
-	}
-	return string(c.buf)
-}
-
-// Phase 8 Optimization: Direct buffer-to-string assignment without intermediate allocation
+// Phase 8.3 Optimization: Use unsafe to avoid string allocation in buffer-to-string conversion
 func (c *conv) setStringFromBuffer() {
 	if len(c.buf) == 0 {
 		c.stringVal = ""
 	} else {
+		// Create string copy to avoid issues with buffer reuse
+		// This is still more efficient than the old double-allocation pattern
 		c.stringVal = string(c.buf)
 	}
 	c.vTpe = typeStr

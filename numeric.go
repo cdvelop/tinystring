@@ -482,6 +482,7 @@ func (t *conv) s2Float() {
 
 // s2n converts string to number with specified base and stores in conv struct.
 // This is an internal conv method that modifies the struct instead of returning values.
+// Phase 8.4 Optimization: Use direct byte access for base 10 to avoid UTF-8 overhead
 func (t *conv) s2n(base int) {
 	inp := t.getString()
 	if !t.validateBase(base) {
@@ -490,31 +491,54 @@ func (t *conv) s2n(base int) {
 
 	var res uint64 // result
 
-	for _, ch := range inp { // char
-		var d int // digit
-		if ch >= '0' && ch <= '9' {
-			d = int(ch - '0')
-		} else if ch >= 'a' && ch <= 'z' {
-			d = int(ch-'a') + 10
-		} else if ch >= 'A' && ch <= 'Z' {
-			d = int(ch-'A') + 10
-		} else {
-			t.NewErr(string(ch))
-			return
-		}
+	// Phase 8.4: Optimized path for base 10 (most common case)
+	if base == 10 {
+		// Use direct byte access instead of range to avoid UTF-8 overhead
+		for i := 0; i < len(inp); i++ {
+			ch := inp[i]
+			if ch < '0' || ch > '9' {
+				t.NewErr(string(ch))
+				return
+			}
 
-		if d >= base {
-			t.NewErr(errInvalidBase, "digit out of range for base")
-			return
-		}
+			d := uint64(ch - '0')
 
-		// Check for overflow
-		if res > (^uint64(0))/uint64(base) {
-			t.NewErr(errOverflow)
-			return
-		}
+			// Check for overflow - optimized for base 10
+			if res > 1844674407370955161 || (res == 1844674407370955161 && d > 5) { // (2^64-1)/10
+				t.NewErr(errOverflow)
+				return
+			}
 
-		res = res*uint64(base) + uint64(d)
+			res = res*10 + d
+		}
+	} else {
+		// Original implementation for other bases
+		for _, ch := range inp { // char
+			var d int // digit
+			if ch >= '0' && ch <= '9' {
+				d = int(ch - '0')
+			} else if ch >= 'a' && ch <= 'z' {
+				d = int(ch-'a') + 10
+			} else if ch >= 'A' && ch <= 'Z' {
+				d = int(ch-'A') + 10
+			} else {
+				t.NewErr(string(ch))
+				return
+			}
+
+			if d >= base {
+				t.NewErr(errInvalidBase, "digit out of range for base")
+				return
+			}
+
+			// Check for overflow
+			if res > (^uint64(0))/uint64(base) {
+				t.NewErr(errOverflow)
+				return
+			}
+
+			res = res*uint64(base) + uint64(d)
+		}
 	}
 
 	t.uintVal = res
