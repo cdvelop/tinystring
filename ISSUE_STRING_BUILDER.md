@@ -23,14 +23,27 @@ Current memory hotspots identified in TinyString:
 
 #### Builder API Methods
 ```go
-// String builder methods - all return *conv for chaining
-func (c *conv) WS(s string) *conv     // WriteString equivalent
-func (c *conv) WB(b byte) *conv       // WriteByte equivalent  
-func (c *conv) WR(r rune) *conv       // WriteRune equivalent
-func (c *conv) RS() *conv             // Reset equivalent
+// REFACTORED: Convert function with variadic parameters (only accepts 0 or 1 value)
+func Convert(v ...any) *conv          // Convert() or Convert(initialValue)
 
-// Build result - reuses existing String() method
+// Unified builder method - detects type automatically
+func (c *conv) Write(v any) *conv     // Universal write method (string, byte, rune, numbers)
+func (c *conv) Reset() *conv          // Reset complete conv state
+
+// Build result - reuses existing String() method  
 func (c *conv) String() string        // Already exists - auto-releases to pool
+
+// CLEAN API: Convert() automatically uses builder internally
+// Example: Convert("hello ").Write("tiny").Write(" string").ToUpper().String()
+// Output: "HELLO TINY STRING"
+
+// BUILDER PATTERN: Empty initialization for loops
+// Example: 
+// c := Convert()
+// for _, item := range items {
+//     c.Write(item).Write(" ")
+// }
+// result := c.String()
 ```
 
 ### 2. Translation Function `T`
@@ -42,48 +55,87 @@ func T(values ...any) string
 
 #### Usage Examples
 ```go
-// Simple translation
-msg := T(D.Invalid, D.Format)              // "invalid format"
-msg := T(ES, D.Invalid, D.Format)          // "formato inválido" 
+// Convert automatically initializes buffer 
+c := Convert("hello ")                    // buf = "hello "
+c.Write("tiny").Write(" string")         // buf = "hello tiny string"  
+c.ToUpper()                              // buf = "HELLO TINY STRING"
+result := c.String()                     // "HELLO TINY STRING" + auto-release
 
-// Error function becomes wrapper
-func Err(values ...any) *conv {
-    return &conv{err: T(values...), vTpe: typeErr}
+// Chaining with mixed operations (should work seamlessly)
+result := Convert("hello").ToUpper().Write(" WORLD").ToLower().String()
+// Output: "hello world"
+
+// Error chain interruption - operations after error are omitted
+c := Convert("valid").Write("ok").Write(make(chan int)) // chan int = unsupported type
+c.ToUpper().Write(" MORE")  // ToUpper and Write(" MORE") are OMITTED internally
+result, err := c.StringError() // result = "validok", err = "unsupported type error"
+
+// Clean error handling
+if err != nil {
+    log.Printf("Chain error: %v", err) // Developer responsibility
 }
 ```
 
 ### 3. Memory Optimization Strategy
 
-#### Responsibility Separation
-- **`RS()` method**: Reset complete conv state (all fields + buffer)
-- **`setString()` method**: Convert to string type + full conv cleanup
-- **Builder methods**: Focus on efficient string construction
-- **Pool integration**: Seamless reuse of existing `convPool`
+#### ARCHITECTURAL CHANGE: Single Source of Truth + Clean API
+- **ELIMINATE `stringVal` AND `tmpStr`**: Use only `buf []byte` as string storage
+- **Unified `Write()` method**: Automatically detects and handles string, byte, rune, numbers
+- **`Reset()` method**: Reset complete conv state (all fields + buffer)
+- **`Convert()` auto-builder**: Transparent internal builder usage for all operations
+- **Memory trade-off**: Slightly more memory for small texts, zero allocations for complex operations
+- **Perfect for TinyGo/WebAssembly**: Optimized for web applications with medium/large text processing
 
-#### Buffer Reuse Pattern
+#### Buffer-Only Strategy
 ```go
-// High-performance pattern for complex operations
+// UNIFIED approach - everything uses buf as single source of truth
 func complexOperation() string {
-    c := getConv()
-    result := c.WS("prefix").WS(" ").WS("suffix").String() // Auto-releases
+    c := Convert()
+    // All operations append to buf directly
+    c.Write("prefix").Write(" ").Write("suffix") // buf contains: "prefix suffix"
+    result := c.String() // Convert buf to string and auto-release
     return result
+}
+
+// Transparent builder usage in existing functions
+func (t *conv) ToUpper() *conv {
+    // Always work with buf, eliminate stringVal conflicts
+    if len(t.buf) == 0 {
+        // Initialize buf from current value
+        t.initBufferFromValue()
+    }
+    t.processBufferToUpper() // Single processing path
+    return t
 }
 ```
 
 ## Implementation Plan
 
-### Phase 1: Builder Methods Implementation
-**File**: `memory.go`
+### Phase 1: Builder Methods Implementation + Refactoring
+**File**: `builder.go`
 
-1. **Add Builder API methods**:
-   - `WS(s string) *conv` - Append string to buffer
-   - `WB(b byte) *conv` - Append byte to buffer  
-   - `WR(r rune) *conv` - Append rune to buffer (UTF-8 encoded)
-   - `RS() *conv` - Reset complete conv state
+1. **Convert function refactoring**:
+   - **CRITICAL**: Change `Convert(v any)` to `Convert(v ...any)` with validation
+   - **Rule**: Only accepts 0 or 1 parameters: `Convert()` or `Convert(value)`
+   - **Purpose**: Enable empty initialization for builder pattern in loops
+   - **Error handling**: Use `c.err = T(D.Only, D.One, D.Value, D.Supported)` for multiple parameters (consistent with library pattern)
 
-2. **Optimize buffer management**:
-   - Reuse existing `cap()` (rename from ensureCapacity) and `resetBuffer()`
-   - Enhance `setStringFromBuffer()` for builder workflow
+2. **Unified type handling method**:
+   - `type cm uint8` - Convert mode constants (mi=inicial, mb=buffer, ma=any)
+   - `setVal(v any, mode cm)` - Consolidate ALL type switches (withValue, Write, any2s)
+   - `Write(v any) *conv` - Universal write method using setVal(v, mb)
+   - `Reset() *conv` - Reset complete conv state
+
+2. **Core refactoring**:
+   - Eliminate `withValue()` - replace with `setVal(v, mi)` 
+   - Rename `ensureCapacity()` to `grow()` 
+   - Replace `getString()` with `getBuf()` (get buffer value - heavily used)   - Create `val2Buf()` method for direct buffer conversion
+   - Unify `i2sBuf()`, `f2sBuf()` with `appendValueToBuf(v any, typ vTpe)` method
+   - **ELIMINATE `stringVal` AND `tmpStr` fields**: Use only `buf` as single source of truth
+
+3. **setString() transition strategy**:
+   - Mark `setString()` as **@deprecated** during transition
+   - Gradual replacement throughout library with `setBuf()`
 
 ### Phase 2: Translation Function `T`
 **File**: `translation.go` (new file)
@@ -136,37 +188,67 @@ Using tools from `ISSUE_MEMORY_TOOLS.md`:
 
 ### Builder Method Details
 
-#### `WS(s string) *conv` - WriteString
+#### `Convert(v ...any) *conv` - Refactored Constructor
 ```go
-func (c *conv) WS(s string) *conv {
-    c.cap(len(c.buf) + len(s))
-    c.buf = append(c.buf, s...)
+func Convert(v ...any) *conv {
+    c := getConv()
+    
+    // Validation: Only accept 0 or 1 parameter
+    if len(v) > 1 {
+        c.err = T(D.Only, D.One, D.Value, D.Supported) // Consistent error handling pattern
+        return c
+    }
+    
+    // Initialize with value if provided, empty otherwise
+    if len(v) == 1 {
+        c.setVal(v[0], mi) // Initial mode
+    }
+    // If no value provided, conv is ready for builder pattern
+    
     return c
 }
 ```
 
-#### `WB(b byte) *conv` - WriteByte  
+**Usage Examples**:
 ```go
-func (c *conv) WB(b byte) *conv {
-    c.cap(len(c.buf) + 1)
-    c.buf = append(c.buf, b)
+// Traditional usage (backward compatible)
+result := Convert("hello").ToUpper().String() // "HELLO"
+
+// Builder pattern for loops (NEW - eliminates multiple allocations)
+c := Convert() // Empty initialization
+for _, word := range []string{"hello", "tiny", "string"} {
+    c.Write(word).Write(" ")
+}
+result := c.String() // "hello tiny string "
+
+// Mixed usage
+c := Convert("prefix: ") // Initialize with value
+for i := 0; i < 5; i++ {
+    c.Write(i).Write(" ")
+}
+result := c.String() // "prefix: 0 1 2 3 4 "
+```
+
+#### `Write(v any) *conv` - Unified Write Operation
+```go
+func (c *conv) Write(v any) *conv {
+    if c.err != nil {
+        return c  // Error chain interruption
+    }
+    
+    // Use unified type handler with write mode
+    c.setVal(v, cmWrite)
     return c
 }
 ```
 
-#### `WR(r rune) *conv` - WriteRune
-```go
-func (c *conv) WR(r rune) *conv {
-    c.buf = addRne2Buf(c.buf, r) // Reuse existing UTF-8 encoder
-    return c
-}
-```
+The Write method provides a unified interface for appending any value to the buffer. It delegates to the unified `setVal()` handler with write mode, which ensures consistent type conversion and error handling across all operations.
 
-#### `RS() *conv` - Reset Builder
+#### `Reset() *conv` - Reset Builder
 ```go
-func (c *conv) RS() *conv {
+func (c *conv) Reset() *conv {
     // Reset all conv fields to default state
-    c.stringVal = ""
+    // ELIMINATED: c.stringVal = ""
     c.intVal = 0
     c.uintVal = 0
     c.floatVal = 0
@@ -179,33 +261,44 @@ func (c *conv) RS() *conv {
     c.tmpStr = ""
     c.lastConvType = typeStr
     c.err = ""
-    c.buf = c.buf[:0] // Reset buffer length, keep capacity
+    c.buf = c.buf[:0] // Reset buffer length, keep capacity - SINGLE SOURCE OF TRUTH
     return c
 }
 ```
 
 ### Method Naming Conventions
 
-#### Short API Names
-- **`WS`**: WriteString - Optimized for frequent use
-- **`WB`**: WriteByte - Single byte append
-- **`WR`**: WriteRune - UTF-8 rune encoding  
-- **`RS`**: Reset - Complete conv reset (all fields + buffer)
-- **`cap`**: Capacity management (renamed from `ensureCapacity` for brevity)
+#### Short API Names & Implementation Notes
+- **`Write()`**: Universal write method - detects type automatically using `setVal(v, mb)`
+- **`Reset()`**: Complete conv reset (all fields + buffer)
+- **`grow()`**: Capacity management (renamed from `ensureCapacity` to avoid Go built-in conflicts)
+- **`getBuf()`**: Get buffer value - heavily used internal method (documented with //)
+- **`setVal()`**: **UNIFIED** type handling - consolidates ALL type switches into single method
+- **`val2Buf()`**: Direct conversion to buffer using unified `appendValueToBuf(v any, typ vTpe)` method
+- **Error checking**: Each operation internally verifies `c.err` before processing
+- **`cm` type**: Convert mode constants (mi, mb, ma) for type-safe mode selection
 
-#### Implementation Notes
-- **`RS()` behavior**: Resets all conv fields to default state, similar to `putConv()` but without returning to pool
-- **Complete reset**: Clears all values, buffer, and state for fresh builder usage
-- **Capacity optimization**: `cap()` method replaces `ensureCapacity()` with shorter name
-- **Memory efficiency**: All methods reuse existing buffer infrastructure
+#### Critical Implementation Details
+- **Buffer initialization strategy**: `c.buf = append(c.buf[:0], val...)` (reset + set)
+- **Convert mode constants**: `mi`=inicial, `mb`=buffer, `ma`=any (type cm uint8)
+- **Error chain behavior**: **ALL operations internally check `c.err` before processing** (error contaminates chain)
+- **Memory layout optimization**: Hot fields (`buf`, `vTpe`, `err`) placed first in struct for better cache locality
+- **`val2Buf()` strategy**: Direct conversion to buffer using unified `appendValueToBuf(v any, typ vTpe)` method
+- **Performance**: Each operation has minimal error check overhead: `if c.err != "" { return c }`
 
 ### Integration Points
 
-#### High-Demand Process Optimization
-1. **`Err` function**: Use `T` with builder internally
-2. **`Fmt` function**: Replace string concatenation with builder
-3. **Transformation chains**: Single buffer for multiple operations
-4. **Dictionary translations**: Efficient multi-part message construction
+#### High-Demand Process Optimization (PRIORITY ORDER)
+**CRITICAL** (Immediate Implementation):
+1. **`joinSlice()` function**: Replace makeBuf + append with builder (convert.go:299)
+2. **`Err()` function**: Use `T` with builder internally for translation concatenation
+3. **`Fmt()` function**: Replace string concatenation with builder throughout format.go
+4. **Transformation chains**: Single buffer for ToUpper, ToLower, CamelCase operations
+
+**MODERATE** (Secondary Implementation):
+5. **`any2s()` conversions**: Use buffer for all type-to-string operations
+6. **Dictionary translations**: Efficient multi-part message construction
+7. **Error message construction**: Throughout library error handling
 
 #### Pool Integration
 - Builder methods work seamlessly with existing `convPool`
@@ -235,7 +328,10 @@ func T(values ...any) string {
 ```go
 // Err becomes a simple wrapper around T function
 func Err(values ...any) *conv {
-    return &conv{err: T(values...), vTpe: typeErr}
+    c := getConv() // Always obtain from pool
+    c.err = T(values...)
+    c.vTpe = typeErr
+    return c
 }
 ```
 
@@ -246,7 +342,7 @@ func Err(values ...any) *conv {
 
 ## Testing Strategy
 
-### New Benchmarks
+### New Benchmarks + Critical Tests
 Add to `benchmark_strings_test.go`:
 
 ```go
@@ -255,13 +351,89 @@ func BenchmarkBuilderOperations(b *testing.B) {
         // Compare builder vs string concatenation
     })
     
-    b.Run("BuilderVsStringsBuilder", func(b *testing.B) {
-        // Compare against stdlib strings.Builder
+    b.Run("UnifiedWrite", func(b *testing.B) {
+        // Benchmark Write() with different types
     })
     
-    b.Run("TranslationFunction", func(b *testing.B) {
-        // Benchmark T() vs current Err() approach
+    b.Run("ChainedOperations", func(b *testing.B) {
+        // Test: Convert().Write().ToUpper().Write().String()
     })
+    
+    b.Run("EmptyConvertLoop", func(b *testing.B) {
+        // CRITICAL: Test Convert() + Write() in loops vs multiple Convert(value)
+        // This validates the main optimization goal
+        items := []string{"a", "b", "c", "d", "e"}
+        
+        b.Run("BuilderPattern", func(b *testing.B) {
+            for i := 0; i < b.N; i++ {
+                c := Convert() // Empty initialization
+                for _, item := range items {
+                    c.Write(item).Write(" ")
+                }
+                _ = c.String()
+            }
+        })
+        
+        b.Run("MultipleAllocations", func(b *testing.B) {
+            for i := 0; i < b.N; i++ {
+                result := ""
+                for _, item := range items {
+                    result += Convert(item).String() + " "
+                }
+            }
+        })
+    })
+}
+
+func TestConvertVariadicValidation(t *testing.T) {
+    // CRITICAL: Test Convert() parameter validation
+    
+    // Valid usage
+    c1 := Convert()          // Empty - should work
+    c2 := Convert("hello")   // Single value - should work
+    
+    if c1.err != "" {
+        t.Errorf("Convert() should not have error, got: %s", c1.err)
+    }
+    if c2.err != "" {
+        t.Errorf("Convert(value) should not have error, got: %s", c2.err)
+    }
+    
+    // Invalid usage - should set error and continue chain
+    c3 := Convert("hello", "world") // Multiple values - should set error
+    if c3.err == "" {
+        t.Error("Convert with multiple parameters should set error")
+    }
+    
+    // Chain should continue but operations should be omitted due to error
+    result := c3.Write(" more").ToUpper().String()
+    if result != "" {
+        t.Errorf("Operations after error should be omitted, got: %s", result)
+    }
+}
+
+func TestChainedOperationsOrder(t *testing.T) {
+    // CRITICAL: Test mixed chaining behavior
+    result := Convert("hello").ToUpper().Write(" WORLD").ToLower().String()
+    expected := "hello world"
+    if result != expected {
+        t.Errorf("Chained operations failed: got %q, want %q", result, expected)
+    }
+}
+
+func TestErrorChainInterruption(t *testing.T) {
+    // CRITICAL: Test error chain interruption behavior
+    c := Convert("valid").Write("ok").Write(make(chan int)) // Unsupported type
+    c.ToUpper().Write(" MORE") // These should be omitted internally
+    
+    result, err := c.StringError()
+    expectedResult := "validok" // Only operations before error
+    if result != expectedResult {
+        t.Errorf("Error chain result: got %q, want %q", result, expectedResult)
+    }
+    if err == nil {
+        t.Error("Expected error for unsupported type, got nil") 
+    }
 }
 ```
 
