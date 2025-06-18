@@ -1,8 +1,10 @@
 package tinystring
 
-// Format creates a new conv instance with variadic formatting similar to fmt.Sprintf
-// Example: tinystring.Format("Hello %s, you have %d messages", "Alice", 5).String()
-func Format(format string, args ...any) *conv {
+// Fmt creates a new conv instance with variadic formatting similar to fmt.Sprintf
+// Example: tinystring.Fmt("Hello %s, you have %d messages", "Alice", 5).String()
+// with error:
+// out, err := tinystring.Fmt("Hello %s, you have %d messages", "Alice", 5).StringError()
+func Fmt(format string, args ...any) *conv {
 	return unifiedFormat(format, args...)
 }
 
@@ -217,7 +219,7 @@ func (t *conv) FormatNumber() *conv {
 		t.setString(fStr)
 		// Phase 8.2 Optimization: Use optimized split without extra allocations
 		intPart, decPart, hasDecimal := t.splitFloatIndices()
-		// Format the integer part with commas directly
+		// Fmt the integer part with commas directly
 		t.setString(intPart)
 		t.fmtNum()
 		iPart := t.getString()
@@ -262,7 +264,7 @@ func (t *conv) FormatNumber() *conv {
 		t.setString(fStr)
 		// Phase 8.2 Optimization: Use optimized split without allocations
 		intPart, decPart, hasDecimal := t.splitFloatIndices()
-		// Format the integer part with commas directly
+		// Fmt the integer part with commas directly
 		if intPart != "" {
 			t.setString(intPart)
 			t.fmtNum()
@@ -562,30 +564,53 @@ func (c *conv) i2sBase(base int) {
 	}
 
 	if !c.validateBase(base) {
+		c.err = Err(D.Argument, D.Wrong, "invalid base").err
 		return
 	}
 
-	result := ""
-	for number > 0 {
-		result = string(digs[number%int64(base)]) + result
+	// Calculate buffer size needed
+	maxDigits := 64                            // Maximum digits for int64 in base 2
+	c.buf = c.getReusableBuffer(maxDigits + 1) // +1 for potential negative sign
+
+	// Convert to string with base
+	digits := "0123456789abcdef"
+	digitCount := 0
+	temp := number
+
+	// Count digits first
+	for temp > 0 {
+		digitCount++
+		temp /= int64(base)
+	}
+
+	// Build string backwards
+	for i := digitCount - 1; i >= 0; i-- {
+		c.buf = append(c.buf, digits[number%int64(base)])
 		number /= int64(base)
 	}
 
-	if isNegative {
-		result = "-" + result
+	// Reverse the buffer since we built it backwards
+	for i, j := 0, len(c.buf)-1; i < j; i, j = i+1, j-1 {
+		c.buf[i], c.buf[j] = c.buf[j], c.buf[i]
 	}
 
-	c.setString(result)
+	if isNegative {
+		// Prepend negative sign
+		temp := make([]byte, 1+len(c.buf))
+		temp[0] = '-'
+		copy(temp[1:], c.buf)
+		c.buf = temp
+	}
+
+	c.setStringFromBuffer()
 	c.vTpe = typeStr
 }
 
-// sprintf formats according to a format specifier and stores in conv struct.
-// This is an internal conv method that modifies the struct instead of returning values.
-
-// Helper function to validate and extract argument for format specifiers
+// extractArg safely extracts an argument from args slice
 func (c *conv) extractArg(args []any, argIndex int, formatSpec string) (any, bool) {
 	if argIndex >= len(args) {
-		c.NewErr(errFormatMissingArg, formatSpec)
+		errConv := Err(D.Argument, D.Missing, formatSpec)
+		c.err = errConv.Error()
 		return nil, false
 	}
 	return args[argIndex], true
@@ -602,7 +627,6 @@ func (c *conv) handleFormat(args []any, argIndex *int, formatType rune, param in
 	case 'd', 'o', 'b', 'x':
 		if intVal, ok := arg.(int); ok {
 			// Save current state including buffer
-			oldIntVal := c.intVal
 			oldVTpe := c.vTpe
 			oldStringVal := c.stringVal
 			oldBuf := make([]byte, len(c.buf))
@@ -620,12 +644,11 @@ func (c *conv) handleFormat(args []any, argIndex *int, formatType rune, param in
 			str = c.getString()
 
 			// Restore original state including buffer
-			c.intVal = oldIntVal
 			c.vTpe = oldVTpe
 			c.stringVal = oldStringVal
 			c.buf = oldBuf
 		} else {
-			c.NewErr(errFormatWrongType, formatSpec)
+			c.err = Err(D.Type, D.Of, D.Argument, D.Wrong, formatSpec).err
 			return nil, false
 		}
 	case 'f':
@@ -652,14 +675,14 @@ func (c *conv) handleFormat(args []any, argIndex *int, formatType rune, param in
 			c.tmpStr = oldTmpStr
 			c.buf = oldBuf
 		} else {
-			c.NewErr(errFormatWrongType, formatSpec)
+			c.err = Err(D.Type, D.Of, D.Argument, D.Wrong, formatSpec).err
 			return nil, false
 		}
 	case 's':
 		if strVal, ok := arg.(string); ok {
 			str = strVal
 		} else {
-			c.NewErr(errFormatWrongType, formatSpec)
+			c.err = Err(D.Type, D.Of, D.Argument, D.Wrong, formatSpec).err
 			return nil, false
 		}
 	case 'v':
@@ -685,7 +708,7 @@ func (c *conv) handleFormat(args []any, argIndex *int, formatType rune, param in
 	return []byte(str), true
 }
 
-// unifiedFormat creates a formatted string using sprintf, shared by Format and Errorf
+// unifiedFormat creates a formatted string using sprintf, shared by Fmt and Errf
 func unifiedFormat(format string, args ...any) *conv {
 	result := &conv{
 		separator: "_", // default separator
@@ -743,48 +766,56 @@ func (c *conv) sprintf(format string, args ...any) {
 					if str, ok := c.handleFormat(args, &argIndex, 'd', 10, "%d"); ok {
 						c.buf = append(c.buf, str...)
 					} else {
+						c.vTpe = typeErr
 						return
 					}
 				case 'f':
 					if str, ok := c.handleFormat(args, &argIndex, 'f', precision, "%f"); ok {
 						c.buf = append(c.buf, str...)
 					} else {
+						c.vTpe = typeErr
 						return
 					}
 				case 'o':
 					if str, ok := c.handleFormat(args, &argIndex, 'o', 8, "%o"); ok {
 						c.buf = append(c.buf, str...)
 					} else {
+						c.vTpe = typeErr
 						return
 					}
 				case 'b':
 					if str, ok := c.handleFormat(args, &argIndex, 'b', 2, "%b"); ok {
 						c.buf = append(c.buf, str...)
 					} else {
+						c.vTpe = typeErr
 						return
 					}
 				case 'x':
 					if str, ok := c.handleFormat(args, &argIndex, 'x', 16, "%x"); ok {
 						c.buf = append(c.buf, str...)
 					} else {
+						c.vTpe = typeErr
 						return
 					}
 				case 'v':
 					if str, ok := c.handleFormat(args, &argIndex, 'v', 0, "%v"); ok {
 						c.buf = append(c.buf, str...)
 					} else {
+						c.vTpe = typeErr
 						return
 					}
 				case 's':
 					if str, ok := c.handleFormat(args, &argIndex, 's', 0, "%s"); ok {
 						c.buf = append(c.buf, str...)
 					} else {
+						c.vTpe = typeErr
 						return
 					}
 				case '%':
 					c.buf = append(c.buf, '%')
 				default:
-					c.NewErr(errFormatUnsupported, format[i])
+					c.err = Err(D.Fmt, D.Specifier, D.Unsupported, format[i]).err
+					c.vTpe = typeErr
 					return
 				}
 			} else {
@@ -795,8 +826,12 @@ func (c *conv) sprintf(format string, args ...any) {
 		}
 	}
 
-	c.setStringFromBuffer()
-	c.vTpe = typeStr
+	if c.err == "" {
+		c.setStringFromBuffer()
+		c.vTpe = typeStr
+	} else {
+		c.vTpe = typeErr
+	}
 }
 
 // formatIntDirectly converts int64 directly to string with thousand separators

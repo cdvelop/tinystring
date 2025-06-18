@@ -51,7 +51,7 @@ func TestConcurrentConvert(t *testing.T) {
 				String()
 
 			if result != expectedResult {
-				counter.addError(Format("goroutine %d: got %q, want %q", id, result, expectedResult).String())
+				counter.addError(Fmt("goroutine %d: got %q, want %q", id, result, expectedResult).String())
 			}
 		}(i)
 	}
@@ -148,10 +148,10 @@ func TestConcurrentUtilityFunctions(t *testing.T) {
 					defer wg.Done()
 					result, err := tc.function()
 					if err != nil {
-						counter.addError(Format("goroutine %d: error: %v", id, err).String())
+						counter.addError(Fmt("goroutine %d: error: %v", id, err).String())
 					}
 					if result != tc.expected {
-						counter.addError(Format("goroutine %d: got %q, want %q", id, result, tc.expected).String())
+						counter.addError(Fmt("goroutine %d: got %q, want %q", id, result, tc.expected).String())
 					}
 				}(i)
 			}
@@ -236,7 +236,7 @@ func TestConcurrentStringManipulation(t *testing.T) {
 					for j := 0; j < iterations; j++ {
 						result := tc.process(tc.input)
 						if result != tc.expected {
-							counter.addError(Format("goroutine %d, iteration %d: got %q, want %q",
+							counter.addError(Fmt("goroutine %d, iteration %d: got %q, want %q",
 								id, j, result, tc.expected).String())
 							return
 						}
@@ -344,10 +344,10 @@ func TestConcurrentNumericOperations(t *testing.T) {
 					defer wg.Done()
 					result, err := tc.function()
 					if err != nil {
-						counter.addError(Format("goroutine %d: error: %v", id, err).String())
+						counter.addError(Fmt("goroutine %d: error: %v", id, err).String())
 					}
 					if result != tc.expected {
-						counter.addError(Format("goroutine %d: got %q, want %q", id, result, tc.expected).String())
+						counter.addError(Fmt("goroutine %d: got %q, want %q", id, result, tc.expected).String())
 					}
 				}(i)
 			}
@@ -396,7 +396,7 @@ func TestConcurrentStringPointerOperations(t *testing.T) {
 
 				expected := "elMurcielagoRapido"
 				if testText != expected {
-					counter.addError(Format("goroutine %d: got %q, want %q", id, testText, expected).String())
+					counter.addError(Fmt("goroutine %d: got %q, want %q", id, testText, expected).String())
 				}
 			}(i)
 		}
@@ -412,7 +412,7 @@ func TestConcurrentStringPointerOperations(t *testing.T) {
 	})
 }
 
-// TestConcurrentFormattingOperations tests Format function and related operations
+// TestConcurrentFormattingOperations tests Fmt function and related operations
 // under concurrent access patterns.
 func TestConcurrentFormattingOperations(t *testing.T) {
 	const numGoroutines = 120
@@ -423,23 +423,23 @@ func TestConcurrentFormattingOperations(t *testing.T) {
 		expected string
 	}{
 		{
-			name: "Format with String",
+			name: "Fmt with String",
 			function: func() string {
-				return Format("Hello %s", "World").String()
+				return Fmt("Hello %s", "World").String()
 			},
 			expected: "Hello World",
 		},
 		{
-			name: "Format with Integer",
+			name: "Fmt with Integer",
 			function: func() string {
-				return Format("Number: %d", 42).String()
+				return Fmt("Number: %d", 42).String()
 			},
 			expected: "Number: 42",
 		},
 		{
-			name: "Format with Float",
+			name: "Fmt with Float",
 			function: func() string {
-				return Format("Pi: %.2f", 3.14159).String()
+				return Fmt("Pi: %.2f", 3.14159).String()
 			},
 			expected: "Pi: 3.14",
 		},
@@ -471,7 +471,7 @@ func TestConcurrentFormattingOperations(t *testing.T) {
 					defer wg.Done()
 					result := tc.function()
 					if result != tc.expected {
-						counter.addError(Format("goroutine %d: got %q, want %q", id, result, tc.expected).String())
+						counter.addError(Fmt("goroutine %d: got %q, want %q", id, result, tc.expected).String())
 					}
 				}(i)
 			}
@@ -553,7 +553,7 @@ func TestConcurrentAdvancedCaseOperations(t *testing.T) {
 					defer wg.Done()
 					result := tc.function()
 					if result != tc.expected {
-						counter.addError(Format("goroutine %d: got %q, want %q", id, result, tc.expected).String())
+						counter.addError(Fmt("goroutine %d: got %q, want %q", id, result, tc.expected).String())
 					}
 				}(i)
 			}
@@ -621,7 +621,7 @@ func TestConcurrentTruncateOperations(t *testing.T) {
 					defer wg.Done()
 					result := tc.function()
 					if result != tc.expected {
-						counter.addError(Format("goroutine %d: got %q, want %q", id, result, tc.expected).String())
+						counter.addError(Fmt("goroutine %d: got %q, want %q", id, result, tc.expected).String())
 					}
 				}(i)
 			}
@@ -704,7 +704,7 @@ func TestConcurrentUtilityOperations(t *testing.T) {
 					defer wg.Done()
 					result := tc.function()
 					if result != tc.expected {
-						counter.addError(Format("goroutine %d: got %q, want %q", id, result, tc.expected).String())
+						counter.addError(Fmt("goroutine %d: got %q, want %q", id, result, tc.expected).String())
 					}
 				}(i)
 			}
@@ -768,7 +768,7 @@ func TestRaceConditionInComplexChaining(t *testing.T) {
 
 					// Verify the result is consistent
 					if len(result) == 0 && len(input) > 0 {
-						counter.addError(Format("goroutine %d, iteration %d: got empty result for input %q",
+						counter.addError(Fmt("goroutine %d, iteration %d: got empty result for input %q",
 							id, j, input).String())
 					}
 
@@ -776,12 +776,12 @@ func TestRaceConditionInComplexChaining(t *testing.T) {
 					switch input {
 					case "Él Múrcielago Rápido":
 						if result != "el_murcielago_rapido" {
-							counter.addError(Format("goroutine %d, iteration %d: got %q, want %q",
+							counter.addError(Fmt("goroutine %d, iteration %d: got %q, want %q",
 								id, j, result, "el_murcielago_rapido").String())
 						}
 					case "  spaces  everywhere  ":
 						if result != "spaces_everywhere" {
-							counter.addError(Format("goroutine %d, iteration %d: got %q, want %q",
+							counter.addError(Fmt("goroutine %d, iteration %d: got %q, want %q",
 								id, j, result, "spaces_everywhere").String())
 						}
 					}
@@ -819,7 +819,7 @@ func TestConcurrentStringInterning(t *testing.T) {
 			"Hello World",
 			"Pi: 3.14",
 			"Number: 42",
-			"Format test",
+			"Fmt test",
 			"Cache test",
 			"Race condition",
 			"Memory optimization",
@@ -837,23 +837,23 @@ func TestConcurrentStringInterning(t *testing.T) {
 				defer wg.Done()
 
 				// Each goroutine performs multiple formatting operations that
-				// trigger string interning through Format() -> sprintf() -> internStringFromBytes()
+				// trigger string interning through Fmt() -> sprintf() -> internStringFromBytes()
 				for j := 0; j < iterations; j++ {
 					testStr := testStrings[j%len(testStrings)]
 
 					// This triggers the internStringFromBytes() path that had the race condition
-					result1 := Format("Test %s %d", testStr, j).String()
-					result2 := Format("Data: %s=%d", testStr, id).String()
+					result1 := Fmt("Test %s %d", testStr, j).String()
+					result2 := Fmt("Data: %s=%d", testStr, id).String()
 
 					// Verify results are correct
 					expected1 := "Test " + testStr + " " + Convert(j).String()
 					expected2 := "Data: " + testStr + "=" + Convert(id).String()
 
 					if result1 != expected1 {
-						counter.addError(Format("goroutine %d, iteration %d: result1 got %q, want %q", id, j, result1, expected1).String())
+						counter.addError(Fmt("goroutine %d, iteration %d: result1 got %q, want %q", id, j, result1, expected1).String())
 					}
 					if result2 != expected2 {
-						counter.addError(Format("goroutine %d, iteration %d: result2 got %q, want %q", id, j, result2, expected2).String())
+						counter.addError(Fmt("goroutine %d, iteration %d: result2 got %q, want %q", id, j, result2, expected2).String())
 					}
 				}
 			}(i)
@@ -897,10 +897,10 @@ func TestConcurrentStringCacheStress(t *testing.T) {
 				for j := 0; j < iterations; j++ {
 					// Mix of operations that trigger string interning
 					operations := []func() string{
-						func() string { return Format("ID_%d_ITER_%d", id, j).String() },
+						func() string { return Fmt("ID_%d_ITER_%d", id, j).String() },
 						func() string { return Convert(id).FormatNumber().String() },
-						func() string { return Convert(Format("goroutine_%d", id).String()).ToUpper().String() },
-						func() string { return Format("%.2f", float64(j)/10.0).String() },
+						func() string { return Convert(Fmt("goroutine_%d", id).String()).ToUpper().String() },
+						func() string { return Fmt("%.2f", float64(j)/10.0).String() },
 						func() string { return Convert("cache_test").Repeat(2).String() },
 					}
 
@@ -910,7 +910,7 @@ func TestConcurrentStringCacheStress(t *testing.T) {
 
 					// Basic validation - ensure result is not empty
 					if result == "" {
-						counter.addError(Format("goroutine %d, iteration %d: got empty result", id, j).String())
+						counter.addError(Fmt("goroutine %d, iteration %d: got empty result", id, j).String())
 					}
 				}
 			}(i)

@@ -84,7 +84,7 @@ func (t *conv) Truncate(maxWidth any, reservedChars ...any) *conv {
 //   - Convert("Ana Maria Rodriguez").TruncateName(2, 10) => "An. Mar..."
 //   - Convert("Juan").TruncateName(3, 5) => "Juan"
 func (t *conv) TruncateName(maxCharsPerWord, maxWidth any) *conv {
-	if isEmpty(t.getString()) {
+	if isEmptySt(t.getString()) {
 		return t
 	}
 	// Validate parameters

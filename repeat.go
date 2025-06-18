@@ -5,7 +5,7 @@ package tinystring
 // eg: Convert("abc").Repeat(3) => "abcabcabc"
 func (t *conv) Repeat(n int) *conv {
 	str, buf := t.newBuf(n)
-	if n <= 0 || isEmpty(str) {
+	if n <= 0 || isEmptySt(str) {
 		t.setString("")
 		return t
 	}

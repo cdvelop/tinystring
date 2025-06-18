@@ -1,12 +1,11 @@
 package main
 
 import (
-	"fmt"
 	"os"
 	"strings" // Only for section finding in README
 	"time"
 
-	"github.com/cdvelop/tinystring"
+	. "github.com/cdvelop/tinystring"
 )
 
 // ReportGenerator handles README and documentation generation
@@ -29,7 +28,7 @@ func (r *ReportGenerator) UpdateBinaryData(binaries []BinaryInfo) error {
 
 	content, err := r.generateBinarySizeSection(binaries)
 	if err != nil {
-		return tinystring.Err(err)
+		return Err(err)
 	}
 
 	return r.updateREADMESection("Binary Size Comparison", content)
@@ -41,7 +40,7 @@ func (r *ReportGenerator) UpdateMemoryData(comparisons []MemoryComparison) error
 
 	content, err := r.generateMemorySection(comparisons)
 	if err != nil {
-		return fmt.Errorf("failed to generate memory section: %v", err)
+		return Errf("failed to generate memory section: %v", err)
 	}
 
 	return r.updateREADMESection("Memory Usage Comparison", content)
@@ -84,10 +83,10 @@ func (r *ReportGenerator) generateBinarySizeSection(binaries []BinaryInfo) (stri
 			sizeDiff := standardNative.Size - tinystringNative.Size
 			performanceIndicator := getPerformanceIndicator(improvementPercent)
 
-			content.WriteString(fmt.Sprintf("| %s **%s Native** | `%s` | %s | %s | **-%s** | %s **%.1f%%** |\n",
+			content.WriteString(Fmt("| %s **%s Native** | `%s` | %s | %s | **-%s** | %s **%.1f%%** |\n",
 				buildIcon, capitalizeFirst(opt.Name), parameters,
 				standardNative.SizeStr, tinystringNative.SizeStr,
-				FormatSize(sizeDiff), performanceIndicator, improvementPercent))
+				FormatSize(sizeDiff), performanceIndicator, improvementPercent).String())
 
 			allImprovements = append(allImprovements, improvementPercent)
 			if improvementPercent > maxImprovement {
@@ -102,10 +101,10 @@ func (r *ReportGenerator) generateBinarySizeSection(binaries []BinaryInfo) (stri
 			sizeDiff := standardWasm.Size - tinystringWasm.Size
 			performanceIndicator := getPerformanceIndicator(improvementPercent)
 
-			content.WriteString(fmt.Sprintf("| 🌐 **%s WASM** | `%s` | %s | %s | **-%s** | %s **%.1f%%** |\n",
+			content.WriteString(Fmt("| 🌐 **%s WASM** | `%s` | %s | %s | **-%s** | %s **%.1f%%** |\n",
 				capitalizeFirst(opt.Name), wasmParameters,
 				standardWasm.SizeStr, tinystringWasm.SizeStr,
-				FormatSize(sizeDiff), performanceIndicator, improvementPercent))
+				FormatSize(sizeDiff), performanceIndicator, improvementPercent).String())
 
 			allImprovements = append(allImprovements, improvementPercent)
 			if improvementPercent > maxImprovement {
@@ -157,14 +156,14 @@ func (r *ReportGenerator) generateBinarySizeSection(binaries []BinaryInfo) (stri
 
 	// Performance summary
 	content.WriteString("\n### 🎯 Performance Summary\n\n")
-	content.WriteString(fmt.Sprintf("- 🏆 **Peak Reduction: %.1f%%** (Best optimization)\n", maxImprovement))
+	content.WriteString(Fmt("- 🏆 **Peak Reduction: %.1f%%** (Best optimization)\n", maxImprovement).String())
 	if wasmCount > 0 {
-		content.WriteString(fmt.Sprintf("- ✅ **Average WebAssembly Reduction: %.1f%%**\n", avgWasmImprovement))
+		content.WriteString(Fmt("- ✅ **Average WebAssembly Reduction: %.1f%%**\n", avgWasmImprovement).String())
 	}
 	if nativeCount > 0 {
-		content.WriteString(fmt.Sprintf("- ✅ **Average Native Reduction: %.1f%%**\n", avgNativeImprovement))
+		content.WriteString(Fmt("- ✅ **Average Native Reduction: %.1f%%**\n", avgNativeImprovement).String())
 	}
-	content.WriteString(fmt.Sprintf("- 📦 **Total Size Savings: %s across all builds**\n\n", FormatSize(totalSavings)))
+	content.WriteString(Fmt("- 📦 **Total Size Savings: %s across all builds**\n\n", FormatSize(totalSavings)).String())
 
 	content.WriteString("#### Performance Legend\n")
 	content.WriteString("- ❌ Poor (<5% reduction)\n")
@@ -217,21 +216,21 @@ func (r *ReportGenerator) generateMemorySection(comparisons []MemoryComparison) 
 			categoryIcon := getBenchmarkCategoryIcon(comparison.Category)
 
 			// Standard library row with enhanced styling
-			content.WriteString(fmt.Sprintf("| %s **%s** | 📊 Standard | `%s` | `%d` | `%s` | - | - | - |\n",
+			content.WriteString(Fmt("| %s **%s** | 📊 Standard | `%s` | `%d` | `%s` | - | - | - |\n",
 				categoryIcon,
 				comparison.Category,
 				FormatSize(comparison.Standard.BytesPerOp),
 				comparison.Standard.AllocsPerOp,
-				formatNanoTime(comparison.Standard.NsPerOp)))
+				formatNanoTime(comparison.Standard.NsPerOp)).String())
 
 			// TinyString row with improvements and visual indicators
-			content.WriteString(fmt.Sprintf("| | 🚀 TinyString | `%s` | `%d` | `%s` | %s **%s** | %s **%s** | %s |\n",
+			content.WriteString(Fmt("| | 🚀 TinyString | `%s` | `%d` | `%s` | %s **%s** | %s **%s** | %s |\n",
 				FormatSize(comparison.TinyString.BytesPerOp),
 				comparison.TinyString.AllocsPerOp,
 				formatNanoTime(comparison.TinyString.NsPerOp),
 				memoryIndicator, memImprovement,
 				allocIndicator, allocImprovement,
-				overallIndicator))
+				overallIndicator).String())
 		}
 	}
 
@@ -249,9 +248,9 @@ func (r *ReportGenerator) generateMemorySection(comparisons []MemoryComparison) 
 	memoryClass := getMemoryEfficiencyClass(avgMemoryDiff)
 	allocClass := getAllocEfficiencyClass(avgAllocDiff)
 
-	content.WriteString(fmt.Sprintf("- 💾 **Memory Efficiency**: %s (%.1f%% average change)\n", memoryClass, avgMemoryDiff))
-	content.WriteString(fmt.Sprintf("- 🔢 **Allocation Efficiency**: %s (%.1f%% average change)\n", allocClass, avgAllocDiff))
-	content.WriteString(fmt.Sprintf("- 📊 **Benchmarks Analyzed**: %d categories\n", benchmarkCount))
+	content.WriteString(Fmt("- 💾 **Memory Efficiency**: %s (%.1f%% average change)\n", memoryClass, avgMemoryDiff).String())
+	content.WriteString(Fmt("- 🔢 **Allocation Efficiency**: %s (%.1f%% average change)\n", allocClass, avgAllocDiff).String())
+	content.WriteString(Fmt("- 📊 **Benchmarks Analyzed**: %d categories\n", benchmarkCount).String())
 	content.WriteString("- 🎯 **Optimization Focus**: Binary size reduction vs runtime efficiency\n\n")
 
 	// Enhanced trade-offs analysis with better formatting
@@ -293,7 +292,7 @@ func (r *ReportGenerator) updateREADMESection(sectionTitle, newContent string) e
 	// Read current README
 	existingContent, err := os.ReadFile(r.ReadmePath)
 	if err != nil {
-		LogError(fmt.Sprintf("Failed to read README: %v", err))
+		LogError(Fmt("Failed to read README: %v", err).String())
 		return err
 	}
 
@@ -324,18 +323,18 @@ func (r *ReportGenerator) updateREADMESection(sectionTitle, newContent string) e
 	// Write updated content
 	err = os.WriteFile(r.TempPath, []byte(content), 0644)
 	if err != nil {
-		LogError(fmt.Sprintf("Failed to write temporary README: %v", err))
+		LogError(Fmt("Failed to write temporary README: %v", err).String())
 		return err
 	}
 
 	// Replace original with temporary
 	err = os.Rename(r.TempPath, r.ReadmePath)
 	if err != nil {
-		LogError(fmt.Sprintf("Failed to replace README: %v", err))
+		LogError(Fmt("Failed to replace README: %v", err).String())
 		return err
 	}
 
-	LogSuccess(fmt.Sprintf("Updated README section: %s", sectionTitle))
+	LogSuccess(Fmt("Updated README section: %s", sectionTitle).String())
 	return nil
 }
 

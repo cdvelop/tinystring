@@ -28,7 +28,7 @@ func main() {
 	items := []string{"item1", "item2", "item3"}
 	result4 := strings.Join(items, ", ")
 
-	// Test 5: Format operations
+	// Test 5: Fmt operations
 	result5 := fmt.Sprintf("Result: %s | Number: %s | Upper: %s | List: %s",
 		result1, result2, result3, result4)
 

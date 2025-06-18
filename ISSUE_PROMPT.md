@@ -10,11 +10,11 @@ Reduce code lines and eliminate unnecessary code while maximizing reusability th
 3. **Minimal Private Elements**: Reduce private methods and variables to minimum
 4. **Architecture Improvement**: Simplicity, fewer lines of code, and good performance
 5. **Public API Stability**: Public methods must not change, only private ones
-6. **Error Handling Consolidation**: Keep error handling in `error.go`, improve ErrorF and Format/sprintf design
+6. **Error Handling Consolidation**: Keep error handling in `error.go`, improve ErrorF and Fmt/sprintf design
 
 ## Current Problems Identified
-- Redundant and repetitive code in Format/sprintf functions
-- Poor error handling design between ErrorF and Format
+- Redundant and repetitive code in Fmt/sprintf functions
+- Poor error handling design between ErrorF and Fmt
 - Repetitive type switches that can be replaced with generics
 - Excessive private methods and helper functions
 

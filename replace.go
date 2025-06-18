@@ -9,7 +9,7 @@ func (t *conv) Replace(oldAny, newAny any, n ...int) *conv {
 	old := Convert(oldAny).String()
 	newStr := Convert(newAny).String()
 	str := t.getString()
-	if isEmpty(old) || isEmpty(str) {
+	if isEmptySt(old) || isEmptySt(str) {
 		return t
 	}
 	// Estimate buffer capacity based on replacement patterns
@@ -72,7 +72,7 @@ func (t *conv) TrimPrefix(prefix string) *conv {
 // eg: "  hello world  " will return "hello world"
 func (t *conv) Trim() *conv {
 	str := t.getString()
-	if isEmpty(str) {
+	if isEmptySt(str) {
 		return t
 	}
 

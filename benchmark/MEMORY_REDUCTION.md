@@ -30,7 +30,7 @@ TinyGo configures WebAssembly **linear memory** with minimal initial size (2 pag
 
 | **Standard Library** | **Issue** | **TinyString Solution** |
 |---------------------|-----------|-------------------------|
-| `fmt.Sprintf("Value: %d", num)` | Parsing + reflection overhead | `tinystring.Format("Value: %d", num)` - Direct implementation |
+| `fmt.Sprintf("Value: %d", num)` | Parsing + reflection overhead | `tinystring.Fmt("Value: %d", num)` - Direct implementation |
 | `strings.Builder` concatenation | Still uses standard library internally | `tinystring.Convert().Join()` - Manual implementation |
 | `strconv.Itoa(num)` | Standard library dependency | `tinystring.Convert(num).String()` - Zero dependencies |
 | `string(bytes)` / `[]byte(string)` | Duplicates data | Use `unsafe.String()` / `unsafe.SliceData()` |
@@ -38,13 +38,13 @@ TinyGo configures WebAssembly **linear memory** with minimal initial size (2 pag
 
 ## TinyString Best Practices for Standard Library Replacement
 
-### 1. Replace `fmt.Sprintf` with TinyString.Format
+### 1. Replace `fmt.Sprintf` with TinyString.Fmt
 ```go
 // ❌ Standard Library (bloated, slow)
 result := fmt.Sprintf("User: %s, Age: %d", name, age)
 
 // ✅ TinyString (optimized, zero dependencies)
-result := tinystring.Format("User: %s, Age: %d", name, age)
+result := tinystring.Fmt("User: %s, Age: %d", name, age)
 ```
 
 ### 2. Replace `strconv` with TinyString Conversion
@@ -132,7 +132,7 @@ go test -benchmem -bench=.
 
 ## Key Recommendations for TinyString Migration
 
-1. **Replace `fmt.Sprintf`** with `tinystring.Format()` for all string formatting
+1. **Replace `fmt.Sprintf`** with `tinystring.Fmt()` for all string formatting
 2. **Replace `strconv` conversions** with `tinystring.Convert()` methods
 3. **Replace `strings` operations** with TinyString's chainable methods
 4. **Use pointer modification** with `Apply()` to avoid allocations entirely

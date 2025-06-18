@@ -74,7 +74,7 @@ type dictionary struct {
     Empty       OL // "empty"
     End         OL // "end"
     Float       OL // "float"
-    Format      OL // "format"
+    Fmt      OL // "format"
     Integer     OL // "integer"
     Invalid     OL // "invalid"
     Missing     OL // "missing"
@@ -112,30 +112,46 @@ var D dictionary
 #### Error Message Composition Examples
 With this word-based approach, current error messages can be composed as:
 
+**⚠️ CRITICAL: Spanish-First Word Order Convention**
+- **ERROR MESSAGE COMPOSITION MUST ALWAYS BE THOUGHT IN SPANISH FIRST**
+- The word order should be semantically correct in Spanish, so it sounds natural in both Spanish and English
+- **Rule**: Compose error messages thinking "How would this sound in Spanish?" first
+- **Example**: `D.Fmt, D.Invalid` → "formato inválido" (natural Spanish) vs `D.Invalid, D.Fmt` → "inválido formato" (unnatural Spanish)
+- **Practice**: Always prioritize Spanish semantic correctness while ensuring English remains understandable
+- **Why**: Spanish adjective placement often differs from English, but following Spanish order usually makes both languages sound natural
+
 ```go
-// errEmptyString = "empty string"
-Err(D.Empty, D.String)
+// errEmptyString = "empty string" → "cadena vacía" (Spanish order: noun + adjective)
+Err(D.String, D.Empty)
 
-// errNegativeUnsigned = "negative numbers are not supported for unsigned integers"  
-Err(D.Negative, D.Numbers, D.Not, D.Supported, D.For, D.Unsigned, D.Integer)
+// errNegativeUnsigned = "negative numbers are not supported for unsigned integers"
+// "números negativos no soportados para enteros sin signo" (Spanish order)  
+Err(D.Numbers, D.Negative, D.Not, D.Supported, D.For, D.Integer, D.Unsigned)
 
-// errInvalidBase = "invalid base"
-Err(D.Invalid, D.Base)
+// errInvalidBase = "invalid base" → "base inválida" (Spanish order: noun + adjective)
+Err(D.Base, D.Invalid)
 
-// errOverflow = "number overflow"
-Err(D.Number, D.Overflow)
+// errOverflow = "number overflow" → "desbordamiento de número" (Spanish order)
+Err(D.Overflow, D.Of, D.Number)
 
-// errInvalidFormat = "invalid format"
-Err(D.Invalid, D.Format)
+// errInvalidFormat = "invalid format" → "formato inválido" (Spanish order: noun + adjective)
+Err(D.Fmt, D.Invalid)
 
-// errFormatMissingArg = "missing argument"
-Err(D.Missing, D.Argument)
+// errFormatMissingArg = "missing argument" → "argumento faltante" (Spanish order: noun + adjective)
+Err(D.Argument, D.Missing)
 
-// errFormatWrongType = "wrong argument type"
-Err(D.Wrong, D.Argument, D.Type)
+// errFormatWrongType = "wrong argument type" → "tipo de argumento incorrecto" (Spanish order)
+Err(D.Type, D.Of, D.Argument, D.Wrong)
 
-// errCannotRound = "cannot round non-numeric value"
-Err(D.Cannot, D.Round, D.NonNumeric, D.Value)
+// errCannotRound = "cannot round non-numeric value" → "no puede redondear valor no numérico" (Spanish order)
+Err(D.Cannot, D.Round, D.Value, D.NonNumeric)
+```
+
+// errFormatWrongType = "wrong argument type" → "tipo de argumento incorrecto" (Spanish order)
+Err(D.Type, D.Of, D.Argument, D.Wrong)
+
+// errCannotRound = "cannot round non-numeric value" → "no puede redondear valor no numérico" (Spanish order)
+Err(D.Cannot, D.Round, D.Value, D.NonNumeric)
 ```
 
 ### Language Configuration
@@ -251,7 +267,7 @@ import . "github.com/cdvelop/tinystring"
 OutLang(ES) // Spanish
 
 // Use word combinations to create error messages
-err := Err(D.Invalid, D.Format, "value").Error()
+err := Err(D.Invalid, D.Fmt, "value").Error()
 // Output: "inválido formato value"
 
 // Complex error message composition
@@ -290,7 +306,7 @@ var MD = MyDict{
 err := Err(MD.User, D.Not, D.Found).Error()
 // Output: "usuario no encontrado" (Spanish)
 
-err := Err(D.Invalid, MD.Email, D.Format).Error()  
+err := Err(D.Invalid, MD.Email, D.Fmt).Error()  
 // Output: "inválido correo formato" (Spanish)
 ```
 
@@ -337,7 +353,7 @@ tinystring/
 
 #### Translation Strategy
 
-**Dictionary Format Convention:**
+**Dictionary Fmt Convention:**
 - All dictionary definitions in `dictionary.go` must use horizontal format for maximum compactness
 - All translations for a word are placed on a single line
 - Language order follows the enum: EN, ES, PT, FR, RU, DE, IT, HI, BN, ID, AR, UR, ZH
@@ -361,22 +377,22 @@ var D = dictionary{
 ```
 
 #### Error Mapping Strategy
-Instead of direct mapping, errors are now composed from words:
+Instead of direct mapping, errors are now composed from words with **Spanish-first word order**:
 
-**Current Constants** → **Word Composition**
-1. `errEmptyString` → `D.Empty + D.String`
-2. `errNegativeUnsigned` → `D.Negative + D.Numbers + D.Not + D.Supported + D.For + D.Unsigned + D.Integer`  
-3. `errInvalidBase` → `D.Invalid + D.Base`
-4. `errOverflow` → `D.Number + D.Overflow`
-5. `errInvalidFormat` → `D.Invalid + D.Format`
-6. `errFormatMissingArg` → `D.Missing + D.Argument`
-7. `errFormatWrongType` → `D.Wrong + D.Argument + D.Type`
-8. `errFormatUnsupported` → `D.Unsupported + D.Format + D.Specifier`
-9. `errIncompleteFormat` → `D.Invalid + D.Format + D.Specifier + D.At + D.End`
-10. `errCannotRound` → `D.Cannot + D.Round + D.NonNumeric + D.Value`
-11. `errCannotFormat` → `D.Cannot + D.Format + D.NonNumeric + D.Value`
-12. `errInvalidFloat` → `D.Invalid + D.Float + D.String`
-13. `errInvalidBool` → `D.Invalid + D.Boolean + D.Value`
+**Current Constants** → **Word Composition (Spanish Order)**
+1. `errEmptyString` → `D.String + D.Empty` ("cadena vacía")
+2. `errNegativeUnsigned` → `D.Numbers + D.Negative + D.Not + D.Supported + D.For + D.Integer + D.Unsigned` ("números negativos no soportados para enteros sin signo")
+3. `errInvalidBase` → `D.Base + D.Invalid` ("base inválida")
+4. `errOverflow` → `D.Overflow + D.Of + D.Number` ("desbordamiento de número")
+5. `errInvalidFormat` → `D.Fmt + D.Invalid` ("formato inválido")
+6. `errFormatMissingArg` → `D.Argument + D.Missing` ("argumento faltante")
+7. `errFormatWrongType` → `D.Type + D.Of + D.Argument + D.Wrong` ("tipo de argumento incorrecto")
+8. `errFormatUnsupported` → `D.Specifier + D.Of + D.Fmt + D.Unsupported` ("especificador de formato no soportado")
+9. `errIncompleteFormat` → `D.Specifier + D.Of + D.Fmt + D.Invalid + D.At + D.End` ("especificador de formato inválido al final")
+10. `errCannotRound` → `D.Cannot + D.Round + D.Value + D.NonNumeric` ("no puede redondear valor no numérico")
+11. `errCannotFormat` → `D.Cannot + D.Fmt + D.Value + D.NonNumeric` ("no puede formatear valor no numérico")
+12. `errInvalidFloat` → `D.String + D.Of + D.Float + D.Invalid` ("cadena de flotante inválida")
+13. `errInvalidBool` → `D.Value + D.Boolean + D.Invalid` ("valor booleano inválido")
 
 ### Phase 3: Testing & Validation
 
@@ -467,7 +483,7 @@ type dictionary struct {
     End         OL // "end"
     Float       OL // "float"
     For         OL // "for"
-    Format      OL // "format"
+    Fmt      OL // "format"
     Found       OL // "found"
     In          OL // "in"
     Integer     OL // "integer"
@@ -507,7 +523,7 @@ var D = dictionary{
     End:         OL{"end", "fin", "fim", "fin", "конец", "Ende", "fine", "अंत", "শেষ", "akhir", "نهاية", "اختتام", "结束"},
     Float:       OL{"float", "flotante", "flutuante", "flottant", "число с плавающей точкой", "Gleitkomma", "virgola mobile", "फ्लोट", "ফ্লোট", "float", "عائم", "فلوٹ", "浮点"},
     For:         OL{"for", "para", "para", "pour", "для", "für", "per", "के लिए", "জন্য", "untuk", "لـ", "کے لیے", "为"},
-    Format:      OL{"format", "formato", "formato", "format", "формат", "Format", "formato", "प्रारूप", "বিন্যাস", "format", "تنسيق", "فارمیٹ", "格式"},
+    Fmt:      OL{"format", "formato", "formato", "format", "формат", "Fmt", "formato", "प्रारूप", "বিন্যাস", "format", "تنسيق", "فارمیٹ", "格式"},
     Found:       OL{"found", "encontrado", "encontrado", "trouvé", "найден", "gefunden", "trovato", "मिला", "পাওয়া", "ditemukan", "موجود", "ملا", "找到"},
     In:          OL{"in", "en", "em", "dans", "в", "in", "in", "में", "এ", "dalam", "في", "میں", "在"},
     Integer:     OL{"integer", "entero", "inteiro", "entier", "целое число", "ganze Zahl", "intero", "पूर्णांक", "পূর্ণসংখ্যা", "integer", "عدد صحيح", "انٹیجر", "整数"},

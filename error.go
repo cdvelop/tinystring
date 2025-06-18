@@ -3,71 +3,64 @@ package tinystring
 // Custom error messages to avoid importing standard library packages like "errors" or "fmt"
 // This keeps the binary size minimal for embedded systems and WebAssembly
 
-// errorType represents an error as a string constant
-type errorType string
+// Err creates a new error message with support for multilingual translations
+// Supports OL types for translations and lang types for language specification
+// Maintains backward compatibility with existing string-based errors
+// eg:
+// tinystring.Err("invalid format") returns "invalid format"
+// tinystring.Err(D.Invalid, D.Fmt) returns "invalid format"
+// tinystring.Err(ES,D.Fmt, D.Invalid) returns "formato inválido"
+func Err(values ...any) *conv {
+	c := &conv{
+		vTpe: typeErr,
+		err:  "",
+	}
 
-// Error message constants
-const (
-	errNone              errorType = ""
-	errEmptyString       errorType = "empty string"
-	errNegativeUnsigned  errorType = "negative numbers are not supported for unsigned integers"
-	errInvalidBase       errorType = "invalid base"
-	errOverflow          errorType = "number overflow"
-	errInvalidFormat     errorType = "invalid format"
-	errFormatMissingArg  errorType = "missing argument"
-	errFormatWrongType   errorType = "wrong argument type"
-	errFormatUnsupported errorType = "unsupported format specifier"
-	errIncompleteFormat  errorType = "incomplete format specifier at end of string"
-	errCannotRound       errorType = "cannot round non-numeric value"
-	errCannotFormat      errorType = "cannot format non-numeric value"
-	errInvalidFloat      errorType = "invalid float string"
-	errInvalidBool       errorType = "invalid boolean value"
-)
-
-// set new error message eg: tinystring.Err(errInvalidFormat, "custom message")
-func (c *conv) NewErr(values ...any) *conv {
-	var sep, out errorType
+	var sep, out string
 	c.tmpStr = ""
-	c.err = ""
+
+	// Determine target language
+	targetLang := defLang
+
 	for _, v := range values {
-		c.any2s(v)
-		if c.err != "" {
-			out += sep + c.err
+		switch val := v.(type) {
+		case lang:
+			// Language specified inline
+			targetLang = val
+			continue
+		case OL:
+			// Translation type detected - use translation
+			out += sep + val.get(targetLang)
+		default:
+			// Handle other types normally (unchanged logic)
+			c.any2s(v)
+			if c.err != "" {
+				out += sep + c.err
+			}
+			if c.tmpStr != "" {
+				out += sep + c.tmpStr
+			}
 		}
 
-		if c.tmpStr != "" {
-			out += sep + errorType(c.tmpStr)
-		}
-
-		if c.err != "" || c.tmpStr != "" {
+		if c.err != "" || c.tmpStr != "" || (v != nil) {
 			sep = " "
 		}
 	}
+
 	c.err = out
-	c.vTpe = typeErr
 	return c
 }
 
-// Errorf creates a new conv instance with error formatting similar to fmt.Errorf
-// Example: tinystring.Errorf("invalid value: %s", value).Error()
-func Errorf(format string, args ...any) *conv {
+// Errf creates a new conv instance with error formatting similar to fmt.Errf
+// Example: tinystring.Errf("invalid value: %s", value).Error()
+func Errf(format string, args ...any) *conv {
 	result := unifiedFormat(format, args...)
 	result.vTpe = typeErr
 	return result
 }
 
-// Err if NewErr replace lib errors.New
-// supports multiple arguments
-// eg: tinystring.Err(errInvalidFormat, "custom message")
-// or tinystring.Err(errInvalidFormat, "custom message", "another message")
-// or tinystring.Err("custom message", "another message")
-func Err(args ...any) *conv {
-	c := &conv{}
-	return c.NewErr(args...)
-}
-
 // Error implements the error interface for conv
 // Returns the error message stored in err
 func (c *conv) Error() string {
-	return string(c.err)
+	return c.err
 }

@@ -6,7 +6,7 @@ package tinystring
 // For example: "  hello   world  " -> "Hello World"
 func (t *conv) Capitalize() *conv {
 	str := t.getString()
-	if isEmpty(str) {
+	if isEmptySt(str) {
 		return t
 	}
 
@@ -62,7 +62,7 @@ func (t *conv) ToUpper() *conv {
 // changeCase consolidates ToLower and ToUpper functionality
 func (t *conv) changeCase(toLower bool) *conv {
 	str := t.getString()
-	if isEmpty(str) {
+	if isEmptySt(str) {
 		return t
 	}
 
@@ -115,7 +115,7 @@ func (t *conv) ToSnakeCaseUpper(sep ...string) *conv {
 // Minimal implementation without pools or builders - optimized for minimal allocations
 func (t *conv) toCaseTransformMinimal(firstWordLower bool, separator string) *conv {
 	str := t.getString()
-	if isEmpty(str) {
+	if isEmptySt(str) {
 		return t
 	}
 	// Pre-allocate buffer with estimated size

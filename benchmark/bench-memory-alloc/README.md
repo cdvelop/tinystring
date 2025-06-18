@@ -48,7 +48,7 @@ cd standard && go test -bench=BenchmarkStringProcessing -benchmem
 cd ../tinystring && go test -bench=BenchmarkStringProcessing -benchmem
 ```
 
-## Benchmark Output Format
+## Benchmark Output Fmt
 
 Go benchmark output format:
 ```

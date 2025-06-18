@@ -18,9 +18,9 @@ var smallInts = [...]string{
 // parseSmallInt optimizes parsing of small integers using direct byte access
 // Returns the parsed integer and nil if successful, otherwise returns 0 and non-nil error
 // Expanded from 999 to 99999 to handle more common integer patterns
-func parseSmallInt(s string) (int, errorType) {
+func parseSmallInt(s string) (int, error) {
 	if len(s) == 0 {
-		return 0, errEmptyString
+		return 0, Err(D.String, D.Empty)
 	}
 
 	var result int
@@ -32,26 +32,26 @@ func parseSmallInt(s string) (int, errorType) {
 		negative = true
 		i = 1
 		if len(s) == 1 {
-			return 0, errInvalidFormat
+			return 0, Err(D.Fmt, D.Invalid)
 		}
 	} else if s[0] == '+' {
 		i = 1
 		if len(s) == 1 {
-			return 0, errInvalidFormat
+			return 0, Err(D.Fmt, D.Invalid)
 		}
 	}
 
 	// Parse digits
 	for ; i < len(s); i++ {
 		if s[i] < '0' || s[i] > '9' {
-			return 0, errInvalidFormat
+			return 0, Err(D.Fmt, D.Invalid)
 		}
 
 		digit := int(s[i] - '0')
 
 		// Phase 11: Extended overflow check for 99999 limit
 		if result > (99999-digit)/10 {
-			return 0, errOverflow
+			return 0, Err(D.Number, D.Overflow)
 		}
 
 		result = result*10 + digit
@@ -62,7 +62,7 @@ func parseSmallInt(s string) (int, errorType) {
 		result = -result
 	}
 
-	return result, errNone
+	return result, nil
 }
 
 // Shared helper methods to reduce code duplication between numeric.go and format.go
@@ -99,8 +99,7 @@ func (t *conv) tryParseAs(parseType vTpe, base int) bool {
 	// If so, don't attempt float fallback as it would bypass base validation
 	if base != 10 && len(oSV) > 0 && oSV[0] == '-' {
 		return false
-	}
-	// If that fails, restore state and try to parse as float then convert
+	} // If that fails, restore state and try to parse as float then convert
 	t.restoreState(oSV, oVT)
 	t.s2Float()
 	if t.err == "" {
@@ -110,7 +109,7 @@ func (t *conv) tryParseAs(parseType vTpe, base int) bool {
 			t.vTpe = typeInt
 		case typeUint:
 			if t.floatVal < 0 {
-				t.err = errNegativeUnsigned
+				t.err = Err(D.NegativeUnsigned).err
 				return false
 			}
 			t.uintVal = uint64(t.floatVal)
@@ -125,7 +124,7 @@ func (t *conv) tryParseAs(parseType vTpe, base int) bool {
 // validateBase validates that base is within acceptable range (2-36)
 func (t *conv) validateBase(base int) bool {
 	if base < 2 || base > 36 {
-		t.NewErr(errInvalidBase)
+		t.err = Err(D.Base, D.Invalid).err
 		return false
 	}
 	return true
@@ -330,13 +329,13 @@ func (t *conv) ToUint(base ...int) (uint, error) {
 		return uint(t.uintVal), nil // Direct return for uint values
 	case typeInt:
 		if t.intVal < 0 {
-			t.NewErr(errNegativeUnsigned, t.intVal)
+			t.err = Err(D.NegativeUnsigned).err
 			return 0, t
 		}
 		return uint(t.intVal), nil // Direct conversion from int if positive
 	case typeFloat:
 		if t.floatVal < 0 {
-			t.NewErr(errNegativeUnsigned, t.floatVal)
+			t.err = Err(D.NegativeUnsigned).err
 			return 0, t
 		}
 		return uint(t.floatVal), nil // Direct truncation from float if positive
@@ -411,14 +410,14 @@ func (t *conv) ToFloat() (float64, error) {
 // This unified method handles both int and int64 conversions.
 func (t *conv) s2IntGeneric(base int) {
 	inp := t.getString()
-	if t.isEmptyString(inp) {
+	if isEmptySt(inp) {
 		return
 	}
 
 	isNeg := false
 	if inp[0] == '-' {
 		if base != 10 {
-			t.NewErr(errInvalidBase, "negative numbers are not supported for non-decimal bases")
+			t.err = Err(D.Base, D.Invalid, "negative numbers are not supported for non-decimal bases").err
 			return
 		}
 		isNeg = true // Update the conv struct with the string without the negative sign
@@ -440,12 +439,11 @@ func (t *conv) s2IntGeneric(base int) {
 // s2Uint converts string to uint with specified base and stores in conv struct.
 // This is an internal conv method that modifies the struct instead of returning values.
 func (t *conv) s2Uint(input string, base int) {
-	if t.isEmptyString(input) {
+	if isEmptySt(input) {
 		return
 	}
-
 	if input[0] == '-' {
-		t.NewErr(errNegativeUnsigned)
+		t.err = Err(D.NegativeUnsigned).err
 		return
 	}
 	// Update the conv struct with the provided input string
@@ -458,23 +456,22 @@ func (t *conv) s2Uint(input string, base int) {
 // This is an internal conv method that modifies the struct instead of returning values.
 func (t *conv) s2Float() {
 	inp := t.getString()
-	if t.isEmptyString(inp) {
+	if isEmptySt(inp) {
 		return
 	}
-
 	isNeg := false
 	sIdx := 0
 	if inp[0] == '-' {
 		isNeg = true
 		sIdx = 1
 		if len(inp) == 1 { // Just a "-" sign
-			t.err = errInvalidFloat
+			t.err = Err(D.Float, D.String, D.Invalid).Error()
 			return
 		}
 	} else if inp[0] == '+' {
 		sIdx = 1
 		if len(inp) == 1 { // Just a "+" sign
-			t.err = errInvalidFloat
+			t.err = Err(D.Float, D.String, D.Invalid).Error()
 			return
 		}
 	}
@@ -490,7 +487,7 @@ func (t *conv) s2Float() {
 		ch := inp[i] // char
 		if ch == '.' {
 			if dps {
-				t.err = errInvalidFloat
+				t.err = Err(D.Float, D.String, D.Invalid).Error()
 				return
 			}
 			dps = true
@@ -503,19 +500,18 @@ func (t *conv) s2Float() {
 				fd *= 10.0
 			} else { // Check for overflow in integer part
 				if ip > ^uint64(0)/10 || (ip == ^uint64(0)/10 && dgt > ^uint64(0)%10) {
-					t.err = errOverflow
+					t.err = Err(D.Number, D.Overflow).err
 					return
 				}
 				ip = ip*10 + dgt
 			}
 		} else {
-			t.err = errInvalidFloat
+			t.err = Err(D.Float, D.String, D.Invalid).Error()
 			return
 		}
 	}
-
 	if !hd {
-		t.err = errInvalidFloat
+		t.err = Err(D.Float, D.String, D.Invalid).Error()
 		return
 	}
 
@@ -540,7 +536,7 @@ func (t *conv) s2n(base int) {
 		return
 	} // Phase 11: Extended fast path for common numbers (0-99999) in base 10
 	if base == 10 && len(inp) <= 5 && len(inp) > 0 {
-		if num, err := parseSmallInt(inp); err == errNone {
+		if num, err := parseSmallInt(inp); err == nil {
 			t.uintVal = uint64(num)
 			t.vTpe = typeUint
 			return
@@ -555,15 +551,13 @@ func (t *conv) s2n(base int) {
 		for i := 0; i < len(inp); i++ {
 			ch := inp[i]
 			if ch < '0' || ch > '9' {
-				t.NewErr(string(ch))
+				t.err = Err(string(ch)).err
 				return
 			}
 
-			d := uint64(ch - '0')
-
-			// Check for overflow - optimized for base 10
+			d := uint64(ch - '0')                                                   // Check for overflow - optimized for base 10
 			if res > 1844674407370955161 || (res == 1844674407370955161 && d > 5) { // (2^64-1)/10
-				t.NewErr(errOverflow)
+				t.err = Err(D.Number, D.Overflow).err
 				return
 			}
 
@@ -580,18 +574,17 @@ func (t *conv) s2n(base int) {
 			} else if ch >= 'A' && ch <= 'Z' {
 				d = int(ch-'A') + 10
 			} else {
-				t.NewErr(string(ch))
+				t.err = Err(string(ch)).err
 				return
 			}
 
 			if d >= base {
-				t.NewErr(errInvalidBase, "digit out of range for base")
+				t.err = Err(D.Base, D.Invalid, "digit out of range for base").err
 				return
 			}
-
 			// Check for overflow
 			if res > (^uint64(0))/uint64(base) {
-				t.NewErr(errOverflow)
+				t.err = Err(D.Number, D.Overflow).err
 				return
 			}
 
@@ -601,15 +594,6 @@ func (t *conv) s2n(base int) {
 
 	t.uintVal = res
 	t.vTpe = typeUint
-}
-
-// isEmptyString checks if the input string is empty and sets an error if it is.
-func (t *conv) isEmptyString(inp string) bool {
-	if isEmpty(inp) {
-		t.err = errEmptyString
-		return true
-	}
-	return false
 }
 
 // fmtUint2Str converts an unsigned integer to a string in the given base,

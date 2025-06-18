@@ -67,37 +67,37 @@ func TestFormatNumber(t *testing.T) {
 		want  string
 	}{
 		{
-			name:  "Format integer with thousand separators",
+			name:  "Fmt integer with thousand separators",
 			input: 2189009,
 			want:  "2.189.009",
 		},
 		{
-			name:  "Format decimal number with trailing zeros",
+			name:  "Fmt decimal number with trailing zeros",
 			input: 2189009.00,
 			want:  "2.189.009",
 		},
 		{
-			name:  "Format decimal number",
+			name:  "Fmt decimal number",
 			input: 2189009.123,
 			want:  "2.189.009.123",
 		},
 		{
-			name:  "Format string number",
+			name:  "Fmt string number",
 			input: "2189009.00",
 			want:  "2.189.009",
 		},
 		{
-			name:  "Format negative number",
+			name:  "Fmt negative number",
 			input: -2189009,
 			want:  "-2.189.009",
 		},
 		{
-			name:  "Format small number",
+			name:  "Fmt small number",
 			input: 123,
 			want:  "123",
 		},
 		{
-			name:  "Format zero",
+			name:  "Fmt zero",
 			input: 0,
 			want:  "0",
 		},
@@ -200,8 +200,8 @@ func TestFormat(t *testing.T) {
 
 	for _, test := range tests {
 		t.Run(test.name, func(t *testing.T) {
-			result := Format(test.format, test.args...).String()
-			resultWithError, err := Format(test.format, test.args...).StringError()
+			result := Fmt(test.format, test.args...).String()
+			resultWithError, err := Fmt(test.format, test.args...).StringError()
 
 			if test.hasError {
 				if err == nil {

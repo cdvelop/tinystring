@@ -11,7 +11,7 @@ func (t *conv) Quote() *conv {
 // Integrated from tinystrconv QuoteString function - optimized for minimal allocations
 func (c *conv) quoteString() {
 	inp := c.getString()
-	if isEmpty(inp) {
+	if isEmptySt(inp) {
 		c.setString(quoteStr)
 		return
 	}

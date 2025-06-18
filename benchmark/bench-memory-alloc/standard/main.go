@@ -36,7 +36,7 @@ func processTextWithStandardLib(texts []string) []string {
 func processNumbersWithStandardLib(numbers []float64) []string {
 	results := make([]string, len(numbers))
 	for i, num := range numbers {
-		// EQUIVALENT OPERATIONS: Format with 2 decimals + add thousand separators
+		// EQUIVALENT OPERATIONS: Fmt with 2 decimals + add thousand separators
 		formatted := strconv.FormatFloat(num, 'f', 2, 64)
 
 		// Add thousand separators (equivalent to FormatNumber)

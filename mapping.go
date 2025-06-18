@@ -25,7 +25,7 @@ const (
 
 // Helper function to check if error is empty (reduces repeated == "" checks)
 // Helper function to check if string is empty (reduces repeated len() calls)
-func isEmpty(s string) bool {
+func isEmptySt(s string) bool {
 	return len(s) == 0
 }
 
@@ -51,12 +51,6 @@ func makeBuf(cap int) []byte {
 		cap = defaultBufCap
 	}
 	return make([]byte, 0, cap)
-}
-
-// Helper function to create rune buffer with estimated capacity
-// Phase 11 Optimization: Use rune buffer pool to reduce allocations
-func makeRuneBuf(cap int) []rune {
-	return getRuneBuffer(cap)
 }
 
 // Index-based character mapping for maximum efficiency

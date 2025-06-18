@@ -1,7 +1,5 @@
 package tinystring
 
-import ()
-
 // vTpe represents the type of value stored in conv
 type vTpe uint8
 
@@ -40,9 +38,9 @@ type conv struct {
 	vTpe           vTpe
 	roundDown      bool
 	separator      string
-	tmpStr         string    // Cache for temp string conversion to avoid repeated work
-	lastConvType   vTpe      // Track last converted type for cache validation
-	err            errorType // Error type from error.go
+	tmpStr         string // Cache for temp string conversion to avoid repeated work
+	lastConvType   vTpe   // Track last converted type for cache validation
+	err            string // Error message string (changed from errorType for dictionary integration)
 
 	// Phase 6.2: Buffer reuse optimization
 	buf []byte // Reusable buffer for string operations
@@ -55,8 +53,7 @@ type convOpt func(*conv)
 func withValue(v any) convOpt {
 	return func(c *conv) {
 		if v == nil {
-			c.stringVal = ""
-			c.vTpe = typeStr
+			c.setErrorVal(Err(D.String, D.Empty).err)
 			return
 		}
 		switch val := v.(type) {
@@ -72,8 +69,8 @@ func withValue(v any) convOpt {
 			c.vTpe = typeStrPtr
 		case bool:
 			c.setBoolVal(val)
-		case errorType:
-			c.setErrorVal(val)
+		case error:
+			c.setErrorVal(val.Error())
 		default:
 			// Handle numeric types using generics
 			c.handleAnyType(val)
@@ -132,8 +129,8 @@ func (c *conv) setBoolVal(val bool) {
 	c.vTpe = typeBool
 }
 
-// setErrorVal sets the errorType value and updates the vTpe
-func (c *conv) setErrorVal(val errorType) {
+// setErrorVal sets the error message and updates the vTpe
+func (c *conv) setErrorVal(val string) {
 	c.err = val
 	c.vTpe = typeErr
 }
@@ -321,10 +318,8 @@ func (t *conv) joinSlice(separator string) string {
 // supports int, uint, float, bool, string and error types
 func (t *conv) any2s(v any) {
 	switch val := v.(type) {
-	case errorType:
-		t.err = val
 	case error:
-		t.err = errorType(val.Error())
+		t.err = val.Error()
 	case string:
 		t.stringVal = val
 		t.tmpStr = val

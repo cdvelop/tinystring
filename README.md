@@ -4,12 +4,13 @@
 <!-- END_SECTION:BADGES_SECTION -->
 
 
-TinyString is a lightweight Go library that provides comprehensive string manipulation, type conversion, formatting, and error handling with a fluid API, specifically designed for small devices and web applications using TinyGo as the target compiler.
+TinyString is a lightweight Go library that provides comprehensive string manipulation, type conversion, formatting, and multilingual error handling with a fluid API, specifically designed for small devices and web applications using TinyGo as the target compiler.
 
 ## Key Features
 
 - 🚀 **Fluid and chainable API** - Easy to use and readable operations
-- � **Complete string toolkit** - Transformations, conversions, formatting, and error handling
+- 📝 **Complete string toolkit** - Transformations, conversions, formatting, and error handling
+- 🌍 **Multilingual error messages** - Built-in dictionary system with 13 languages
 - 🧵 **Concurrency safe** - Thread-safe operations for concurrent environments
 - 📦 **Zero dependencies** - No `fmt`, `strings`, `strconv`, or `errors` imports
 - 🎯 **TinyGo optimized** - Manual implementations for minimal binary size
@@ -60,6 +61,17 @@ boolText := tinystring.Convert(true).String()  // out: "true"
 original := "Él Múrcielago Rápido"
 tinystring.Convert(&original).RemoveTilde().CamelCaseLower().Apply()
 // original is now: "elMurcielagoRapido"
+
+// Multilingual error messages (NEW!)
+import . "github.com/cdvelop/tinystring"
+
+OutLang(ES) // Set Spanish
+err := Err(D.Invalid, D.Fmt).Error()
+// out: "inválido formato"
+
+OutLang()   // Auto-detect system language
+err = Err(D.Cannot, D.Round, D.NonNumeric, D.Value).Error()
+// Output in user's detected language
 ```
 
 ## 📚 Standard Library Equivalents
@@ -187,59 +199,229 @@ Replace `fmt` package functions for formatting:
 
 | Go Standard | TinyString Equivalent |
 |-------------|----------------------|
-| `fmt.Sprintf()` | `Format(format, args...)` |
+| `fmt.Sprintf()` | `Fmt(format, args...)` |
 | `fmt.Sprint()` | `Convert(v).String()` |
 
 #### String Formatting
 
 ```go
 // Printf-style formatting
-result := tinystring.Format("Hello %s, you have %d messages", "John", 5)
+result := tinystring.Fmt("Hello %s, you have %d messages", "John", 5)
 // out: "Hello John, you have 5 messages"
 
 // Multiple format specifiers
-result := tinystring.Format("Number: %d, Float: %.2f, Bool: %v", 42, 3.14159, true)
+result := tinystring.Fmt("Number: %d, Float: %.2f, Bool: %v", 42, 3.14159, true)
 // out: "Number: 42, Float: 3.14, Bool: true"
 
 // Advanced formatting (hex, binary, octal)
-result := tinystring.Format("Hex: %x, Binary: %b, Octal: %o", 255, 10, 8)
+result := tinystring.Fmt("Hex: %x, Binary: %b, Octal: %o", 255, 10, 8)
 // out: "Hex: ff, Binary: 1010, Octal: 10"
 ```
 
 ### ❌ errors Package
 
-Replace `errors` package functions for error handling:
+Replace `errors` package functions for error handling with multilingual support:
 
 | Go Standard | TinyString Equivalent |
 |-------------|----------------------|
 | `errors.New()` | `Err(message)` |
-| `fmt.Errorf()` | `Errorf(format, args...)` |
+| `fmt.Errorf()` | `Errf(format, args...)` |
 
 #### Error Creation
 
 ```go
 // Simple error creation
-err := tinystring.Err("invalid input").Error()
+err := tinystring.Err("invalid input")
 // out: "invalid input"
 
 // Multiple error messages
-tinystring.Err("invalid format", "expected number").Error()
+err := tinystring.Err("invalid format", "expected number")
 // out: "invalid format expected number"
 
 // Formatted errors (like fmt.Errorf)
-err := tinystring.Errorf("invalid value: %s at position %d", "abc", 5).Error()
+err := tinystring.Errf("invalid value: %s at position %d", "abc", 5)
 // out: "invalid value: abc at position 5"
 
-// Error with validation
-result, err := tinystring.Convert("invalid").ToInt()
-if err != nil {
-    // Handle conversion error
-}
 ```
-
 ## 🚀 TinyString Exclusive Features
 
+#### 🌍 Multilingual Error Messages
+
+TinyString includes a comprehensive dictionary system for creating multilingual error messages:
+
+```go
+import . "github.com/cdvelop/tinystring"
+
+// Configure default language
+OutLang(ES) // Spanish
+
+// Use dictionary words to create error messages
+err := Err(D.Invalid, D.Fmt)
+// out: "inválido formato" (Spanish)
+
+// Complex error message composition
+err := Err(D.Negative, D.Numbers, D.Not, D.Supported)
+// out: "negativo números no soportado" (Spanish)
+
+// Mix languages inline
+err := Err(FR, D.Empty, D.String)
+// out: "vide chaîne" (French)
+
+// Auto-detect system language
+OutLang() // Detects browser/OS language automatically
+err := Err(D.Cannot, D.Round, D.NonNumeric, D.Value)
+// Output in user's system language
+```
+
+#### 🗣️ Supported Languages
+
+The dictionary system supports 13 languages:
+- 🇺🇸 **EN** - English (default)
+- 🇪🇸 **ES** - Spanish  
+- 🇧🇷 **PT** - Portuguese
+- 🇫🇷 **FR** - French
+- 🇷🇺 **RU** - Russian
+- 🇩🇪 **DE** - German
+- 🇮🇹 **IT** - Italian
+- 🇮🇳 **HI** - Hindi
+- 🇧🇩 **BN** - Bengali
+- 🇮🇩 **ID** - Indonesian
+- 🇸🇦 **AR** - Arabic
+- 🇵🇰 **UR** - Urdu
+- 🇨🇳 **ZH** - Chinese
+
+#### 📖 Dictionary Words
+
+The dictionary contains essential words for error composition:
+
+```go
+// Common error words (alphabetically sorted)
+D.Argument    // "argument", "argumento", "argumento", "argument"...
+D.Base        // "base", "base", "base", "base"...
+D.Cannot      // "cannot", "no puede", "não pode", "ne peut pas"...
+D.Empty       // "empty", "vacío", "vazio", "vide"...
+D.Fmt      // "format", "formato", "formato", "format"...
+D.Invalid     // "invalid", "inválido", "inválido", "invalide"...
+D.Missing     // "missing", "falta", "ausente", "manquant"...
+D.Number      // "number", "número", "número", "nombre"...
+D.String      // "string", "cadena", "string", "chaîne"...
+D.Supported   // "supported", "soportado", "suportado", "pris en charge"...
+D.Type        // "type", "tipo", "tipo", "type"...
+D.Value       // "value", "valor", "valor", "valeur"...
+// ... and more
+```
+
+#### 🎨 Custom Dictionary Extensions
+
+Create your own dictionary words for domain-specific errors:
+
+```go
+// Define custom dictionary for your application
+type MyDict struct {
+    User     OL
+    Email    OL
+    Password OL
+    Login    OL
+}
+
+// Initialize with translations
+var MD = MyDict{
+    User: OL{
+        "user",            // EN
+        "usuario",         // ES
+        "usuário",         // PT
+        "utilisateur",     // FR
+        "пользователь",    // RU
+        "Benutzer",        // DE
+        "utente",          // IT
+        "उपयोगकर्ता",      // HI
+        "ব্যবহারকারী",     // BN
+        "pengguna",        // ID
+        "مستخدم",         // AR
+        "صارف",           // UR
+        "用户",            // ZH
+    },
+    Email: OL{
+        "email",           // EN
+        "correo",          // ES
+        "email",           // PT
+        "courriel",        // FR
+        "электронная почта", // RU
+        "E-Mail",          // DE
+        "email",           // IT
+        "ईमेल",            // HI
+        "ইমেইল",           // BN
+        "email",           // ID
+        "بريد إلكتروني",   // AR
+        "ای میل",          // UR
+        "邮箱",            // ZH
+    },
+    // ... more custom words
+}
+
+// Combine system dictionary with custom words
+OutLang(ES) // Spanish
+err := Err(MD.User, D.Not, D.Found)
+// out: "usuario no encontrado"
+
+err := Err(D.Fmt,MD.Email, D.Invalid) 
+// out: "formato correo inválido"
+```
+
+#### 🔧 Language Configuration
+
+```go
+// Set specific language
+OutLang(ES)    // Spanish
+OutLang(FR)    // French
+OutLang(ZH)    // Chinese
+
+// Auto-detect system language
+OutLang()      // Detects from environment variables (backend) or browser (WASM)
+
+// Override language inline
+err := Err(DE, D.Invalid, D.Value)  // Force German
+// out: "ungültig Wert"
+```
+
 Features not available in Go's standard library:
+
+### 🌍 Multilingual Dictionary System
+
+TinyString includes a comprehensive multilingual error system with zero external dependencies:
+
+```go
+import . "github.com/cdvelop/tinystring"
+
+// Configure language (auto-detects system language by default)
+OutLang(ES) // Set Spanish as default
+
+// Create translated error messages using dictionary words
+err := Err(D.Invalid, D.Fmt).Error()
+// out: "inválido formato" (Spanish)
+
+// Complex compositions
+err := Err(D.Negative, D.Numbers, D.Not, D.Supported, D.For, D.Unsigned, D.Integer).Error()
+// out: "negativo números no soportado para sin signo entero" (Spanish)
+
+// Language override inline
+err := Err(FR, D.Cannot, D.Round, D.NonNumeric, D.Value).Error()
+// out: "ne peut pas arrondir non numérique valeur" (French)
+
+// Mixed with regular strings (backward compatible)
+err := Err(D.Invalid, "user input:", "abc123").Error()
+// out: "inválido user input: abc123"
+```
+
+#### 🎯 Dictionary Features
+- **13 Languages Supported**: EN, ES, PT, FR, RU, DE, IT, HI, BN, ID, AR, UR, ZH
+- **35+ Essential Words**: Alphabetically sorted for maximum reusability
+- **Composable Messages**: Build complex errors from simple words
+- **Zero Dependencies**: No external translation libraries
+- **TinyGo Compatible**: Full WebAssembly support
+- **Auto-Detection**: Automatically detects system/browser language
+- **Extensible**: Create your own dictionary words
+- **Backward Compatible**: Works with existing string-based errors
 
 ### 🌍 Unicode & Localization
 
@@ -274,6 +456,78 @@ value, err := tinystring.ParseKeyValue("count=42", "=")         // out: "42", ni
 // Snake case with custom separators
 tinystring.Convert("hello world").ToSnakeCaseLower("-").String() // out: "hello-world"
 tinystring.Convert("hello world").ToSnakeCaseUpper("_").String() // out: "HELLO_WORLD"
+```
+
+## 🌍 Complete Multilingual Example
+
+Here's a practical example showing how to build a multilingual application:
+
+```go
+package main
+
+import (
+    "fmt"
+    . "github.com/cdvelop/tinystring"
+)
+
+func main() {
+    // Auto-detect user's language
+    OutLang() // Detects from environment/browser
+    
+    // Validation function with multilingual errors
+    validateUserInput := func(input string) error {
+        if input == "" {
+            return Err(D.Empty, D.String, D.Not, D.Supported)
+        }
+        
+        if len(input) < 3 {
+            return Err(D.String, D.Value, "too short")
+        }
+        
+        // Try to parse as number
+        if _, err := Convert(input).ToInt(); err != nil {
+            return Err(D.Invalid, D.Number, D.Fmt)
+        }
+        
+        return nil
+    }
+    
+    // Test with different inputs
+    inputs := []string{"", "ab", "not_a_number", "123"}
+    
+    for _, input := range inputs {
+        if err := validateUserInput(input); err != nil {
+            fmt.Printf("Input '%s': %s\n", input, err.Error())
+        } else {
+            fmt.Printf("Input '%s': OK\n", input)
+        }
+    }
+    
+    // Switch language dynamically
+    fmt.Println("\n--- Switching to Spanish ---")
+    OutLang(ES)
+    
+    // Same validation, different language
+    if err := validateUserInput(""); err != nil {
+        fmt.Printf("Error in Spanish: %s\n", err.Error())
+        // out: "vacío cadena no soportado"
+    }
+    
+    // Force specific language for specific errors
+    criticalErr := Err(ZH, D.Cannot, D.Fmt, D.NonNumeric, D.Value)
+    fmt.Printf("Critical error in Chinese: %s\n", criticalErr.Error())
+    // out: "不能 格式 非数字 值"
+}
+
+// Output example (depends on system language):
+// Input '': empty string not supported
+// Input 'ab': string value too short  
+// Input 'not_a_number': invalid number format
+// Input '123': OK
+//
+// --- Switching to Spanish ---
+// Error in Spanish: vacío cadena no soportado
+// Critical error in Chinese: 不能 格式 非数字 值
 ```
 
 ## 💡 Performance Tips

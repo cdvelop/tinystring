@@ -22,8 +22,8 @@ func main() {
 	items := []string{"item1", "item2", "item3"}
 	result4 := tinystring.Convert(items).Join(", ").String()
 
-	// Test 5: Format operations
-	result5 := tinystring.Format("Result: %s | Number: %s | Upper: %s | List: %s",
+	// Test 5: Fmt operations
+	result5 := tinystring.Fmt("Result: %s | Number: %s | Upper: %s | List: %s",
 		result1, result2, result3, result4)
 
 	// Use results to prevent optimization

@@ -111,7 +111,7 @@ func internStringFromBytes(b []byte) string {
 1. **`TestConcurrentStringInterning`:**
    - 500 goroutines × 20 iterations
    - Specifically targets string interning race conditions
-   - Validates Format() operations under high concurrency
+   - Validates Fmt() operations under high concurrency
 
 2. **`TestConcurrentStringCacheStress`:**
    - 200 goroutines × 50 iterations  
