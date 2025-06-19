@@ -3,17 +3,10 @@ package tinystring
 // Quote wraps a string in double quotes and escapes any special characters
 // Example: Quote("hello \"world\"") returns "\"hello \\\"world\\\"\""
 func (t *conv) Quote() *conv {
-	t.quoteString()
-	return t
-}
-
-// quoteString quotes a string by wrapping it in double quotes and escaping special characters
-// Integrated from tinystrconv QuoteString function - optimized for minimal allocations
-func (c *conv) quoteString() {
-	inp := c.getString()
+	inp := t.getString()
 	if isEmptySt(inp) {
-		c.setString(quoteStr)
-		return
+		t.setString(quoteStr)
+		return t
 	}
 
 	// Pre-allocate with estimated size (input length + 20% buffer for escapes + 2 for quotes)
@@ -38,5 +31,6 @@ func (c *conv) quoteString() {
 		}
 	}
 	result = append(result, '"')
-	c.setString(string(result))
+	t.setString(string(result))
+	return t
 }

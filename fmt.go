@@ -5,7 +5,10 @@ package tinystring
 // with error:
 // out, err := tinystring.Fmt("Hello %s, you have %d messages", "Alice", 5).StringError()
 func Fmt(format string, args ...any) *conv {
-	return unifiedFormat(format, args...)
+	// Inline unifiedFormat logic - eliminated wrapper function
+	result := getConv() // Always obtain from pool
+	result.sprintf(format, args...)
+	return result
 }
 
 // formatValue converts any value to string and stores in conv struct.
@@ -748,13 +751,6 @@ func (c *conv) handleFormat(args []any, argIndex *int, formatType rune, param in
 
 	*argIndex++
 	return []byte(str), true
-}
-
-// unifiedFormat creates a formatted string using sprintf, shared by Fmt and Errf
-func unifiedFormat(format string, args ...any) *conv {
-	result := getConv() // Always obtain from pool
-	result.sprintf(format, args...)
-	return result
 }
 
 func (c *conv) sprintf(format string, args ...any) {
