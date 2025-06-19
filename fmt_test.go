@@ -272,6 +272,21 @@ func TestRoundDecimalsEnhanced(t *testing.T) {
 			down:     true,
 			expected: "-3.15",
 		},
+		// Casos con 5 exacto (punto de corte)
+		{
+			name:     "Negative number with 5 - round up",
+			input:    "-3.155",
+			decimals: 2,
+			down:     false,
+			expected: "-3.16", // 5 va hacia arriba (away from zero)
+		},
+		{
+			name:     "Negative number with 5 - round down",
+			input:    "-3.155",
+			decimals: 2,
+			down:     true,
+			expected: "-3.15", // Forzar hacia abajo
+		},
 	}
 
 	for _, test := range tests {
