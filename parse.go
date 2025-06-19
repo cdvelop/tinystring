@@ -17,9 +17,8 @@ package tinystring
 func ParseKeyValue(in string, delimiters ...string) (value string, err error) {
 	// Default delimiter is ":"
 	d := ":"
-
 	// Check for a custom delimiter
-	if hasLength(delimiters) {
+	if len(delimiters) > 0 {
 		if len(delimiters) > 1 {
 			return "", Err(D.Format, D.Invalid, 1, D.Delimiter, D.Allowed)
 		}

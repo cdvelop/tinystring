@@ -50,7 +50,12 @@ func (t *conv) Join(sep ...string) *conv {
 			}
 			tL += (len(parts) - 1) * len(separator)
 
-			buf := makeBuf(tL)
+			// Inline makeBuf logic
+			bufCap := tL
+			if bufCap < defaultBufCap {
+				bufCap = defaultBufCap
+			}
+			buf := make([]byte, 0, bufCap)
 			for i, part := range parts {
 				buf = append(buf, part...)
 				if i < len(parts)-1 {

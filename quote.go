@@ -11,7 +11,12 @@ func (t *conv) Quote() *conv {
 
 	// Pre-allocate with estimated size (input length + 20% buffer for escapes + 2 for quotes)
 	eSz := len(inp) + (len(inp) / 5) + 2
-	result := makeBuf(eSz)
+	// Inline makeBuf logic
+	estimatedSize := eSz
+	if estimatedSize < defaultBufCap {
+		estimatedSize = defaultBufCap
+	}
+	result := make([]byte, 0, estimatedSize)
 
 	result = append(result, '"')
 	for _, char := range inp {

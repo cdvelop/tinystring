@@ -29,30 +29,6 @@ func isEmptySt(s string) bool {
 	return len(s) == 0
 }
 
-// Helper function to check if slice/string has content (reduces repeated len() > 0 checks)
-func hasLength(s any) bool {
-	switch v := s.(type) {
-	case string:
-		return len(v) > 0
-	case []string:
-		return len(v) > 0
-	case []int:
-		return len(v) > 0
-	case []any:
-		return len(v) > 0
-	default:
-		return false
-	}
-}
-
-// Helper function to create byte buffer with estimated capacity
-func makeBuf(cap int) []byte {
-	if cap < defaultBufCap {
-		cap = defaultBufCap
-	}
-	return make([]byte, 0, cap)
-}
-
 // Index-based character mapping for maximum efficiency
 var (
 	// Accented characters (lowercase)

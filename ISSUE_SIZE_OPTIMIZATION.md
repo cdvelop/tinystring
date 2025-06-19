@@ -159,13 +159,41 @@ Achieve >90% WebAssembly binary size reduction vs Go standard library. Current s
 - **Results**: +0.1% Default WASM improvement (53.0% vs 52.9%), measurable progress
 - **Status**: Successfully eliminated 2 functions, small but measurable improvement detected
 
+#### ✅ **Optimization #9** (June 19, 2025)
+- **Target**: `builder.go` - Function Inlining & Dead Code Elimination
+- **Change**: Eliminated `getBuf()` (unused) and `hasInitialValue()` (11 lines, used once)
+- **Strategy**: A (Function Inlining) - Removed dead code and inlined simple helper function
+- **Results**: Small but measurable improvement (+0.3% Default WASM)
+- **Status**: Applied without commit (<5% threshold), continuing builder.go analysis
+
+#### ✅ **Optimization #10** (June 19, 2025)
+- **Target**: `builder.go` - Function Inlining Consolidation
+- **Change**: Inlined `appendIntToBuf()`, `appendUintToBuf()`, `appendFloatToBuf()` (3 functions, 7 lines each)
+- **Strategy**: A (Function Inlining) - Eliminated similar pattern functions, direct formatting logic
+- **Results**: +0.3% Default WASM improvement (272.1 KB vs 273.0 KB), +0.4% Speed WASM
+- **Status**: Successfully eliminated 5 total functions from builder.go, measurable cumulative progress
+
+#### ✅ **Optimization #11** (June 19, 2025)
+- **Target**: `mapping.go` + multiple files - Function Inlining
+- **Change**: Inlined `hasLength()` (12 lines, used 2 times) across replace.go and parse.go
+- **Strategy**: A (Function Inlining) - Direct len() checks instead of generic function call
+- **Results**: +0.04% Default WASM improvement (small but measurable)
+- **Status**: Applied without commit (<5% threshold), continuing mapping.go analysis
+
+#### ✅ **Optimization #12** (June 19, 2025)
+- **Target**: `mapping.go` + multiple files - Function Inlining & Buffer Optimization
+- **Change**: Inlined `makeBuf()` (4 lines, used 4 times) across quote.go, replace.go, join.go, capitalize.go
+- **Strategy**: A (Function Inlining) - Direct buffer allocation logic instead of wrapper function
+- **Results**: +0.2% Default WASM improvement (271.4 KB vs 272.0 KB), +0.3% Ultra WASM, +0.1% Speed WASM
+- **Status**: Successfully eliminated 2 functions from mapping.go, cumulative improvements detected
+
 ### Current Phase Status (Updated)
-- **Phase**: 3A - Function Inlining Phase ✅ **ONGOING WITH STRONG SUCCESS**
-- **Achievement**: 12 functions successfully eliminated across multiple files
-- **Results**: +8.6% Default WASM improvement total (53.0% vs 44.4% baseline)
-- **Current Progress**: 74.1% Ultra WASM reduction (targeting >90%)
-- **Next Focus**: Continue Strategy A with additional small function candidates
-- **Branch**: `size-reduction` (optimizations accumulating, approaching next commit threshold)
+- **Phase**: 3A - Function Inlining Phase ✅ **NEARING COMMIT THRESHOLD**
+- **Achievement**: 19 functions successfully eliminated across multiple files
+- **Results**: +8.9% Default WASM improvement total (53.3% vs 44.4% baseline)
+- **Current Progress**: 74.2% Ultra WASM reduction (targeting >90%)
+- **Next Focus**: Find 1-2 more small optimizations to reach 5% commit threshold (+0.1% needed)
+- **Branch**: `size-reduction` (very close to committing accumulated improvements)
 
 #### 🎯 **Next Target: Additional Function Analysis** (June 19, 2025)
 - **Current Status**: Strong momentum with measurable improvements from function inlining

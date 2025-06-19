@@ -139,7 +139,12 @@ func (t *conv) toCaseTransformMinimal(firstWordLower bool, separator string) *co
 		return t
 	} // Pre-allocate buffer with estimated size
 	eSz := len(str) + (len(separator) * 5) // Extra space for separators
-	result := makeBuf(eSz)
+	// Inline makeBuf logic
+	resultCap := eSz
+	if resultCap < defaultBufCap {
+		resultCap = defaultBufCap
+	}
+	result := make([]byte, 0, resultCap)
 	// Advanced word boundary detection for camelCase and snake_case
 	wordIndex := 0
 	var pWU, pWL, pWD, pWS bool

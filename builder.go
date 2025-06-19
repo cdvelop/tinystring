@@ -20,9 +20,11 @@ func (c *conv) Write(v any) *conv {
 	if c.err != "" {
 		return c // Error chain interruption
 	}
-
 	// BUILDER INTEGRATION: If buffer is empty but we have initial value, transfer it first
-	if len(c.buf) == 0 && c.hasInitialValue() {
+	if len(c.buf) == 0 && ((c.vTpe == typeStr && c.stringVal != "") ||
+		(c.vTpe == typeStrPtr && c.stringPtrVal != nil && *c.stringPtrVal != "") ||
+		(c.vTpe == typeStrSlice && len(c.stringSliceVal) > 0) ||
+		(c.vTpe == typeInt || c.vTpe == typeUint || c.vTpe == typeFloat || c.vTpe == typeBool)) {
 		c.val2Buf() // Transfer current value to buffer
 	}
 
@@ -200,12 +202,15 @@ func (c *conv) handleError(val error, mode cm) {
 
 func (c *conv) handleInt(val int64, mode cm) {
 	switch mode {
-	case mi: // Initial mode
-		c.intVal = val
+	case mi: // Initial mode		c.intVal = val
 		c.vTpe = typeInt
 	case mb: // Buffer mode
 		c.intVal = val
-		c.appendIntToBuf(val)
+		// Inline appendIntToBuf logic
+		oldTmpStr := c.tmpStr
+		c.fmtInt(10)
+		c.buf = append(c.buf, c.tmpStr...)
+		c.tmpStr = oldTmpStr // Restore original tmpStr
 	case ma: // Any mode
 		c.intVal = val
 		c.fmtInt(10)
@@ -214,12 +219,15 @@ func (c *conv) handleInt(val int64, mode cm) {
 
 func (c *conv) handleUint(val uint64, mode cm) {
 	switch mode {
-	case mi: // Initial mode
-		c.uintVal = val
+	case mi: // Initial mode		c.uintVal = val
 		c.vTpe = typeUint
 	case mb: // Buffer mode
 		c.uintVal = val
-		c.appendUintToBuf(val)
+		// Inline appendUintToBuf logic
+		oldTmpStr := c.tmpStr
+		c.fmtUint(10)
+		c.buf = append(c.buf, c.tmpStr...)
+		c.tmpStr = oldTmpStr // Restore original tmpStr
 	case ma: // Any mode
 		c.uintVal = val
 		c.fmtUint(10)
@@ -228,12 +236,15 @@ func (c *conv) handleUint(val uint64, mode cm) {
 
 func (c *conv) handleFloat(val float64, mode cm) {
 	switch mode {
-	case mi: // Initial mode
-		c.floatVal = val
+	case mi: // Initial mode		c.floatVal = val
 		c.vTpe = typeFloat
 	case mb: // Buffer mode
 		c.floatVal = val
-		c.appendFloatToBuf(val)
+		// Inline appendFloatToBuf logic
+		oldTmpStr := c.tmpStr
+		c.f2s()
+		c.buf = append(c.buf, c.tmpStr...)
+		c.tmpStr = oldTmpStr // Restore original tmpStr
 	case ma: // Any mode
 		c.floatVal = val
 		c.f2s()
@@ -262,14 +273,6 @@ func (c *conv) grow(capacity int) {
 	}
 }
 
-// getBuf returns the current buffer content as string (replaces getString for buffer operations)
-func (c *conv) getBuf() string {
-	if len(c.buf) == 0 {
-		return ""
-	}
-	return string(c.buf)
-}
-
 // val2Buf converts current value directly to buffer for maximum efficiency
 func (c *conv) val2Buf() {
 	switch c.vTpe {
@@ -289,13 +292,25 @@ func (c *conv) val2Buf() {
 		}
 	case typeInt:
 		c.buf = c.buf[:0]
-		c.appendIntToBuf(c.intVal)
+		// Inline appendIntToBuf logic
+		oldTmpStr := c.tmpStr
+		c.fmtInt(10)
+		c.buf = append(c.buf, c.tmpStr...)
+		c.tmpStr = oldTmpStr // Restore original tmpStr
 	case typeUint:
 		c.buf = c.buf[:0]
-		c.appendUintToBuf(c.uintVal)
+		// Inline appendUintToBuf logic
+		oldTmpStr := c.tmpStr
+		c.fmtUint(10)
+		c.buf = append(c.buf, c.tmpStr...)
+		c.tmpStr = oldTmpStr // Restore original tmpStr
 	case typeFloat:
 		c.buf = c.buf[:0]
-		c.appendFloatToBuf(c.floatVal)
+		// Inline appendFloatToBuf logic
+		oldTmpStr := c.tmpStr
+		c.f2s()
+		c.buf = append(c.buf, c.tmpStr...)
+		c.tmpStr = oldTmpStr // Restore original tmpStr
 	case typeBool:
 		c.buf = c.buf[:0]
 		if c.boolVal {
@@ -304,52 +319,5 @@ func (c *conv) val2Buf() {
 			c.buf = append(c.buf, falseStr...)
 		}
 	default:
-		c.buf = c.buf[:0]
-	}
-}
-
-// appendIntToBuf appends integer directly to buffer
-func (c *conv) appendIntToBuf(val int64) {
-	// Use existing fmtInt logic but append to buffer instead of tmpStr
-	oldTmpStr := c.tmpStr
-	c.intVal = val
-	c.fmtInt(10)
-	c.buf = append(c.buf, c.tmpStr...)
-	c.tmpStr = oldTmpStr // Restore original tmpStr
-}
-
-// appendUintToBuf appends unsigned integer directly to buffer
-func (c *conv) appendUintToBuf(val uint64) {
-	// Use existing fmtUint logic but append to buffer instead of tmpStr
-	oldTmpStr := c.tmpStr
-	c.uintVal = val
-	c.fmtUint(10)
-	c.buf = append(c.buf, c.tmpStr...)
-	c.tmpStr = oldTmpStr // Restore original tmpStr
-}
-
-// appendFloatToBuf appends float directly to buffer
-func (c *conv) appendFloatToBuf(val float64) {
-	// Use existing f2s logic but append to buffer instead of tmpStr
-	oldTmpStr := c.tmpStr
-	c.floatVal = val
-	c.f2s()
-	c.buf = append(c.buf, c.tmpStr...)
-	c.tmpStr = oldTmpStr // Restore original tmpStr
-}
-
-// hasInitialValue checks if conv has an initial value that should be transferred to buffer
-func (c *conv) hasInitialValue() bool {
-	switch c.vTpe {
-	case typeStr:
-		return c.stringVal != ""
-	case typeStrPtr:
-		return c.stringPtrVal != nil && *c.stringPtrVal != ""
-	case typeStrSlice:
-		return len(c.stringSliceVal) > 0
-	case typeInt, typeUint, typeFloat, typeBool:
-		return true // Numeric and boolean types always have a value
-	default:
-		return false
-	}
+		c.buf = c.buf[:0]	}
 }

@@ -28,11 +28,15 @@ func (t *conv) Replace(oldAny, newAny any, n ...int) *conv {
 		// If new string is longer, estimate extra space needed
 		estimatedCap += (len(newStr) - len(old)) * 5 // Assume up to 5 replacements
 	}
-	buf := makeBuf(estimatedCap)
-
+	// Inline makeBuf logic
+	bufCap := estimatedCap
+	if bufCap < defaultBufCap {
+		bufCap = defaultBufCap
+	}
+	buf := make([]byte, 0, bufCap)
 	// Default behavior: replace all occurrences (n = -1)
 	maxReps := -1
-	if hasLength(n) {
+	if len(n) > 0 {
 		maxReps = n[0]
 	}
 

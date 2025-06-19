@@ -44,7 +44,8 @@ func (t *conv) ToBool() (bool, error) {
 			if t.err == "" {
 				t.boolVal = t.floatVal != 0.0
 				t.vTpe = typeBool
-				t.err = "" // Clear any errors since we successfully converted				return t.boolVal, nil
+				t.err = "" // Clear any errors since we successfully converted
+				return t.boolVal, nil
 			}
 
 			return false, Err(D.Boolean, D.Value, D.Invalid, inp)
