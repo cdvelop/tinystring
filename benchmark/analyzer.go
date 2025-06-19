@@ -392,32 +392,6 @@ func displayMemoryResults(comparisons []MemoryComparison) {
 	}
 }
 
-// formatNanoTime formats nanoseconds to readable time units
-func formatNanoTime(ns int64) string {
-	if ns < 1000 {
-		return fmt.Sprintf("%dns", ns)
-	} else if ns < 1000000 {
-		return fmt.Sprintf("%.1fμs", float64(ns)/1000)
-	} else {
-		return fmt.Sprintf("%.1fms", float64(ns)/1000000)
-	}
-}
-
-// calculateMemoryImprovement calculates percentage improvement for memory metrics
-func calculateMemoryImprovement(original, improved int64) string {
-	if original == 0 {
-		return "N/A"
-	}
-
-	improvement := float64(original-improved) / float64(original) * 100
-	if improvement > 0 {
-		return fmt.Sprintf("%.1f%% less", improvement)
-	} else if improvement < 0 {
-		return fmt.Sprintf("%.1f%% more", -improvement)
-	}
-	return "Same"
-}
-
 // updateREADMEWithBinaryData updates README with binary size analysis
 func updateREADMEWithBinaryData(binaries []BinaryInfo) {
 	reporter := NewReportGenerator("../README.md")

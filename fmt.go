@@ -20,6 +20,8 @@ func (c *conv) formatValue(value any) {
 		}
 	case string:
 		c.Write(val)
+	case error:
+		c.Write(val.Error())
 	default:
 		c.formatAnyNumeric(value)
 	}
@@ -625,7 +627,46 @@ func (c *conv) handleFormat(args []any, argIndex *int, formatType rune, param in
 	var str string
 	switch formatType {
 	case 'd', 'o', 'b', 'x':
-		if intVal, ok := arg.(int); ok {
+		var intVal int64
+		var ok bool
+
+		// Handle all integer types
+		switch v := arg.(type) {
+		case int:
+			intVal = int64(v)
+			ok = true
+		case int8:
+			intVal = int64(v)
+			ok = true
+		case int16:
+			intVal = int64(v)
+			ok = true
+		case int32:
+			intVal = int64(v)
+			ok = true
+		case int64:
+			intVal = v
+			ok = true
+		case uint:
+			intVal = int64(v)
+			ok = true
+		case uint8:
+			intVal = int64(v)
+			ok = true
+		case uint16:
+			intVal = int64(v)
+			ok = true
+		case uint32:
+			intVal = int64(v)
+			ok = true
+		case uint64:
+			if v <= 9223372036854775807 { // Max int64
+				intVal = int64(v)
+				ok = true
+			}
+		}
+
+		if ok {
 			// Save current state including buffer
 			oldVTpe := c.vTpe
 			oldStringVal := c.stringVal
@@ -634,7 +675,7 @@ func (c *conv) handleFormat(args []any, argIndex *int, formatType rune, param in
 
 			// Perform calculation with isolated buffer
 			c.resetBuffer()
-			c.intVal = int64(intVal)
+			c.intVal = intVal
 			c.vTpe = typeInt
 			if param == 10 {
 				c.i2s()

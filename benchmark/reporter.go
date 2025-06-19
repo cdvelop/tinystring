@@ -48,18 +48,17 @@ func (r *ReportGenerator) UpdateMemoryData(comparisons []MemoryComparison) error
 
 // generateBinarySizeSection creates the binary size comparison section
 func (r *ReportGenerator) generateBinarySizeSection(binaries []BinaryInfo) (string, error) {
-	var content strings.Builder
+	content := Convert() // Using TinyString builder for better performance
 
-	content.WriteString("## Binary Size Comparison\n\n")
-	content.WriteString("[Standard Library Example](benchmark/bench-binary-size/standard-lib/main.go) | [TinyString Example](benchmark/bench-binary-size/tinystring-lib/main.go)\n\n")
-	content.WriteString("<!-- This table is automatically generated from build-and-measure.sh -->\n")
-	content.WriteString("*Last updated: " + time.Now().Format("2006-01-02 15:04:05") + "*\n\n")
+	content.Write("## Binary Size Comparison\n\n")
+	content.Write("[Standard Library Example](benchmark/bench-binary-size/standard-lib/main.go) | [TinyString Example](benchmark/bench-binary-size/tinystring-lib/main.go)\n\n")
+	content.Write("<!-- This table is automatically generated from build-and-measure.sh -->\n")
+	content.Write("*Last updated: " + time.Now().Format("2006-01-02 15:04:05") + "*\n\n")
 
 	// Group binaries by optimization level
 	optimizations := getOptimizationConfigs()
-
-	content.WriteString("| Build Type | Parameters | Standard Library<br/>`go build` | TinyString<br/>`tinygo build` | Size Reduction | Performance |\n")
-	content.WriteString("|------------|------------|------------------|------------|----------------|-------------|\n")
+	content.Write("| Build Type | Parameters | Standard Library<br/>`go build` | TinyString<br/>`tinygo build` | Size Reduction | Performance |\n")
+	content.Write("|------------|------------|------------------|------------|----------------|-------------|\n")
 
 	var allImprovements []float64
 	var maxImprovement float64
@@ -76,14 +75,13 @@ func (r *ReportGenerator) generateBinarySizeSection(binaries []BinaryInfo) (stri
 		buildIcon := getBuildTypeIcon(opt.Name)
 		parameters := getBuildParameters(opt.Name, false)    // Native
 		wasmParameters := getBuildParameters(opt.Name, true) // WASM
-
 		// Native builds
 		if standardNative.Name != "" && tinystringNative.Name != "" {
 			improvementPercent := calculateImprovementPercent(standardNative.Size, tinystringNative.Size)
 			sizeDiff := standardNative.Size - tinystringNative.Size
 			performanceIndicator := getPerformanceIndicator(improvementPercent)
 
-			content.WriteString(Fmt("| %s **%s Native** | `%s` | %s | %s | **-%s** | %s **%.1f%%** |\n",
+			content.Write(Fmt("| %s **%s Native** | `%s` | %s | %s | **-%s** | %s **%.1f%%** |\n",
 				buildIcon, capitalizeFirst(opt.Name), parameters,
 				standardNative.SizeStr, tinystringNative.SizeStr,
 				FormatSize(sizeDiff), performanceIndicator, improvementPercent).String())
@@ -94,14 +92,13 @@ func (r *ReportGenerator) generateBinarySizeSection(binaries []BinaryInfo) (stri
 			}
 			totalSavings += sizeDiff
 		}
-
 		// WebAssembly builds
 		if standardWasm.Name != "" && tinystringWasm.Name != "" {
 			improvementPercent := calculateImprovementPercent(standardWasm.Size, tinystringWasm.Size)
 			sizeDiff := standardWasm.Size - tinystringWasm.Size
 			performanceIndicator := getPerformanceIndicator(improvementPercent)
 
-			content.WriteString(Fmt("| 🌐 **%s WASM** | `%s` | %s | %s | **-%s** | %s **%.1f%%** |\n",
+			content.Write(Fmt("| 🌐 **%s WASM** | `%s` | %s | %s | **-%s** | %s **%.1f%%** |\n",
 				capitalizeFirst(opt.Name), wasmParameters,
 				standardWasm.SizeStr, tinystringWasm.SizeStr,
 				FormatSize(sizeDiff), performanceIndicator, improvementPercent).String())
@@ -153,40 +150,39 @@ func (r *ReportGenerator) generateBinarySizeSection(binaries []BinaryInfo) (stri
 	if wasmCount > 0 {
 		avgWasmImprovement /= float64(wasmCount)
 	}
-
 	// Performance summary
-	content.WriteString("\n### 🎯 Performance Summary\n\n")
-	content.WriteString(Fmt("- 🏆 **Peak Reduction: %.1f%%** (Best optimization)\n", maxImprovement).String())
+	content.Write("\n### 🎯 Performance Summary\n\n")
+	content.Write(Fmt("- 🏆 **Peak Reduction: %.1f%%** (Best optimization)\n", maxImprovement).String())
 	if wasmCount > 0 {
-		content.WriteString(Fmt("- ✅ **Average WebAssembly Reduction: %.1f%%**\n", avgWasmImprovement).String())
+		content.Write(Fmt("- ✅ **Average WebAssembly Reduction: %.1f%%**\n", avgWasmImprovement).String())
 	}
 	if nativeCount > 0 {
-		content.WriteString(Fmt("- ✅ **Average Native Reduction: %.1f%%**\n", avgNativeImprovement).String())
+		content.Write(Fmt("- ✅ **Average Native Reduction: %.1f%%**\n", avgNativeImprovement).String())
 	}
-	content.WriteString(Fmt("- 📦 **Total Size Savings: %s across all builds**\n\n", FormatSize(totalSavings)).String())
+	content.Write(Fmt("- 📦 **Total Size Savings: %s across all builds**\n\n", FormatSize(totalSavings)).String())
 
-	content.WriteString("#### Performance Legend\n")
-	content.WriteString("- ❌ Poor (<5% reduction)\n")
-	content.WriteString("- ➖ Fair (5-15% reduction)\n")
-	content.WriteString("- ✅ Good (15-70% reduction)\n")
-	content.WriteString("- 🏆 Outstanding (>70% reduction)\n\n")
+	content.Write("#### Performance Legend\n")
+	content.Write("- ❌ Poor (<5% reduction)\n")
+	content.Write("- ➖ Fair (5-15% reduction)\n")
+	content.Write("- ✅ Good (15-70% reduction)\n")
+	content.Write("- 🏆 Outstanding (>70% reduction)\n\n")
 
 	return content.String(), nil
 }
 
 // generateMemorySection creates the memory allocation comparison section
 func (r *ReportGenerator) generateMemorySection(comparisons []MemoryComparison) (string, error) {
-	var content strings.Builder
+	content := Convert() // Using TinyString builder for better performance
 
-	content.WriteString("## Memory Usage Comparison\n\n")
-	content.WriteString("[Standard Library Example](benchmark/bench-memory-alloc/standard) | [TinyString Example](benchmark/bench-memory-alloc/tinystring)\n\n")
-	content.WriteString("<!-- This table is automatically generated from memory-benchmark.sh -->\n")
-	content.WriteString("*Last updated: " + time.Now().Format("2006-01-02 15:04:05") + "*\n\n")
-	content.WriteString("Performance benchmarks comparing memory allocation patterns between standard Go library and TinyString:\n\n")
+	content.Write("## Memory Usage Comparison\n\n")
+	content.Write("[Standard Library Example](benchmark/bench-memory-alloc/standard) | [TinyString Example](benchmark/bench-memory-alloc/tinystring)\n\n")
+	content.Write("<!-- This table is automatically generated from memory-benchmark.sh -->\n")
+	content.Write("*Last updated: " + time.Now().Format("2006-01-02 15:04:05") + "*\n\n")
+	content.Write("Performance benchmarks comparing memory allocation patterns between standard Go library and TinyString:\n\n")
 
 	// Enhanced table with better styling and icons
-	content.WriteString("| 🧪 **Benchmark Category** | 📚 **Library** | 💾 **Memory/Op** | 🔢 **Allocs/Op** | ⏱️ **Time/Op** | 📈 **Memory Trend** | 🎯 **Alloc Trend** | 🏆 **Performance** |\n")
-	content.WriteString("|----------------------------|----------------|-------------------|-------------------|-----------------|---------------------|---------------------|--------------------|\n")
+	content.Write("| 🧪 **Benchmark Category** | 📚 **Library** | 💾 **Memory/Op** | 🔢 **Allocs/Op** | ⏱️ **Time/Op** | 📈 **Memory Trend** | 🎯 **Alloc Trend** | 🏆 **Performance** |\n")
+	content.Write("|----------------------------|----------------|-------------------|-------------------|-----------------|---------------------|---------------------|--------------------|\n")
 
 	var totalMemoryDiff float64
 	var totalAllocDiff float64
@@ -213,10 +209,8 @@ func (r *ReportGenerator) generateMemorySection(comparisons []MemoryComparison) 
 			overallIndicator := getOverallPerformanceIndicator(memPercent, allocPercent)
 
 			// Category with emoji
-			categoryIcon := getBenchmarkCategoryIcon(comparison.Category)
-
-			// Standard library row with enhanced styling
-			content.WriteString(Fmt("| %s **%s** | 📊 Standard | `%s` | `%d` | `%s` | - | - | - |\n",
+			categoryIcon := getBenchmarkCategoryIcon(comparison.Category) // Standard library row with enhanced styling
+			content.Write(Fmt("| %s **%s** | 📊 Standard | `%s` | `%d` | `%s` | - | - | - |\n",
 				categoryIcon,
 				comparison.Category,
 				FormatSize(comparison.Standard.BytesPerOp),
@@ -224,7 +218,7 @@ func (r *ReportGenerator) generateMemorySection(comparisons []MemoryComparison) 
 				formatNanoTime(comparison.Standard.NsPerOp)).String())
 
 			// TinyString row with improvements and visual indicators
-			content.WriteString(Fmt("| | 🚀 TinyString | `%s` | `%d` | `%s` | %s **%s** | %s **%s** | %s |\n",
+			content.Write(Fmt("| | 🚀 TinyString | `%s` | `%d` | `%s` | %s **%s** | %s **%s** | %s |\n",
 				FormatSize(comparison.TinyString.BytesPerOp),
 				comparison.TinyString.AllocsPerOp,
 				formatNanoTime(comparison.TinyString.NsPerOp),
@@ -240,49 +234,47 @@ func (r *ReportGenerator) generateMemorySection(comparisons []MemoryComparison) 
 		avgMemoryDiff = totalMemoryDiff / float64(benchmarkCount)
 		avgAllocDiff = totalAllocDiff / float64(benchmarkCount)
 	}
-
 	// Performance summary section with enhanced styling
-	content.WriteString("\n### 🎯 Performance Summary\n\n")
+	content.Write("\n### 🎯 Performance Summary\n\n")
 
 	// Memory efficiency classification
 	memoryClass := getMemoryEfficiencyClass(avgMemoryDiff)
 	allocClass := getAllocEfficiencyClass(avgAllocDiff)
 
-	content.WriteString(Fmt("- 💾 **Memory Efficiency**: %s (%.1f%% average change)\n", memoryClass, avgMemoryDiff).String())
-	content.WriteString(Fmt("- 🔢 **Allocation Efficiency**: %s (%.1f%% average change)\n", allocClass, avgAllocDiff).String())
-	content.WriteString(Fmt("- 📊 **Benchmarks Analyzed**: %d categories\n", benchmarkCount).String())
-	content.WriteString("- 🎯 **Optimization Focus**: Binary size reduction vs runtime efficiency\n\n")
+	content.Write(Fmt("- 💾 **Memory Efficiency**: %s (%.1f%% average change)\n", memoryClass, avgMemoryDiff).String())
+	content.Write(Fmt("- 🔢 **Allocation Efficiency**: %s (%.1f%% average change)\n", allocClass, avgAllocDiff).String())
+	content.Write(Fmt("- 📊 **Benchmarks Analyzed**: %d categories\n", benchmarkCount).String())
+	content.Write("- 🎯 **Optimization Focus**: Binary size reduction vs runtime efficiency\n\n")
 
 	// Enhanced trade-offs analysis with better formatting
-	content.WriteString("### ⚖️ Trade-offs Analysis\n\n")
-	content.WriteString("The benchmarks reveal important trade-offs between **binary size** and **runtime performance**:\n\n")
+	content.Write("### ⚖️ Trade-offs Analysis\n\n")
+	content.Write("The benchmarks reveal important trade-offs between **binary size** and **runtime performance**:\n\n")
 
-	content.WriteString("#### 📦 **Binary Size Benefits** ✅\n")
-	content.WriteString("- 🏆 **16-84% smaller** compiled binaries\n")
-	content.WriteString("- 🌐 **Superior WebAssembly** compression ratios\n")
-	content.WriteString("- 🚀 **Faster deployment** and distribution\n")
-	content.WriteString("- 💾 **Lower storage** requirements\n\n")
+	content.Write("#### 📦 **Binary Size Benefits** ✅\n")
+	content.Write("- 🏆 **16-84% smaller** compiled binaries\n")
+	content.Write("- 🌐 **Superior WebAssembly** compression ratios\n")
+	content.Write("- 🚀 **Faster deployment** and distribution\n")
+	content.Write("- 💾 **Lower storage** requirements\n\n")
 
-	content.WriteString("#### 🧠 **Runtime Memory Considerations** ⚠️\n")
-	content.WriteString("- 📈 **Higher allocation overhead** during execution\n")
-	content.WriteString("- 🗑️ **Increased GC pressure** due to allocation patterns\n")
-	content.WriteString("- ⚡ **Trade-off optimizes** for distribution size over runtime efficiency\n")
-	content.WriteString("- 🔄 **Different optimization strategy** than standard library\n\n")
+	content.Write("#### 🧠 **Runtime Memory Considerations** ⚠️\n")
+	content.Write("- 📈 **Higher allocation overhead** during execution\n")
+	content.Write("- 🗑️ **Increased GC pressure** due to allocation patterns\n")
+	content.Write("- ⚡ **Trade-off optimizes** for distribution size over runtime efficiency\n")
+	content.Write("- 🔄 **Different optimization strategy** than standard library\n\n")
+	content.Write("#### 🎯 **Optimization Recommendations**\n")
+	content.Write("| 🎯 **Use Case** | 💡 **Recommendation** | 🔧 **Best For** |\n")
+	content.Write("|-----------------|------------------------|------------------|\n")
+	content.Write("| 🌐 WebAssembly Apps | ✅ **TinyString** | Size-critical web deployment |\n")
+	content.Write("| 📱 Embedded Systems | ✅ **TinyString** | Resource-constrained devices |\n")
+	content.Write("| ☁️ Edge Computing | ✅ **TinyString** | Fast startup and deployment |\n")
+	content.Write("| 🏢 Memory-Intensive Server | ⚠️ **Standard Library** | High-throughput applications |\n")
+	content.Write("| 🔄 High-Frequency Processing | ⚠️ **Standard Library** | Performance-critical workloads |\n\n")
 
-	content.WriteString("#### 🎯 **Optimization Recommendations**\n")
-	content.WriteString("| 🎯 **Use Case** | 💡 **Recommendation** | 🔧 **Best For** |\n")
-	content.WriteString("|-----------------|------------------------|------------------|\n")
-	content.WriteString("| 🌐 WebAssembly Apps | ✅ **TinyString** | Size-critical web deployment |\n")
-	content.WriteString("| 📱 Embedded Systems | ✅ **TinyString** | Resource-constrained devices |\n")
-	content.WriteString("| ☁️ Edge Computing | ✅ **TinyString** | Fast startup and deployment |\n")
-	content.WriteString("| 🏢 Memory-Intensive Server | ⚠️ **Standard Library** | High-throughput applications |\n")
-	content.WriteString("| 🔄 High-Frequency Processing | ⚠️ **Standard Library** | Performance-critical workloads |\n\n")
-
-	content.WriteString("#### 📊 **Performance Legend**\n")
-	content.WriteString("- 🏆 **Excellent** (Better performance)\n")
-	content.WriteString("- ✅ **Good** (Acceptable trade-off)\n")
-	content.WriteString("- ⚠️ **Caution** (Higher resource usage)\n")
-	content.WriteString("- ❌ **Poor** (Significant overhead)\n\n")
+	content.Write("#### 📊 **Performance Legend**\n")
+	content.Write("- 🏆 **Excellent** (Better performance)\n")
+	content.Write("- ✅ **Good** (Acceptable trade-off)\n")
+	content.Write("- ⚠️ **Caution** (Higher resource usage)\n")
+	content.Write("- ❌ **Poor** (Significant overhead)\n\n")
 
 	return content.String(), nil
 }
@@ -523,5 +515,31 @@ func getAllocEfficiencyClass(avgPercent float64) string {
 		return "⚠️ **Caution** (More allocations)"
 	default:
 		return "❌ **Poor** (Excessive allocations)"
+	}
+}
+
+// calculateMemoryImprovement formats the memory improvement as a string
+func calculateMemoryImprovement(standardValue, tinystringValue int64) string {
+	if standardValue <= 0 {
+		return "N/A"
+	}
+
+	percent := float64(standardValue-tinystringValue) / float64(standardValue) * 100
+	if percent > 0 {
+		return Fmt("%.1f%% less", percent).String()
+	} else if percent < 0 {
+		return Fmt("%.1f%% more", -percent).String()
+	}
+	return "Same"
+}
+
+// formatNanoTime formats nanoseconds to readable time units
+func formatNanoTime(ns int64) string {
+	if ns < 1000 {
+		return Fmt("%dns", ns).String()
+	} else if ns < 1000000 {
+		return Fmt("%.1fμs", float64(ns)/1000).String()
+	} else {
+		return Fmt("%.1fms", float64(ns)/1000000).String()
 	}
 }
