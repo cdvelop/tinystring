@@ -14,12 +14,12 @@ func (c *conv) formatValue(value any) {
 	switch val := value.(type) {
 	case bool:
 		if val {
-			c.setString(trueStr)
+			c.Write(trueStr)
 		} else {
-			c.setString(falseStr)
+			c.Write(falseStr)
 		}
 	case string:
-		c.setString(val)
+		c.Write(val)
 	default:
 		c.formatAnyNumeric(value)
 	}
@@ -53,7 +53,7 @@ func (c *conv) formatAnyNumeric(val any) {
 	case float64:
 		genFloat(c, v, 2)
 	default:
-		c.setString("<unsupported>")
+		c.Write("<unsupported>")
 	}
 }
 
@@ -710,9 +710,7 @@ func (c *conv) handleFormat(args []any, argIndex *int, formatType rune, param in
 
 // unifiedFormat creates a formatted string using sprintf, shared by Fmt and Errf
 func unifiedFormat(format string, args ...any) *conv {
-	result := &conv{
-		separator: "_", // default separator
-	}
+	result := getConv() // Always obtain from pool
 	result.sprintf(format, args...)
 	return result
 }

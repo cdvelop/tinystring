@@ -75,18 +75,29 @@ func (c *conv) getReusableBuffer(capacity int) []byte {
 
 // Phase 9: Optimized buffer management with direct string interning
 func (c *conv) setStringFromBuffer() {
+	var resultStr string
 	if len(c.buf) == 0 {
-		c.stringVal = ""
+		resultStr = ""
 	} else {
 		// Direct string interning for small strings to avoid double allocation
 		if len(c.buf) <= 32 {
-			c.stringVal = internStringFromBytes(c.buf) // Direct from bytes, no temp string
+			resultStr = internStringFromBytes(c.buf) // Direct from bytes, no temp string
 		} else {
 			// For large strings, direct allocation is still better
-			c.stringVal = string(c.buf)
+			resultStr = string(c.buf)
 		}
 	}
-	c.vTpe = typeStr
+
+	c.stringVal = resultStr
+
+	// If working with string pointer, update the original string
+	if c.vTpe == typeStrPtr && c.stringPtrVal != nil {
+		*c.stringPtrVal = resultStr
+		// Keep the vTpe as stringPtr to maintain the pointer relationship
+	} else {
+		c.vTpe = typeStr
+	}
+
 	c.buf = c.buf[:0] // Reset buffer length, keep capacity
 }
 

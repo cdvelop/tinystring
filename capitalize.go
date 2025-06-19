@@ -45,7 +45,7 @@ func (t *conv) Capitalize() *conv {
 		}
 	}
 
-	t.setString(string(buf))
+	t.buf = append(t.buf[:0], string(buf)...)
 	return t
 }
 
@@ -59,27 +59,33 @@ func (t *conv) ToUpper() *conv {
 	return t.changeCase(false)
 }
 
-// changeCase consolidates ToLower and ToUpper functionality
+// changeCase consolidates ToLower and ToUpper functionality - optimized with buffer-first strategy
 func (t *conv) changeCase(toLower bool) *conv {
+	if t.err != "" {
+		return t // Error chain interruption
+	}
+
 	str := t.getString()
 	if isEmptySt(str) {
 		return t
 	}
 
-	// Use rune buffer pool for better memory efficiency
-	buf := getRuneBuffer(len(str))
-	defer putRuneBuffer(&buf)
+	// Convert to runes for proper Unicode handling
+	runes := []rune(str)
 
-	// Convert to runes and process
-	for _, r := range str {
+	// Process runes for case conversion
+	for i, r := range runes {
 		if toLower {
-			buf = append(buf, toLowerRune(r))
+			runes[i] = toLowerRune(r)
 		} else {
-			buf = append(buf, toUpperRune(r))
+			runes[i] = toUpperRune(r)
 		}
 	}
 
-	t.setString(string(buf))
+	// Convert back to string and store in buffer
+	result := string(runes)
+	t.buf = append(t.buf[:0], result...)
+
 	return t
 }
 
@@ -114,6 +120,10 @@ func (t *conv) ToSnakeCaseUpper(sep ...string) *conv {
 
 // Minimal implementation without pools or builders - optimized for minimal allocations
 func (t *conv) toCaseTransformMinimal(firstWordLower bool, separator string) *conv {
+	if t.err != "" {
+		return t // Error chain interruption
+	}
+
 	str := t.getString()
 	if isEmptySt(str) {
 		return t
@@ -197,7 +207,8 @@ func (t *conv) toCaseTransformMinimal(firstWordLower bool, separator string) *co
 		pWD = cID
 	}
 
-	t.setString(string(result))
+	// Update buffer instead of using setString for buffer-first strategy
+	t.buf = append(t.buf[:0], result...)
 	return t
 }
 

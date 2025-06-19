@@ -35,7 +35,7 @@ func (c *conv) Write(v any) *conv {
 // Useful for reusing the same conv object for multiple operations
 func (c *conv) Reset() *conv {
 	// Reset all conv fields to default state
-	c.stringVal = ""  // CRITICAL: Clear string value
+	c.stringVal = "" // CRITICAL: Clear string value
 	c.intVal = 0
 	c.uintVal = 0
 	c.floatVal = 0

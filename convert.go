@@ -83,19 +83,19 @@ func withValue(v any) convOpt {
 // Phase 7: Uses object pool internally for memory optimization (transparent to user)
 func Convert(v ...any) *conv {
 	c := getConv()
-	
+
 	// Validation: Only accept 0 or 1 parameter
 	if len(v) > 1 {
 		c.err = T(D.Only, D.One, D.Value, D.Supported) // Consistent error handling pattern
 		return c
 	}
-	
+
 	// Initialize with value if provided, empty otherwise
 	if len(v) == 1 {
 		withValue(v[0])(c)
 	}
 	// If no value provided, conv is ready for builder pattern
-	
+
 	return c
 }
 
@@ -180,7 +180,7 @@ func (t *conv) String() string {
 func (t *conv) StringError() (string, error) {
 	var result string
 	var err error
-	
+
 	// BUILDER INTEGRATION: Check for error condition more comprehensively
 	if t.err != "" {
 		// If there's an error, return empty string and the error
@@ -190,7 +190,7 @@ func (t *conv) StringError() (string, error) {
 		result = t.getString()
 		err = nil
 	}
-	
+
 	// Auto-release back to pool for memory efficiency
 	t.putConv()
 	return result, err
@@ -233,17 +233,26 @@ func (t *conv) getString() string {
 		return t.stringVal
 	}
 
-	// Use cached string if available and type hasn't changed
-	if t.tmpStr != "" && t.lastConvType == t.vTpe {
-		return t.tmpStr
+	// For string pointers, always return the current value (don't use cache)
+	if t.vTpe == typeStrPtr && t.stringPtrVal != nil {
+		return *t.stringPtrVal
 	}
 
+	// Use cached string if available and type hasn't changed (but not for string pointers)
+	if t.tmpStr != "" && t.lastConvType == t.vTpe && t.vTpe != typeStrPtr {
+		return t.tmpStr
+	}
 	// Convert to string using internal methods to avoid allocations
 	switch t.vTpe {
 	case typeStr:
 		t.tmpStr = t.stringVal
 	case typeStrPtr:
-		t.tmpStr = t.stringVal // Already stored during creation
+		// For string pointers, always get the current value from the pointer
+		if t.stringPtrVal != nil {
+			t.tmpStr = *t.stringPtrVal
+		} else {
+			t.tmpStr = t.stringVal // Fallback to stored value
+		}
 	case typeStrSlice:
 		if len(t.stringSliceVal) == 0 {
 			t.tmpStr = ""
@@ -313,7 +322,7 @@ func (t *conv) setString(s string) {
 	t.lastConvType = vTpe(0)
 }
 
-// joinSlice joins string slice with separator - optimized for minimal allocations
+// joinSlice joins string slice with separator - optimized using builder API
 func (t *conv) joinSlice(separator string) string {
 	if len(t.stringSliceVal) == 0 {
 		return ""
@@ -322,24 +331,17 @@ func (t *conv) joinSlice(separator string) string {
 		return t.stringSliceVal[0]
 	}
 
-	// Calculate total length to minimize allocations
-	tl := 0 // totalLen
-	for _, s := range t.stringSliceVal {
-		tl += len(s)
-	}
-	tl += len(separator) * (len(t.stringSliceVal) - 1)
-
-	// Build result string efficiently using slice of bytes
-	result := makeBuf(tl) // result
+	// Use builder API for zero-allocation string construction
+	c := Convert() // Empty initialization for builder pattern
 
 	for i, s := range t.stringSliceVal {
 		if i > 0 {
-			result = append(result, separator...)
+			c.Write(separator)
 		}
-		result = append(result, s...)
+		c.Write(s)
 	}
 
-	return string(result)
+	return c.String() // Auto-release to pool
 }
 
 // Internal conversion methods - centralized in conv to minimize allocations

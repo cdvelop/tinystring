@@ -22,6 +22,10 @@ func (t *conv) processWordForName(word string, wordIndex int, totalWords int, ma
 // eg: Convert("Hello, World!").Truncate(10, 3) => "Hell..."
 // eg: Convert("Hello").Truncate(10) => "Hello"
 func (t *conv) Truncate(maxWidth any, reservedChars ...any) *conv {
+	if t.err != "" {
+		return t // Error chain interruption
+	}
+
 	conv := t.getString()
 	oL := len(conv)
 	// Validate maxWidth parameter
@@ -64,7 +68,8 @@ func (t *conv) Truncate(maxWidth any, reservedChars ...any) *conv {
 		} else {
 			// Case 3: Ellipsis doesn't fit or reserved chars prevent it, just truncate
 			cTK := min(mWI, oL)
-			t.setString(conv[:cTK])
+			// Update buffer instead of using setString for buffer-first strategy
+			t.buf = append(t.buf[:0], conv[:cTK]...)
 		}
 	}
 
@@ -84,6 +89,10 @@ func (t *conv) Truncate(maxWidth any, reservedChars ...any) *conv {
 //   - Convert("Ana Maria Rodriguez").TruncateName(2, 10) => "An. Mar..."
 //   - Convert("Juan").TruncateName(3, 5) => "Juan"
 func (t *conv) TruncateName(maxCharsPerWord, maxWidth any) *conv {
+	if t.err != "" {
+		return t // Error chain interruption
+	}
+
 	if isEmptySt(t.getString()) {
 		return t
 	}
@@ -112,7 +121,8 @@ func (t *conv) TruncateName(maxCharsPerWord, maxWidth any) *conv {
 
 	// Step 2: Check if the processed result fits within maxWidth
 	if len(res) <= mT {
-		t.setString(res)
+		// Update buffer instead of using setString for buffer-first strategy
+		t.buf = append(t.buf[:0], res...)
 		return t
 	}
 
@@ -172,6 +182,7 @@ func (t *conv) applyMaxWidthConstraint(words []string, mC, mT int) *conv {
 	}
 	// Add the suffix
 	res += ellipsisStr
-	t.setString(res)
+	// Update buffer instead of using setString for buffer-first strategy
+	t.buf = append(t.buf[:0], res...)
 	return t
 }

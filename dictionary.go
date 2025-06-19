@@ -55,7 +55,7 @@ type dictionary struct {
 	Number           OL // "number"
 	Numbers          OL // "numbers"
 	Of               OL // "of"
-	One              OL // "one" 
+	One              OL // "one"
 	Only             OL // "only"
 	Overflow         OL // "overflow"
 	Range            OL // "range"

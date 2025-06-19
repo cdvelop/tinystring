@@ -3,7 +3,7 @@ package tinystring
 // T creates a translated string with support for multilingual translations
 // Same functionality as Err but returns string directly instead of *conv
 // This function is used internally by the builder API for efficient string construction
-// 
+//
 // Usage examples:
 // T(D.Invalid, D.Format) returns "invalid format"
 // T(ES, D.Invalid, D.Format) returns "formato inválido"
@@ -19,7 +19,7 @@ func T(values ...any) string {
 	// Check if first argument is a language selector
 	startIdx := 0
 	currentLang := defLang
-	
+
 	// Language detection - check if first value is a language
 	if len(values) > 0 {
 		if l, ok := values[0].(lang); ok {
@@ -33,7 +33,7 @@ func T(values ...any) string {
 		if i > startIdx {
 			c.buf = append(c.buf, ' ') // Add space between words
 		}
-		
+
 		switch v := values[i].(type) {
 		case OL:
 			// Dictionary term - get translation for current language

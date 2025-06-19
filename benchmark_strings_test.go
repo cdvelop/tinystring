@@ -128,3 +128,84 @@ func BenchmarkStringChains(b *testing.B) {
 		}
 	})
 }
+
+// BenchmarkBuilderOperations tests the new builder API performance
+func BenchmarkBuilderOperations(b *testing.B) {
+	b.Run("BuilderVsConcat", func(b *testing.B) {
+		words := []string{"hello", "tiny", "string", "builder", "performance"}
+
+		b.Run("BuilderPattern", func(b *testing.B) {
+			for i := 0; i < b.N; i++ {
+				c := Convert() // Empty initialization
+				for _, word := range words {
+					c.Write(word).Write(" ")
+				}
+				_ = c.String()
+			}
+		})
+
+		b.Run("MultipleAllocations", func(b *testing.B) {
+			for i := 0; i < b.N; i++ {
+				result := ""
+				for _, word := range words {
+					result += Convert(word).String() + " "
+				}
+				_ = result
+			}
+		})
+	})
+
+	b.Run("UnifiedWrite", func(b *testing.B) {
+		testValues := []any{"string", 42, 3.14, true, 'x'}
+
+		for i := 0; i < b.N; i++ {
+			c := Convert()
+			for _, val := range testValues {
+				c.Write(val).Write(" ")
+			}
+			_ = c.String()
+		}
+	})
+
+	b.Run("ChainedOperations", func(b *testing.B) {
+		for i := 0; i < b.N; i++ {
+			result := Convert("hello").ToUpper().Write(" WORLD").ToLower().String()
+			_ = result
+		}
+	})
+
+	b.Run("JoinSliceOptimization", func(b *testing.B) {
+		items := []string{"item1", "item2", "item3", "item4", "item5"}
+
+		for i := 0; i < b.N; i++ {
+			result := Convert(items).String()
+			_ = result
+		}
+	})
+}
+
+// BenchmarkHighDemandProcesses tests the critical optimization targets
+func BenchmarkHighDemandProcesses(b *testing.B) {
+	b.Run("TransformationChains", func(b *testing.B) {
+		testStr := "Hello World Testing String"
+
+		for i := 0; i < b.N; i++ {
+			result := Convert(testStr).ToLower().Capitalize().ToUpper().String()
+			_ = result
+		}
+	})
+
+	b.Run("FormatOperations", func(b *testing.B) {
+		for i := 0; i < b.N; i++ {
+			result := Fmt("User %s has %d messages with %.2f%% completion", "Alice", 42, 85.5).String()
+			_ = result
+		}
+	})
+
+	b.Run("ErrorMessageConstruction", func(b *testing.B) {
+		for i := 0; i < b.N; i++ {
+			result := Err("Operation failed for user", "Alice", "with error code", 500).String()
+			_ = result
+		}
+	})
+}

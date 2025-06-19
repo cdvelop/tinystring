@@ -97,16 +97,26 @@ func toLowerRune(r rune) rune {
 
 // RemoveTilde removes accents and diacritics using index-based lookup
 func (t *conv) RemoveTilde() *conv {
-	str, buf := t.newBuf(2)
-	hc := false
+	// Check for error chain interruption
+	if t.err != "" {
+		return t
+	}
+
+	str := t.getString()
+	if isEmptySt(str) {
+		return t
+	}
+
+	// Use buffer-first strategy
+	tempBuf := make([]byte, 0, len(str)*2)
+
 	for _, r := range str {
 		// Find accent and replace with base character using index lookup
 		found := false
 		// Check lowercase accents
 		for i, char := range aL {
 			if r == char {
-				buf = addRne2Buf(buf, bL[i])
-				hc = true
+				tempBuf = addRne2Buf(tempBuf, bL[i])
 				found = true
 				break
 			}
@@ -115,20 +125,22 @@ func (t *conv) RemoveTilde() *conv {
 		if !found {
 			for i, char := range aU {
 				if r == char {
-					buf = addRne2Buf(buf, bU[i])
-					hc = true
+					tempBuf = addRne2Buf(tempBuf, bU[i])
 					found = true
 					break
 				}
 			}
 		}
 		if !found {
-			buf = addRne2Buf(buf, r)
+			tempBuf = addRne2Buf(tempBuf, r)
 		}
 	}
-	if !hc {
-		return t
-	}
-	t.setString(string(buf))
+
+	// Always update the buffer, even if no changes were made
+	// This ensures consistency with buffer-first strategy
+	t.buf = t.buf[:0]
+	t.buf = append(t.buf, tempBuf...)
+	t.setStringFromBuffer()
+
 	return t
 }
