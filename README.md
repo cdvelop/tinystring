@@ -579,21 +579,21 @@ tinystring.Convert(&originalText).RemoveTilde().ToLower().Apply()
 [Standard Library Example](benchmark/bench-binary-size/standard-lib/main.go) | [TinyString Example](benchmark/bench-binary-size/tinystring-lib/main.go)
 
 <!-- This table is automatically generated from build-and-measure.sh -->
-*Last updated: 2025-06-19 17:11:03*
+*Last updated: 2025-06-19 17:58:27*
 
 | Build Type | Parameters | Standard Library<br/>`go build` | TinyString<br/>`tinygo build` | Size Reduction | Performance |
 |------------|------------|------------------|------------|----------------|-------------|
-| 🖥️ **Default Native** | `-ldflags="-s -w"` | 1.3 MB | 1.1 MB | **-185.0 KB** | ➖ **14.1%** |
-| 🌐 **Default WASM** | `(default -opt=z)` | 580.8 KB | 271.4 KB | **-309.4 KB** | ✅ **53.3%** |
+| 🖥️ **Default Native** | `-ldflags="-s -w"` | 1.3 MB | 1.1 MB | **-184.5 KB** | ➖ **14.0%** |
+| 🌐 **Default WASM** | `(default -opt=z)` | 580.8 KB | 271.2 KB | **-309.7 KB** | ✅ **53.3%** |
 | 🌐 **Ultra WASM** | `-no-debug -panic=trap -scheduler=none -gc=leaking -target wasm` | 141.3 KB | 36.5 KB | **-104.8 KB** | 🏆 **74.2%** |
-| 🌐 **Speed WASM** | `-opt=2 -target wasm` | 827.0 KB | 338.2 KB | **-488.8 KB** | ✅ **59.1%** |
-| 🌐 **Debug WASM** | `-opt=0 -target wasm` | 1.8 MB | 936.5 KB | **-896.1 KB** | ✅ **48.9%** |
+| 🌐 **Speed WASM** | `-opt=2 -target wasm` | 827.0 KB | 338.9 KB | **-488.0 KB** | ✅ **59.0%** |
+| 🌐 **Debug WASM** | `-opt=0 -target wasm` | 1.8 MB | 942.1 KB | **-890.5 KB** | ✅ **48.6%** |
 
 ### 🎯 Performance Summary
 
 - 🏆 **Peak Reduction: 74.2%** (Best optimization)
-- ✅ **Average WebAssembly Reduction: 58.9%**
-- ✅ **Average Native Reduction: 14.1%**
+- ✅ **Average WebAssembly Reduction: 58.8%**
+- ✅ **Average Native Reduction: 14.0%**
 - 📦 **Total Size Savings: 1.9 MB across all builds**
 
 #### Performance Legend
@@ -608,18 +608,18 @@ tinystring.Convert(&originalText).RemoveTilde().ToLower().Apply()
 [Standard Library Example](benchmark/bench-memory-alloc/standard) | [TinyString Example](benchmark/bench-memory-alloc/tinystring)
 
 <!-- This table is automatically generated from memory-benchmark.sh -->
-*Last updated: 2025-06-19 17:11:21*
+*Last updated: 2025-06-19 17:58:45*
 
 Performance benchmarks comparing memory allocation patterns between standard Go library and TinyString:
 
 | 🧪 **Benchmark Category** | 📚 **Library** | 💾 **Memory/Op** | 🔢 **Allocs/Op** | ⏱️ **Time/Op** | 📈 **Memory Trend** | 🎯 **Alloc Trend** | 🏆 **Performance** |
 |----------------------------|----------------|-------------------|-------------------|-----------------|---------------------|---------------------|--------------------|
 | 📝 **String Processing** | 📊 Standard | `1.2 KB` | `48` | `3.4μs` | - | - | - |
-| | 🚀 TinyString | `2.8 KB` | `119` | `14.3μs` | ❌ **140.3% more** | ❌ **147.9% more** | ❌ **Poor** |
+| | 🚀 TinyString | `2.8 KB` | `119` | `15.4μs` | ❌ **140.3% more** | ❌ **147.9% more** | ❌ **Poor** |
 | 🔢 **Number Processing** | 📊 Standard | `912 B` | `42` | `2.6μs` | - | - | - |
-| | 🚀 TinyString | `4.4 KB` | `88` | `6.3μs` | ❌ **389.8% more** | ❌ **109.5% more** | ❌ **Poor** |
+| | 🚀 TinyString | `4.4 KB` | `88` | `6.1μs` | ❌ **389.8% more** | ❌ **109.5% more** | ❌ **Poor** |
 | 🔄 **Mixed Operations** | 📊 Standard | `512 B` | `26` | `1.9μs` | - | - | - |
-| | 🚀 TinyString | `1.7 KB` | `54` | `5.5μs` | ❌ **243.9% more** | ❌ **107.7% more** | ❌ **Poor** |
+| | 🚀 TinyString | `1.7 KB` | `54` | `5.9μs` | ❌ **243.9% more** | ❌ **107.7% more** | ❌ **Poor** |
 
 ### 🎯 Performance Summary
 

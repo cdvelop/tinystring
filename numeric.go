@@ -392,7 +392,7 @@ func (t *conv) ToFloat() (float64, error) {
 // This unified method handles both int and int64 conversions.
 func (t *conv) s2IntGeneric(base int) {
 	inp := t.getString()
-	if isEmptySt(inp) {
+	if len(inp) == 0 {
 		return
 	}
 
@@ -421,7 +421,7 @@ func (t *conv) s2IntGeneric(base int) {
 // s2Uint converts string to uint with specified base and stores in conv struct.
 // This is an internal conv method that modifies the struct instead of returning values.
 func (t *conv) s2Uint(input string, base int) {
-	if isEmptySt(input) {
+	if len(input) == 0 {
 		return
 	}
 	if input[0] == '-' {
@@ -438,7 +438,7 @@ func (t *conv) s2Uint(input string, base int) {
 // This is an internal conv method that modifies the struct instead of returning values.
 func (t *conv) s2Float() {
 	inp := t.getString()
-	if isEmptySt(inp) {
+	if len(inp) == 0 {
 		return
 	}
 	isNeg := false

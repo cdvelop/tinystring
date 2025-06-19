@@ -4,7 +4,7 @@ package tinystring
 // Example: Quote("hello \"world\"") returns "\"hello \\\"world\\\"\""
 func (t *conv) Quote() *conv {
 	inp := t.getString()
-	if isEmptySt(inp) {
+	if len(inp) == 0 {
 		t.setString(quoteStr)
 		return t
 	}

@@ -23,7 +23,7 @@ func Split(data string, separator ...string) (result []string) {
 	}
 
 	// Handle empty separator
-	if isEmptySt(sep) {
+	if len(sep) == 0 {
 		// Phase 11: Optimized character splitting
 		return splitByCharacter(data)
 	}

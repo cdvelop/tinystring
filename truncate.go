@@ -82,7 +82,7 @@ func (t *conv) TruncateName(maxCharsPerWord, maxWidth any) *conv {
 		return t // Error chain interruption
 	}
 
-	if isEmptySt(t.getString()) {
+	if len(t.getString()) == 0 {
 		return t
 	}
 	// Validate parameters

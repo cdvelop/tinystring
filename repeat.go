@@ -16,7 +16,7 @@ func (t *conv) Repeat(n int) *conv {
 	}
 
 	str, buf := t.newBuf(n)
-	if isEmptySt(str) {
+	if len(str) == 0 {
 		// Clear both buffer and stringVal for empty result
 		t.buf = t.buf[:0]
 		t.stringVal = ""

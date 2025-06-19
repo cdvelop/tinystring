@@ -15,9 +15,17 @@ func (t *conv) Join(sep ...string) *conv {
 	if t.vTpe == typeStrSlice {
 		if len(t.stringSliceVal) == 0 {
 			t.setString("")
+		} else if len(t.stringSliceVal) == 1 {
+			t.setString(t.stringSliceVal[0])
 		} else {
-			result := t.joinSlice(separator)
-			t.setString(result)
+			c := Convert()
+			for i, s := range t.stringSliceVal {
+				if i > 0 {
+					c.Write(separator)
+				}
+				c.Write(s)
+			}
+			t.setString(c.String())
 		}
 		return t
 	}

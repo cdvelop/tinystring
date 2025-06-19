@@ -4,7 +4,7 @@ package tinystring
 // eg: "hello world" with search "world" will return 1
 func CountOccurrences(conv, search string) int {
 	// If the search string is empty, there can be no matches
-	if isEmptySt(search) {
+	if len(search) == 0 {
 		return 0
 	}
 
@@ -30,7 +30,7 @@ func CountOccurrences(conv, search string) int {
 // This matches the behavior of the standard library strings.Contains
 func Contains(conv, search string) bool {
 	// If the search string is empty, it's not contained
-	if isEmptySt(search) {
+	if len(search) == 0 {
 		return false
 	}
 

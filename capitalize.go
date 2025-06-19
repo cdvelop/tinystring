@@ -6,7 +6,7 @@ package tinystring
 // For example: "  hello   world  " -> "Hello World"
 func (t *conv) Capitalize() *conv {
 	str := t.getString()
-	if isEmptySt(str) {
+	if len(str) == 0 {
 		return t
 	}
 
@@ -66,7 +66,7 @@ func (t *conv) changeCase(toLower bool) *conv {
 	}
 
 	str := t.getString()
-	if isEmptySt(str) {
+	if len(str) == 0 {
 		return t
 	}
 
@@ -135,7 +135,7 @@ func (t *conv) toCaseTransformMinimal(firstWordLower bool, separator string) *co
 	}
 
 	str := t.getString()
-	if isEmptySt(str) {
+	if len(str) == 0 {
 		return t
 	} // Pre-allocate buffer with estimated size
 	eSz := len(str) + (len(separator) * 5) // Extra space for separators

@@ -18,7 +18,7 @@ func (t *conv) Replace(oldAny, newAny any, n ...int) *conv {
 
 	// Convert parameters to strings using the consistent Convert pattern
 	str := t.getString()
-	if isEmptySt(old) || isEmptySt(str) {
+	if len(old) == 0 || len(str) == 0 {
 		return t
 	}
 
@@ -103,7 +103,7 @@ func (t *conv) Trim() *conv {
 	}
 
 	str := t.getString()
-	if isEmptySt(str) {
+	if len(str) == 0 {
 		return t
 	}
 

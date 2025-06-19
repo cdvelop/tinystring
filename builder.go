@@ -143,7 +143,20 @@ func (c *conv) handleStringSlice(val []string, mode cm) {
 			c.buf = append(c.buf, s...)
 		}
 	case ma: // Any mode
-		c.tmpStr = c.joinSlice(" ")
+		if len(c.stringSliceVal) == 0 {
+			c.tmpStr = ""
+		} else if len(c.stringSliceVal) == 1 {
+			c.tmpStr = c.stringSliceVal[0]
+		} else {
+			tmp := Convert()
+			for i, s := range c.stringSliceVal {
+				if i > 0 {
+					tmp.Write(" ")
+				}
+				tmp.Write(s)
+			}
+			c.tmpStr = tmp.String()
+		}
 	}
 }
 

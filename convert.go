@@ -221,9 +221,18 @@ func (t *conv) getString() string {
 	case typeStrSlice:
 		if len(t.stringSliceVal) == 0 {
 			t.tmpStr = ""
+		} else if len(t.stringSliceVal) == 1 {
+			t.tmpStr = t.stringSliceVal[0]
 		} else {
-			// Join with space as default - use internal method
-			t.tmpStr = t.joinSlice(" ")
+			// Use builder API for zero-allocation string construction
+			c := Convert() // Empty initialization for builder pattern
+			for i, s := range t.stringSliceVal {
+				if i > 0 {
+					c.Write(" ")
+				}
+				c.Write(s)
+			}
+			t.tmpStr = c.String() // Auto-release to pool
 		}
 	case typeInt:
 		// Use internal method instead of external function
@@ -285,28 +294,6 @@ func (t *conv) setString(s string) {
 	// Invalidate cache since we changed the string
 	t.tmpStr = ""
 	t.lastConvType = vTpe(0)
-}
-
-// joinSlice joins string slice with separator - optimized using builder API
-func (t *conv) joinSlice(separator string) string {
-	if len(t.stringSliceVal) == 0 {
-		return ""
-	}
-	if len(t.stringSliceVal) == 1 {
-		return t.stringSliceVal[0]
-	}
-
-	// Use builder API for zero-allocation string construction
-	c := Convert() // Empty initialization for builder pattern
-
-	for i, s := range t.stringSliceVal {
-		if i > 0 {
-			c.Write(separator)
-		}
-		c.Write(s)
-	}
-
-	return c.String() // Auto-release to pool
 }
 
 // Internal conversion methods - centralized in conv to minimize allocations

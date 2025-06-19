@@ -23,12 +23,6 @@ const (
 	defaultBufCap = 16 // default buffer size
 )
 
-// Helper function to check if error is empty (reduces repeated == "" checks)
-// Helper function to check if string is empty (reduces repeated len() calls)
-func isEmptySt(s string) bool {
-	return len(s) == 0
-}
-
 // Index-based character mapping for maximum efficiency
 var (
 	// Accented characters (lowercase)
@@ -79,7 +73,7 @@ func (t *conv) RemoveTilde() *conv {
 	}
 
 	str := t.getString()
-	if isEmptySt(str) {
+	if len(str) == 0 {
 		return t
 	}
 

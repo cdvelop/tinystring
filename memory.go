@@ -206,7 +206,7 @@ func putRuneBuffer(buf *[]rune) {
 // newBuf creates an optimally-sized buffer for common string operations
 func (t *conv) newBuf(sizeMultiplier int) (string, []byte) {
 	str := t.getString()
-	if isEmptySt(str) {
+	if len(str) == 0 {
 		return str, nil
 	}
 	bufSize := len(str) * sizeMultiplier
