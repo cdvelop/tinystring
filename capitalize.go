@@ -110,12 +110,22 @@ func (t *conv) CamelCaseUpper() *conv {
 //
 // ToSnakeCaseLower converts conv to snake_case format
 func (t *conv) ToSnakeCaseLower(sep ...string) *conv {
-	return t.toCaseTransformMinimal(true, t.separatorCase(sep...))
+	// Inline separatorCase logic
+	t.separator = "_" // underscore default
+	if len(sep) > 0 {
+		t.separator = sep[0]
+	}
+	return t.toCaseTransformMinimal(true, t.separator)
 }
 
 // ToSnakeCaseUpper converts conv to Snake_Case format
 func (t *conv) ToSnakeCaseUpper(sep ...string) *conv {
-	return t.toCaseTransformMinimal(false, t.separatorCase(sep...))
+	// Inline separatorCase logic
+	t.separator = "_" // underscore default
+	if len(sep) > 0 {
+		t.separator = sep[0]
+	}
+	return t.toCaseTransformMinimal(false, t.separator)
 }
 
 // Minimal implementation without pools or builders - optimized for minimal allocations
@@ -127,17 +137,20 @@ func (t *conv) toCaseTransformMinimal(firstWordLower bool, separator string) *co
 	str := t.getString()
 	if isEmptySt(str) {
 		return t
-	}
-	// Pre-allocate buffer with estimated size
+	} // Pre-allocate buffer with estimated size
 	eSz := len(str) + (len(separator) * 5) // Extra space for separators
 	result := makeBuf(eSz)
 	// Advanced word boundary detection for camelCase and snake_case
 	wordIndex := 0
 	var pWU, pWL, pWD, pWS bool
 	for i, r := range str {
-		cIU := isLetter(r) && isUpper(r)
-		cIL := isLetter(r) && isLower(r)
-		cID := isDigit(r)
+		// Inline isLetter logic
+		isLetterR := (r >= 'a' && r <= 'z') || (r >= 'A' && r <= 'Z') ||
+			(r >= 'À' && r <= 'ÿ' && r != 'x' && r != '÷')
+		cIU := isLetterR && isUpper(r)
+		cIL := isLetterR && isLower(r)
+		// Inline isDigit logic
+		cID := r >= '0' && r <= '9'
 		cIS := r == ' ' || r == '\t' || r == '\n' || r == '\r'
 
 		// Determine if we're starting a new word

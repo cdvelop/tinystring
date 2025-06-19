@@ -63,7 +63,8 @@ func Convert(v ...any) *conv {
 		// Inlined withValue logic for performance
 		val := v[0]
 		if val == nil {
-			c.setErrorVal(Err(D.String, D.Empty).err)
+			c.err = Err(D.String, D.Empty).err
+			c.vTpe = typeErr
 		} else {
 			switch typedVal := val.(type) {
 			case string:
@@ -77,9 +78,11 @@ func Convert(v ...any) *conv {
 				c.stringPtrVal = typedVal
 				c.vTpe = typeStrPtr
 			case bool:
-				c.setBoolVal(typedVal)
+				c.boolVal = typedVal
+				c.vTpe = typeBool
 			case error:
-				c.setErrorVal(typedVal.Error())
+				c.err = typedVal.Error()
+				c.vTpe = typeErr
 			default:
 				// Handle numeric types using generics
 				c.handleAnyType(typedVal)
@@ -126,26 +129,6 @@ func genFloat[T anyFloat](c *conv, v T, op int) {
 	case 2:
 		c.f2sMan(-1) // format
 	}
-}
-
-// setBoolVal sets the bool value and updates the vTpe
-func (c *conv) setBoolVal(val bool) {
-	c.boolVal = val
-	c.vTpe = typeBool
-}
-
-// setErrorVal sets the error message and updates the vTpe
-func (c *conv) setErrorVal(val string) {
-	c.err = val
-	c.vTpe = typeErr
-}
-
-func (t *conv) separatorCase(sep ...string) string {
-	t.separator = "_" // underscore default
-	if len(sep) > 0 {
-		t.separator = sep[0]
-	}
-	return t.separator
 }
 
 // Apply updates the original string pointer with the current content and auto-releases to pool.
@@ -195,16 +178,6 @@ type customError struct {
 
 func (e *customError) Error() string {
 	return e.message
-}
-
-// Helper function to check if a rune is a digit
-func isDigit(r rune) bool {
-	return r >= '0' && r <= '9'
-}
-
-func isLetter(r rune) bool {
-	return (r >= 'a' && r <= 'z') || (r >= 'A' && r <= 'Z') ||
-		(r >= 'À' && r <= 'ÿ' && r != 'x' && r != '÷')
 }
 
 // getString converts the current value to string only when needed

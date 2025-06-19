@@ -67,22 +67,10 @@ func parseSmallInt(s string) (int, error) {
 
 // Shared helper methods to reduce code duplication between numeric.go and format.go
 
-// saveState saves the current string value and type for later restoration
-func (t *conv) saveState() (string, vTpe) {
-	return t.stringVal, t.vTpe
-}
-
-// restoreState restores previously saved string value and type
-func (t *conv) restoreState(savedVal string, savedType vTpe) {
-	t.stringVal = savedVal
-	t.vTpe = savedType
-	t.err = "" // Reset error when restoring state
-}
-
 // tryParseAs attempts to parse content as the specified numeric type with fallback to float
 func (t *conv) tryParseAs(parseType vTpe, base int) bool {
-	// Save original state
-	oSV, oVT := t.saveState()
+	// Save original state (inline saveState)
+	oSV, oVT := t.stringVal, t.vTpe
 	// Try direct parsing based on type
 	switch parseType {
 	case typeInt:
@@ -100,7 +88,10 @@ func (t *conv) tryParseAs(parseType vTpe, base int) bool {
 	if base != 10 && len(oSV) > 0 && oSV[0] == '-' {
 		return false
 	} // If that fails, restore state and try to parse as float then convert
-	t.restoreState(oSV, oVT)
+	// Inline restoreState logic
+	t.stringVal = oSV
+	t.vTpe = oVT
+	t.err = "" // Reset error when restoring state
 	t.s2Float()
 	if t.err == "" {
 		switch parseType {
@@ -119,15 +110,6 @@ func (t *conv) tryParseAs(parseType vTpe, base int) bool {
 	}
 
 	return false
-}
-
-// validateBase validates that base is within acceptable range (2-36)
-func (t *conv) validateBase(base int) bool {
-	if base < 2 || base > 36 {
-		t.err = T(D.Base, D.Invalid)
-		return false
-	}
-	return true
 }
 
 // ToInt converts the conv content to an integer with optional base specification.
@@ -532,7 +514,9 @@ func (t *conv) s2Float() {
 // Phase 8.5 Architecture: Use common number cache + optimized byte access
 func (t *conv) s2n(base int) {
 	inp := t.getString()
-	if !t.validateBase(base) {
+	// Inline validateBase logic
+	if base < 2 || base > 36 {
+		t.err = T(D.Base, D.Invalid)
 		return
 	} // Phase 11: Extended fast path for common numbers (0-99999) in base 10
 	if base == 10 && len(inp) <= 5 && len(inp) > 0 {

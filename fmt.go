@@ -565,8 +565,9 @@ func (c *conv) i2sBase(base int) {
 		number = -number
 	}
 
-	if !c.validateBase(base) {
-		c.err = T(D.Invalid, D.Base)
+	// Inline validateBase logic
+	if base < 2 || base > 36 {
+		c.err = T(D.Base, D.Invalid)
 		return
 	}
 

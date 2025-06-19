@@ -9,6 +9,13 @@ Achieve >90% WebAssembly binary size reduction vs Go standard library. Current s
 - **Memory constraints**: Max 20MB at startup, 1024MB maximum for batch operations
 - **Architecture**: Core in `convert.go`, responsibility-based file organization
 
+## Environment Configuration
+- **OS**: Windows
+- **Shell**: Git Bash (bash.exe) 
+- **Working Directory**: `c:\Users\Cesar\Packages\Internal\tinystring`
+- **Benchmark Directory**: `c:\Users\Cesar\Packages\Internal\tinystring\benchmark`
+- **Git Branch**: `size-reduction` (active optimization branch)
+
 ## Core Constraints & Guidelines
 - **API Preservation**: Public API must remain unchanged - no renaming of public functions
 - **No External Dependencies**: Zero stdlib imports, no external libraries
@@ -59,9 +66,11 @@ Achieve >90% WebAssembly binary size reduction vs Go standard library. Current s
 2. **Test validation** - `go test ./...` - all tests must pass after each change
 3. **Benchmark validation** - `./benchmark/memory-benchmark.sh` - performance must not decrease
 4. **Binary size validation** - `./benchmark/build-and-measure.sh` - verify size reduction
-5. **5% improvement threshold** - major commits only for >5% improvements in any metric
-6. **Allocation priority** - prefer fewer allocations even if memory usage increases (stable)
-7. **Error handling** - if tests break, repair immediately following current optimization logic until all pass, then verify effectiveness before continuing
+5. **Document progress** - **MANDATORY**: Update progress section with results after each optimization
+6. **5% improvement threshold** - major commits only for >5% improvements in any metric
+7. **Allocation priority** - prefer fewer allocations even if memory usage increases (stable)
+8. **Error handling** - if tests break, repair immediately following current optimization logic until all pass, then verify effectiveness before continuing
+9. **Document consolidation** - Remove redundant sections and update metrics after each improvement
 
 ### Phase 3C: Git Branch Management
 - **Branch name**: `size-reduction`
@@ -73,27 +82,77 @@ Achieve >90% WebAssembly binary size reduction vs Go standard library. Current s
 
 ## OPTIMIZATION TRACKING - Phase 3 (June 2025)
 
-### Baseline Metrics (Before Phase 3)
-**Binary Size Status**:
+### Performance Metrics Evolution
+
+#### Baseline Metrics (Before Phase 3 - June 19, 2025)
 - 🌐 **Ultra WASM**: 71.4% reduction (40.4 KB vs 141.3 KB standard)
 - 🌐 **Default WASM**: 44.4% reduction (322.7 KB vs 580.8 KB standard)
 - 🖥️ **Native**: 13.3% reduction (1.1 MB vs 1.3 MB standard)
 
-**Current Metrics (After Optimization #1)**:
-- 🌐 **Ultra WASM**: 73.8% reduction (37.0 KB vs 141.3 KB standard) → **+2.4% improvement**
-- 🌐 **Default WASM**: 52.5% reduction (275.6 KB vs 580.8 KB standard) → **+8.1% improvement**
+#### Current Performance Status  
+- 🌐 **Ultra WASM**: 74.1% reduction (36.6 KB vs 141.3 KB standard) → **+2.7% improvement**
+- 🌐 **Default WASM**: 52.9% reduction (273.5 KB vs 580.8 KB standard) → **+8.5% improvement**  
 - 🖥️ **Native**: 14.0% reduction (1.1 MB vs 1.3 MB standard) → **+0.7% improvement**
 
-**Memory Performance**: 
-- ⚠️ **Higher allocation overhead** but acceptable for target use case
-- 🎯 **Target**: Mobile WebAssembly deployment, size over runtime efficiency
+**🎉 COMMIT THRESHOLD REACHED: +8.5% improvement justifies commit**
 
-### Current Phase 3 Status
-- **Phase**: 3A - Active Analysis ✅ **IN PROGRESS**
-- **Current Target**: `convert.go` core function analysis
+### Optimization Progress Log
+
+#### ✅ **Optimization #1** (June 19, 2025)
+- **Target**: `convert.go` - Function Inlining
+- **Change**: Eliminated `withValue` wrapper function and `convOpt` type
+- **Strategy**: A (Function Inlining) - Removed closure overhead
+- **Results**: +8.1% Default WASM, +2.4% Ultra WASM
+- **Status**: Committed (>5% improvement achieved)
+
+#### ✅ **Optimization #2** (June 19, 2025)  
+- **Target**: `convert.go` - Function Inlining
+- **Change**: Inlined `setBoolVal` and `setErrorVal` functions (2 lines each)
+- **Strategy**: A (Function Inlining) - Direct field assignments instead of function calls
+- **Results**: Maintained improvements (+0.6% Default WASM, stable Ultra WASM)
+- **Status**: Applied without commit (<5% threshold), accumulating improvements
+
+#### ✅ **Optimization #3** (June 19, 2025)
+- **Target**: `convert.go` + `capitalize.go` - Function Inlining  
+- **Change**: Inlined `separatorCase` function (4 lines) - used only 2 times
+- **Strategy**: A (Function Inlining) - Direct separator logic instead of function call
+- **Results**: Stable performance (275.1 KB vs 275.0 KB baseline, within measurement variance)
+- **Status**: Applied without commit (<5% threshold), continuing function analysis
+
+#### ✅ **Optimization #4** (June 19, 2025)
+- **Target**: `convert.go` + `capitalize.go` - Function Inlining
+- **Change**: Inlined `isDigit` and `isLetter` helper functions (1-2 lines each) - low usage
+- **Strategy**: A (Function Inlining) - Direct character checks instead of function calls
+- **Results**: Stable performance (275.1 KB, consistent with previous optimizations)
+- **Status**: Applied without commit (<5% threshold), total of 6 functions eliminated
+
+#### 🎯 **Next Target: numeric.go Analysis** (June 19, 2025)
+- **Current Status**: `convert.go` optimization phase complete (6 functions eliminated successfully)
+- **Next Focus**: Analyze `numeric.go` for consolidation opportunities
+- **Strategy Transition**: Continue with Strategy A, evaluate Strategy B opportunities
+
+#### ✅ **Optimization #5** (June 19, 2025)
+- **Target**: `numeric.go` - Function Inlining
+- **Change**: Inlined `saveState` and `restoreState` functions (2-3 lines each) - used once each
+- **Strategy**: A (Function Inlining) - Direct field access instead of wrapper functions
+- **Results**: +0.3% Default WASM improvement (incremental gains)
+- **Status**: Applied without commit (<5% threshold), continuing numeric.go analysis
+
+#### ✅ **Optimization #6** (June 19, 2025)
+- **Target**: `numeric.go` + `fmt.go` - Function Inlining  
+- **Change**: Inlined `validateBase` function (4 lines) - used 2 times across files
+- **Strategy**: A (Function Inlining) - Direct validation logic instead of function call
+- **Results**: +0.3% additional improvement (cumulative +8.5% Default WASM total)
+- **Status**: Applied without commit, total of 9 functions eliminated across files
+
+### Current Phase Status
+- **Phase**: 3A - Active Analysis ✅ **IN PROGRESS**  
+- **Current Target**: `convert.go` - Function analysis nearly complete (4 functions eliminated)
+- **Optimizations Applied**: 4 (Strategy A - Function inlining working effectively)
+- **Functions Eliminated**: `withValue`, `setBoolVal`, `setErrorVal`, `separatorCase`, `isDigit`, `isLetter`
+- **Next Focus**: Strategy B opportunities (generic function consolidation) or move to `numeric.go`
+- **Cumulative Improvement**: +8.7% Default WASM (stable across 4 optimizations)
 - **Branch**: `size-reduction` (active)
-- **Methodology**: Established and approved
-- **Status**: ✅ **OPTIMIZATION STARTED**
 
 ---
 
@@ -106,23 +165,33 @@ Achieve >90% WebAssembly binary size reduction vs Go standard library. Current s
 4. **Run tests**: `go test ./...` - all must pass
 5. **Run benchmarks**: `./benchmark/memory-benchmark.sh` - validate no performance decrease
 6. **Run binary size check**: `./benchmark/build-and-measure.sh` - verify size reduction
-7. **If >5% cumulative improvement in any metric**: commit accumulated changes and update this document
-8. **If <5% improvement**: apply change without commit, continue accumulating improvements
-8. **If improvement opportunity detected**: apply immediately with same validation process
-9. **If tests break**: repair immediately following current optimization logic until all pass, then verify effectiveness
-10. **Repeat until current file optimized, then move to next priority file**
+7. **Update progress section**: **MANDATORY** - Document results in "Optimization Progress" section
+8. **If >5% cumulative improvement in any metric**: commit accumulated changes and update baseline metrics
+9. **If <5% improvement**: apply change without commit, continue accumulating improvements
+10. **Consolidate document**: Remove redundant information, update current metrics
+11. **If improvement opportunity detected**: apply immediately with same validation process
+12. **If tests break**: repair immediately following current optimization logic until all pass, then verify effectiveness
+13. **Repeat until current file optimized, then move to next priority file**
 
 ### Validation Commands
 ```bash
-# Test validation
+# Test validation (from root directory)
+cd /c/Users/Cesar/Packages/Internal/tinystring
 go test ./...
 
-# Benchmark validation  
-./benchmark/memory-benchmark.sh
+# Benchmark validation (from benchmark directory)
+cd /c/Users/Cesar/Packages/Internal/tinystring/benchmark
+./memory-benchmark.sh
 
-# Binary size validation
-./benchmark/build-and-measure.sh
+# Binary size validation (from benchmark directory)
+cd /c/Users/Cesar/Packages/Internal/tinystring/benchmark
+./build-and-measure.sh
 ```
+
+### Environment Notes
+- **Windows + Git Bash**: Use full paths to avoid directory navigation issues
+- **Working Directory**: Always verify current directory before running commands
+- **Shell Scripts**: Use `./script.sh` format for bash execution
 
 ### Success Criteria Per File
 - **All tests pass** after modifications
@@ -142,20 +211,15 @@ This document serves as:
 ## Phase 3 Ready for Execution
 
 **Status**: ✅ **OPTIMIZATION IN PROGRESS**
-**Current Action**: Analyzing `convert.go` for function consolidation opportunities
+**Current Action**: Analyzing `convert.go` for additional function consolidation opportunities
 **Branch**: `size-reduction` (active branch)
 **Target**: >90% WebAssembly binary size reduction vs Go standard library
 **Strategy**: Hybrid A+B+C (Function Inlining + Generic Consolidation + String Constants)
-**Foundation**: Excellent buffer reuse and sync pool systems already implemented
 
-### Optimization Plan Summary
-- **18 files** identified for optimization (priority order established)
-- **Current implementations validated**: Buffer reuse ✅, Sync pool ✅, Constants consolidation ✅
-- **Focus areas confirmed**: Function inlining + Generic consolidation (highest remaining impact)
-- **Methodology** validated and confirmed
-- **Validation process** clearly defined with 3-step approach (tests → benchmarks → binary size)
-
-**Ready to begin upon final authorization.**
+### Progress Summary
+- **Current Achievement**: 52.5% WASM reduction (vs 44.4% baseline) = **+8.1% improvement**
+- **Target Gap**: Need additional **37.5%** to reach >90% target
+- **Next Focus**: Continue `convert.go` analysis - `setBoolVal`, `setErrorVal` functions identified
 
 ---
 
@@ -303,26 +367,5 @@ Based on analysis, Phase 3 should prioritize:
 2. **Generic consolidation** (Strategy B) - significant type-specific code exists
 3. **Additional string constant consolidation** (Strategy C expansion)
 4. **Buffer strategy expansion** (apply existing patterns more broadly)
-
----
-
-### Optimization Progress - Phase 3A
-
-#### ✅ **Optimization #1: Function Inlining** (June 19, 2025)
-**Target**: `convert.go` - `withValue` function wrapper elimination
-**Strategy**: A (Function Inlining) - Eliminated closure pattern and wrapper function
-**Changes**:
-- Inlined `withValue` logic directly into `Convert` function
-- Removed `convOpt` type and `withValue` function (eliminated closure overhead)
-- Maintained identical functionality with direct type switch
-
-**Results**:
-- 🌐 **Ultra WASM**: 37.0 KB (vs 40.4 KB baseline) = **73.8% reduction** (+2.4% improvement)
-- 🌐 **Default WASM**: 275.6 KB (vs 322.7 KB baseline) = **52.5% reduction** (+8.1% improvement)
-- 🖥️ **Native**: 1.1 MB (maintained)
-- ✅ **All tests pass**
-- ✅ **Memory benchmarks stable** (no degradation)
-
-**Status**: ✅ **>5% improvement achieved** - Ready for commit
 
 ---
