@@ -5,8 +5,8 @@ package tinystring
 // This function is used internally by the builder API for efficient string construction
 //
 // Usage examples:
-// T(D.Invalid, D.Format) returns "invalid format"
-// T(ES, D.Invalid, D.Format) returns "formato inválido"
+// T(D.Format, D.Invalid) returns "invalid format"
+// T(ES, D.Format, D.Invalid) returns "formato inválido"
 func T(values ...any) string {
 	if len(values) == 0 {
 		return ""
@@ -35,7 +35,7 @@ func T(values ...any) string {
 		}
 
 		switch v := values[i].(type) {
-		case OL:
+		case LocStr:
 			// Dictionary term - get translation for current language
 			translation := v.get(currentLang)
 			c.buf = append(c.buf, translation...)

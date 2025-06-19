@@ -21,7 +21,7 @@ func ParseKeyValue(in string, delimiters ...string) (value string, err error) {
 	// Check for a custom delimiter
 	if hasLength(delimiters) {
 		if len(delimiters) > 1 {
-			return "", Err(D.Fmt, D.Invalid, "only one delimiter is allowed")
+			return "", Err(D.Format, D.Invalid, 1, D.Delimiter, D.Allowed)
 		}
 		if delimiters[0] != "" {
 			d = delimiters[0]
@@ -35,13 +35,7 @@ func ParseKeyValue(in string, delimiters ...string) (value string, err error) {
 
 	// Check if delimiter exists in the in
 	if !Contains(in, d) {
-		// Use buffer for error message instead of string concatenation
-		buf := makeBuf(len("delimiter '") + len(d) + len("' not found in string ") + len(in))
-		buf = append(buf, "delimiter '"...)
-		buf = append(buf, d...)
-		buf = append(buf, "' not found in string "...)
-		buf = append(buf, in...)
-		return "", Err(D.Fmt, D.Invalid, string(buf))
+		return "", Err(D.Format, D.Invalid, D.Delimiter, D.Not, D.Found)
 	}
 	// Extract value part (everything after the first occurrence of the delimiter)
 	// Find the position of the first delimiter

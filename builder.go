@@ -107,10 +107,8 @@ func (c *conv) setVal(v any, mode cm) {
 		c.handleFloat(val, mode)
 	default:
 		// Unsupported type
-		if mode == mi {
-			c.err = T(D.Unsupported, D.Type)
-		} else if mode == mb {
-			c.err = T(D.Unsupported, D.Type)
+		if mode == mi || mode == mb {
+			c.err = T(D.Type, D.Not, D.Supported)
 		}
 	}
 }

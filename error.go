@@ -5,12 +5,12 @@ package tinystring
 
 // Err creates a new error message with support for multilingual translations
 // REFACTORED: Uses T function and pool for optimal performance
-// Supports OL types for translations and lang types for language specification
+// Supports LocStr types for translations and lang types for language specification
 // Maintains backward compatibility with existing string-based errors
 // eg:
 // tinystring.Err("invalid format") returns "invalid format"
-// tinystring.Err(D.Invalid, D.Fmt) returns "invalid format"
-// tinystring.Err(ES,D.Fmt, D.Invalid) returns "formato inválido"
+// tinystring.Err(D.Format, D.Invalid) returns "invalid format"
+// tinystring.Err(ES,D.Format, D.Invalid) returns "formato inválido"
 func Err(values ...any) *conv {
 	c := getConv() // Always obtain from pool
 	c.err = T(values...)

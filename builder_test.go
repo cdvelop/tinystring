@@ -160,7 +160,7 @@ func TestTFunction(t *testing.T) {
 // TestErrFunction tests the refactored Err function
 func TestErrFunction(t *testing.T) {
 	// Test basic error creation
-	err := Err(D.Invalid, D.Fmt)
+	err := Err(D.Format, D.Invalid)
 	if err.err == "" {
 		t.Error("Err function should create error message")
 	}

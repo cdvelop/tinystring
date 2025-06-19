@@ -32,19 +32,19 @@ func parseSmallInt(s string) (int, error) {
 		negative = true
 		i = 1
 		if len(s) == 1 {
-			return 0, Err(D.Fmt, D.Invalid)
+			return 0, Err(D.Format, D.Invalid)
 		}
 	} else if s[0] == '+' {
 		i = 1
 		if len(s) == 1 {
-			return 0, Err(D.Fmt, D.Invalid)
+			return 0, Err(D.Format, D.Invalid)
 		}
 	}
 
 	// Parse digits
 	for ; i < len(s); i++ {
 		if s[i] < '0' || s[i] > '9' {
-			return 0, Err(D.Fmt, D.Invalid)
+			return 0, Err(D.Format, D.Invalid)
 		}
 
 		digit := int(s[i] - '0')
@@ -109,7 +109,7 @@ func (t *conv) tryParseAs(parseType vTpe, base int) bool {
 			t.vTpe = typeInt
 		case typeUint:
 			if t.floatVal < 0 {
-				t.err = Err(D.NegativeUnsigned).err
+				t.err = T(D.Number, D.Negative, D.Not, D.Supported)
 				return false
 			}
 			t.uintVal = uint64(t.floatVal)
@@ -124,7 +124,7 @@ func (t *conv) tryParseAs(parseType vTpe, base int) bool {
 // validateBase validates that base is within acceptable range (2-36)
 func (t *conv) validateBase(base int) bool {
 	if base < 2 || base > 36 {
-		t.err = Err(D.Base, D.Invalid).err
+		t.err = T(D.Base, D.Invalid)
 		return false
 	}
 	return true
@@ -329,13 +329,13 @@ func (t *conv) ToUint(base ...int) (uint, error) {
 		return uint(t.uintVal), nil // Direct return for uint values
 	case typeInt:
 		if t.intVal < 0 {
-			t.err = Err(D.NegativeUnsigned).err
+			t.err = T(D.Number, D.Negative, D.Not, D.Supported)
 			return 0, t
 		}
 		return uint(t.intVal), nil // Direct conversion from int if positive
 	case typeFloat:
 		if t.floatVal < 0 {
-			t.err = Err(D.NegativeUnsigned).err
+			t.err = T(D.Number, D.Negative, D.Not, D.Supported)
 			return 0, t
 		}
 		return uint(t.floatVal), nil // Direct truncation from float if positive
@@ -417,7 +417,7 @@ func (t *conv) s2IntGeneric(base int) {
 	isNeg := false
 	if inp[0] == '-' {
 		if base != 10 {
-			t.err = Err(D.Base, D.Invalid, "negative numbers are not supported for non-decimal bases").err
+			t.err = T(D.Base, D.Decimal, D.Invalid)
 			return
 		}
 		isNeg = true // Update the conv struct with the string without the negative sign
@@ -443,7 +443,7 @@ func (t *conv) s2Uint(input string, base int) {
 		return
 	}
 	if input[0] == '-' {
-		t.err = Err(D.NegativeUnsigned).err
+		t.err = T(D.Number, D.Negative, D.Not, D.Supported)
 		return
 	}
 	// Update the conv struct with the provided input string
@@ -465,13 +465,13 @@ func (t *conv) s2Float() {
 		isNeg = true
 		sIdx = 1
 		if len(inp) == 1 { // Just a "-" sign
-			t.err = Err(D.Float, D.String, D.Invalid).Error()
+			t.err = T(D.Float, D.String, D.Invalid)
 			return
 		}
 	} else if inp[0] == '+' {
 		sIdx = 1
 		if len(inp) == 1 { // Just a "+" sign
-			t.err = Err(D.Float, D.String, D.Invalid).Error()
+			t.err = T(D.Float, D.String, D.Invalid)
 			return
 		}
 	}
@@ -487,7 +487,7 @@ func (t *conv) s2Float() {
 		ch := inp[i] // char
 		if ch == '.' {
 			if dps {
-				t.err = Err(D.Float, D.String, D.Invalid).Error()
+				t.err = T(D.Float, D.String, D.Invalid)
 				return
 			}
 			dps = true
@@ -500,18 +500,18 @@ func (t *conv) s2Float() {
 				fd *= 10.0
 			} else { // Check for overflow in integer part
 				if ip > ^uint64(0)/10 || (ip == ^uint64(0)/10 && dgt > ^uint64(0)%10) {
-					t.err = Err(D.Number, D.Overflow).err
+					t.err = T(D.Number, D.Overflow)
 					return
 				}
 				ip = ip*10 + dgt
 			}
 		} else {
-			t.err = Err(D.Float, D.String, D.Invalid).Error()
+			t.err = T(D.Float, D.String, D.Invalid)
 			return
 		}
 	}
 	if !hd {
-		t.err = Err(D.Float, D.String, D.Invalid).Error()
+		t.err = T(D.Float, D.String, D.Invalid)
 		return
 	}
 
@@ -551,13 +551,13 @@ func (t *conv) s2n(base int) {
 		for i := 0; i < len(inp); i++ {
 			ch := inp[i]
 			if ch < '0' || ch > '9' {
-				t.err = Err(string(ch)).err
+				t.err = T(D.Invalid, D.NonNumeric, D.Character, string(ch))
 				return
 			}
 
 			d := uint64(ch - '0')                                                   // Check for overflow - optimized for base 10
 			if res > 1844674407370955161 || (res == 1844674407370955161 && d > 5) { // (2^64-1)/10
-				t.err = Err(D.Number, D.Overflow).err
+				t.err = T(D.Number, D.Overflow)
 				return
 			}
 
@@ -574,17 +574,17 @@ func (t *conv) s2n(base int) {
 			} else if ch >= 'A' && ch <= 'Z' {
 				d = int(ch-'A') + 10
 			} else {
-				t.err = Err(string(ch)).err
+				t.err = T(D.Character, string(ch), D.Invalid)
 				return
 			}
 
 			if d >= base {
-				t.err = Err(D.Base, D.Invalid, "digit out of range for base").err
+				t.err = T(D.Digit, D.Out, D.Of, D.Range, D.For, D.Base)
 				return
 			}
 			// Check for overflow
 			if res > (^uint64(0))/uint64(base) {
-				t.err = Err(D.Number, D.Overflow).err
+				t.err = T(D.Number, D.Overflow)
 				return
 			}
 

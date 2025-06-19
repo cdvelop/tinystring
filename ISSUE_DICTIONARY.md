@@ -48,11 +48,11 @@ const (
 
 #### Translation Container
 ```go
-// OL represents Output Language translations using fixed array for efficiency
-type OL [13]string // Fixed array: EN, ES, PT, FR, RU, DE, IT, HI, BN, ID, AR, UR, ZH
+// LocStr represents localized string Language translations using fixed array for efficiency
+type LocStr [13]string // Fixed array: EN, ES, PT, FR, RU, DE, IT, HI, BN, ID, AR, UR, ZH
 
 // get returns translation for specified language with English fallback
-func (o OL) get(l lang) string {
+func (o LocStr) get(l lang) string {
     if int(l) < len(o) && o[l] != "" {
         return o[l]
     }
@@ -67,42 +67,42 @@ Based on analysis of current TinyString error messages, the dictionary contains 
 ```go
 type dictionary struct {
     // Basic words sorted alphabetically for maximum reusability
-    Argument    OL // "argument" 
-    Base        OL // "base"
-    Boolean     OL // "boolean"
-    Cannot      OL // "cannot"
-    Empty       OL // "empty"
-    End         OL // "end"
-    Float       OL // "float"
-    Fmt      OL // "format"
-    Integer     OL // "integer"
-    Invalid     OL // "invalid"
-    Missing     OL // "missing"
-    Negative    OL // "negative"
-    NonNumeric  OL // "non-numeric"
-    Not         OL // "not"
-    Number      OL // "number"
-    Numbers     OL // "numbers"
-    Overflow    OL // "overflow"
-    Round       OL // "round"
-    Specifier   OL // "specifier"
-    String      OL // "string"
-    Supported   OL // "supported"
-    Type        OL // "type"
-    Unsigned    OL // "unsigned"
-    Unsupported OL // "unsupported"
-    Value       OL // "value"
-    Wrong       OL // "wrong"
+    Argument    LocStr // "argument" 
+    Base        LocStr // "base"
+    Boolean     LocStr // "boolean"
+    Cannot      LocStr // "cannot"
+    Empty       LocStr // "empty"
+    End         LocStr // "end"
+    Float       LocStr // "float"
+    Fmt      LocStr // "format"
+    Integer     LocStr // "integer"
+    Invalid     LocStr // "invalid"
+    Missing     LocStr // "missing"
+    Negative    LocStr // "negative"
+    NonNumeric  LocStr // "non-numeric"
+    Not         LocStr // "not"
+    Number      LocStr // "number"
+    Numbers     LocStr // "numbers"
+    Overflow    LocStr // "overflow"
+    Round       LocStr // "round"
+    Specifier   LocStr // "specifier"
+    String      LocStr // "string"
+    Supported   LocStr // "supported"
+    Type        LocStr // "type"
+    Unsigned    LocStr // "unsigned"
+    Unsupported LocStr // "unsupported"
+    Value       LocStr // "value"
+    Wrong       LocStr // "wrong"
     
     // Additional common terms for user extensions
-    At          OL // "at"
-    For         OL // "for"
-    In          OL // "in"
-    Of          OL // "of"
-    Range       OL // "range"
-    Required    OL // "required"
-    Text        OL // "text"
-    Unknown     OL // "unknown"
+    At          LocStr // "at"
+    For         LocStr // "for"
+    In          LocStr // "in"
+    Of          LocStr // "of"
+    Range       LocStr // "range"
+    Required    LocStr // "required"
+    Text        LocStr // "text"
+    Unknown     LocStr // "unknown"
 }
 
 // Global dictionary instance
@@ -116,7 +116,7 @@ With this word-based approach, current error messages can be composed as:
 - **ERROR MESSAGE COMPOSITION MUST ALWAYS BE THOUGHT IN SPANISH FIRST**
 - The word order should be semantically correct in Spanish, so it sounds natural in both Spanish and English
 - **Rule**: Compose error messages thinking "How would this sound in Spanish?" first
-- **Example**: `D.Fmt, D.Invalid` → "formato inválido" (natural Spanish) vs `D.Invalid, D.Fmt` → "inválido formato" (unnatural Spanish)
+- **Example**: `D.Format, D.Invalid` → "formato inválido" (natural Spanish) vs `D.Invalid, D.Format` → "inválido formato" (unnatural Spanish)
 - **Practice**: Always prioritize Spanish semantic correctness while ensuring English remains understandable
 - **Why**: Spanish adjective placement often differs from English, but following Spanish order usually makes both languages sound natural
 
@@ -135,7 +135,7 @@ Err(D.Base, D.Invalid)
 Err(D.Overflow, D.Of, D.Number)
 
 // errInvalidFormat = "invalid format" → "formato inválido" (Spanish order: noun + adjective)
-Err(D.Fmt, D.Invalid)
+Err(D.Format, D.Invalid)
 
 // errFormatMissingArg = "missing argument" → "argumento faltante" (Spanish order: noun + adjective)
 Err(D.Argument, D.Missing)
@@ -205,7 +205,7 @@ func (c *conv) NewErr(values ...any) *conv
 ```
 
 #### Translation Detection
-The key innovation is automatic detection of OL types in existing functions:
+The key innovation is automatic detection of LocStr types in existing functions:
 
 ```go
 func (c *conv) NewErr(values ...any) *conv {
@@ -221,7 +221,7 @@ func (c *conv) NewErr(values ...any) *conv {
         case lang:
             // Language specified inline
             targetLang = val
-            continue        case OL:
+            continue        case LocStr:
             // Translation type detected - use translation
             if val.get(targetLang) != "" {
                 out += sep + val.get(targetLang)
@@ -267,7 +267,7 @@ import . "github.com/cdvelop/tinystring"
 OutLang(ES) // Spanish
 
 // Use word combinations to create error messages
-err := Err(D.Invalid, D.Fmt, "value").Error()
+err := Err(D.Invalid, D.Format, "value").Error()
 // Output: "inválido formato value"
 
 // Complex error message composition
@@ -288,25 +288,25 @@ err := Err(D.Cannot, D.Round, D.NonNumeric, D.Value).Error()
 ```go
 // Users can extend with their own words and combine with dictionary
 type MyDict struct {
-    User     OL
-    Email    OL
-    Password OL
-    Login    OL
+    User     LocStr
+    Email    LocStr
+    Password LocStr
+    Login    LocStr
 }
 
 var MD = MyDict{
     // Language order: EN, ES, PT, FR, RU, DE, IT, HI, BN, ID, AR, UR, ZH
-    User:     OL{"user", "usuario", "usuário", "utilisateur", "пользователь", "Benutzer", "utente", "उपयोगकर्ता", "ব্যবহারকারী", "pengguna", "مستخدم", "صارف", "用户"},
-    Email:    OL{"email", "correo", "email", "courriel", "электронная почта", "E-Mail", "email", "ईमेल", "ইমেইল", "email", "بريد إلكتروني", "ای میل", "邮箱"},
-    Password: OL{"password", "contraseña", "senha", "mot de passe", "пароль", "Passwort", "password", "पासवर्ड", "পাসওয়ার্ড", "kata sandi", "كلمة مرور", "پاس ورڈ", "密码"},
-    Login:    OL{"login", "iniciar sesión", "login", "connexion", "вход", "Anmeldung", "accesso", "लॉगिन", "লগইন", "masuk", "تسجيل الدخول", "لاگ ان", "登录"},
+    User:     LocStr{"user", "usuario", "usuário", "utilisateur", "пользователь", "Benutzer", "utente", "उपयोगकर्ता", "ব্যবহারকারী", "pengguna", "مستخدم", "صارف", "用户"},
+    Email:    LocStr{"email", "correo", "email", "courriel", "электронная почта", "E-Mail", "email", "ईमेल", "ইমেইল", "email", "بريد إلكتروني", "ای میل", "邮箱"},
+    Password: LocStr{"password", "contraseña", "senha", "mot de passe", "пароль", "Passwort", "password", "पासवर्ड", "পাসওয়ার্ড", "kata sandi", "كلمة مرور", "پاس ورڈ", "密码"},
+    Login:    LocStr{"login", "iniciar sesión", "login", "connexion", "вход", "Anmeldung", "accesso", "लॉगिन", "লগইন", "masuk", "تسجيل الدخول", "لاگ ان", "登录"},
 }
 
 // Combine system dictionary with user extensions
 err := Err(MD.User, D.Not, D.Found).Error()
 // Output: "usuario no encontrado" (Spanish)
 
-err := Err(D.Invalid, MD.Email, D.Fmt).Error()  
+err := Err(D.Invalid, MD.Email, D.Format).Error()  
 // Output: "inválido correo formato" (Spanish)
 ```
 
@@ -317,10 +317,10 @@ err := Err(D.Invalid, MD.Email, D.Fmt).Error()
 #### File Structure
 ```
 tinystring/
-├── dictionary.go      # NEW: OL type, lang enum, dictionary struct and D instance
+├── dictionary.go      # NEW: LocStr type, lang enum, dictionary struct and D instance
 ├── env.back.go       # NEW: System language detection (non-WASM)
 ├── env.front.go      # NEW: Browser language detection (WASM)
-├── error.go          # MODIFIED: Remove errorType, update NewErr to handle OL
+├── error.go          # MODIFIED: Remove errorType, update NewErr to handle LocStr
 ├── convert.go        # MODIFIED: Change err field from errorType to string
 └── ...existing files
 ```
@@ -328,8 +328,8 @@ tinystring/
 #### Implementation Steps
 1. **Create `dictionary.go`**:
    - Define `lang` enum with 13 languages
-   - Define `OL` type as `[13]string` array
-   - Implement `(o OL) get(l lang) string` method
+   - Define `LocStr` type as `[13]string` array
+   - Implement `(o LocStr) get(l lang) string` method
    - Define `dictionary` struct with all error terms
    - Initialize global `D` dictionary instance with translations
    - Implement `OutLang(l ...lang)` function
@@ -343,7 +343,7 @@ tinystring/
 3. **Update `error.go`**:
    - Remove `errorType` type completely
    - Change all `errorType` references to `string`
-   - Update `NewErr()` to detect and handle `OL` and `lang` types
+   - Update `NewErr()` to detect and handle `LocStr` and `lang` types
    - Maintain backward compatibility with existing error constants
 
 4. **Update `convert.go`**:
@@ -365,12 +365,12 @@ tinystring/
 var D = dictionary{
     // Basic words sorted alphabetically - full translations for maximum reusability
     // Language order: EN, ES, PT, FR, RU, DE, IT, HI, BN, ID, AR, UR, ZH
-    Argument: OL{"argument", "argumento", "argumento", "argument", "аргумент", "Argument", "argomento", "तर्क", "যুক্তি", "argumen", "وسيط", "دلیل", "参数"},    
-    Base: OL{"base", "base", "base", "base", "основание", "Basis", "base", "आधार", "ভিত্তি", "basis", "قاعدة", "بنیاد", "进制"},
+    Argument: LocStr{"argument", "argumento", "argumento", "argument", "аргумент", "Argument", "argomento", "तर्क", "যুক্তি", "argumen", "وسيط", "دلیل", "参数"},    
+    Base: LocStr{"base", "base", "base", "base", "основание", "Basis", "base", "आधार", "ভিত্তি", "basis", "قاعدة", "بنیاد", "进制"},
     
-    Empty: OL{"empty", "vacío", "vazio", "vide", "пустой", "leer", "vuoto", "खाली", "খালি", "kosong", "فارغ", "خالی", "空"},
+    Empty: LocStr{"empty", "vacío", "vazio", "vide", "пустой", "leer", "vuoto", "खाली", "খালি", "kosong", "فارغ", "خالی", "空"},
     
-    Invalid: OL{"invalid", "inválido", "inválido", "invalide", "недопустимый", "ungültig", "non valido", "अमान्य", "অবৈধ", "tidak valid", "غير صالح", "غیر درست", "无效"},
+    Invalid: LocStr{"invalid", "inválido", "inválido", "invalide", "недопустимый", "ungültig", "non valido", "अमान्य", "অবৈধ", "tidak valid", "غير صالح", "غیر درست", "无效"},
     
     // ... continue for all ~30 words
 }
@@ -384,13 +384,13 @@ Instead of direct mapping, errors are now composed from words with **Spanish-fir
 2. `errNegativeUnsigned` → `D.Numbers + D.Negative + D.Not + D.Supported + D.For + D.Integer + D.Unsigned` ("números negativos no soportados para enteros sin signo")
 3. `errInvalidBase` → `D.Base + D.Invalid` ("base inválida")
 4. `errOverflow` → `D.Overflow + D.Of + D.Number` ("desbordamiento de número")
-5. `errInvalidFormat` → `D.Fmt + D.Invalid` ("formato inválido")
+5. `errInvalidFormat` → `D.Format + D.Invalid` ("formato inválido")
 6. `errFormatMissingArg` → `D.Argument + D.Missing` ("argumento faltante")
 7. `errFormatWrongType` → `D.Type + D.Of + D.Argument + D.Wrong` ("tipo de argumento incorrecto")
-8. `errFormatUnsupported` → `D.Specifier + D.Of + D.Fmt + D.Unsupported` ("especificador de formato no soportado")
-9. `errIncompleteFormat` → `D.Specifier + D.Of + D.Fmt + D.Invalid + D.At + D.End` ("especificador de formato inválido al final")
+8. `errFormatUnsupported` → `D.Specifier + D.Of + D.Format + D.Unsupported` ("especificador de formato no soportado")
+9. `errIncompleteFormat` → `D.Specifier + D.Of + D.Format + D.Invalid + D.At + D.End` ("especificador de formato inválido al final")
 10. `errCannotRound` → `D.Cannot + D.Round + D.Value + D.NonNumeric` ("no puede redondear valor no numérico")
-11. `errCannotFormat` → `D.Cannot + D.Fmt + D.Value + D.NonNumeric` ("no puede formatear valor no numérico")
+11. `errCannotFormat` → `D.Cannot + D.Format + D.Value + D.NonNumeric` ("no puede formatear valor no numérico")
 12. `errInvalidFloat` → `D.String + D.Of + D.Float + D.Invalid` ("cadena de flotante inválida")
 13. `errInvalidBool` → `D.Value + D.Boolean + D.Invalid` ("valor booleano inválido")
 
@@ -424,7 +424,7 @@ tinystring/
 
 4. **Integration Tests** (`integration_test.go`):
    - Test backward compatibility with existing error usage
-   - Test mixed usage (OL types + regular strings)
+   - Test mixed usage (LocStr types + regular strings)
    - Test inline language specification
    - Validate binary size impact (<15KB)
    - TinyGo compilation tests
@@ -460,11 +460,11 @@ const (
     ZH             // 12 - Chinese
 )
 
-// OL represents Output Language translations using fixed array for efficiency
-type OL [13]string
+// LocStr represents Output Language translations using fixed array for efficiency
+type LocStr [13]string
 
 // get returns translation for specified language with English fallback
-func (o OL) get(l lang) string {
+func (o LocStr) get(l lang) string {
     if int(l) < len(o) && o[l] != "" {
         return o[l]
     }
@@ -474,81 +474,81 @@ func (o OL) get(l lang) string {
 // Dictionary structure containing all translatable terms
 type dictionary struct {
     // Basic words sorted alphabetically for maximum reusability
-    Argument    OL // "argument" 
-    At          OL // "at"
-    Base        OL // "base"
-    Boolean     OL // "boolean"
-    Cannot      OL // "cannot"
-    Empty       OL // "empty"
-    End         OL // "end"
-    Float       OL // "float"
-    For         OL // "for"
-    Fmt      OL // "format"
-    Found       OL // "found"
-    In          OL // "in"
-    Integer     OL // "integer"
-    Invalid     OL // "invalid"
-    Missing     OL // "missing"
-    Negative    OL // "negative"
-    NonNumeric  OL // "non-numeric"
-    Not         OL // "not"
-    Number      OL // "number"
-    Numbers     OL // "numbers"
-    Of          OL // "of"
-    Overflow    OL // "overflow"
-    Range       OL // "range"
-    Required    OL // "required"
-    Round       OL // "round"
-    Specifier   OL // "specifier"
-    String      OL // "string"
-    Supported   OL // "supported"
-    Text        OL // "text"
-    Type        OL // "type"
-    Unknown     OL // "unknown"
-    Unsigned    OL // "unsigned"
-    Unsupported OL // "unsupported"
-    Value       OL // "value"
-    Wrong       OL // "wrong"
+    Argument    LocStr // "argument" 
+    At          LocStr // "at"
+    Base        LocStr // "base"
+    Boolean     LocStr // "boolean"
+    Cannot      LocStr // "cannot"
+    Empty       LocStr // "empty"
+    End         LocStr // "end"
+    Float       LocStr // "float"
+    For         LocStr // "for"
+    Fmt      LocStr // "format"
+    Found       LocStr // "found"
+    In          LocStr // "in"
+    Integer     LocStr // "integer"
+    Invalid     LocStr // "invalid"
+    Missing     LocStr // "missing"
+    Negative    LocStr // "negative"
+    NonNumeric  LocStr // "non-numeric"
+    Not         LocStr // "not"
+    Number      LocStr // "number"
+    Numbers     LocStr // "numbers"
+    Of          LocStr // "of"
+    Overflow    LocStr // "overflow"
+    Range       LocStr // "range"
+    Required    LocStr // "required"
+    Round       LocStr // "round"
+    Specifier   LocStr // "specifier"
+    String      LocStr // "string"
+    Supported   LocStr // "supported"
+    Text        LocStr // "text"
+    Type        LocStr // "type"
+    Unknown     LocStr // "unknown"
+    Unsigned    LocStr // "unsigned"
+    Unsupported LocStr // "unsupported"
+    Value       LocStr // "value"
+    Wrong       LocStr // "wrong"
 }
 
 // Global dictionary instance - populated with all translations using horizontal format
 var D = dictionary{
     // Language order: EN, ES, PT, FR, RU, DE, IT, HI, BN, ID, AR, UR, ZH
-    Argument:    OL{"argument", "argumento", "argumento", "argument", "аргумент", "Argument", "argomento", "तर्क", "যুক্তি", "argumen", "وسيط", "دلیل", "参数"},
-    At:          OL{"at", "en", "em", "à", "в", "bei", "a", "पर", "এ", "di", "في", "میں", "在"},
-    Base:        OL{"base", "base", "base", "base", "основание", "Basis", "base", "आधार", "ভিত্তি", "basis", "قاعدة", "بنیاد", "进制"},
-    Boolean:     OL{"boolean", "booleano", "booleano", "booléen", "логический", "boolescher", "booleano", "बूलियन", "বুলিয়ান", "boolean", "منطقي", "بولین", "布尔"},
-    Cannot:      OL{"cannot", "no puede", "não pode", "ne peut pas", "не может", "kann nicht", "non può", "नहीं कर सकते", "পারে না", "tidak bisa", "لا يمكن", "نہیں کر سکتے", "不能"},
-    Empty:       OL{"empty", "vacío", "vazio", "vide", "пустой", "leer", "vuoto", "खाली", "খালি", "kosong", "فارغ", "خالی", "空"},
-    End:         OL{"end", "fin", "fim", "fin", "конец", "Ende", "fine", "अंत", "শেষ", "akhir", "نهاية", "اختتام", "结束"},
-    Float:       OL{"float", "flotante", "flutuante", "flottant", "число с плавающей точкой", "Gleitkomma", "virgola mobile", "फ्लोट", "ফ্লোট", "float", "عائم", "فلوٹ", "浮点"},
-    For:         OL{"for", "para", "para", "pour", "для", "für", "per", "के लिए", "জন্য", "untuk", "لـ", "کے لیے", "为"},
-    Fmt:      OL{"format", "formato", "formato", "format", "формат", "Fmt", "formato", "प्रारूप", "বিন্যাস", "format", "تنسيق", "فارمیٹ", "格式"},
-    Found:       OL{"found", "encontrado", "encontrado", "trouvé", "найден", "gefunden", "trovato", "मिला", "পাওয়া", "ditemukan", "موجود", "ملا", "找到"},
-    In:          OL{"in", "en", "em", "dans", "в", "in", "in", "में", "এ", "dalam", "في", "میں", "在"},
-    Integer:     OL{"integer", "entero", "inteiro", "entier", "целое число", "ganze Zahl", "intero", "पूर्णांक", "পূর্ণসংখ্যা", "integer", "عدد صحيح", "انٹیجر", "整数"},
-    Invalid:     OL{"invalid", "inválido", "inválido", "invalide", "недопустимый", "ungültig", "non valido", "अमान्य", "অবৈধ", "tidak valid", "غير صالح", "غیر درست", "无效"},
-    Missing:     OL{"missing", "falta", "ausente", "manquant", "отсутствует", "fehlend", "mancante", "गुम", "অনুপস্থিত", "hilang", "مفقود", "غائب", "缺少"},
-    Negative:    OL{"negative", "negativo", "negativo", "négatif", "отрицательный", "negativ", "negativo", "नकारात्मक", "নেগেটিভ", "negatif", "سالب", "منفی", "负"},
-    NonNumeric:  OL{"non-numeric", "no numérico", "não numérico", "non numérique", "нечисловой", "nicht numerisch", "non numerico", "गैर-संख्यात्मक", "অ-সংখ্যাসূচক", "non-numerik", "غير رقمي", "غیر عددی", "非数字"},
-    Not:         OL{"not", "no", "não", "pas", "не", "nicht", "non", "नहीं", "না", "tidak", "ليس", "نہیں", "不"},
-    Number:      OL{"number", "número", "número", "nombre", "число", "Zahl", "numero", "संख्या", "সংখ্যা", "angka", "رقم", "نمبر", "数字"},
-    Numbers:     OL{"numbers", "números", "números", "nombres", "числа", "Zahlen", "numeri", "संख्याएं", "সংখ্যা", "angka", "أرقام", "نمبرز", "数字"},
-    Of:          OL{"of", "de", "de", "de", "из", "von", "di", "का", "এর", "dari", "من", "کا", "的"},
-    Overflow:    OL{"overflow", "desbordamiento", "estouro", "débordement", "переполнение", "Überlauf", "overflow", "ओवरफ्लो", "ওভারফ্লো", "overflow", "فيض", "اوور فلو", "溢出"},
-    Range:       OL{"range", "rango", "intervalo", "plage", "диапазон", "Bereich", "intervallo", "रेंज", "পরিসর", "rentang", "نطاق", "رینج", "范围"},
-    Required:    OL{"required", "requerido", "necessário", "requis", "обязательный", "erforderlich", "richiesto", "आवश्यक", "প্রয়োজনীয়", "diperlukan", "مطلوب", "ضروری", "必需"},
-    Round:       OL{"round", "redondear", "arredondar", "arrondir", "округлить", "runden", "arrotondare", "गोल", "গোল", "bulatkan", "جولة", "گول", "圆"},
-    Specifier:   OL{"specifier", "especificador", "especificador", "spécificateur", "спецификатор", "Spezifizierer", "specificatore", "निर्दिष्टकर्ता", "নির্দিষ্টকারী", "penentu", "محدد", "تعین کنندہ", "说明符"},
-    String:      OL{"string", "cadena", "string", "chaîne", "строка", "Zeichenkette", "stringa", "स्ट्रिंग", "স্ট্রিং", "string", "سلسلة", "سٹرنگ", "字符串"},
-    Supported:   OL{"supported", "soportado", "suportado", "pris en charge", "поддерживается", "unterstützt", "supportato", "समर्थित", "সমর্থিত", "didukung", "مدعوم", "معاون", "支持"},
-    Text:        OL{"text", "texto", "texto", "texte", "текст", "Text", "testo", "पाठ", "পাঠ", "teks", "نص", "متن", "文本"},
-    Type:        OL{"type", "tipo", "tipo", "type", "тип", "Typ", "tipo", "प्रकार", "টাইপ", "tipe", "نوع", "قسم", "类型"},
-    Unknown:     OL{"unknown", "desconocido", "desconhecido", "inconnu", "неизвестный", "unbekannt", "sconosciuto", "अज्ञात", "অজানা", "tidak diketahui", "غير معروف", "نامعلوم", "未知"},
-    Unsigned:    OL{"unsigned", "sin signo", "sem sinal", "non signé", "беззнаковый", "vorzeichenlos", "senza segno", "अहस्ताक्षरित", "স্বাক্ষরহীন", "tidak bertanda", "غير موقع", "غیر دستخط شدہ", "无符号"},
-    Unsupported: OL{"unsupported", "no soportado", "não suportado", "non pris en charge", "не поддерживается", "nicht unterstützt", "non supportato", "असमर्थित", "অসমর্থিত", "tidak didukung", "غير مدعوم", "غیر معاون", "不支持"},
-    Value:       OL{"value", "valor", "valor", "valeur", "значение", "Wert", "valore", "मूल्य", "মান", "nilai", "قيمة", "قیمت", "值"},
-    Wrong:       OL{"wrong", "incorrecto", "errado", "mauvais", "неправильный", "falsch", "sbagliato", "गलत", "ভুল", "salah", "خطأ", "غلط", "错误"},
+    Argument:    LocStr{"argument", "argumento", "argumento", "argument", "аргумент", "Argument", "argomento", "तर्क", "যুক্তি", "argumen", "وسيط", "دلیل", "参数"},
+    At:          LocStr{"at", "en", "em", "à", "в", "bei", "a", "पर", "এ", "di", "في", "میں", "在"},
+    Base:        LocStr{"base", "base", "base", "base", "основание", "Basis", "base", "आधार", "ভিত্তি", "basis", "قاعدة", "بنیاد", "进制"},
+    Boolean:     LocStr{"boolean", "booleano", "booleano", "booléen", "логический", "boolescher", "booleano", "बूलियन", "বুলিয়ান", "boolean", "منطقي", "بولین", "布尔"},
+    Cannot:      LocStr{"cannot", "no puede", "não pode", "ne peut pas", "не может", "kann nicht", "non può", "नहीं कर सकते", "পারে না", "tidak bisa", "لا يمكن", "نہیں کر سکتے", "不能"},
+    Empty:       LocStr{"empty", "vacío", "vazio", "vide", "пустой", "leer", "vuoto", "खाली", "খালি", "kosong", "فارغ", "خالی", "空"},
+    End:         LocStr{"end", "fin", "fim", "fin", "конец", "Ende", "fine", "अंत", "শেষ", "akhir", "نهاية", "اختتام", "结束"},
+    Float:       LocStr{"float", "flotante", "flutuante", "flottant", "число с плавающей точкой", "Gleitkomma", "virgola mobile", "फ्लोट", "ফ্লোট", "float", "عائم", "فلوٹ", "浮点"},
+    For:         LocStr{"for", "para", "para", "pour", "для", "für", "per", "के लिए", "জন্য", "untuk", "لـ", "کے لیے", "为"},
+    Fmt:      LocStr{"format", "formato", "formato", "format", "формат", "Fmt", "formato", "प्रारूप", "বিন্যাস", "format", "تنسيق", "فارمیٹ", "格式"},
+    Found:       LocStr{"found", "encontrado", "encontrado", "trouvé", "найден", "gefunden", "trovato", "मिला", "পাওয়া", "ditemukan", "موجود", "ملا", "找到"},
+    In:          LocStr{"in", "en", "em", "dans", "в", "in", "in", "में", "এ", "dalam", "في", "میں", "在"},
+    Integer:     LocStr{"integer", "entero", "inteiro", "entier", "целое число", "ganze Zahl", "intero", "पूर्णांक", "পূর্ণসংখ্যা", "integer", "عدد صحيح", "انٹیجر", "整数"},
+    Invalid:     LocStr{"invalid", "inválido", "inválido", "invalide", "недопустимый", "ungültig", "non valido", "अमान्य", "অবৈধ", "tidak valid", "غير صالح", "غیر درست", "无效"},
+    Missing:     LocStr{"missing", "falta", "ausente", "manquant", "отсутствует", "fehlend", "mancante", "गुम", "অনুপস্থিত", "hilang", "مفقود", "غائب", "缺少"},
+    Negative:    LocStr{"negative", "negativo", "negativo", "négatif", "отрицательный", "negativ", "negativo", "नकारात्मक", "নেগেটিভ", "negatif", "سالب", "منفی", "负"},
+    NonNumeric:  LocStr{"non-numeric", "no numérico", "não numérico", "non numérique", "нечисловой", "nicht numerisch", "non numerico", "गैर-संख्यात्मक", "অ-সংখ্যাসূচক", "non-numerik", "غير رقمي", "غیر عددی", "非数字"},
+    Not:         LocStr{"not", "no", "não", "pas", "не", "nicht", "non", "नहीं", "না", "tidak", "ليس", "نہیں", "不"},
+    Number:      LocStr{"number", "número", "número", "nombre", "число", "Zahl", "numero", "संख्या", "সংখ্যা", "angka", "رقم", "نمبر", "数字"},
+    Numbers:     LocStr{"numbers", "números", "números", "nombres", "числа", "Zahlen", "numeri", "संख्याएं", "সংখ্যা", "angka", "أرقام", "نمبرز", "数字"},
+    Of:          LocStr{"of", "de", "de", "de", "из", "von", "di", "का", "এর", "dari", "من", "کا", "的"},
+    Overflow:    LocStr{"overflow", "desbordamiento", "estouro", "débordement", "переполнение", "Überlauf", "overflow", "ओवरफ्लो", "ওভারফ্লো", "overflow", "فيض", "اوور فلو", "溢出"},
+    Range:       LocStr{"range", "rango", "intervalo", "plage", "диапазон", "Bereich", "intervallo", "रेंज", "পরিসর", "rentang", "نطاق", "رینج", "范围"},
+    Required:    LocStr{"required", "requerido", "necessário", "requis", "обязательный", "erforderlich", "richiesto", "आवश्यक", "প্রয়োজনীয়", "diperlukan", "مطلوب", "ضروری", "必需"},
+    Round:       LocStr{"round", "redondear", "arredondar", "arrondir", "округлить", "runden", "arrotondare", "गोल", "গোল", "bulatkan", "جولة", "گول", "圆"},
+    Specifier:   LocStr{"specifier", "especificador", "especificador", "spécificateur", "спецификатор", "Spezifizierer", "specificatore", "निर्दिष्टकर्ता", "নির্দিষ্টকারী", "penentu", "محدد", "تعین کنندہ", "说明符"},
+    String:      LocStr{"string", "cadena", "string", "chaîne", "строка", "Zeichenkette", "stringa", "स्ट्रिंग", "স্ট্রিং", "string", "سلسلة", "سٹرنگ", "字符串"},
+    Supported:   LocStr{"supported", "soportado", "suportado", "pris en charge", "поддерживается", "unterstützt", "supportato", "समर्थित", "সমর্থিত", "didukung", "مدعوم", "معاون", "支持"},
+    Text:        LocStr{"text", "texto", "texto", "texte", "текст", "Text", "testo", "पाठ", "পাঠ", "teks", "نص", "متن", "文本"},
+    Type:        LocStr{"type", "tipo", "tipo", "type", "тип", "Typ", "tipo", "प्रकार", "টাইপ", "tipe", "نوع", "قسم", "类型"},
+    Unknown:     LocStr{"unknown", "desconocido", "desconhecido", "inconnu", "неизвестный", "unbekannt", "sconosciuto", "अज्ञात", "অজানা", "tidak diketahui", "غير معروف", "نامعلوم", "未知"},
+    Unsigned:    LocStr{"unsigned", "sin signo", "sem sinal", "non signé", "беззнаковый", "vorzeichenlos", "senza segno", "अहस्ताक्षरित", "স্বাক্ষরহীন", "tidak bertanda", "غير موقع", "غیر دستخط شدہ", "无符号"},
+    Unsupported: LocStr{"unsupported", "no soportado", "não suportado", "non pris en charge", "не поддерживается", "nicht unterstützt", "non supportato", "असमर्थित", "অসমর্থিত", "tidak didukung", "غير مدعوم", "غیر معاون", "不支持"},
+    Value:       LocStr{"value", "valor", "valor", "valeur", "значение", "Wert", "valore", "मूल्य", "মান", "nilai", "قيمة", "قیمت", "值"},
+    Wrong:       LocStr{"wrong", "incorrecto", "errado", "mauvais", "неправильный", "falsch", "sbagliato", "गलत", "ভুল", "salah", "خطأ", "غلط", "错误"},
 }
 
 // Private global configuration
@@ -680,7 +680,7 @@ const (
     // ... rest remain as string constants
 )
 
-// Modified NewErr to handle OL types
+// Modified NewErr to handle LocStr types
 func (c *conv) NewErr(values ...any) *conv {
     var sep, out string
     c.tmpStr = ""
@@ -695,7 +695,7 @@ func (c *conv) NewErr(values ...any) *conv {
             // Language specified inline
             targetLang = val
             continue
-        case OL:
+        case LocStr:
             // Translation type detected - use translation
             out += sep + val.get(targetLang)
         default:
@@ -730,7 +730,7 @@ type conv struct {
 ```
 
 ### Memory Layout
-- **OL type**: 13 * 8 bytes (string headers) = 104 bytes per entry
+- **LocStr type**: 13 * 8 bytes (string headers) = 104 bytes per entry
 - **Dictionary**: ~35 words * 104 bytes = ~3.6KB base overhead
 - **Translation strings**: ~8KB for all languages (short words are efficient)
 - **Total impact**: ~12KB additional binary size (within 15KB limit)
@@ -800,5 +800,5 @@ The implementation preserves 100% backward compatibility while providing powerfu
 - **`dictionary.go`**: Core dictionary, types, and configuration
 - **`env.back.go`**: Backend language detection (build tag: `!wasm`)
 - **`env.front.go`**: Frontend language detection (build tag: `wasm`)
-- **`error.go`**: Modified to support OL types, remove errorType
+- **`error.go`**: Modified to support LocStr types, remove errorType
 - **`convert.go`**: Change err field type to string

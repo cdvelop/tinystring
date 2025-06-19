@@ -566,7 +566,7 @@ func (c *conv) i2sBase(base int) {
 	}
 
 	if !c.validateBase(base) {
-		c.err = Err(D.Argument, D.Wrong, "invalid base").err
+		c.err = T(D.Invalid, D.Base)
 		return
 	}
 
@@ -689,7 +689,7 @@ func (c *conv) handleFormat(args []any, argIndex *int, formatType rune, param in
 			c.stringVal = oldStringVal
 			c.buf = oldBuf
 		} else {
-			c.err = Err(D.Type, D.Of, D.Argument, D.Wrong, formatSpec).err
+			c.err = T(D.Invalid, D.Type, D.Of, D.Argument, formatSpec)
 			return nil, false
 		}
 	case 'f':
@@ -716,14 +716,14 @@ func (c *conv) handleFormat(args []any, argIndex *int, formatType rune, param in
 			c.tmpStr = oldTmpStr
 			c.buf = oldBuf
 		} else {
-			c.err = Err(D.Type, D.Of, D.Argument, D.Wrong, formatSpec).err
+			c.err = T(D.Invalid, D.Type, D.Of, D.Argument, formatSpec)
 			return nil, false
 		}
 	case 's':
 		if strVal, ok := arg.(string); ok {
 			str = strVal
 		} else {
-			c.err = Err(D.Type, D.Of, D.Argument, D.Wrong, formatSpec).err
+			c.err = T(D.Invalid, D.Type, D.Of, D.Argument, formatSpec)
 			return nil, false
 		}
 	case 'v':
@@ -853,7 +853,7 @@ func (c *conv) sprintf(format string, args ...any) {
 				case '%':
 					c.buf = append(c.buf, '%')
 				default:
-					c.err = Err(D.Fmt, D.Specifier, D.Unsupported, format[i]).err
+					c.err = T(D.Format, D.Specifier, D.Not, D.Supported, format[i])
 					c.vTpe = typeErr
 					return
 				}

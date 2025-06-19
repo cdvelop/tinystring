@@ -26,7 +26,7 @@ func TestParseKeyValue(t *testing.T) {
 			input:       "invalid-string",
 			delimiter:   "",
 			wantValue:   "",
-			wantErrText: "delimiter ':' not found in string invalid-string",
+			wantErrText: T(D.Format, D.Invalid, D.Delimiter, D.Not, D.Found),
 		},
 		{
 			name:        "Custom delimiter",
@@ -47,7 +47,7 @@ func TestParseKeyValue(t *testing.T) {
 			input:       "",
 			delimiter:   "",
 			wantValue:   "",
-			wantErrText: "delimiter ':' not found in string ",
+			wantErrText: T(D.Format, D.Invalid, D.Delimiter, D.Not, D.Found),
 		},
 		{
 			name:        "Only delimiter",
@@ -68,7 +68,7 @@ func TestParseKeyValue(t *testing.T) {
 			input:       "key:value",
 			delimiter:   "=",
 			wantValue:   "",
-			wantErrText: "delimiter '=' not found in string key:value",
+			wantErrText: T(D.Format, D.Invalid, D.Delimiter, D.Not, D.Found),
 		},
 		{
 			name:        "Empty delimiter uses default",

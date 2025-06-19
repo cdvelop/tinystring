@@ -10,7 +10,7 @@ TinyString is a lightweight Go library that provides comprehensive string manipu
 
 - 🚀 **Fluid and chainable API** - Easy to use and readable operations
 - 📝 **Complete string toolkit** - Transformations, conversions, formatting, and error handling
-- 🌍 **Multilingual error messages** - Built-in dictionary system with 13 languages
+- 🌍 **Multilingual error messages** - Built-in dictionary system with 9 languages
 - 🧵 **Concurrency safe** - Thread-safe operations for concurrent environments
 - 📦 **Zero dependencies** - No `fmt`, `strings`, `strconv`, or `errors` imports
 - 🎯 **TinyGo optimized** - Manual implementations for minimal binary size
@@ -66,7 +66,7 @@ tinystring.Convert(&original).RemoveTilde().CamelCaseLower().Apply()
 import . "github.com/cdvelop/tinystring"
 
 OutLang(ES) // Set Spanish
-err := Err(D.Invalid, D.Fmt)
+err := Err(D.Invalid, D.Format)
 // out: "inválido formato"
 
 OutLang()   // Auto-detect system language
@@ -316,7 +316,7 @@ import . "github.com/cdvelop/tinystring"
 OutLang(ES) // Spanish
 
 // Use dictionary words to create error messages
-err := Err(D.Invalid, D.Fmt)
+err := Err(D.Invalid, D.Format)
 // out: "inválido formato" (Spanish)
 
 // Complex error message composition
@@ -335,20 +335,20 @@ err := Err(D.Cannot, D.Round, D.NonNumeric, D.Value)
 
 #### 🗣️ Supported Languages
 
-The dictionary system supports 13 languages:
+The dictionary system supports 9 languages, prioritized by global reach to ensure optimal binary size.
+
+**Core Essential Languages:**
 - 🇺🇸 **EN** - English (default)
-- 🇪🇸 **ES** - Spanish  
+- 🇪🇸 **ES** - Spanish
+- 🇨🇳 **ZH** - Chinese
+- 🇮🇳 **HI** - Hindi
+- 🇸🇦 **AR** - Arabic
+
+**Extended Reach Languages:**
 - 🇧🇷 **PT** - Portuguese
 - 🇫🇷 **FR** - French
-- 🇷🇺 **RU** - Russian
 - 🇩🇪 **DE** - German
-- 🇮🇹 **IT** - Italian
-- 🇮🇳 **HI** - Hindi
-- 🇧🇩 **BN** - Bengali
-- 🇮🇩 **ID** - Indonesian
-- 🇸🇦 **AR** - Arabic
-- 🇵🇰 **UR** - Urdu
-- 🇨🇳 **ZH** - Chinese
+- 🇷🇺 **RU** - Russian
 
 #### 📖 Dictionary Words
 
@@ -360,7 +360,7 @@ D.Argument    // "argument", "argumento", "argumento", "argument"...
 D.Base        // "base", "base", "base", "base"...
 D.Cannot      // "cannot", "no puede", "não pode", "ne peut pas"...
 D.Empty       // "empty", "vacío", "vazio", "vide"...
-D.Fmt      // "format", "formato", "formato", "format"...
+D.Format      // "format", "formato", "formato", "format"...
 D.Invalid     // "invalid", "inválido", "inválido", "invalide"...
 D.Missing     // "missing", "falta", "ausente", "manquant"...
 D.Number      // "number", "número", "número", "nombre"...
@@ -378,15 +378,15 @@ Create your own dictionary words for domain-specific errors:
 ```go
 // Define custom dictionary for your application
 type MyDict struct {
-    User     OL
-    Email    OL
-    Password OL
-    Login    OL
+    User     LocStr
+    Email    LocStr
+    Password LocStr
+    Login    LocStr
 }
 
 // Initialize with translations
 var MD = MyDict{
-    User: OL{
+    User: LocStr{
         "user",            // EN
         "usuario",         // ES
         "usuário",         // PT
@@ -401,7 +401,7 @@ var MD = MyDict{
         "صارف",           // UR
         "用户",            // ZH
     },
-    Email: OL{
+    Email: LocStr{
         "email",           // EN
         "correo",          // ES
         "email",           // PT
@@ -424,7 +424,7 @@ OutLang(ES) // Spanish
 err := Err(MD.User, D.Not, D.Found)
 // out: "usuario no encontrado"
 
-err := Err(D.Fmt,MD.Email, D.Invalid) 
+err := Err(D.Format,MD.Email, D.Invalid) 
 // out: "formato correo inválido"
 ```
 
@@ -457,7 +457,7 @@ import . "github.com/cdvelop/tinystring"
 OutLang(ES) // Set Spanish as default
 
 // Create translated error messages using dictionary words
-err := Err(D.Invalid, D.Fmt).Error()
+err := Err(D.Invalid, D.Format).Error()
 // out: "inválido formato" (Spanish)
 
 // Complex compositions
@@ -474,7 +474,7 @@ err := Err(D.Invalid, "user input:", "abc123").Error()
 ```
 
 #### 🎯 Dictionary Features
-- **13 Languages Supported**: EN, ES, PT, FR, RU, DE, IT, HI, BN, ID, AR, UR, ZH
+- **9 Languages Supported**: EN, ES, ZH, HI, AR, PT, FR, DE, RU
 - **35+ Essential Words**: Alphabetically sorted for maximum reusability
 - **Composable Messages**: Build complex errors from simple words
 - **Zero Dependencies**: No external translation libraries
@@ -543,7 +543,7 @@ func main() {
         
         // Try to parse as number
         if _, err := Convert(input).ToInt(); err != nil {
-            return Err(D.Invalid, D.Number, D.Fmt)
+            return Err(D.Invalid, D.Number, D.Format)
         }
         
         return nil
@@ -572,7 +572,7 @@ func main() {
     }
     
     // Force specific language for specific errors
-    criticalErr := Err(ZH, D.Cannot, D.Fmt, D.NonNumeric, D.Value)
+    criticalErr := Err(ZH, D.Cannot, D.Format, D.NonNumeric, D.Value)
     chineseError := criticalErr.Error()
     // out: "不能 格式 非数字 值"
 }

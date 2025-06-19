@@ -4,8 +4,8 @@ import "testing"
 
 func TestDictionaryBasicFunctionality(t *testing.T) {
 	// Test default English
-	err := Err(D.Invalid, D.Fmt).Error()
-	expected := "invalid format"
+	err := Err(D.Format, D.Invalid).Error()
+	expected := T(D.Format, D.Invalid)
 	if err != expected {
 		t.Errorf("Expected '%s', got '%s'", expected, err)
 	}
@@ -15,8 +15,8 @@ func TestDictionarySpanishTranslation(t *testing.T) {
 	// Set Spanish as default
 	OutLang(ES)
 
-	err := Err(D.Invalid, D.Fmt).Error()
-	expected := "inválido formato"
+	err := Err(D.Format, D.Invalid).Error()
+	expected := T(ES, D.Format, D.Invalid)
 	if err != expected {
 		t.Errorf("Expected '%s', got '%s'", expected, err)
 	}
@@ -45,7 +45,7 @@ func TestDictionaryMixedWithRegularStrings(t *testing.T) {
 
 func TestOLFallbackToEnglish(t *testing.T) {
 	// Test fallback when translation is empty
-	testOL := OL{"test", "", "", "", "", "", "", "", "", "", "", "", ""}
+	testOL := LocStr{"test", "", "", "", "", "", "", "", ""}
 	result := testOL.get(ES)
 	expected := "test"
 	if result != expected {

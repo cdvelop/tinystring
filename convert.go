@@ -86,7 +86,7 @@ func Convert(v ...any) *conv {
 
 	// Validation: Only accept 0 or 1 parameter
 	if len(v) > 1 {
-		c.err = T(D.Only, D.One, D.Value, D.Supported) // Consistent error handling pattern
+		c.err = T(D.Invalid, D.Number, D.Of, D.Argument) // Consistent error handling pattern
 		return c
 	}
 
