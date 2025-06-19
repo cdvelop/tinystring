@@ -43,7 +43,8 @@ type dictionary struct {
 	Float            OL // "float"
 	For              OL // "for"
 	Fmt              OL // "format"
-	Found            OL // "found"	In          OL // "in"
+	Found            OL // "found"
+	In               OL // "in"
 	Integer          OL // "integer"
 	Invalid          OL // "invalid"
 	Missing          OL // "missing"
@@ -54,6 +55,8 @@ type dictionary struct {
 	Number           OL // "number"
 	Numbers          OL // "numbers"
 	Of               OL // "of"
+	One              OL // "one" 
+	Only             OL // "only"
 	Overflow         OL // "overflow"
 	Range            OL // "range"
 	Required         OL // "required"
@@ -94,6 +97,8 @@ var D = dictionary{
 	Number:           OL{"number", "número", "número", "nombre", "число", "Zahl", "numero", "संख्या", "সংখ্যা", "angka", "رقم", "نمبر", "数字"},
 	Numbers:          OL{"numbers", "números", "números", "nombres", "числа", "Zahlen", "numeri", "संख्याएं", "সংখ্যা", "angka", "أرقام", "نمبرز", "数字"},
 	Of:               OL{"of", "de", "de", "de", "из", "von", "di", "का", "এর", "dari", "من", "کا", "的"},
+	One:              OL{"one", "uno", "um", "un", "один", "eins", "uno", "एक", "একটি", "satu", "واحد", "ایک", "一"},
+	Only:             OL{"only", "solo", "apenas", "seulement", "только", "nur", "solo", "केवल", "শুধুমাত্র", "hanya", "فقط", "صرف", "仅"},
 	Overflow:         OL{"overflow", "desbordamiento", "estouro", "débordement", "переполнение", "Überlauf", "overflow", "ओवरफ्लो", "ওভারফ্লো", "overflow", "فيض", "اوور فلو", "溢出"},
 	Range:            OL{"range", "rango", "intervalo", "plage", "диапазон", "Bereich", "intervallo", "रेंज", "পরিসর", "rentang", "نطاق", "رینج", "范围"},
 	Required:         OL{"required", "requerido", "necessário", "requis", "обязательный", "erforderlich", "richiesto", "आवश्यक", "প্রয়োজনীয়", "diperlukan", "مطلوب", "ضروری", "必需"},

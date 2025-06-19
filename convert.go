@@ -78,11 +78,24 @@ func withValue(v any) convOpt {
 	}
 }
 
-// Convert initializes a new conv struct with any type of value for string,bool and number manipulation.
+// Convert initializes a new conv struct with optional value for string,bool and number manipulation.
+// REFACTORED: Now accepts variadic parameters - Convert() or Convert(value)
 // Phase 7: Uses object pool internally for memory optimization (transparent to user)
-func Convert(v any) *conv {
+func Convert(v ...any) *conv {
 	c := getConv()
-	withValue(v)(c)
+	
+	// Validation: Only accept 0 or 1 parameter
+	if len(v) > 1 {
+		c.err = T(D.Only, D.One, D.Value, D.Supported) // Consistent error handling pattern
+		return c
+	}
+	
+	// Initialize with value if provided, empty otherwise
+	if len(v) == 1 {
+		withValue(v[0])(c)
+	}
+	// If no value provided, conv is ready for builder pattern
+	
 	return c
 }
 
@@ -167,16 +180,29 @@ func (t *conv) String() string {
 func (t *conv) StringError() (string, error) {
 	var result string
 	var err error
-	if t.vTpe == typeErr {
-		result = t.getString()
-		err = t
+	
+	// BUILDER INTEGRATION: Check for error condition more comprehensively
+	if t.err != "" {
+		// If there's an error, return empty string and the error
+		result = ""
+		err = &customError{message: t.err}
 	} else {
 		result = t.getString()
 		err = nil
 	}
+	
 	// Auto-release back to pool for memory efficiency
 	t.putConv()
 	return result, err
+}
+
+// customError implements error interface for StringError
+type customError struct {
+	message string
+}
+
+func (e *customError) Error() string {
+	return e.message
 }
 
 // Helper function to check if a rune is a digit
@@ -190,10 +216,16 @@ func isLetter(r rune) bool {
 }
 
 // getString converts the current value to string only when needed
+// BUILDER INTEGRATION: Prioritizes buffer content when available
 // Optimized with string caching to avoid repeated conversions
 func (t *conv) getString() string {
 	if t.vTpe == typeErr {
 		return ""
+	}
+
+	// BUILDER PRIORITY: If buffer has content, use it as source of truth
+	if len(t.buf) > 0 {
+		return string(t.buf)
 	}
 
 	// If we already have a string value and haven't changed types, reuse it

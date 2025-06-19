@@ -5,7 +5,7 @@ import "sync"
 // Phase 7: Conv Pool for memory optimization
 // Reuse conv objects to eliminate the 53.67% allocation hotspot from newConv()
 var convPool = sync.Pool{
-	New: func() interface{} {
+	New: func() any {
 		return &conv{
 			separator: "_", // default separator
 		}
@@ -152,7 +152,7 @@ func internStringFromBytes(b []byte) string {
 // Phase 11: Rune Buffer Pool for memory optimization
 // Reuse rune buffers to eliminate makeRuneBuf() allocation hotspot
 var runeBufferPool = sync.Pool{
-	New: func() interface{} {
+	New: func() any {
 		// Start with a reasonable default capacity
 		return make([]rune, 0, defaultBufCap)
 	},
