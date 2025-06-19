@@ -762,7 +762,43 @@ func (t *conv) f2s() {
 
 // validateIntParam validates and converts an any parameter to int
 func (t *conv) validateIntParam(param any, allowZero bool) (int, bool) {
-	val, ok := extractInt(param)
+	// Inline extractInt logic
+	var val int
+	var ok bool
+	switch v := param.(type) {
+	case int, int8, int16, int32, int64:
+		// Use type assertion to handle all integer types
+		if i, isInt := param.(int); isInt {
+			val, ok = i, true
+		} else if i8, isInt8 := param.(int8); isInt8 {
+			val, ok = int(i8), true
+		} else if i16, isInt16 := param.(int16); isInt16 {
+			val, ok = int(i16), true
+		} else if i32, isInt32 := param.(int32); isInt32 {
+			val, ok = int(i32), true
+		} else if i64, isInt64 := param.(int64); isInt64 {
+			val, ok = int(i64), true
+		}
+	case uint, uint8, uint16, uint32, uint64:
+		if u, isUint := param.(uint); isUint {
+			val, ok = int(u), true
+		} else if u8, isUint8 := param.(uint8); isUint8 {
+			val, ok = int(u8), true
+		} else if u16, isUint16 := param.(uint16); isUint16 {
+			val, ok = int(u16), true
+		} else if u32, isUint32 := param.(uint32); isUint32 {
+			val, ok = int(u32), true
+		} else if u64, isUint64 := param.(uint64); isUint64 {
+			val, ok = int(u64), true
+		}
+	case float32:
+		val, ok = int(v), true
+	case float64:
+		val, ok = int(v), true
+	default:
+		val, ok = 0, false
+	}
+
 	if !ok {
 		return 0, false
 	}
@@ -771,48 +807,4 @@ func (t *conv) validateIntParam(param any, allowZero bool) (int, bool) {
 		return val, val >= 0
 	}
 	return val, val > 0
-}
-
-// extractInt extracts integer value from any numeric type using generics
-func extractInt(v any) (int, bool) {
-	switch val := v.(type) {
-	case int, int8, int16, int32, int64:
-		// Use type assertion to handle all integer types
-		if i, ok := v.(int); ok {
-			return i, true
-		}
-		if i8, ok := v.(int8); ok {
-			return int(i8), true
-		}
-		if i16, ok := v.(int16); ok {
-			return int(i16), true
-		}
-		if i32, ok := v.(int32); ok {
-			return int(i32), true
-		}
-		if i64, ok := v.(int64); ok {
-			return int(i64), true
-		}
-	case uint, uint8, uint16, uint32, uint64:
-		if u, ok := v.(uint); ok {
-			return int(u), true
-		}
-		if u8, ok := v.(uint8); ok {
-			return int(u8), true
-		}
-		if u16, ok := v.(uint16); ok {
-			return int(u16), true
-		}
-		if u32, ok := v.(uint32); ok {
-			return int(u32), true
-		}
-		if u64, ok := v.(uint64); ok {
-			return int(u64), true
-		}
-	case float32:
-		return int(val), true
-	case float64:
-		return int(val), true
-	}
-	return 0, false
 }

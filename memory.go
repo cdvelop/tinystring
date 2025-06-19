@@ -33,7 +33,7 @@ func (c *conv) putConv() {
 	c.tmpStr = ""
 	c.lastConvType = typeStr
 	c.err = ""
-	c.resetBuffer()
+	c.buf = c.buf[:0] // Inline resetBuffer
 
 	convPool.Put(c)
 }
@@ -61,15 +61,10 @@ func (c *conv) ensureCapacity(capacity int) {
 	}
 }
 
-// resetBuffer resets the buffer length while keeping capacity
-func (c *conv) resetBuffer() {
-	c.buf = c.buf[:0]
-}
-
 // getReusableBuffer returns a buffer with specified capacity, reusing existing if possible
 func (c *conv) getReusableBuffer(capacity int) []byte {
 	c.ensureCapacity(capacity)
-	c.resetBuffer()
+	c.buf = c.buf[:0] // Inline resetBuffer
 	return c.buf
 }
 

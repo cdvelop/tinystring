@@ -117,7 +117,6 @@ func (t *conv) TruncateName(maxCharsPerWord, maxWidth any) *conv {
 		}
 		res += processedWord
 	}
-
 	// Step 2: Check if the processed result fits within maxWidth
 	if len(res) <= mT {
 		// Update buffer instead of using setString for buffer-first strategy
@@ -125,12 +124,7 @@ func (t *conv) TruncateName(maxCharsPerWord, maxWidth any) *conv {
 		return t
 	}
 
-	// Step 3: Apply maxWidth constraint with ellipsis
-	return t.applyMaxWidthConstraint(words, mC, mT)
-}
-
-// applyMaxWidthConstraint handles the complex logic when maxWidth constraint is needed
-func (t *conv) applyMaxWidthConstraint(words []string, mC, mT int) *conv {
+	// Step 3: Apply maxWidth constraint with ellipsis - inline applyMaxWidthConstraint logic
 	// Check if we can fit at least two words with abbreviations
 	if len(words) > 1 {
 		// Calculate minimum space needed for normal abbreviation pattern
@@ -150,15 +144,14 @@ func (t *conv) applyMaxWidthConstraint(words []string, mC, mT int) *conv {
 			}
 		}
 	}
-
 	// Build result with remaining space tracking
-	var res string
+	var result string
 	remaining := mT - len(ellipsisStr) // Reserve space for "..." suffix
 
 	for i, word := range words { // Check if we need to add a space
 		if i > 0 {
 			if remaining > 0 {
-				res += spaceStr
+				result += spaceStr
 				remaining--
 			} else {
 				break // No more space left
@@ -177,18 +170,18 @@ func (t *conv) applyMaxWidthConstraint(words []string, mC, mT int) *conv {
 		// Check how much of this word we can include
 		if len(prW) <= remaining {
 			// We can include the entire word
-			res += prW
+			result += prW
 			remaining -= len(prW)
 		} else {
 			// We can only include part of the word
-			res += prW[:remaining]
+			result += prW[:remaining]
 			remaining = 0
 			break
 		}
 	}
 	// Add the suffix
-	res += ellipsisStr
+	result += ellipsisStr
 	// Update buffer instead of using setString for buffer-first strategy
-	t.buf = append(t.buf[:0], res...)
+	t.buf = append(t.buf[:0], result...)
 	return t
 }

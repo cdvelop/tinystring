@@ -255,11 +255,11 @@ func (t *conv) FormatNumber() *conv {
 		t.err = ""
 		return t
 	}
-
 	// Try to parse as float using existing parseFloatManual
 	t.err = "" // Reset error before trying float parsing
 	t.setString(str)
-	t.parseFloat()
+	// Inline parseFloat logic
+	t.s2Float()
 	if t.err == "" {
 		// Use the parsed float value
 		t.vTpe = typeFloat
@@ -395,14 +395,6 @@ func (c *conv) splitFloatIndices() (intPart, decPart string, hasDecimal bool) {
 		}
 	}
 	return str, "", false
-}
-
-// parseFloat converts a string to a float64 and stores in conv struct.
-// This is an internal conv method that modifies the struct instead of returning values.
-// Uses the same optimized parsing logic as s2Float() for consistency.
-func (c *conv) parseFloat() {
-	// Use the unified float parsing logic from s2Float
-	c.s2Float()
 }
 
 // f2sMan converts a float64 to a string and stores in conv struct.
@@ -612,22 +604,16 @@ func (c *conv) i2sBase(base int) {
 	c.vTpe = typeStr
 }
 
-// extractArg safely extracts an argument from args slice
-func (c *conv) extractArg(args []any, argIndex int, formatSpec string) (any, bool) {
-	if argIndex >= len(args) {
+// Unified handler for all format specifiers
+func (c *conv) handleFormat(args []any, argIndex *int, formatType rune, param int, formatSpec string) ([]byte, bool) {
+	// Inline extractArg logic
+	if *argIndex >= len(args) {
 		errConv := Err(D.Argument, D.Missing, formatSpec)
 		c.err = errConv.Error()
 		return nil, false
 	}
-	return args[argIndex], true
-}
+	arg := args[*argIndex]
 
-// Unified handler for all format specifiers
-func (c *conv) handleFormat(args []any, argIndex *int, formatType rune, param int, formatSpec string) ([]byte, bool) {
-	arg, ok := c.extractArg(args, *argIndex, formatSpec)
-	if !ok {
-		return nil, false
-	}
 	var str string
 	switch formatType {
 	case 'd', 'o', 'b', 'x':
@@ -675,10 +661,8 @@ func (c *conv) handleFormat(args []any, argIndex *int, formatType rune, param in
 			oldVTpe := c.vTpe
 			oldStringVal := c.stringVal
 			oldBuf := make([]byte, len(c.buf))
-			copy(oldBuf, c.buf)
-
-			// Perform calculation with isolated buffer
-			c.resetBuffer()
+			copy(oldBuf, c.buf) // Perform calculation with isolated buffer
+			c.buf = c.buf[:0]   // Inline resetBuffer
 			c.intVal = intVal
 			c.vTpe = typeInt
 			if param == 10 {
@@ -704,10 +688,8 @@ func (c *conv) handleFormat(args []any, argIndex *int, formatType rune, param in
 			oldStringVal := c.stringVal
 			oldTmpStr := c.tmpStr
 			oldBuf := make([]byte, len(c.buf))
-			copy(oldBuf, c.buf)
-
-			// Perform calculation with isolated buffer
-			c.resetBuffer()
+			copy(oldBuf, c.buf) // Perform calculation with isolated buffer
+			c.buf = c.buf[:0]   // Inline resetBuffer
 			c.floatVal = floatVal
 			c.vTpe = typeFloat
 			c.f2sMan(param)
@@ -738,7 +720,7 @@ func (c *conv) handleFormat(args []any, argIndex *int, formatType rune, param in
 		copy(oldBuf, c.buf)
 
 		// Perform calculation with isolated buffer
-		c.resetBuffer()
+		c.buf = c.buf[:0] // Inline resetBuffer
 		c.stringVal = ""
 		c.formatValue(arg)
 		str = c.getString()
@@ -755,7 +737,7 @@ func (c *conv) handleFormat(args []any, argIndex *int, formatType rune, param in
 
 func (c *conv) sprintf(format string, args ...any) {
 	// Reset buffer at start to avoid concatenation issues
-	c.resetBuffer()
+	c.buf = c.buf[:0] // Inline resetBuffer
 
 	// Pre-calculate buffer size to reduce reallocations
 	eSz := len(format)
@@ -797,62 +779,42 @@ func (c *conv) sprintf(format string, args ...any) {
 						}
 					}
 				} // Handle format specifiers
+				var formatChar rune
+				var param int
+				var formatSpec string
+
 				switch format[i] {
 				case 'd':
-					if str, ok := c.handleFormat(args, &argIndex, 'd', 10, "%d"); ok {
-						c.buf = append(c.buf, str...)
-					} else {
-						c.vTpe = typeErr
-						return
-					}
+					formatChar, param, formatSpec = 'd', 10, "%d"
 				case 'f':
-					if str, ok := c.handleFormat(args, &argIndex, 'f', precision, "%f"); ok {
-						c.buf = append(c.buf, str...)
-					} else {
-						c.vTpe = typeErr
-						return
-					}
+					formatChar, param, formatSpec = 'f', precision, "%f"
 				case 'o':
-					if str, ok := c.handleFormat(args, &argIndex, 'o', 8, "%o"); ok {
-						c.buf = append(c.buf, str...)
-					} else {
-						c.vTpe = typeErr
-						return
-					}
+					formatChar, param, formatSpec = 'o', 8, "%o"
 				case 'b':
-					if str, ok := c.handleFormat(args, &argIndex, 'b', 2, "%b"); ok {
-						c.buf = append(c.buf, str...)
-					} else {
-						c.vTpe = typeErr
-						return
-					}
+					formatChar, param, formatSpec = 'b', 2, "%b"
 				case 'x':
-					if str, ok := c.handleFormat(args, &argIndex, 'x', 16, "%x"); ok {
-						c.buf = append(c.buf, str...)
-					} else {
-						c.vTpe = typeErr
-						return
-					}
+					formatChar, param, formatSpec = 'x', 16, "%x"
 				case 'v':
-					if str, ok := c.handleFormat(args, &argIndex, 'v', 0, "%v"); ok {
-						c.buf = append(c.buf, str...)
-					} else {
-						c.vTpe = typeErr
-						return
-					}
+					formatChar, param, formatSpec = 'v', 0, "%v"
 				case 's':
-					if str, ok := c.handleFormat(args, &argIndex, 's', 0, "%s"); ok {
-						c.buf = append(c.buf, str...)
-					} else {
-						c.vTpe = typeErr
-						return
-					}
+					formatChar, param, formatSpec = 's', 0, "%s"
 				case '%':
 					c.buf = append(c.buf, '%')
+					continue
 				default:
 					c.err = T(D.Format, D.Specifier, D.Not, D.Supported, format[i])
 					c.vTpe = typeErr
 					return
+				}
+
+				// Common format handling logic for all specifiers except '%'
+				if format[i] != '%' {
+					if str, ok := c.handleFormat(args, &argIndex, formatChar, param, formatSpec); ok {
+						c.buf = append(c.buf, str...)
+					} else {
+						c.vTpe = typeErr
+						return
+					}
 				}
 			} else {
 				c.buf = append(c.buf, format[i])
