@@ -453,35 +453,45 @@ TinyString includes a comprehensive multilingual error system with zero external
 ```go
 import . "github.com/cdvelop/tinystring"
 
-// Configure language (auto-detects system language by default)
-OutLang(ES) // Set Spanish as default
+// Auto-detect system language or set explicitly
+OutLang()    // Auto-detect from environment/browser
+OutLang(ES)  // Set Spanish explicitly
 
-// Create translated error messages using dictionary words
-err := Err(D.Invalid, D.Format).Error()
+// Basic error creation with dictionary words
+err := Err(D.Invalid, D.Format)
 // out: "inválido formato" (Spanish)
 
 // Complex compositions
-err := Err(D.Negative, D.Numbers, D.Not, D.Supported, D.For, D.Unsigned, D.Integer).Error()
-// out: "negativo números no soportado para sin signo entero" (Spanish)
+err := Err(D.Cannot, D.Round, D.NonNumeric, D.Value)
+// out: "no puede redondear no numérico valor" (Spanish)
 
-// Language override inline
-err := Err(FR, D.Cannot, D.Round, D.NonNumeric, D.Value).Error()
-// out: "ne peut pas arrondir non numérique valeur" (French)
+// Dynamic language switching
+err := Err(FR, D.Empty, D.String, D.Not, D.Supported)
+// out: "vide chaîne pas pris en charge" (French)
 
 // Mixed with regular strings (backward compatible)
-err := Err(D.Invalid, "user input:", "abc123").Error()
+err := Err(D.Invalid, "user input:", "abc123")
 // out: "inválido user input: abc123"
+
+// Practical validation example
+validateInput := func(input string) error {
+    if input == "" {
+        return Err(D.Empty, D.String, D.Not, D.Supported)
+    }
+    if _, err := Convert(input).ToInt(); err != nil {
+        return Err(D.Invalid, D.Number, D.Format)
+    }
+    return nil
+}
 ```
 
 #### 🎯 Dictionary Features
-- **9 Languages Supported**: EN, ES, ZH, HI, AR, PT, FR, DE, RU
+- **9 Languages**: EN, ES, ZH, HI, AR, PT, FR, DE, RU
 - **35+ Essential Words**: Alphabetically sorted for maximum reusability
 - **Composable Messages**: Build complex errors from simple words
 - **Zero Dependencies**: No external translation libraries
-- **TinyGo Compatible**: Full WebAssembly support
 - **Auto-Detection**: Automatically detects system/browser language
-- **Extensible**: Create your own dictionary words
-- **Backward Compatible**: Works with existing string-based errors
+- **TinyGo Compatible**: Full WebAssembly support
 
 ### 🌍 Unicode & Localization
 
@@ -516,76 +526,6 @@ value, err := tinystring.ParseKeyValue("count=42", "=")         // out: "42", ni
 // Snake case with custom separators
 tinystring.Convert("hello world").ToSnakeCaseLower("-").String() // out: "hello-world"
 tinystring.Convert("hello world").ToSnakeCaseUpper("_").String() // out: "HELLO_WORLD"
-```
-
-## 🌍 Complete Multilingual Example
-
-Here's a practical example showing how to build a multilingual application:
-
-```go
-package main
-
-import . "github.com/cdvelop/tinystring"
-
-func main() {
-    // Auto-detect user's language
-    OutLang() // Detects from environment/browser
-    
-    // Validation function with multilingual errors
-    validateUserInput := func(input string) error {
-        if input == "" {
-            return Err(D.Empty, D.String, D.Not, D.Supported)
-        }
-        
-        if len(input) < 3 {
-            return Err(D.String, D.Value, "too short")
-        }
-        
-        // Try to parse as number
-        if _, err := Convert(input).ToInt(); err != nil {
-            return Err(D.Invalid, D.Number, D.Format)
-        }
-        
-        return nil
-    }
-    
-    // Test with different inputs
-    inputs := []string{"", "ab", "not_a_number", "123"}
-    
-    for _, input := range inputs {
-        if err := validateUserInput(input); err != nil {
-            output := Fmt("Input '%s': %s", input, err.Error())
-            // out: "Input '': empty string not supported"
-        } else {
-            output := Fmt("Input '%s': OK", input)
-            // out: "Input '123': OK"
-        }
-    }
-    
-    // Switch language dynamically
-    OutLang(ES)
-    
-    // Same validation, different language
-    if err := validateUserInput(""); err != nil {
-        spanishError := err.Error()
-        // out: "vacío cadena no soportado"
-    }
-    
-    // Force specific language for specific errors
-    criticalErr := Err(ZH, D.Cannot, D.Format, D.NonNumeric, D.Value)
-    chineseError := criticalErr.Error()
-    // out: "不能 格式 非数字 值"
-}
-
-// Example outputs (depends on system language):
-// Input '': "empty string not supported"
-// Input 'ab': "string value too short"  
-// Input 'not_a_number': "invalid number format"
-// Input '123': "OK"
-//
-// After switching to Spanish:
-// Error: "vacío cadena no soportado"
-// Chinese error: "不能 格式 非数字 值"
 ```
 
 ## 💡 Performance Tips
