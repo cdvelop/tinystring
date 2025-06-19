@@ -330,8 +330,33 @@ func (t *conv) any2s(v any) {
 		}
 		t.stringVal = t.tmpStr
 	default:
-		// Handle numeric types using generics for any2s
-		t.handleAnyTypeForAny2s(v)
+		// Inline handleAnyTypeForAny2s logic for numeric types
+		switch v := v.(type) {
+		case int:
+			genInt(t, v, 1)
+		case int8:
+			genInt(t, v, 1)
+		case int16:
+			genInt(t, v, 1)
+		case int32:
+			genInt(t, v, 1)
+		case int64:
+			genInt(t, v, 1)
+		case uint:
+			genUint(t, v, 1)
+		case uint8:
+			genUint(t, v, 1)
+		case uint16:
+			genUint(t, v, 1)
+		case uint32:
+			genUint(t, v, 1)
+		case uint64:
+			genUint(t, v, 1)
+		case float32:
+			genFloat(t, v, 1)
+		case float64:
+			genFloat(t, v, 1)
+		}
 	}
 }
 
@@ -363,35 +388,5 @@ func (c *conv) handleAnyType(val any) {
 		genFloat(c, v, 0)
 	case float64:
 		genFloat(c, v, 0)
-	}
-}
-
-// handleAnyTypeForAny2s processes any numeric type for any2s using generics
-func (c *conv) handleAnyTypeForAny2s(val any) {
-	switch v := val.(type) {
-	case int:
-		genInt(c, v, 1)
-	case int8:
-		genInt(c, v, 1)
-	case int16:
-		genInt(c, v, 1)
-	case int32:
-		genInt(c, v, 1)
-	case int64:
-		genInt(c, v, 1)
-	case uint:
-		genUint(c, v, 1)
-	case uint8:
-		genUint(c, v, 1)
-	case uint16:
-		genUint(c, v, 1)
-	case uint32:
-		genUint(c, v, 1)
-	case uint64:
-		genUint(c, v, 1)
-	case float32:
-		genFloat(c, v, 1)
-	case float64:
-		genFloat(c, v, 1)
 	}
 }

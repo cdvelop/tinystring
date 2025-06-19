@@ -2,17 +2,6 @@ package tinystring
 
 // Using shared constants from mapping.go for consistency
 
-// processWordForName applies the maxCharsPerWord rule to a word for name truncation
-func (t *conv) processWordForName(word string, wordIndex int, totalWords int, maxCharsPerWord int) string { // Last word doesn't get truncated by maxCharsPerWord
-	if wordIndex < totalWords-1 && len(word) > maxCharsPerWord {
-		return word[:maxCharsPerWord] + dotStr
-	} else if wordIndex == 0 && len(word) == 1 {
-		// Special case: single letter first word gets a period
-		return word + dotStr
-	}
-	return word
-}
-
 // Truncate truncates a conv so that it does not exceed the specified width.
 // If the conv is longer, it truncates it and adds "..." if there is space.
 // If the conv is shorter or equal to the width, it remains unchanged.
@@ -116,7 +105,17 @@ func (t *conv) TruncateName(maxCharsPerWord, maxWidth any) *conv {
 		if i > 0 {
 			res += spaceStr // Add space separator
 		}
-		res += t.processWordForName(word, i, len(words), mC)
+		// Inline processWordForName logic
+		var processedWord string
+		if i < len(words)-1 && len(word) > mC {
+			processedWord = word[:mC] + dotStr
+		} else if i == 0 && len(word) == 1 {
+			// Special case: single letter first word gets a period
+			processedWord = word + dotStr
+		} else {
+			processedWord = word
+		}
+		res += processedWord
 	}
 
 	// Step 2: Check if the processed result fits within maxWidth
@@ -164,9 +163,16 @@ func (t *conv) applyMaxWidthConstraint(words []string, mC, mT int) *conv {
 			} else {
 				break // No more space left
 			}
+		} // Inline processWordForName logic
+		var prW string
+		if i < len(words)-1 && len(word) > mC {
+			prW = word[:mC] + dotStr
+		} else if i == 0 && len(word) == 1 {
+			// Special case: single letter first word gets a period
+			prW = word + dotStr
+		} else {
+			prW = word
 		}
-		// Process word according to maxCharsPerWord rule
-		prW := t.processWordForName(word, i, len(words), mC)
 
 		// Check how much of this word we can include
 		if len(prW) <= remaining {

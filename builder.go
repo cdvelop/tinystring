@@ -202,7 +202,8 @@ func (c *conv) handleError(val error, mode cm) {
 
 func (c *conv) handleInt(val int64, mode cm) {
 	switch mode {
-	case mi: // Initial mode		c.intVal = val
+	case mi: // Initial mode
+		c.intVal = val
 		c.vTpe = typeInt
 	case mb: // Buffer mode
 		c.intVal = val
@@ -219,7 +220,8 @@ func (c *conv) handleInt(val int64, mode cm) {
 
 func (c *conv) handleUint(val uint64, mode cm) {
 	switch mode {
-	case mi: // Initial mode		c.uintVal = val
+	case mi: // Initial mode
+		c.uintVal = val
 		c.vTpe = typeUint
 	case mb: // Buffer mode
 		c.uintVal = val
@@ -236,7 +238,8 @@ func (c *conv) handleUint(val uint64, mode cm) {
 
 func (c *conv) handleFloat(val float64, mode cm) {
 	switch mode {
-	case mi: // Initial mode		c.floatVal = val
+	case mi: // Initial mode
+		c.floatVal = val
 		c.vTpe = typeFloat
 	case mb: // Buffer mode
 		c.floatVal = val
@@ -319,5 +322,6 @@ func (c *conv) val2Buf() {
 			c.buf = append(c.buf, falseStr...)
 		}
 	default:
-		c.buf = c.buf[:0]	}
+		c.buf = c.buf[:0]
+	}
 }
