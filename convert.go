@@ -46,38 +46,6 @@ type conv struct {
 	buf []byte // Reusable buffer for string operations
 }
 
-// Functional options pattern for conv construction
-type convOpt func(*conv)
-
-// withValue initializes conv with any value type
-func withValue(v any) convOpt {
-	return func(c *conv) {
-		if v == nil {
-			c.setErrorVal(Err(D.String, D.Empty).err)
-			return
-		}
-		switch val := v.(type) {
-		case string:
-			c.stringVal = val
-			c.vTpe = typeStr
-		case []string:
-			c.stringSliceVal = val
-			c.vTpe = typeStrSlice
-		case *string:
-			c.stringVal = *val
-			c.stringPtrVal = val
-			c.vTpe = typeStrPtr
-		case bool:
-			c.setBoolVal(val)
-		case error:
-			c.setErrorVal(val.Error())
-		default:
-			// Handle numeric types using generics
-			c.handleAnyType(val)
-		}
-	}
-}
-
 // Convert initializes a new conv struct with optional value for string,bool and number manipulation.
 // REFACTORED: Now accepts variadic parameters - Convert() or Convert(value)
 // Phase 7: Uses object pool internally for memory optimization (transparent to user)
@@ -92,7 +60,31 @@ func Convert(v ...any) *conv {
 
 	// Initialize with value if provided, empty otherwise
 	if len(v) == 1 {
-		withValue(v[0])(c)
+		// Inlined withValue logic for performance
+		val := v[0]
+		if val == nil {
+			c.setErrorVal(Err(D.String, D.Empty).err)
+		} else {
+			switch typedVal := val.(type) {
+			case string:
+				c.stringVal = typedVal
+				c.vTpe = typeStr
+			case []string:
+				c.stringSliceVal = typedVal
+				c.vTpe = typeStrSlice
+			case *string:
+				c.stringVal = *typedVal
+				c.stringPtrVal = typedVal
+				c.vTpe = typeStrPtr
+			case bool:
+				c.setBoolVal(typedVal)
+			case error:
+				c.setErrorVal(typedVal.Error())
+			default:
+				// Handle numeric types using generics
+				c.handleAnyType(typedVal)
+			}
+		}
 	}
 	// If no value provided, conv is ready for builder pattern
 
