@@ -66,12 +66,51 @@ tinystring.Convert(&original).RemoveTilde().CamelCaseLower().Apply()
 import . "github.com/cdvelop/tinystring"
 
 OutLang(ES) // Set Spanish
-err := Err(D.Invalid, D.Fmt).Error()
+err := Err(D.Invalid, D.Fmt)
 // out: "inválido formato"
 
 OutLang()   // Auto-detect system language
 err = Err(D.Cannot, D.Round, D.NonNumeric, D.Value).Error()
 // Output in user's detected language
+```
+
+## 🔧 Builder API
+
+TinyString features a **high-performance builder API** for memory-efficient string operations. All operations work on a single internal buffer with object pooling.
+
+### Efficient Loop Processing
+
+```go
+import "github.com/cdvelop/tinystring"
+
+// Memory-efficient processing in loops
+items := []string{"  APPLE  ", "  banana  ", "  Cherry  "}
+
+c := tinystring.Convert() // Empty initialization
+for i, item := range items {
+    c.Write(item).Trim().ToLower().Capitalize()
+    if i < len(items)-1 {
+        c.Write(" - ")
+    }
+}
+result := c.String() // "Apple - Banana - Cherry"
+```
+
+### Key Builder Operations
+
+```go
+// Reuse builder for multiple operations
+builder := tinystring.Convert()
+
+// Operation 1: Reset and build
+builder.Reset()
+result1 := builder.Write("Hello").Write(" World").String()
+
+// Operation 2: Reset and transform
+builder.Reset()
+original := "test string"
+tinystring.Convert(&original).ToUpper().RemoveTilde().Apply()
+// original is now: "TEST STRING" - modified in-place
 ```
 
 ## 📚 Standard Library Equivalents
@@ -92,6 +131,27 @@ Replace common `strings` package functions with TinyString equivalents:
 | `strings.TrimPrefix()` | `Convert(s).TrimPrefix(prefix).String()` |
 | `strings.TrimSuffix()` | `Convert(s).TrimSuffix(suffix).String()` |
 | `strings.Repeat()` | `Convert(s).Repeat(n).String()` |
+| `strings.Builder` | `Convert().Write(a).Write(b).String()` |
+
+#### Builder API Advantages
+
+The Builder API is especially efficient for complex operations:
+
+```go
+// ❌ Standard approach - multiple allocations
+result := tinystring.Convert("Hello").ToUpper().String() + " " + 
+          tinystring.Convert("World").ToLower().String() + "!"
+// Multiple Convert() calls = multiple allocations
+
+// ✅ Builder approach - single allocation
+result := tinystring.Convert().
+    Write("Hello").ToUpper().
+    Write(" ").
+    Write("World").ToLower().
+    Write("!").
+    String()
+// Single Convert() + reused buffer = optimal performance
+```
 
 #### String Transformations
 
@@ -465,10 +525,7 @@ Here's a practical example showing how to build a multilingual application:
 ```go
 package main
 
-import (
-    "fmt"
-    . "github.com/cdvelop/tinystring"
-)
+import . "github.com/cdvelop/tinystring"
 
 func main() {
     // Auto-detect user's language
@@ -497,37 +554,38 @@ func main() {
     
     for _, input := range inputs {
         if err := validateUserInput(input); err != nil {
-            fmt.Printf("Input '%s': %s\n", input, err.Error())
+            output := Fmt("Input '%s': %s", input, err.Error())
+            // out: "Input '': empty string not supported"
         } else {
-            fmt.Printf("Input '%s': OK\n", input)
+            output := Fmt("Input '%s': OK", input)
+            // out: "Input '123': OK"
         }
     }
     
     // Switch language dynamically
-    fmt.Println("\n--- Switching to Spanish ---")
     OutLang(ES)
     
     // Same validation, different language
     if err := validateUserInput(""); err != nil {
-        fmt.Printf("Error in Spanish: %s\n", err.Error())
+        spanishError := err.Error()
         // out: "vacío cadena no soportado"
     }
     
     // Force specific language for specific errors
     criticalErr := Err(ZH, D.Cannot, D.Fmt, D.NonNumeric, D.Value)
-    fmt.Printf("Critical error in Chinese: %s\n", criticalErr.Error())
+    chineseError := criticalErr.Error()
     // out: "不能 格式 非数字 值"
 }
 
-// Output example (depends on system language):
-// Input '': empty string not supported
-// Input 'ab': string value too short  
-// Input 'not_a_number': invalid number format
-// Input '123': OK
+// Example outputs (depends on system language):
+// Input '': "empty string not supported"
+// Input 'ab': "string value too short"  
+// Input 'not_a_number': "invalid number format"
+// Input '123': "OK"
 //
-// --- Switching to Spanish ---
-// Error in Spanish: vacío cadena no soportado
-// Critical error in Chinese: 不能 格式 非数字 值
+// After switching to Spanish:
+// Error: "vacío cadena no soportado"
+// Chinese error: "不能 格式 非数字 值"
 ```
 
 ## 💡 Performance Tips

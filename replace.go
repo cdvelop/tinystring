@@ -9,9 +9,14 @@ func (t *conv) Replace(oldAny, newAny any, n ...int) *conv {
 		return t // Error chain interruption
 	}
 
+	tmp := getConv()
+	tmp.any2s(oldAny) // Convert oldAny to string
+	old := tmp.tmpStr
+
+	tmp.any2s(newAny)      // Convert newAny to string
+	newStr := tmp.String() // return tmp to pool
+
 	// Convert parameters to strings using the consistent Convert pattern
-	old := Convert(oldAny).String()
-	newStr := Convert(newAny).String()
 	str := t.getString()
 	if isEmptySt(old) || isEmptySt(str) {
 		return t

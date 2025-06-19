@@ -107,18 +107,33 @@ func TestErrorChainInterruption(t *testing.T) {
 
 // TestBuilderPattern tests the main optimization goal: empty Convert() for loops
 func TestBuilderPattern(t *testing.T) {
-	items := []string{"apple", "banana", "cherry"}
+	items := []string{"  APPLE  ", "  banana  ", "  Cherry  "}
 
-	// Test builder pattern
+	// Test builder pattern with transformations
 	c := Convert() // Empty initialization
-	for _, item := range items {
-		c.Write(item).Write(" ")
+	for i, item := range items {
+		c.Write(item).Trim().ToLower().Capitalize()
+		if i < len(items)-1 {
+			c.Write(" - ")
+		}
 	}
 	result := c.String() // Auto-releases
 
-	expected := "apple banana cherry "
+	expected := "Apple - Banana - Cherry"
 	if result != expected {
 		t.Errorf("Builder pattern failed: got %q, want %q", result, expected)
+	}
+
+	// Test simple pattern too
+	c2 := Convert() // Empty initialization
+	for _, item := range []string{"apple", "banana", "cherry"} {
+		c2.Write(item).Write(" ")
+	}
+	result2 := c2.String() // Auto-releases
+
+	expected2 := "apple banana cherry "
+	if result2 != expected2 {
+		t.Errorf("Simple builder pattern failed: got %q, want %q", result2, expected2)
 	}
 }
 
