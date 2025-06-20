@@ -37,7 +37,13 @@ func T(values ...any) string {
 		switch v := values[i].(type) {
 		case LocStr:
 			// Dictionary term - get translation for current language
-			translation := v.get(currentLang)
+			// Inline get logic
+			translation := func() string {
+				if int(currentLang) < len(v) && v[currentLang] != "" {
+					return v[currentLang]
+				}
+				return v[EN] // Fallback to English
+			}()
 			c.buf = append(c.buf, translation...)
 		case string:
 			// Direct string

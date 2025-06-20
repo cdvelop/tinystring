@@ -14,10 +14,39 @@ func (t *conv) Capitalize() *conv {
 	runes := []rune(str)
 	if len(runes) == 0 {
 		return t
-	}
-	// Get pooled buffer for result
-	buf := getRuneBuffer(len(runes))
-	defer putRuneBuffer(&buf)
+	} // Get pooled buffer for result
+	// Inline getRuneBuffer logic
+	buf := func(capacity int) []rune {
+		bufInterface := runeBufferPool.Get()
+		buffer := bufInterface.([]rune)
+
+		// Reset the buffer
+		buffer = buffer[:0]
+		// Grow if needed
+		if capacity > cap(buffer) {
+			// If requested capacity is much larger, allocate new buffer
+			if capacity > cap(buffer)*2 {
+				runeBufferPool.Put(buffer[:0]) // SA6002: sync.Pool expects interface{}
+				return make([]rune, 0, capacity)
+			}
+			// Otherwise, grow the buffer
+			runeBufferPool.Put(buffer[:0]) // SA6002: sync.Pool expects interface{}
+			return make([]rune, 0, capacity)
+		}
+
+		return buffer
+	}(len(runes))
+	// Inline putRuneBuffer logic
+	defer func(buffer *[]rune) {
+		if buffer == nil {
+			return
+		}
+		// Only pool buffers that aren't too large to avoid memory leaks
+		if cap(*buffer) <= defaultBufCap*4 {
+			resetBuf := (*buffer)[:0]
+			runeBufferPool.Put(resetBuf) // SA6002: sync.Pool expects interface{}
+		}
+	}(&buf)
 	inWord := false
 	addSpace := false // Flag to add space before next word
 

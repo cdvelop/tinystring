@@ -21,10 +21,10 @@ func Err(values ...any) *conv {
 // Errf creates a new conv instance with error formatting similar to fmt.Errf
 // Example: tinystring.Errf("invalid value: %s", value).Error()
 func Errf(format string, args ...any) *conv {
-	result := getConv() // Always obtain from pool
-	result.sprintf(format, args...)
-	result.vTpe = typeErr
-	return result
+	c := getConv() // Always obtain from pool
+	c.sprintf(format, args...)
+	c.vTpe = typeErr
+	return c
 }
 
 // Error implements the error interface for conv

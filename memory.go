@@ -164,40 +164,6 @@ var runeBufferPool = sync.Pool{
 	},
 }
 
-// getRuneBuffer gets a reusable rune buffer from the pool
-func getRuneBuffer(capacity int) []rune {
-	bufInterface := runeBufferPool.Get()
-	buf := bufInterface.([]rune)
-
-	// Reset the buffer
-	buf = buf[:0]
-	// Grow if needed
-	if capacity > cap(buf) {
-		// If requested capacity is much larger, allocate new buffer
-		if capacity > cap(buf)*2 {
-			runeBufferPool.Put(buf[:0]) // SA6002: sync.Pool expects interface{}
-			return make([]rune, 0, capacity)
-		}
-		// Otherwise, grow the buffer
-		runeBufferPool.Put(buf[:0]) // SA6002: sync.Pool expects interface{}
-		return make([]rune, 0, capacity)
-	}
-
-	return buf
-}
-
-// putRuneBuffer returns a rune buffer to the pool
-func putRuneBuffer(buf *[]rune) {
-	if buf == nil {
-		return
-	}
-	// Only pool buffers that aren't too large to avoid memory leaks
-	if cap(*buf) <= defaultBufCap*4 {
-		resetBuf := (*buf)[:0]
-		runeBufferPool.Put(resetBuf) // SA6002: sync.Pool expects interface{}
-	}
-}
-
 // newBuf creates an optimally-sized buffer for common string operations
 func (t *conv) newBuf(sizeMultiplier int) (string, []byte) {
 	str := t.getString()

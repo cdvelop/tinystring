@@ -16,9 +16,54 @@ func (t *conv) Truncate(maxWidth any, reservedChars ...any) *conv {
 	}
 
 	conv := t.getString()
-	oL := len(conv)
-	// Validate maxWidth parameter
-	mWI, ok := t.validateIntParam(maxWidth, false)
+	oL := len(conv) // Validate maxWidth parameter
+	// Inline validateIntParam logic
+	mWI, ok := func(param any, allowZero bool) (int, bool) {
+		var val int
+		var ok bool
+		switch v := param.(type) {
+		case int, int8, int16, int32, int64:
+			// Use type assertion to handle all integer types
+			if i, isInt := param.(int); isInt {
+				val, ok = i, true
+			} else if i8, isInt8 := param.(int8); isInt8 {
+				val, ok = int(i8), true
+			} else if i16, isInt16 := param.(int16); isInt16 {
+				val, ok = int(i16), true
+			} else if i32, isInt32 := param.(int32); isInt32 {
+				val, ok = int(i32), true
+			} else if i64, isInt64 := param.(int64); isInt64 {
+				val, ok = int(i64), true
+			}
+		case uint, uint8, uint16, uint32, uint64:
+			if u, isUint := param.(uint); isUint {
+				val, ok = int(u), true
+			} else if u8, isUint8 := param.(uint8); isUint8 {
+				val, ok = int(u8), true
+			} else if u16, isUint16 := param.(uint16); isUint16 {
+				val, ok = int(u16), true
+			} else if u32, isUint32 := param.(uint32); isUint32 {
+				val, ok = int(u32), true
+			} else if u64, isUint64 := param.(uint64); isUint64 {
+				val, ok = int(u64), true
+			}
+		case float32:
+			val, ok = int(v), true
+		case float64:
+			val, ok = int(v), true
+		default:
+			val, ok = 0, false
+		}
+
+		if !ok {
+			return 0, false
+		}
+		// Unified validation logic
+		if allowZero {
+			return val, val >= 0
+		}
+		return val, val > 0
+	}(maxWidth, false)
 	if !ok {
 		return t
 	}
@@ -27,7 +72,53 @@ func (t *conv) Truncate(maxWidth any, reservedChars ...any) *conv {
 		// Get reserved chars value
 		rCI := 0
 		if len(reservedChars) > 0 {
-			if val, ok := t.validateIntParam(reservedChars[0], true); ok {
+			// Inline validateIntParam logic
+			if val, ok := func(param any, allowZero bool) (int, bool) {
+				var val int
+				var ok bool
+				switch v := param.(type) {
+				case int, int8, int16, int32, int64:
+					// Use type assertion to handle all integer types
+					if i, isInt := param.(int); isInt {
+						val, ok = i, true
+					} else if i8, isInt8 := param.(int8); isInt8 {
+						val, ok = int(i8), true
+					} else if i16, isInt16 := param.(int16); isInt16 {
+						val, ok = int(i16), true
+					} else if i32, isInt32 := param.(int32); isInt32 {
+						val, ok = int(i32), true
+					} else if i64, isInt64 := param.(int64); isInt64 {
+						val, ok = int(i64), true
+					}
+				case uint, uint8, uint16, uint32, uint64:
+					if u, isUint := param.(uint); isUint {
+						val, ok = int(u), true
+					} else if u8, isUint8 := param.(uint8); isUint8 {
+						val, ok = int(u8), true
+					} else if u16, isUint16 := param.(uint16); isUint16 {
+						val, ok = int(u16), true
+					} else if u32, isUint32 := param.(uint32); isUint32 {
+						val, ok = int(u32), true
+					} else if u64, isUint64 := param.(uint64); isUint64 {
+						val, ok = int(u64), true
+					}
+				case float32:
+					val, ok = int(v), true
+				case float64:
+					val, ok = int(v), true
+				default:
+					val, ok = 0, false
+				}
+
+				if !ok {
+					return 0, false
+				}
+				// Unified validation logic
+				if allowZero {
+					return val, val >= 0
+				}
+				return val, val > 0
+			}(reservedChars[0], true); ok {
 				rCI = val
 			}
 		}
@@ -84,14 +175,105 @@ func (t *conv) TruncateName(maxCharsPerWord, maxWidth any) *conv {
 
 	if len(t.getString()) == 0 {
 		return t
-	}
-	// Validate parameters
-	mC, ok := t.validateIntParam(maxCharsPerWord, false)
+	} // Validate parameters
+	// Inline validateIntParam logic
+	mC, ok := func(param any, allowZero bool) (int, bool) {
+		var val int
+		var ok bool
+		switch v := param.(type) {
+		case int, int8, int16, int32, int64:
+			// Use type assertion to handle all integer types
+			if i, isInt := param.(int); isInt {
+				val, ok = i, true
+			} else if i8, isInt8 := param.(int8); isInt8 {
+				val, ok = int(i8), true
+			} else if i16, isInt16 := param.(int16); isInt16 {
+				val, ok = int(i16), true
+			} else if i32, isInt32 := param.(int32); isInt32 {
+				val, ok = int(i32), true
+			} else if i64, isInt64 := param.(int64); isInt64 {
+				val, ok = int(i64), true
+			}
+		case uint, uint8, uint16, uint32, uint64:
+			if u, isUint := param.(uint); isUint {
+				val, ok = int(u), true
+			} else if u8, isUint8 := param.(uint8); isUint8 {
+				val, ok = int(u8), true
+			} else if u16, isUint16 := param.(uint16); isUint16 {
+				val, ok = int(u16), true
+			} else if u32, isUint32 := param.(uint32); isUint32 {
+				val, ok = int(u32), true
+			} else if u64, isUint64 := param.(uint64); isUint64 {
+				val, ok = int(u64), true
+			}
+		case float32:
+			val, ok = int(v), true
+		case float64:
+			val, ok = int(v), true
+		default:
+			val, ok = 0, false
+		}
+
+		if !ok {
+			return 0, false
+		}
+		// Unified validation logic
+		if allowZero {
+			return val, val >= 0
+		}
+		return val, val > 0
+	}(maxCharsPerWord, false)
 	if !ok {
 		return t
 	}
 
-	mT, ok := t.validateIntParam(maxWidth, false)
+	// Inline validateIntParam logic
+	mT, ok := func(param any, allowZero bool) (int, bool) {
+		var val int
+		var ok bool
+		switch v := param.(type) {
+		case int, int8, int16, int32, int64:
+			// Use type assertion to handle all integer types
+			if i, isInt := param.(int); isInt {
+				val, ok = i, true
+			} else if i8, isInt8 := param.(int8); isInt8 {
+				val, ok = int(i8), true
+			} else if i16, isInt16 := param.(int16); isInt16 {
+				val, ok = int(i16), true
+			} else if i32, isInt32 := param.(int32); isInt32 {
+				val, ok = int(i32), true
+			} else if i64, isInt64 := param.(int64); isInt64 {
+				val, ok = int(i64), true
+			}
+		case uint, uint8, uint16, uint32, uint64:
+			if u, isUint := param.(uint); isUint {
+				val, ok = int(u), true
+			} else if u8, isUint8 := param.(uint8); isUint8 {
+				val, ok = int(u8), true
+			} else if u16, isUint16 := param.(uint16); isUint16 {
+				val, ok = int(u16), true
+			} else if u32, isUint32 := param.(uint32); isUint32 {
+				val, ok = int(u32), true
+			} else if u64, isUint64 := param.(uint64); isUint64 {
+				val, ok = int(u64), true
+			}
+		case float32:
+			val, ok = int(v), true
+		case float64:
+			val, ok = int(v), true
+		default:
+			val, ok = 0, false
+		}
+
+		if !ok {
+			return 0, false
+		}
+		// Unified validation logic
+		if allowZero {
+			return val, val >= 0
+		}
+		return val, val > 0
+	}(maxWidth, false)
 	if !ok {
 		return t
 	}

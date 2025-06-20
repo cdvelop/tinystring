@@ -26,39 +26,35 @@ func (c *conv) formatValue(value any) {
 	case error:
 		c.Write(val.Error())
 	default:
-		c.formatAnyNumeric(value)
-	}
-}
-
-// formatAnyNumeric consolidates all numeric type formatting
-func (c *conv) formatAnyNumeric(val any) {
-	switch v := val.(type) {
-	case int:
-		genInt(c, v, 2)
-	case int8:
-		genInt(c, v, 2)
-	case int16:
-		genInt(c, v, 2)
-	case int32:
-		genInt(c, v, 2)
-	case int64:
-		genInt(c, v, 2)
-	case uint:
-		genUint(c, v, 2)
-	case uint8:
-		genUint(c, v, 2)
-	case uint16:
-		genUint(c, v, 2)
-	case uint32:
-		genUint(c, v, 2)
-	case uint64:
-		genUint(c, v, 2)
-	case float32:
-		genFloat(c, v, 2)
-	case float64:
-		genFloat(c, v, 2)
-	default:
-		c.Write("<unsupported>")
+		// Inline formatAnyNumeric logic
+		switch v := value.(type) {
+		case int:
+			genInt(c, v, 2)
+		case int8:
+			genInt(c, v, 2)
+		case int16:
+			genInt(c, v, 2)
+		case int32:
+			genInt(c, v, 2)
+		case int64:
+			genInt(c, v, 2)
+		case uint:
+			genUint(c, v, 2)
+		case uint8:
+			genUint(c, v, 2)
+		case uint16:
+			genUint(c, v, 2)
+		case uint32:
+			genUint(c, v, 2)
+		case uint64:
+			genUint(c, v, 2)
+		case float32:
+			genFloat(c, v, 2)
+		case float64:
+			genFloat(c, v, 2)
+		default:
+			c.Write("<unsupported>")
+		}
 	}
 }
 
@@ -152,11 +148,17 @@ func (t *conv) Down() *conv {
 		}
 		val = t.floatVal
 	}
-
 	// Detect decimal places from the current content
 	decimalPlaces := 0
 	str := t.getString()
-	if dotIndex := idxByte(str, '.'); dotIndex != -1 {
+	if dotIndex := func() int {
+		for i := range len(str) {
+			if str[i] == '.' {
+				return i
+			}
+		}
+		return -1
+	}(); dotIndex != -1 {
 		decimalPlaces = len(str) - dotIndex - 1
 	}
 
@@ -209,8 +211,7 @@ func (t *conv) FormatNumber() *conv {
 		t.err = ""
 		return t
 	}
-	if t.vTpe == typeUint {
-		// Convert uint to int64 and format directly
+	if t.vTpe == typeUint { // Convert uint to int64 and format directly
 		// Phase 10 Optimization: Direct uint64 to formatted string conversion
 		t.formatIntDirectly(int64(t.uintVal))
 		t.err = ""
@@ -220,7 +221,36 @@ func (t *conv) FormatNumber() *conv {
 		// We already have a float value, use it directly
 		t.f2sMan(-1)
 		fStr := t.getString()
-		fStr = rmZeros(fStr) // Remove trailing zeros after decimal point
+		// Inline rmZeros logic
+		fStr = func(s string) string {
+			dotIndex := func() int {
+				for i := range len(s) {
+					if s[i] == '.' {
+						return i
+					}
+				}
+				return -1
+			}()
+			if dotIndex == -1 {
+				return s // No decimal point, return as is
+			}
+
+			// Find the last non-zero digit after decimal point
+			lastNonZero := len(s) - 1
+			for i := len(s) - 1; i > dotIndex; i-- {
+				if s[i] != '0' {
+					lastNonZero = i
+					break
+				}
+			}
+
+			// If all digits after decimal are zeros, remove decimal point too
+			if lastNonZero == dotIndex {
+				return s[:dotIndex]
+			}
+
+			return s[:lastNonZero+1]
+		}(fStr)
 		t.setString(fStr)
 		// Phase 8.2 Optimization: Use optimized split without extra allocations
 		intPart, decPart, hasDecimal := t.splitFloatIndices()
@@ -260,12 +290,40 @@ func (t *conv) FormatNumber() *conv {
 	t.setString(str)
 	// Inline parseFloat logic
 	t.s2Float()
-	if t.err == "" {
-		// Use the parsed float value
+	if t.err == "" { // Use the parsed float value
 		t.vTpe = typeFloat
 		t.f2sMan(-1)
 		fStr := t.getString()
-		fStr = rmZeros(fStr) // Remove trailing zeros after decimal point
+		// Inline rmZeros logic
+		fStr = func(s string) string {
+			dotIndex := func() int {
+				for i := range len(s) {
+					if s[i] == '.' {
+						return i
+					}
+				}
+				return -1
+			}()
+			if dotIndex == -1 {
+				return s // No decimal point, return as is
+			}
+
+			// Find the last non-zero digit after decimal point
+			lastNonZero := len(s) - 1
+			for i := len(s) - 1; i > dotIndex; i-- {
+				if s[i] != '0' {
+					lastNonZero = i
+					break
+				}
+			}
+
+			// If all digits after decimal are zeros, remove decimal point too
+			if lastNonZero == dotIndex {
+				return s[:dotIndex]
+			}
+
+			return s[:lastNonZero+1]
+		}(fStr)
 		t.setString(fStr)
 		// Phase 8.2 Optimization: Use optimized split without allocations
 		intPart, decPart, hasDecimal := t.splitFloatIndices()
@@ -308,40 +366,7 @@ func (t *conv) FormatNumber() *conv {
 	return t
 }
 
-// idxByte finds the first occurrence of byte c in s (manual implementation to replace strings.IndexByte)
-func idxByte(s string, c byte) int {
-	for i := range len(s) {
-		if s[i] == c {
-			return i
-		}
-	}
-	return -1
-}
-
 // rmZeros removes trailing zeros from decimal numbers
-func rmZeros(s string) string {
-	dotIndex := idxByte(s, '.')
-	if dotIndex == -1 {
-		return s // No decimal point, return as is
-	}
-
-	// Find the last non-zero digit after decimal point
-	lastNonZero := len(s) - 1
-	for i := len(s) - 1; i > dotIndex; i-- {
-		if s[i] != '0' {
-			lastNonZero = i
-			break
-		}
-	}
-
-	// If all digits after decimal are zeros, remove decimal point too
-	if lastNonZero == dotIndex {
-		return s[:dotIndex]
-	}
-
-	return s[:lastNonZero+1]
-}
-
 // formatNumberWithCommas adds thousand separators to the numeric string in conv struct.
 // This is an internal conv method that modifies the struct instead of returning values.
 // Optimized to minimize allocations and use more efficient buffer operations.
@@ -605,135 +630,6 @@ func (c *conv) i2sBase(base int) {
 }
 
 // Unified handler for all format specifiers
-func (c *conv) handleFormat(args []any, argIndex *int, formatType rune, param int, formatSpec string) ([]byte, bool) {
-	// Inline extractArg logic
-	if *argIndex >= len(args) {
-		errConv := Err(D.Argument, D.Missing, formatSpec)
-		c.err = errConv.Error()
-		return nil, false
-	}
-	arg := args[*argIndex]
-
-	var str string
-	switch formatType {
-	case 'd', 'o', 'b', 'x':
-		var intVal int64
-		var ok bool
-
-		// Handle all integer types
-		switch v := arg.(type) {
-		case int:
-			intVal = int64(v)
-			ok = true
-		case int8:
-			intVal = int64(v)
-			ok = true
-		case int16:
-			intVal = int64(v)
-			ok = true
-		case int32:
-			intVal = int64(v)
-			ok = true
-		case int64:
-			intVal = v
-			ok = true
-		case uint:
-			intVal = int64(v)
-			ok = true
-		case uint8:
-			intVal = int64(v)
-			ok = true
-		case uint16:
-			intVal = int64(v)
-			ok = true
-		case uint32:
-			intVal = int64(v)
-			ok = true
-		case uint64:
-			if v <= 9223372036854775807 { // Max int64
-				intVal = int64(v)
-				ok = true
-			}
-		}
-
-		if ok {
-			// Save current state including buffer
-			oldVTpe := c.vTpe
-			oldStringVal := c.stringVal
-			oldBuf := make([]byte, len(c.buf))
-			copy(oldBuf, c.buf) // Perform calculation with isolated buffer
-			c.buf = c.buf[:0]   // Inline resetBuffer
-			c.intVal = intVal
-			c.vTpe = typeInt
-			if param == 10 {
-				c.i2s()
-			} else {
-				c.i2sBase(param)
-			}
-			str = c.getString()
-
-			// Restore original state including buffer
-			c.vTpe = oldVTpe
-			c.stringVal = oldStringVal
-			c.buf = oldBuf
-		} else {
-			c.err = T(D.Invalid, D.Type, D.Of, D.Argument, formatSpec)
-			return nil, false
-		}
-	case 'f':
-		if floatVal, ok := arg.(float64); ok {
-			// Save current state including buffer
-			oldFloatVal := c.floatVal
-			oldVTpe := c.vTpe
-			oldStringVal := c.stringVal
-			oldTmpStr := c.tmpStr
-			oldBuf := make([]byte, len(c.buf))
-			copy(oldBuf, c.buf) // Perform calculation with isolated buffer
-			c.buf = c.buf[:0]   // Inline resetBuffer
-			c.floatVal = floatVal
-			c.vTpe = typeFloat
-			c.f2sMan(param)
-			str = c.getString()
-
-			// Restore original state including buffer
-			c.floatVal = oldFloatVal
-			c.vTpe = oldVTpe
-			c.stringVal = oldStringVal
-			c.tmpStr = oldTmpStr
-			c.buf = oldBuf
-		} else {
-			c.err = T(D.Invalid, D.Type, D.Of, D.Argument, formatSpec)
-			return nil, false
-		}
-	case 's':
-		if strVal, ok := arg.(string); ok {
-			str = strVal
-		} else {
-			c.err = T(D.Invalid, D.Type, D.Of, D.Argument, formatSpec)
-			return nil, false
-		}
-	case 'v':
-		// Save current state including buffer
-		oldStringVal := c.stringVal
-		oldVTpe := c.vTpe
-		oldBuf := make([]byte, len(c.buf))
-		copy(oldBuf, c.buf)
-
-		// Perform calculation with isolated buffer
-		c.buf = c.buf[:0] // Inline resetBuffer
-		c.stringVal = ""
-		c.formatValue(arg)
-		str = c.getString()
-
-		// Restore original state including buffer
-		c.stringVal = oldStringVal
-		c.vTpe = oldVTpe
-		c.buf = oldBuf
-	}
-
-	*argIndex++
-	return []byte(str), true
-}
 
 func (c *conv) sprintf(format string, args ...any) {
 	// Reset buffer at start to avoid concatenation issues
@@ -805,16 +701,139 @@ func (c *conv) sprintf(format string, args ...any) {
 					c.err = T(D.Format, D.Specifier, D.Not, D.Supported, format[i])
 					c.vTpe = typeErr
 					return
-				}
-
-				// Common format handling logic for all specifiers except '%'
+				} // Common format handling logic for all specifiers except '%'
 				if format[i] != '%' {
-					if str, ok := c.handleFormat(args, &argIndex, formatChar, param, formatSpec); ok {
-						c.buf = append(c.buf, str...)
-					} else {
+					// Inline handleFormat logic
+					if argIndex >= len(args) {
+						errConv := Err(D.Argument, D.Missing, formatSpec)
+						c.err = errConv.Error()
 						c.vTpe = typeErr
 						return
 					}
+					arg := args[argIndex]
+
+					var str string
+					switch formatChar {
+					case 'd', 'o', 'b', 'x':
+						var intVal int64
+						var ok bool
+
+						// Handle all integer types
+						switch v := arg.(type) {
+						case int:
+							intVal = int64(v)
+							ok = true
+						case int8:
+							intVal = int64(v)
+							ok = true
+						case int16:
+							intVal = int64(v)
+							ok = true
+						case int32:
+							intVal = int64(v)
+							ok = true
+						case int64:
+							intVal = v
+							ok = true
+						case uint:
+							intVal = int64(v)
+							ok = true
+						case uint8:
+							intVal = int64(v)
+							ok = true
+						case uint16:
+							intVal = int64(v)
+							ok = true
+						case uint32:
+							intVal = int64(v)
+							ok = true
+						case uint64:
+							if v <= 9223372036854775807 { // Max int64
+								intVal = int64(v)
+								ok = true
+							}
+						}
+
+						if ok {
+							// Save current state including buffer
+							oldVTpe := c.vTpe
+							oldStringVal := c.stringVal
+							oldBuf := make([]byte, len(c.buf))
+							copy(oldBuf, c.buf) // Perform calculation with isolated buffer
+							c.buf = c.buf[:0]   // Inline resetBuffer
+							c.intVal = intVal
+							c.vTpe = typeInt
+							if param == 10 {
+								c.i2s()
+							} else {
+								c.i2sBase(param)
+							}
+							str = c.getString()
+
+							// Restore original state including buffer
+							c.vTpe = oldVTpe
+							c.stringVal = oldStringVal
+							c.buf = oldBuf
+						} else {
+							c.err = T(D.Invalid, D.Type, D.Of, D.Argument, formatSpec)
+							c.vTpe = typeErr
+							return
+						}
+					case 'f':
+						if floatVal, ok := arg.(float64); ok {
+							// Save current state including buffer
+							oldFloatVal := c.floatVal
+							oldVTpe := c.vTpe
+							oldStringVal := c.stringVal
+							oldTmpStr := c.tmpStr
+							oldBuf := make([]byte, len(c.buf))
+							copy(oldBuf, c.buf) // Perform calculation with isolated buffer
+							c.buf = c.buf[:0]   // Inline resetBuffer
+							c.floatVal = floatVal
+							c.vTpe = typeFloat
+							c.f2sMan(param)
+							str = c.getString()
+
+							// Restore original state including buffer
+							c.floatVal = oldFloatVal
+							c.vTpe = oldVTpe
+							c.stringVal = oldStringVal
+							c.tmpStr = oldTmpStr
+							c.buf = oldBuf
+						} else {
+							c.err = T(D.Invalid, D.Type, D.Of, D.Argument, formatSpec)
+							c.vTpe = typeErr
+							return
+						}
+					case 's':
+						if strVal, ok := arg.(string); ok {
+							str = strVal
+						} else {
+							c.err = T(D.Invalid, D.Type, D.Of, D.Argument, formatSpec)
+							c.vTpe = typeErr
+							return
+						}
+					case 'v':
+						// Save current state including buffer
+						oldStringVal := c.stringVal
+						oldVTpe := c.vTpe
+						oldBuf := make([]byte, len(c.buf))
+						copy(oldBuf, c.buf)
+
+						// Perform calculation with isolated buffer
+						c.buf = c.buf[:0] // Inline resetBuffer
+						c.stringVal = ""
+						c.formatValue(arg)
+						str = c.getString()
+
+						// Restore original state including buffer
+						c.stringVal = oldStringVal
+						c.vTpe = oldVTpe
+						c.buf = oldBuf
+					}
+
+					argIndex++
+					c.buf = append(c.buf, []byte(str)...)
 				}
 			} else {
 				c.buf = append(c.buf, format[i])

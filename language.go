@@ -57,14 +57,6 @@ const (
 //	err := Err(MyDictionary.File, D.Not, D.Found) // -> "file not found", "archivo no encontrado", etc.
 type LocStr [9]string
 
-// get returns translation for specified language with English fallback
-func (o LocStr) get(l lang) string {
-	if int(l) < len(o) && o[l] != "" {
-		return o[l]
-	}
-	return o[EN] // Fallback to English
-}
-
 // OutLang sets the default output language
 // OutLang() without parameters auto-detects system language
 // OutLang(ES) sets Spanish as default
@@ -93,38 +85,32 @@ func langParser(langStrings ...string) lang {
 		if code == "" {
 			continue
 		}
-
 		// Convert to lowercase and map to the internal lang type.
 		code = Convert(code).ToLower().String()
-		return mapLangCode(code)
+		// Inline mapLangCode logic
+		switch code {
+		// Group 1
+		case "es":
+			return ES
+		case "zh":
+			return ZH
+		case "hi":
+			return HI
+		case "ar":
+			return AR
+		// Group 2
+		case "pt":
+			return PT
+		case "fr":
+			return FR
+		case "de":
+			return DE
+		case "ru":
+			return RU
+		default:
+			return EN
+		}
 	}
 
 	return EN // Default fallback if no valid language string is found.
-}
-
-// mapLangCode maps a language code string (e.g., "es") to the lang enum.
-// It's the single source of truth for language code mapping.
-func mapLangCode(code string) lang {
-	switch code {
-	// Group 1
-	case "es":
-		return ES
-	case "zh":
-		return ZH
-	case "hi":
-		return HI
-	case "ar":
-		return AR
-	// Group 2
-	case "pt":
-		return PT
-	case "fr":
-		return FR
-	case "de":
-		return DE
-	case "ru":
-		return RU
-	default:
-		return EN
-	}
 }

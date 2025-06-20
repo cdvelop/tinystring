@@ -46,7 +46,13 @@ func TestDictionaryMixedWithRegularStrings(t *testing.T) {
 func TestOLFallbackToEnglish(t *testing.T) {
 	// Test fallback when translation is empty
 	testOL := LocStr{"test", "", "", "", "", "", "", "", ""}
-	result := testOL.get(ES)
+	// Inline get logic for testing
+	result := func() string {
+		if int(ES) < len(testOL) && testOL[ES] != "" {
+			return testOL[ES]
+		}
+		return testOL[EN] // Fallback to English
+	}()
 	expected := "test"
 	if result != expected {
 		t.Errorf("Expected fallback to English 'test', got '%s'", result)
