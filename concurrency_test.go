@@ -115,9 +115,9 @@ func TestConcurrentUtilityFunctions(t *testing.T) {
 			expected: "true",
 		},
 		{
-			name: "CountOccurrences",
+			name: "Count",
 			function: func() (string, error) {
-				count := CountOccurrences("abracadabra", "abra")
+				count := Count("abracadabra", "abra")
 				if count == 2 {
 					return "2", nil
 				}

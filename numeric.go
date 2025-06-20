@@ -580,29 +580,6 @@ func (t *conv) s2n(base int) {
 	t.vTpe = typeUint
 }
 
-// fmtUint2Str converts an unsigned integer to a string in the given base,
-// writing it into the provided buffer and returning the resulting string and its start index in the buffer.
-func fmtUint2Str(val uint64, base int, buf []byte) (string, int) {
-	idx := len(buf) // i
-
-	for val > 0 {
-		idx--
-		buf[idx] = digs[val%uint64(base)]
-		val /= uint64(base)
-	}
-	return string(buf[idx:]), idx
-}
-
-// fmtInt converts integer to string and stores in tmpStr
-func (t *conv) fmtInt(base int) {
-	t.fmtIntGeneric(t.intVal, base, true)
-}
-
-// fmtUint converts unsigned integer to string and stores in tmpStr
-func (t *conv) fmtUint(base int) {
-	t.fmtIntGeneric(int64(t.uintVal), base, false)
-}
-
 // fmtIntGeneric converts integer to string with unified logic
 func (t *conv) fmtIntGeneric(val int64, base int, allowNegative bool) {
 	if val == 0 {
@@ -617,7 +594,15 @@ func (t *conv) fmtIntGeneric(val int64, base int, allowNegative bool) {
 		val = -val
 	}
 
-	_, idx := fmtUint2Str(uint64(val), base, buf[:])
+	// Inlined fmtUint2Str logic
+	uval := uint64(val)
+	idx := len(buf)
+
+	for uval > 0 {
+		idx--
+		buf[idx] = digs[uval%uint64(base)]
+		uval /= uint64(base)
+	}
 
 	if negative {
 		idx--
@@ -650,7 +635,7 @@ func (t *conv) i2s() {
 		return
 	}
 	// Fall back to standard conversion for larger numbers
-	t.fmtInt(10)
+	t.fmtIntGeneric(val, 10, true)
 }
 
 // u2s converts uint64 to string with minimal allocations and stores in tmpStr
@@ -676,16 +661,15 @@ func (t *conv) u2s() {
 	}
 
 	// Fall back to standard conversion for larger numbers
-	t.fmtUint(10) // Use the unified fmtUint
+	t.fmtIntGeneric(int64(t.uintVal), 10, false) // Use the unified fmtUint
 }
 
 // f2s converts float to string and stores in tmpStr
 // Uses simplified float-to-string conversion for basic numeric.go operations
 func (t *conv) f2s() {
-	val := t.floatVal
-	// Handle special cases
-	if val != val { // NaN
-		t.tmpStr = "NaN"
+	val := t.floatVal // Handle special cases
+	if val != val {   // NaN
+		t.tmpStr = nanStr
 		t.stringVal = t.tmpStr
 		return
 	}
@@ -693,9 +677,9 @@ func (t *conv) f2s() {
 	// Handle infinity
 	if val > 1e308 || val < -1e308 {
 		if val < 0 {
-			t.tmpStr = "-Inf"
+			t.tmpStr = negInfStr
 		} else {
-			t.tmpStr = "Inf"
+			t.tmpStr = infStr
 		}
 		t.stringVal = t.tmpStr
 		return
@@ -758,4 +742,96 @@ func (t *conv) f2s() {
 
 	t.tmpStr = result
 	t.stringVal = result
+}
+
+// int2Buf converts an integer to a string and appends it directly to the conv buffer.
+func (c *conv) int2Buf(val int64, base int, allowNegative bool) {
+	if val == 0 {
+		c.buf = append(c.buf, '0')
+		return
+	}
+
+	var localBuf [64]byte
+	negative := allowNegative && val < 0
+	if negative {
+		val = -val
+	}
+
+	uval := uint64(val)
+	idx := len(localBuf)
+
+	for uval > 0 {
+		idx--
+		localBuf[idx] = digs[uval%uint64(base)]
+		uval /= uint64(base)
+	}
+
+	if negative {
+		idx--
+		localBuf[idx] = '-'
+	}
+
+	c.buf = append(c.buf, localBuf[idx:]...)
+}
+
+// float2Buf converts a float to a string and appends it directly to the conv buffer.
+func (c *conv) float2Buf(val float64) { // Handle special cases
+	if val != val { // NaN
+		c.buf = append(c.buf, nanStr...)
+		return
+	}
+	if val > 1e308 || val < -1e308 {
+		if val < 0 {
+			c.buf = append(c.buf, negInfStr...)
+		} else {
+			c.buf = append(c.buf, infStr...)
+		}
+		return
+	}
+	if val == 0 {
+		c.buf = append(c.buf, '0')
+		return
+	}
+
+	isNegative := val < 0
+	if isNegative {
+		c.buf = append(c.buf, '-')
+		val = -val
+	}
+
+	integerPart := int64(val)
+	fractionalPart := val - float64(integerPart)
+
+	// Convert integer part
+	c.int2Buf(integerPart, 10, false)
+
+	if fractionalPart > 0 {
+		c.buf = append(c.buf, '.')
+
+		fracInt := int64(fractionalPart*1e6 + 0.5)
+
+		if fracInt == 0 {
+			c.buf = append(c.buf, '0')
+			return
+		}
+
+		var fracBuf [6]byte
+		temp := fracInt
+		// Fill buffer from the end, for 6 digits
+		for i := 5; i >= 0; i-- {
+			fracBuf[i] = byte('0' + temp%10)
+			temp /= 10
+		}
+
+		// Trim trailing zeros
+		end := len(fracBuf)
+		for end > 0 && fracBuf[end-1] == '0' {
+			end--
+		}
+		if end == 0 {
+			end = 1
+		}
+
+		c.buf = append(c.buf, fracBuf[:end]...)
+	}
 }

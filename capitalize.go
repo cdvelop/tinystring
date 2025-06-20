@@ -139,22 +139,22 @@ func (t *conv) CamelCaseUpper() *conv {
 //
 // ToSnakeCaseLower converts conv to snake_case format
 func (t *conv) ToSnakeCaseLower(sep ...string) *conv {
-	// Inline separatorCase logic
-	t.separator = "_" // underscore default
+	// Phase 4.3: Use local variable instead of struct field
+	separator := "_" // underscore default
 	if len(sep) > 0 {
-		t.separator = sep[0]
+		separator = sep[0]
 	}
-	return t.toCaseTransformMinimal(true, t.separator)
+	return t.toCaseTransformMinimal(true, separator)
 }
 
 // ToSnakeCaseUpper converts conv to Snake_Case format
 func (t *conv) ToSnakeCaseUpper(sep ...string) *conv {
-	// Inline separatorCase logic
-	t.separator = "_" // underscore default
+	// Phase 4.3: Use local variable instead of struct field
+	separator := "_" // underscore default
 	if len(sep) > 0 {
-		t.separator = sep[0]
+		separator = sep[0]
 	}
-	return t.toCaseTransformMinimal(false, t.separator)
+	return t.toCaseTransformMinimal(false, separator)
 }
 
 // Minimal implementation without pools or builders - optimized for minimal allocations

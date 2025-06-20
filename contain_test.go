@@ -6,7 +6,7 @@ import (
 	. "github.com/cdvelop/tinystring"
 )
 
-func TestCountOccurrences(t *testing.T) {
+func TestCount(t *testing.T) {
 	var testCases = map[string]struct {
 		conv     string
 		search   string
@@ -66,7 +66,7 @@ func TestCountOccurrences(t *testing.T) {
 
 	for name, tc := range testCases {
 		t.Run(name, func(t *testing.T) {
-			result := CountOccurrences(tc.conv, tc.search)
+			result := Count(tc.conv, tc.search)
 			if result != tc.expected {
 				t.Errorf("Error: Se esperaba %v, pero se obtuvo %v. Texto: %s, Búsqueda: %s", tc.expected, result, tc.conv, tc.search)
 			}

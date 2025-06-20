@@ -15,6 +15,10 @@ const (
 	spaceStr    = " "
 	ellipsisStr = "..."
 	quoteStr    = "\"\""
+	// Numeric special values - Phase 3G.7: String constant consolidation
+	nanStr    = "NaN"
+	infStr    = "Inf"
+	negInfStr = "-Inf"
 	// ASCII case conversion constant
 	asciiCaseDiff = 32
 	// Buffer capacity constants

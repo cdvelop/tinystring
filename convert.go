@@ -28,22 +28,23 @@ type anyFloat interface {
 }
 
 type conv struct {
-	stringVal      string
-	intVal         int64
-	uintVal        uint64
-	floatVal       float64
-	boolVal        bool
+	// Phase 4.5: Optimized field layout for cache locality
+	// Most frequently accessed fields first
+	buf       []byte // Hot path: buffer operations
+	vTpe      vTpe   // Hot path: type checking
+	err       string // Hot path: error chain interruption
+	stringVal string // Hot path: string operations
+	tmpStr    string // Hot path: cache for temp string conversion
+
+	// Numeric values grouped together
+	intVal   int64
+	uintVal  uint64
+	floatVal float64
+
+	// Less frequently used fields
 	stringSliceVal []string
 	stringPtrVal   *string
-	vTpe           vTpe
-	roundDown      bool
-	separator      string
-	tmpStr         string // Cache for temp string conversion to avoid repeated work
-	lastConvType   vTpe   // Track last converted type for cache validation
-	err            string // Error message string (changed from errorType for dictionary integration)
-
-	// Phase 6.2: Buffer reuse optimization
-	buf []byte // Reusable buffer for string operations
+	boolVal        bool
 }
 
 // Convert initializes a new conv struct with optional value for string,bool and number manipulation.
@@ -101,7 +102,7 @@ func genInt[T anyInt](c *conv, v T, op int) {
 	case 0:
 		c.vTpe = typeInt // setValue
 	case 1:
-		c.fmtInt(10) // any2s
+		c.fmtIntGeneric(c.intVal, 10, true) // any2s
 	case 2:
 		c.i2s() // format
 	}
@@ -113,7 +114,7 @@ func genUint[T anyUint](c *conv, v T, op int) {
 	case 0:
 		c.vTpe = typeUint // setValue
 	case 1:
-		c.fmtUint(10) // any2s
+		c.fmtIntGeneric(int64(c.uintVal), 10, false) // any2s
 	case 2:
 		c.u2s() // format
 	}
@@ -202,9 +203,8 @@ func (t *conv) getString() string {
 	if t.vTpe == typeStrPtr && t.stringPtrVal != nil {
 		return *t.stringPtrVal
 	}
-
-	// Use cached string if available and type hasn't changed (but not for string pointers)
-	if t.tmpStr != "" && t.lastConvType == t.vTpe && t.vTpe != typeStrPtr {
+	// Use cached string if available (simplified cache logic)
+	if t.tmpStr != "" && t.vTpe != typeStrPtr {
 		return t.tmpStr
 	}
 	// Convert to string using internal methods to avoid allocations
@@ -236,10 +236,10 @@ func (t *conv) getString() string {
 		}
 	case typeInt:
 		// Use internal method instead of external function
-		t.fmtInt(10)
+		t.fmtIntGeneric(t.intVal, 10, true)
 	case typeUint:
 		// Use internal method instead of external function
-		t.fmtUint(10)
+		t.fmtIntGeneric(int64(t.uintVal), 10, false)
 	case typeFloat:
 		// Use internal method instead of external function
 		t.f2s()
@@ -252,9 +252,7 @@ func (t *conv) getString() string {
 	default:
 		t.tmpStr = ""
 	}
-
-	// Update cache state
-	t.lastConvType = t.vTpe
+	// Cache is now updated (simplified without type tracking)
 	return t.tmpStr
 }
 
@@ -290,10 +288,8 @@ func (t *conv) setString(s string) {
 	t.floatVal = 0
 	t.boolVal = false
 	t.stringSliceVal = nil
-
 	// Invalidate cache since we changed the string
 	t.tmpStr = ""
-	t.lastConvType = vTpe(0)
 }
 
 // Internal conversion methods - centralized in conv to minimize allocations
@@ -343,6 +339,9 @@ func (t *conv) any2s(v any) {
 			genFloat(t, v, 1)
 		case float64:
 			genFloat(t, v, 1)
+		default:
+			t.tmpStr = ""
+			t.stringVal = t.tmpStr
 		}
 	}
 }

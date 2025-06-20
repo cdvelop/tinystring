@@ -6,9 +6,7 @@ import "sync"
 // Reuse conv objects to eliminate the 53.67% allocation hotspot from newConv()
 var convPool = sync.Pool{
 	New: func() any {
-		return &conv{
-			separator: "_", // default separator
-		}
+		return &conv{}
 	},
 }
 
@@ -18,8 +16,7 @@ func getConv() *conv {
 }
 
 // putConv returns a conv to the pool after resetting it
-func (c *conv) putConv() {
-	// Reset all fields to default state
+func (c *conv) putConv() { // Reset all fields to default state
 	c.stringVal = ""
 	c.intVal = 0
 	c.uintVal = 0
@@ -28,10 +25,7 @@ func (c *conv) putConv() {
 	c.stringSliceVal = nil
 	c.stringPtrVal = nil
 	c.vTpe = typeStr
-	c.roundDown = false
-	c.separator = "_"
 	c.tmpStr = ""
-	c.lastConvType = typeStr
 	c.err = ""
 	c.buf = c.buf[:0] // Inline resetBuffer
 
@@ -162,17 +156,4 @@ var runeBufferPool = sync.Pool{
 		// Start with a reasonable default capacity
 		return make([]rune, 0, defaultBufCap)
 	},
-}
-
-// newBuf creates an optimally-sized buffer for common string operations
-func (t *conv) newBuf(sizeMultiplier int) (string, []byte) {
-	str := t.getString()
-	if len(str) == 0 {
-		return str, nil
-	}
-	bufSize := len(str) * sizeMultiplier
-	if bufSize < 16 {
-		bufSize = 16 // Minimum useful buffer size
-	}
-	return str, make([]byte, 0, bufSize)
 }

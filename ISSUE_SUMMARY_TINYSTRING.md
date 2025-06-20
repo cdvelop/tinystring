@@ -69,7 +69,7 @@ tinystring.Convert(&text).RemoveTilde().CamelCaseLower().Apply()
 - `Join(sep...)` - Join string slices
 - `Replace(old, new, n...)` - Replace substrings
 - `TrimPrefix()`, `TrimSuffix()`, `Trim()` - Trim operations
-- `Contains()`, `CountOccurrences()` - Search operations
+- `Contains()`, `Count()` - Search operations
 - `Repeat(n)` - Repeat strings
 
 **Advanced Features:**

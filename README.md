@@ -173,7 +173,7 @@ tinystring.Convert("hello world").ToSnakeCaseUpper().String() // out: "HELLO_WOR
 ```go
 // Search and count
 found := tinystring.Contains("hello world", "world")              // out: true
-count := tinystring.CountOccurrences("abracadabra", "abra")       // out: 2
+count := tinystring.Count("abracadabra", "abra")       // out: 2
 
 // Replace operations
 tinystring.Convert("hello world").Replace("world", "Go").String() // out: "hello Go"
@@ -579,21 +579,21 @@ tinystring.Convert(&originalText).RemoveTilde().ToLower().Apply()
 [Standard Library Example](benchmark/bench-binary-size/standard-lib/main.go) | [TinyString Example](benchmark/bench-binary-size/tinystring-lib/main.go)
 
 <!-- This table is automatically generated from build-and-measure.sh -->
-*Last updated: 2025-06-19 20:00:08*
+*Last updated: 2025-06-19 21:31:55*
 
 | Build Type | Parameters | Standard Library<br/>`go build` | TinyString<br/>`tinygo build` | Size Reduction | Performance |
 |------------|------------|------------------|------------|----------------|-------------|
-| 🖥️ **Default Native** | `-ldflags="-s -w"` | 1.3 MB | 1.1 MB | **-188.5 KB** | ➖ **14.4%** |
-| 🌐 **Default WASM** | `(default -opt=z)` | 580.8 KB | 266.4 KB | **-314.4 KB** | ✅ **54.1%** |
-| 🌐 **Ultra WASM** | `-no-debug -panic=trap -scheduler=none -gc=leaking -target wasm` | 141.3 KB | 35.9 KB | **-105.4 KB** | 🏆 **74.6%** |
-| 🌐 **Speed WASM** | `-opt=2 -target wasm` | 827.0 KB | 329.2 KB | **-497.7 KB** | ✅ **60.2%** |
-| 🌐 **Debug WASM** | `-opt=0 -target wasm` | 1.8 MB | 926.1 KB | **-906.4 KB** | ✅ **49.5%** |
+| 🖥️ **Default Native** | `-ldflags="-s -w"` | 1.3 MB | 1.1 MB | **-193.5 KB** | ➖ **14.7%** |
+| 🌐 **Default WASM** | `(default -opt=z)` | 580.8 KB | 260.5 KB | **-320.3 KB** | ✅ **55.1%** |
+| 🌐 **Ultra WASM** | `-no-debug -panic=trap -scheduler=none -gc=leaking -target wasm` | 141.3 KB | 35.1 KB | **-106.2 KB** | 🏆 **75.1%** |
+| 🌐 **Speed WASM** | `-opt=2 -target wasm` | 827.0 KB | 334.9 KB | **-492.0 KB** | ✅ **59.5%** |
+| 🌐 **Debug WASM** | `-opt=0 -target wasm` | 1.8 MB | 900.9 KB | **-931.6 KB** | ✅ **50.8%** |
 
 ### 🎯 Performance Summary
 
-- 🏆 **Peak Reduction: 74.6%** (Best optimization)
-- ✅ **Average WebAssembly Reduction: 59.6%**
-- ✅ **Average Native Reduction: 14.4%**
+- 🏆 **Peak Reduction: 75.1%** (Best optimization)
+- ✅ **Average WebAssembly Reduction: 60.2%**
+- ✅ **Average Native Reduction: 14.7%**
 - 📦 **Total Size Savings: 2.0 MB across all builds**
 
 #### Performance Legend
@@ -608,16 +608,16 @@ tinystring.Convert(&originalText).RemoveTilde().ToLower().Apply()
 [Standard Library Example](benchmark/bench-memory-alloc/standard) | [TinyString Example](benchmark/bench-memory-alloc/tinystring)
 
 <!-- This table is automatically generated from memory-benchmark.sh -->
-*Last updated: 2025-06-19 20:00:26*
+*Last updated: 2025-06-19 21:32:14*
 
 Performance benchmarks comparing memory allocation patterns between standard Go library and TinyString:
 
 | 🧪 **Benchmark Category** | 📚 **Library** | 💾 **Memory/Op** | 🔢 **Allocs/Op** | ⏱️ **Time/Op** | 📈 **Memory Trend** | 🎯 **Alloc Trend** | 🏆 **Performance** |
 |----------------------------|----------------|-------------------|-------------------|-----------------|---------------------|---------------------|--------------------|
-| 📝 **String Processing** | 📊 Standard | `1.2 KB` | `48` | `3.4μs` | - | - | - |
-| | 🚀 TinyString | `2.8 KB` | `119` | `14.1μs` | ❌ **140.3% more** | ❌ **147.9% more** | ❌ **Poor** |
+| 📝 **String Processing** | 📊 Standard | `1.2 KB` | `48` | `3.5μs` | - | - | - |
+| | 🚀 TinyString | `2.8 KB` | `119` | `14.8μs` | ❌ **140.3% more** | ❌ **147.9% more** | ❌ **Poor** |
 | 🔢 **Number Processing** | 📊 Standard | `912 B` | `42` | `2.7μs` | - | - | - |
-| | 🚀 TinyString | `4.4 KB` | `88` | `5.9μs` | ❌ **389.8% more** | ❌ **109.5% more** | ❌ **Poor** |
+| | 🚀 TinyString | `4.4 KB` | `88` | `6.0μs` | ❌ **389.8% more** | ❌ **109.5% more** | ❌ **Poor** |
 | 🔄 **Mixed Operations** | 📊 Standard | `512 B` | `26` | `1.9μs` | - | - | - |
 | | 🚀 TinyString | `1.7 KB` | `54` | `5.7μs` | ❌ **243.9% more** | ❌ **107.7% more** | ❌ **Poor** |
 

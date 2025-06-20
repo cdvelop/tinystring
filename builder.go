@@ -45,22 +45,13 @@ func (c *conv) Reset() *conv {
 	c.stringSliceVal = nil
 	c.stringPtrVal = nil
 	c.vTpe = typeStr
-	c.roundDown = false
-	c.separator = "_"
 	c.tmpStr = ""
-	c.lastConvType = typeStr
 	c.err = ""
 	c.buf = c.buf[:0] // Reset buffer length, keep capacity - SINGLE SOURCE OF TRUTH
 	return c
 }
 
 // setVal is the unified type handling method that consolidates ALL type switches
-// This replaces the individual withValue, Write, and any2s type switches
-//
-// Modes:
-//   mi (inicial): Initialize conv with value (like current withValue)
-//   mb (buffer):  Append value to buffer (for Write operations)
-//   ma (any):     General conversion (for any2s operations)
 func (c *conv) setVal(v any, mode cm) {
 	if c.err != "" && mode != mi {
 		return // Skip operations if error exists (except initial mode)
@@ -74,39 +65,161 @@ func (c *conv) setVal(v any, mode cm) {
 	}
 	switch val := v.(type) {
 	case string:
-		c.handleString(val, mode)
+		switch mode {
+		case mi: // Initial mode
+			c.stringVal = val
+			c.vTpe = typeStr
+		case mb: // Buffer mode
+			c.buf = append(c.buf, val...)
+		case ma: // Any mode
+			c.tmpStr = val
+		}
 	case []string:
-		c.handleStringSlice(val, mode)
+		switch mode {
+		case mi: // Initial mode
+			c.stringSliceVal = val
+			c.vTpe = typeStrSlice
+		case mb: // Buffer mode
+			// Join slice with space and append to buffer
+			for i, s := range val {
+				if i > 0 {
+					c.buf = append(c.buf, ' ')
+				}
+				c.buf = append(c.buf, s...)
+			}
+		case ma: // Any mode
+			if len(val) == 0 {
+				c.tmpStr = ""
+			} else if len(val) == 1 {
+				c.tmpStr = val[0]
+			} else {
+				tmp := Convert()
+				for i, s := range val {
+					if i > 0 {
+						tmp.Write(" ")
+					}
+					tmp.Write(s)
+				}
+				c.tmpStr = tmp.String()
+			}
+		}
 	case *string:
-		c.handleStringPtr(val, mode)
+		if val == nil {
+			if mode == mi {
+				c.err = T(D.String, D.Empty)
+			}
+			return
+		}
+
+		switch mode {
+		case mi: // Initial mode
+			c.stringVal = *val
+			c.stringPtrVal = val
+			c.vTpe = typeStrPtr
+		case mb: // Buffer mode
+			c.buf = append(c.buf, *val...)
+		case ma: // Any mode
+			c.tmpStr = *val
+		}
 	case bool:
-		c.handleBool(val, mode)
+		switch mode {
+		case mi: // Initial mode
+			c.boolVal = val
+			c.vTpe = typeBool
+		case mb: // Buffer mode
+			if val {
+				c.buf = append(c.buf, trueStr...)
+			} else {
+				c.buf = append(c.buf, falseStr...)
+			}
+		case ma: // Any mode
+			if val {
+				c.tmpStr = trueStr
+			} else {
+				c.tmpStr = falseStr
+			}
+		}
 	case error:
-		c.handleError(val, mode)
-	case int:
-		c.handleInt(int64(val), mode)
-	case int8:
-		c.handleInt(int64(val), mode)
-	case int16:
-		c.handleInt(int64(val), mode)
-	case int32: // This handles both int32 and rune
-		c.handleInt(int64(val), mode)
-	case int64:
-		c.handleInt(val, mode)
-	case uint:
-		c.handleUint(uint64(val), mode)
-	case uint8: // This handles both uint8 and byte
-		c.handleUint(uint64(val), mode)
-	case uint16:
-		c.handleUint(uint64(val), mode)
-	case uint32:
-		c.handleUint(uint64(val), mode)
-	case uint64:
-		c.handleUint(val, mode)
-	case float32:
-		c.handleFloat(float64(val), mode)
-	case float64:
-		c.handleFloat(val, mode)
+		errStr := val.Error()
+		switch mode {
+		case mi: // Initial mode
+			c.err = errStr
+			c.vTpe = typeErr
+		case mb: // Buffer mode
+			c.buf = append(c.buf, errStr...)
+		case ma: // Any mode
+			c.tmpStr = errStr
+		}
+	case int, int8, int16, int32, int64, uint, uint8, uint16, uint32, uint64, float32, float64:
+		// Phase 3G.6: Consolidated numeric handling
+		var vInt int64
+		var vUint uint64
+		var vFloat float64
+		var isInt, isUint, isFloat bool
+
+		switch v := val.(type) {
+		case int:
+			vInt, isInt = int64(v), true
+		case int8:
+			vInt, isInt = int64(v), true
+		case int16:
+			vInt, isInt = int64(v), true
+		case int32:
+			vInt, isInt = int64(v), true
+		case int64:
+			vInt, isInt = v, true
+		case uint:
+			vUint, isUint = uint64(v), true
+		case uint8:
+			vUint, isUint = uint64(v), true
+		case uint16:
+			vUint, isUint = uint64(v), true
+		case uint32:
+			vUint, isUint = uint64(v), true
+		case uint64:
+			vUint, isUint = v, true
+		case float32:
+			vFloat, isFloat = float64(v), true
+		case float64:
+			vFloat, isFloat = v, true
+		}
+
+		switch mode {
+		case mi: // Initial mode
+			if isInt {
+				c.intVal = vInt
+				c.vTpe = typeInt
+			} else if isUint {
+				c.uintVal = vUint
+				c.vTpe = typeUint
+			} else if isFloat {
+				c.floatVal = vFloat
+				c.vTpe = typeFloat
+			}
+		case mb: // Buffer mode
+			oldTmpStr := c.tmpStr
+			if isInt {
+				c.fmtIntGeneric(vInt, 10, true)
+			} else if isUint {
+				c.fmtIntGeneric(int64(vUint), 10, false)
+			} else if isFloat {
+				c.floatVal = vFloat
+				c.f2s()
+			}
+			c.buf = append(c.buf, c.tmpStr...)
+			c.tmpStr = oldTmpStr // Restore original tmpStr
+		case ma: // Any mode
+			if isInt {
+				c.intVal = vInt
+				c.fmtIntGeneric(vInt, 10, true)
+			} else if isUint {
+				c.uintVal = vUint
+				c.fmtIntGeneric(int64(vUint), 10, false)
+			} else if isFloat {
+				c.floatVal = vFloat
+				c.f2s()
+			}
+		}
 	default:
 		// Unsupported type
 		if mode == mi || mode == mb {
@@ -115,226 +228,40 @@ func (c *conv) setVal(v any, mode cm) {
 	}
 }
 
-// Type-specific handlers for unified setVal method
-
-func (c *conv) handleString(val string, mode cm) {
-	switch mode {
-	case mi: // Initial mode
-		c.stringVal = val
-		c.vTpe = typeStr
-	case mb: // Buffer mode
-		c.buf = append(c.buf, val...)
-	case ma: // Any mode
-		c.tmpStr = val
-	}
-}
-
-func (c *conv) handleStringSlice(val []string, mode cm) {
-	switch mode {
-	case mi: // Initial mode
-		c.stringSliceVal = val
-		c.vTpe = typeStrSlice
-	case mb: // Buffer mode
-		// Join slice with space and append to buffer
-		for i, s := range val {
-			if i > 0 {
-				c.buf = append(c.buf, ' ')
-			}
-			c.buf = append(c.buf, s...)
-		}
-	case ma: // Any mode
-		if len(c.stringSliceVal) == 0 {
-			c.tmpStr = ""
-		} else if len(c.stringSliceVal) == 1 {
-			c.tmpStr = c.stringSliceVal[0]
-		} else {
-			tmp := Convert()
-			for i, s := range c.stringSliceVal {
-				if i > 0 {
-					tmp.Write(" ")
-				}
-				tmp.Write(s)
-			}
-			c.tmpStr = tmp.String()
-		}
-	}
-}
-
-func (c *conv) handleStringPtr(val *string, mode cm) {
-	if val == nil {
-		if mode == mi {
-			c.err = T(D.String, D.Empty)
-		}
-		return
-	}
-
-	switch mode {
-	case mi: // Initial mode
-		c.stringVal = *val
-		c.stringPtrVal = val
-		c.vTpe = typeStrPtr
-	case mb: // Buffer mode
-		c.buf = append(c.buf, *val...)
-	case ma: // Any mode
-		c.tmpStr = *val
-	}
-}
-
-func (c *conv) handleBool(val bool, mode cm) {
-	switch mode {
-	case mi: // Initial mode
-		c.boolVal = val
-		c.vTpe = typeBool
-	case mb: // Buffer mode
-		if val {
-			c.buf = append(c.buf, trueStr...)
-		} else {
-			c.buf = append(c.buf, falseStr...)
-		}
-	case ma: // Any mode
-		if val {
-			c.tmpStr = trueStr
-		} else {
-			c.tmpStr = falseStr
-		}
-	}
-}
-
-func (c *conv) handleError(val error, mode cm) {
-	errStr := val.Error()
-	switch mode {
-	case mi: // Initial mode
-		c.err = errStr
-		c.vTpe = typeErr
-	case mb: // Buffer mode
-		c.buf = append(c.buf, errStr...)
-	case ma: // Any mode
-		c.tmpStr = errStr
-	}
-}
-
-func (c *conv) handleInt(val int64, mode cm) {
-	switch mode {
-	case mi: // Initial mode
-		c.intVal = val
-		c.vTpe = typeInt
-	case mb: // Buffer mode
-		c.intVal = val
-		// Inline appendIntToBuf logic
-		oldTmpStr := c.tmpStr
-		c.fmtInt(10)
-		c.buf = append(c.buf, c.tmpStr...)
-		c.tmpStr = oldTmpStr // Restore original tmpStr
-	case ma: // Any mode
-		c.intVal = val
-		c.fmtInt(10)
-	}
-}
-
-func (c *conv) handleUint(val uint64, mode cm) {
-	switch mode {
-	case mi: // Initial mode
-		c.uintVal = val
-		c.vTpe = typeUint
-	case mb: // Buffer mode
-		c.uintVal = val
-		// Inline appendUintToBuf logic
-		oldTmpStr := c.tmpStr
-		c.fmtUint(10)
-		c.buf = append(c.buf, c.tmpStr...)
-		c.tmpStr = oldTmpStr // Restore original tmpStr
-	case ma: // Any mode
-		c.uintVal = val
-		c.fmtUint(10)
-	}
-}
-
-func (c *conv) handleFloat(val float64, mode cm) {
-	switch mode {
-	case mi: // Initial mode
-		c.floatVal = val
-		c.vTpe = typeFloat
-	case mb: // Buffer mode
-		c.floatVal = val
-		// Inline appendFloatToBuf logic
-		oldTmpStr := c.tmpStr
-		c.f2s()
-		c.buf = append(c.buf, c.tmpStr...)
-		c.tmpStr = oldTmpStr // Restore original tmpStr
-	case ma: // Any mode
-		c.floatVal = val
-		c.f2s()
-	}
-}
-
-// grow ensures the buffer has sufficient capacity (renamed from ensureCapacity)
-func (c *conv) grow(capacity int) {
-	if cap(c.buf) < capacity {
-		newCap := capacity
-		if newCap < 32 {
-			newCap = 32
-		}
-		// Double the capacity if we need significant growth
-		if newCap > cap(c.buf)*2 {
-			newCap = capacity
-		} else if cap(c.buf) > 0 {
-			newCap = cap(c.buf) * 2
-			if newCap < capacity {
-				newCap = capacity
-			}
-		}
-		newBuf := make([]byte, len(c.buf), newCap)
-		copy(newBuf, c.buf)
-		c.buf = newBuf
-	}
-}
-
 // val2Buf converts current value directly to buffer for maximum efficiency
 func (c *conv) val2Buf() {
+	c.buf = c.buf[:0] // Reset buffer for all cases
 	switch c.vTpe {
 	case typeStr:
-		c.buf = append(c.buf[:0], c.stringVal...)
+		c.buf = append(c.buf, c.stringVal...)
 	case typeStrPtr:
 		if c.stringPtrVal != nil {
-			c.buf = append(c.buf[:0], *c.stringPtrVal...)
+			c.buf = append(c.buf, *c.stringPtrVal...)
 		}
 	case typeStrSlice:
-		c.buf = c.buf[:0]
 		for i, s := range c.stringSliceVal {
 			if i > 0 {
 				c.buf = append(c.buf, ' ')
 			}
 			c.buf = append(c.buf, s...)
 		}
-	case typeInt:
-		c.buf = c.buf[:0]
-		// Inline appendIntToBuf logic
+	case typeInt, typeUint, typeFloat:
 		oldTmpStr := c.tmpStr
-		c.fmtInt(10)
-		c.buf = append(c.buf, c.tmpStr...)
-		c.tmpStr = oldTmpStr // Restore original tmpStr
-	case typeUint:
-		c.buf = c.buf[:0]
-		// Inline appendUintToBuf logic
-		oldTmpStr := c.tmpStr
-		c.fmtUint(10)
-		c.buf = append(c.buf, c.tmpStr...)
-		c.tmpStr = oldTmpStr // Restore original tmpStr
-	case typeFloat:
-		c.buf = c.buf[:0]
-		// Inline appendFloatToBuf logic
-		oldTmpStr := c.tmpStr
-		c.f2s()
+		switch c.vTpe {
+		case typeInt:
+			c.fmtIntGeneric(c.intVal, 10, true)
+		case typeUint:
+			c.fmtIntGeneric(int64(c.uintVal), 10, false)
+		case typeFloat:
+			c.f2s()
+		}
 		c.buf = append(c.buf, c.tmpStr...)
 		c.tmpStr = oldTmpStr // Restore original tmpStr
 	case typeBool:
-		c.buf = c.buf[:0]
 		if c.boolVal {
 			c.buf = append(c.buf, trueStr...)
 		} else {
 			c.buf = append(c.buf, falseStr...)
 		}
-	default:
-		c.buf = c.buf[:0]
 	}
 }

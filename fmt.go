@@ -62,6 +62,11 @@ func (c *conv) formatValue(value any) {
 // Default behavior is rounding up. Use .Down() to round down.
 // Example: Convert(3.154).RoundDecimals(2).String() → "3.16"
 func (t *conv) RoundDecimals(decimals int) *conv {
+	return t.roundDecimalsInternal(decimals, false) // false = round up (default)
+}
+
+// roundDecimalsInternal handles rounding with specified direction
+func (t *conv) roundDecimalsInternal(decimals int, roundDown bool) *conv {
 	if t.err != "" {
 		return t
 	}
@@ -86,7 +91,7 @@ func (t *conv) RoundDecimals(decimals int) *conv {
 		multiplier *= 10
 	}
 	var rounded float64
-	if t.roundDown {
+	if roundDown {
 		// Round down (floor)
 		if val >= 0 {
 			rounded = float64(int64(val*multiplier)) / multiplier
@@ -122,7 +127,6 @@ func (t *conv) RoundDecimals(decimals int) *conv {
 	t.vTpe = typeFloat
 	t.f2sMan(decimals)
 	t.err = ""
-	// Preserve the roundDown flag (already in self)
 	return t
 }
 
@@ -142,8 +146,7 @@ func (t *conv) Down() *conv {
 		// Parse current string content as float directly
 		t.s2Float()
 		if t.err != "" {
-			// Not a number, just set the flag and return
-			t.roundDown = true
+			// Not a number, return as-is
 			return t
 		}
 		val = t.floatVal
@@ -195,7 +198,6 @@ func (t *conv) Down() *conv {
 	t.vTpe = typeFloat
 	t.f2sMan(decimalPlaces)
 	t.err = ""
-	t.roundDown = true
 	return t
 }
 
@@ -253,7 +255,16 @@ func (t *conv) FormatNumber() *conv {
 		}(fStr)
 		t.setString(fStr)
 		// Phase 8.2 Optimization: Use optimized split without extra allocations
-		intPart, decPart, hasDecimal := t.splitFloatIndices()
+		// Inline splitFloatIndices logic
+		intPart, decPart, hasDecimal := func() (string, string, bool) {
+			str := t.getString()
+			for i, char := range str {
+				if char == '.' {
+					return str[:i], str[i+1:], true
+				}
+			}
+			return str, "", false
+		}()
 		// Fmt the integer part with commas directly
 		t.setString(intPart)
 		t.fmtNum()
@@ -326,7 +337,16 @@ func (t *conv) FormatNumber() *conv {
 		}(fStr)
 		t.setString(fStr)
 		// Phase 8.2 Optimization: Use optimized split without allocations
-		intPart, decPart, hasDecimal := t.splitFloatIndices()
+		// Inline splitFloatIndices logic
+		intPart, decPart, hasDecimal := func() (string, string, bool) {
+			str := t.getString()
+			for i, char := range str {
+				if char == '.' {
+					return str[:i], str[i+1:], true
+				}
+			}
+			return str, "", false
+		}()
 		// Fmt the integer part with commas directly
 		if intPart != "" {
 			t.setString(intPart)
@@ -412,15 +432,6 @@ func (c *conv) fmtNum() {
 
 // splitFloat splits a float string into integer and decimal parts.
 // Phase 8.2: Optimized version that returns split indices without allocating new strings
-func (c *conv) splitFloatIndices() (intPart, decPart string, hasDecimal bool) {
-	str := c.getString()
-	for i, char := range str {
-		if char == '.' {
-			return str[:i], str[i+1:], true
-		}
-	}
-	return str, "", false
-}
 
 // f2sMan converts a float64 to a string and stores in conv struct.
 // This is an internal conv method that modifies the struct instead of returning values.

@@ -14,14 +14,20 @@ func (t *conv) Repeat(n int) *conv {
 		t.stringVal = ""
 		return t
 	}
-
-	str, buf := t.newBuf(n)
+	// Phase 4.2: Inline newBuf method to eliminate function call overhead
+	str := t.getString()
 	if len(str) == 0 {
 		// Clear both buffer and stringVal for empty result
 		t.buf = t.buf[:0]
 		t.stringVal = ""
 		return t
 	}
+
+	bufSize := len(str) * n
+	if bufSize < 16 {
+		bufSize = 16 // Minimum useful buffer size
+	}
+	buf := make([]byte, 0, bufSize)
 
 	// Write string n times
 	for range n {
