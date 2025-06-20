@@ -88,16 +88,16 @@ func TestTruncate(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			var result string
+			var out string
 			if tt.useReserved {
-				result = Convert(tt.input).Truncate(tt.maxWidth, tt.reservedChars).String()
+				out = Convert(tt.input).Truncate(tt.maxWidth, tt.reservedChars).String()
 			} else {
-				result = Convert(tt.input).Truncate(tt.maxWidth).String()
+				out = Convert(tt.input).Truncate(tt.maxWidth).String()
 			}
 
-			if result != tt.expected {
+			if out != tt.expected {
 				t.Errorf("Convert(%q).Truncate() = %q, want %q",
-					tt.input, result, tt.expected)
+					tt.input, out, tt.expected)
 			}
 		})
 	}
@@ -299,11 +299,11 @@ func TestTruncateName(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			result := Convert(tt.input).TruncateName(tt.maxCharsPerWord, tt.maxWidth).String()
+			out := Convert(tt.input).TruncateName(tt.maxCharsPerWord, tt.maxWidth).String()
 
-			if result != tt.expected {
+			if out != tt.expected {
 				t.Errorf("Convert(%q).TruncateName(%v, %v) = %q, want %q",
-					tt.input, tt.maxCharsPerWord, tt.maxWidth, result, tt.expected)
+					tt.input, tt.maxCharsPerWord, tt.maxWidth, out, tt.expected)
 			}
 		})
 	}

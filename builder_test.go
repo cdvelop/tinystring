@@ -7,28 +7,26 @@ func TestConvertVariadicValidation(t *testing.T) {
 	// Valid usage
 	c1 := Convert()        // Empty - should work
 	c2 := Convert("hello") // Single value - should work
-
-	if c1.err != "" {
-		t.Errorf("Convert() should not have error, got: %s", c1.err)
+	if len(c1.err) > 0 {
+		t.Errorf("Convert() should not have error, got: %s", c1.getError())
 	}
-	if c2.err != "" {
-		t.Errorf("Convert(value) should not have error, got: %s", c2.err)
+	if len(c2.err) > 0 {
+		t.Errorf("Convert(value) should not have error, got: %s", c2.getError())
 	}
 
 	// Clean up
 	c1.putConv()
 	c2.putConv()
-
 	// Invalid usage - should set error and continue chain
 	c3 := Convert("hello", "world") // Multiple values - should set error
-	if c3.err == "" {
+	if len(c3.err) == 0 {
 		t.Error("Convert with multiple parameters should set error")
 	}
 
 	// Chain should continue but operations should be omitted due to error
-	result := c3.Write(" more").String() // This auto-releases
-	if result != "" {
-		t.Errorf("Operations after error should be omitted, got: %s", result)
+	out := c3.Write(" more").String() // This auto-releases
+	if out != "" {
+		t.Errorf("Operations after error should be omitted, got: %s", out)
 	}
 }
 
@@ -51,10 +49,10 @@ func TestWriteMethod(t *testing.T) {
 			for _, v := range tt.values {
 				c.Write(v)
 			}
-			result := c.String() // Auto-releases
+			out := c.String() // Auto-releases
 
-			if result != tt.expected {
-				t.Errorf("Write chain failed: got %q, want %q", result, tt.expected)
+			if out != tt.expected {
+				t.Errorf("Write chain failed: got %q, want %q", out, tt.expected)
 			}
 		})
 	}
@@ -68,11 +66,11 @@ func TestResetMethod(t *testing.T) {
 	// Reset and reuse
 	c.Reset()
 	c.Write("new").Write(" content")
-	result := c.String() // Auto-releases
+	out := c.String() // Auto-releases
 
 	expected := "new content"
-	if result != expected {
-		t.Errorf("Reset failed: got %q, want %q", result, expected)
+	if out != expected {
+		t.Errorf("Reset failed: got %q, want %q", out, expected)
 	}
 }
 
@@ -81,15 +79,14 @@ func TestErrorChainInterruption(t *testing.T) {
 	// Test normal case first
 	c := Convert("valid")
 	c.Write("ok")
-	result := c.String() // Auto-releases
+	out := c.String() // Auto-releases
 	expected := "validok"
-	if result != expected {
-		t.Errorf("Normal chain failed: got %q, want %q", result, expected)
+	if out != expected {
+		t.Errorf("Normal chain failed: got %q, want %q", out, expected)
 	}
-
 	// Test error case
 	c2 := Convert("hello", "world") // This should set error
-	if c2.err == "" {
+	if len(c2.err) == 0 {
 		t.Error("Expected error for multiple parameters, got none")
 	}
 
@@ -99,9 +96,9 @@ func TestErrorChainInterruption(t *testing.T) {
 	if err == nil {
 		t.Error("Expected error from StringError(), got nil")
 	}
-	// When there's an error, result should be empty string
+	// When there's an error, out should be empty string
 	if result2 != "" {
-		t.Errorf("Expected empty result due to error, got: %s", result2)
+		t.Errorf("Expected empty out due to error, got: %s", result2)
 	}
 }
 
@@ -117,11 +114,11 @@ func TestBuilderPattern(t *testing.T) {
 			c.Write(" - ")
 		}
 	}
-	result := c.String() // Auto-releases
+	out := c.String() // Auto-releases
 
 	expected := "Apple - Banana - Cherry"
-	if result != expected {
-		t.Errorf("Builder pattern failed: got %q, want %q", result, expected)
+	if out != expected {
+		t.Errorf("Builder pattern failed: got %q, want %q", out, expected)
 	}
 
 	// Test simple pattern too
@@ -140,8 +137,8 @@ func TestBuilderPattern(t *testing.T) {
 // TestTFunction tests the T translation function
 func TestTFunction(t *testing.T) {
 	// Test basic translation
-	result := T(D.Invalid, D.Value)
-	if result == "" {
+	out := T(D.Invalid, D.Value)
+	if out == "" {
 		t.Error("T function returned empty string")
 	}
 
@@ -152,22 +149,21 @@ func TestTFunction(t *testing.T) {
 	}
 
 	// They should be different (English vs Spanish)
-	if result == result2 {
+	if out == result2 {
 		t.Error("T function should return different translations for different languages")
 	}
 }
 
 // TestErrFunction tests the refactored Err function
-func TestErrFunction(t *testing.T) {
-	// Test basic error creation
+func TestErrFunction(t *testing.T) { // Test basic error creation
 	err := Err(D.Format, D.Invalid)
-	if err.err == "" {
+	if len(err.err) == 0 {
 		t.Error("Err function should create error message")
 	}
 
 	// Test that it uses pool
-	if err.vTpe != typeErr {
-		t.Error("Err should set type to typeErr")
+	if err.kind != KErr {
+		t.Error("Err should set type to KErr")
 	}
 
 	// Clean up

@@ -236,9 +236,9 @@ func TestConvertToStringOptimized(t *testing.T) {
 
 	for _, tc := range testCases {
 		t.Run(tc.name, func(t *testing.T) {
-			result := Convert(tc.input).String()
-			if result != tc.expected {
-				t.Errorf("Convert(%v).String() = %q, want %q", tc.input, result, tc.expected)
+			out := Convert(tc.input).String()
+			if out != tc.expected {
+				t.Errorf("Convert(%v).String() = %q, want %q", tc.input, out, tc.expected)
 			}
 		})
 	}

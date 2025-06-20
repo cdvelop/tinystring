@@ -72,7 +72,7 @@ func toLowerRune(r rune) rune {
 // RemoveTilde removes accents and diacritics using index-based lookup
 func (t *conv) RemoveTilde() *conv {
 	// Check for error chain interruption
-	if t.err != "" {
+	if len(t.err) > 0 {
 		return t
 	}
 
@@ -112,8 +112,8 @@ func (t *conv) RemoveTilde() *conv {
 
 	// Always update the buffer, even if no changes were made
 	// This ensures consistency with buffer-first strategy
-	t.buf = t.buf[:0]
-	t.buf = append(t.buf, tempBuf...)
+	t.out = t.out[:0]
+	t.out = append(t.out, tempBuf...)
 	t.setStringFromBuffer()
 
 	return t

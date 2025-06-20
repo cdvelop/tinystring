@@ -5,13 +5,12 @@ package tinystring
 // eg: "hello world" with old "world" and new "universe" will return "hello universe"
 // Old and new can be any type, they will be converted to string using Convert
 func (t *conv) Replace(oldAny, newAny any, n ...int) *conv {
-	if t.err != "" {
+	if len(t.err) > 0 {
 		return t // Error chain interruption
 	}
-
 	tmp := getConv()
 	tmp.any2s(oldAny) // Convert oldAny to string
-	old := tmp.tmpStr
+	old := string(tmp.work[:tmp.workLen])
 
 	tmp.any2s(newAny)      // Convert newAny to string
 	newStr := tmp.String() // return tmp to pool
@@ -33,7 +32,7 @@ func (t *conv) Replace(oldAny, newAny any, n ...int) *conv {
 	if bufCap < defaultBufCap {
 		bufCap = defaultBufCap
 	}
-	buf := make([]byte, 0, bufCap)
+	out := make([]byte, 0, bufCap)
 	// Default behavior: replace all occurrences (n = -1)
 	maxReps := -1
 	if len(n) > 0 {
@@ -44,27 +43,27 @@ func (t *conv) Replace(oldAny, newAny any, n ...int) *conv {
 	for i := 0; i < len(str); i++ {
 		// Check for occurrence of old in the string and if we haven't reached the maximum rep
 		if i+len(old) <= len(str) && str[i:i+len(old)] == old && (maxReps < 0 || rep < maxReps) {
-			// Add the new word to the result
-			buf = append(buf, newStr...)
+			// Add the new word to the out
+			out = append(out, newStr...)
 			// Skip the length of the old word in the original string
 			i += len(old) - 1
 			// Increment replacement counter
 			rep++
 		} else {
-			// Add the current character to the result
-			buf = append(buf, str[i])
+			// Add the current character to the out
+			out = append(out, str[i])
 		}
 	}
 
 	// Update buffer instead of using setString for buffer-first strategy
-	t.buf = append(t.buf[:0], buf...)
+	t.out = append(t.out[:0], out...)
 	return t
 }
 
 // TrimSuffix removes the specified suffix from the conv content if it exists
 // eg: "hello.txt" with suffix ".txt" will return "hello"
 func (t *conv) TrimSuffix(suffix string) *conv {
-	if t.err != "" {
+	if len(t.err) > 0 {
 		return t // Error chain interruption
 	}
 
@@ -73,15 +72,15 @@ func (t *conv) TrimSuffix(suffix string) *conv {
 		return t
 	}
 	// Update buffer instead of using setString for buffer-first strategy
-	result := str[:len(str)-len(suffix)]
-	t.buf = append(t.buf[:0], result...)
+	out := str[:len(str)-len(suffix)]
+	t.out = append(t.out[:0], out...)
 	return t
 }
 
 // TrimPrefix removes the specified prefix from the conv content if it exists
 // eg: "prefix-hello" with prefix "prefix-" will return "hello"
 func (t *conv) TrimPrefix(prefix string) *conv {
-	if t.err != "" {
+	if len(t.err) > 0 {
 		return t // Error chain interruption
 	}
 
@@ -90,15 +89,15 @@ func (t *conv) TrimPrefix(prefix string) *conv {
 		return t
 	}
 	// Update buffer instead of using setString for buffer-first strategy
-	result := str[len(prefix):]
-	t.buf = append(t.buf[:0], result...)
+	out := str[len(prefix):]
+	t.out = append(t.out[:0], out...)
 	return t
 }
 
 // Trim removes spaces at the beginning and end of the conv content
 // eg: "  hello world  " will return "hello world"
 func (t *conv) Trim() *conv {
-	if t.err != "" {
+	if len(t.err) > 0 {
 		return t // Error chain interruption
 	}
 
@@ -120,14 +119,14 @@ func (t *conv) Trim() *conv {
 
 	} // Special case: empty string
 	if start > end {
-		// Clear buffer for empty result
-		t.buf = t.buf[:0]
-		t.stringVal = ""
+		// Clear buffer for empty out
+		t.out = t.out[:0]
+		t.outLen = 0
 		return t
 	}
 
 	// Set the substring without spaces using buffer-first strategy
-	result := str[start : end+1]
-	t.buf = append(t.buf[:0], result...)
+	out := str[start : end+1]
+	t.out = append(t.out[:0], out...)
 	return t
 }

@@ -4,22 +4,21 @@ package tinystring
 // If n is less than or equal to zero, or if s is empty, it returns an empty string.
 // eg: Convert("abc").Repeat(3) => "abcabcabc"
 func (t *conv) Repeat(n int) *conv {
-	if t.err != "" {
+	if len(t.err) > 0 {
 		return t // Error chain interruption
 	}
-
 	if n <= 0 {
-		// Clear both buffer and stringVal for empty result
-		t.buf = t.buf[:0]
-		t.stringVal = ""
+		// Clear buffer for empty out
+		t.out = t.out[:0]
+		t.outLen = 0
 		return t
 	}
 	// Phase 4.2: Inline newBuf method to eliminate function call overhead
 	str := t.getString()
 	if len(str) == 0 {
-		// Clear both buffer and stringVal for empty result
-		t.buf = t.buf[:0]
-		t.stringVal = ""
+		// Clear buffer for empty out
+		t.out = t.out[:0]
+		t.outLen = 0
 		return t
 	}
 
@@ -27,14 +26,14 @@ func (t *conv) Repeat(n int) *conv {
 	if bufSize < 16 {
 		bufSize = 16 // Minimum useful buffer size
 	}
-	buf := make([]byte, 0, bufSize)
+	out := make([]byte, 0, bufSize)
 
 	// Write string n times
 	for range n {
-		buf = append(buf, str...)
+		out = append(out, str...)
 	}
 
 	// Update buffer instead of using setString for buffer-first strategy
-	t.buf = append(t.buf[:0], buf...)
+	t.out = append(t.out[:0], out...)
 	return t
 }

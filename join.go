@@ -12,7 +12,7 @@ func (t *conv) Join(sep ...string) *conv {
 	}
 
 	// Handle case when we have a string slice stored
-	if t.vTpe == typeStrSlice {
+	if t.kind == KSliceStr {
 		if len(t.stringSliceVal) == 0 {
 			t.setString("")
 		} else if len(t.stringSliceVal) == 1 {
@@ -63,14 +63,14 @@ func (t *conv) Join(sep ...string) *conv {
 			if bufCap < defaultBufCap {
 				bufCap = defaultBufCap
 			}
-			buf := make([]byte, 0, bufCap)
+			out := make([]byte, 0, bufCap)
 			for i, part := range parts {
-				buf = append(buf, part...)
+				out = append(out, part...)
 				if i < len(parts)-1 {
-					buf = append(buf, separator...)
+					out = append(out, separator...)
 				}
 			}
-			t.setString(string(buf))
+			t.setString(string(out))
 		}
 	}
 

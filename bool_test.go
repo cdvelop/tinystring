@@ -79,7 +79,7 @@ func TestToBool(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			result, err := Convert(tt.input).ToBool()
+			out, err := Convert(tt.input).ToBool()
 
 			if tt.hasError {
 				if err == nil {
@@ -89,8 +89,8 @@ func TestToBool(t *testing.T) {
 				if err != nil {
 					t.Errorf("Unexpected error: %v", err)
 				}
-				if result != tt.expected {
-					t.Errorf("Expected %v, got %v", tt.expected, result)
+				if out != tt.expected {
+					t.Errorf("Expected %v, got %v", tt.expected, out)
 				}
 			}
 		})
@@ -117,9 +117,9 @@ func TestFromBool(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			result := Convert(tt.input).String()
-			if result != tt.expected {
-				t.Errorf("Expected %q, got %q", tt.expected, result)
+			out := Convert(tt.input).String()
+			if out != tt.expected {
+				t.Errorf("Expected %q, got %q", tt.expected, out)
 			}
 		})
 	}
@@ -127,10 +127,10 @@ func TestFromBool(t *testing.T) {
 
 func TestBoolChaining(t *testing.T) {
 	// Test chaining with boolean operations
-	result := Convert(true).ToUpper().String()
+	out := Convert(true).ToUpper().String()
 	expected := "TRUE"
-	if result != expected {
-		t.Errorf("Expected %q, got %q", expected, result)
+	if out != expected {
+		t.Errorf("Expected %q, got %q", expected, out)
 	}
 
 	// Test converting back

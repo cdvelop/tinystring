@@ -33,16 +33,16 @@ func TestStringOperations(t *testing.T) {
 		}
 
 		for _, test := range tests {
-			var result string
+			var out string
 			if test.n >= 0 {
-				result = Convert(test.input).Replace(test.old, test.newStr, test.n).String()
+				out = Convert(test.input).Replace(test.old, test.newStr, test.n).String()
 			} else {
-				result = Convert(test.input).Replace(test.old, test.newStr).String()
+				out = Convert(test.input).Replace(test.old, test.newStr).String()
 			}
 
-			if result != test.expected {
+			if out != test.expected {
 				t.Errorf("Para input '%s', old '%v', new '%v', n '%d', esperado '%s', pero obtenido '%s'",
-					test.input, test.old, test.newStr, test.n, test.expected, result)
+					test.input, test.old, test.newStr, test.n, test.expected, out)
 			}
 		}
 	})
@@ -60,9 +60,9 @@ func TestStringOperations(t *testing.T) {
 		}
 
 		for _, test := range tests {
-			result := Convert(test.input).TrimSuffix(test.suffix).String()
-			if result != test.expected {
-				t.Errorf("Para input '%s', suffix '%s', esperado '%s', pero obtenido '%s'", test.input, test.suffix, test.expected, result)
+			out := Convert(test.input).TrimSuffix(test.suffix).String()
+			if out != test.expected {
+				t.Errorf("Para input '%s', suffix '%s', esperado '%s', pero obtenido '%s'", test.input, test.suffix, test.expected, out)
 			}
 		}
 	})
@@ -79,9 +79,9 @@ func TestStringOperations(t *testing.T) {
 		}
 
 		for _, test := range tests {
-			result := Convert(test.input).TrimPrefix(test.prefix).String()
-			if result != test.expected {
-				t.Errorf("Para input '%s', prefix '%s', esperado '%s', pero obtenido '%s'", test.input, test.prefix, test.expected, result)
+			out := Convert(test.input).TrimPrefix(test.prefix).String()
+			if out != test.expected {
+				t.Errorf("Para input '%s', prefix '%s', esperado '%s', pero obtenido '%s'", test.input, test.prefix, test.expected, out)
 			}
 		}
 	})
@@ -111,9 +111,9 @@ func TestStringOperations(t *testing.T) {
 		}
 
 		for _, test := range tests {
-			result := Convert(test.input).Trim().String()
-			if result != test.expected {
-				t.Errorf("Para input '%s', esperado '%s', pero obtenido '%s'", test.input, test.expected, result)
+			out := Convert(test.input).Trim().String()
+			if out != test.expected {
+				t.Errorf("Para input '%s', esperado '%s', pero obtenido '%s'", test.input, test.expected, out)
 			}
 		}
 	})
@@ -166,9 +166,9 @@ func TestStringOperations(t *testing.T) {
 
 		for _, test := range tests {
 			t.Run(test.name, func(t *testing.T) {
-				result := test.chain(test.input)
-				if result != test.expected {
-					t.Errorf("Chain test '%s': expected '%s', got '%s'", test.name, test.expected, result)
+				out := test.chain(test.input)
+				if out != test.expected {
+					t.Errorf("Chain test '%s': expected '%s', got '%s'", test.name, test.expected, out)
 				}
 			})
 		}

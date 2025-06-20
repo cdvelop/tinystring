@@ -14,10 +14,10 @@ func (t *conv) Capitalize() *conv {
 	runes := []rune(str)
 	if len(runes) == 0 {
 		return t
-	} // Get pooled buffer for result
+	} // Get pooled buffer for out
 	// Inline getRuneBuffer logic
-	buf := func(capacity int) []rune {
-		bufInterface := runeBufferPool.Get()
+	out := func(capacity int) []rune {
+		bufInterface := runePool.Get()
 		buffer := bufInterface.([]rune)
 
 		// Reset the buffer
@@ -26,11 +26,11 @@ func (t *conv) Capitalize() *conv {
 		if capacity > cap(buffer) {
 			// If requested capacity is much larger, allocate new buffer
 			if capacity > cap(buffer)*2 {
-				runeBufferPool.Put(buffer[:0]) // SA6002: sync.Pool expects interface{}
+				runePool.Put(buffer[:0]) // SA6002: sync.Pool expects interface{}
 				return make([]rune, 0, capacity)
 			}
 			// Otherwise, grow the buffer
-			runeBufferPool.Put(buffer[:0]) // SA6002: sync.Pool expects interface{}
+			runePool.Put(buffer[:0]) // SA6002: sync.Pool expects interface{}
 			return make([]rune, 0, capacity)
 		}
 
@@ -44,9 +44,9 @@ func (t *conv) Capitalize() *conv {
 		// Only pool buffers that aren't too large to avoid memory leaks
 		if cap(*buffer) <= defaultBufCap*4 {
 			resetBuf := (*buffer)[:0]
-			runeBufferPool.Put(resetBuf) // SA6002: sync.Pool expects interface{}
+			runePool.Put(resetBuf) // SA6002: sync.Pool expects interface{}
 		}
-	}(&buf)
+	}(&out)
 	inWord := false
 	addSpace := false // Flag to add space before next word
 
@@ -61,20 +61,20 @@ func (t *conv) Capitalize() *conv {
 		} else {
 			if !inWord {
 				// Start of new word
-				if addSpace && len(buf) > 0 {
-					buf = append(buf, ' ')
+				if addSpace && len(out) > 0 {
+					out = append(out, ' ')
 				}
-				buf = append(buf, toUpperRune(r))
+				out = append(out, toUpperRune(r))
 				inWord = true
 				addSpace = false
 			} else {
 				// Lowercase other letters in word
-				buf = append(buf, toLowerRune(r))
+				out = append(out, toLowerRune(r))
 			}
 		}
 	}
 
-	t.buf = append(t.buf[:0], string(buf)...)
+	t.out = append(t.out[:0], string(out)...)
 	return t
 }
 
@@ -90,7 +90,7 @@ func (t *conv) ToUpper() *conv {
 
 // changeCase consolidates ToLower and ToUpper functionality - optimized with buffer-first strategy
 func (t *conv) changeCase(toLower bool) *conv {
-	if t.err != "" {
+	if len(t.err) > 0 {
 		return t // Error chain interruption
 	}
 
@@ -112,8 +112,8 @@ func (t *conv) changeCase(toLower bool) *conv {
 	}
 
 	// Convert back to string and store in buffer
-	result := string(runes)
-	t.buf = append(t.buf[:0], result...)
+	out := string(runes)
+	t.out = append(t.out[:0], out...)
 
 	return t
 }
@@ -159,7 +159,7 @@ func (t *conv) ToSnakeCaseUpper(sep ...string) *conv {
 
 // Minimal implementation without pools or builders - optimized for minimal allocations
 func (t *conv) toCaseTransformMinimal(firstWordLower bool, separator string) *conv {
-	if t.err != "" {
+	if len(t.err) > 0 {
 		return t // Error chain interruption
 	}
 
@@ -173,7 +173,7 @@ func (t *conv) toCaseTransformMinimal(firstWordLower bool, separator string) *co
 	if resultCap < defaultBufCap {
 		resultCap = defaultBufCap
 	}
-	result := make([]byte, 0, resultCap)
+	out := make([]byte, 0, resultCap)
 	// Advanced word boundary detection for camelCase and snake_case
 	wordIndex := 0
 	var pWU, pWL, pWD, pWS bool
@@ -216,7 +216,7 @@ func (t *conv) toCaseTransformMinimal(firstWordLower bool, separator string) *co
 
 		// Add separator if starting new word (except first word)
 		if iWS && wordIndex > 0 && separator != "" {
-			result = append(result, separator...)
+			out = append(out, separator...)
 		}
 
 		// Determine case transformation
@@ -242,10 +242,10 @@ func (t *conv) toCaseTransformMinimal(firstWordLower bool, separator string) *co
 		// Convert rune to bytes directly instead of string(rune)
 		if transformedRune < 128 {
 			// ASCII optimization
-			result = append(result, byte(transformedRune))
+			out = append(out, byte(transformedRune))
 		} else {
 			// Use UTF-8 encoding for multi-byte runes
-			result = append(result, string(transformedRune)...)
+			out = append(out, string(transformedRune)...)
 		}
 
 		// Update state for next iteration
@@ -255,7 +255,7 @@ func (t *conv) toCaseTransformMinimal(firstWordLower bool, separator string) *co
 	}
 
 	// Update buffer instead of using setString for buffer-first strategy
-	t.buf = append(t.buf[:0], result...)
+	t.out = append(t.out[:0], out...)
 	return t
 }
 

@@ -26,8 +26,8 @@ func processTextWithStandardLib(texts []string) []string {
 		if len(words) > 0 && len(words[0]) > 0 {
 			words[0] = strings.ToUpper(words[0][:1]) + words[0][1:]
 		}
-		result := strings.Join(words, "")
-		results[i] = result
+		out := strings.Join(words, "")
+		results[i] = out
 	}
 	return results
 }
@@ -46,14 +46,14 @@ func processNumbersWithStandardLib(numbers []float64) []string {
 
 		// Simple thousand separator logic
 		if len(integer) > 3 {
-			var result strings.Builder
+			var out strings.Builder
 			for j, char := range integer {
 				if j > 0 && (len(integer)-j)%3 == 0 {
-					result.WriteString(".")
+					out.WriteString(".")
 				}
-				result.WriteRune(char)
+				out.WriteRune(char)
 			}
-			formatted = result.String() + "," + decimal
+			formatted = out.String() + "," + decimal
 		}
 		results[i] = formatted
 	}

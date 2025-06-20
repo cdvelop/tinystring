@@ -7,7 +7,7 @@ package tinystring
 // eg: Split("Hello World") => []string{"Hello", "World"}
 // with separator eg: Split("Hello;World", ";") => []string{"Hello", "World"}
 
-func Split(data string, separator ...string) (result []string) {
+func Split(data string, separator ...string) (out []string) {
 	// If no separator provided, split by whitespace
 	if len(separator) == 0 {
 		// Inline splitByWhitespace logic
@@ -34,7 +34,7 @@ func Split(data string, separator ...string) (result []string) {
 		}
 
 		// Allocate exact capacity to avoid reallocations
-		result := make([]string, 0, wordCount)
+		out := make([]string, 0, wordCount)
 		inWord = false
 		start := 0
 
@@ -49,16 +49,16 @@ func Split(data string, separator ...string) (result []string) {
 			} else if isSpace && inWord {
 				// End of a word
 				inWord = false
-				result = append(result, data[start:i])
+				out = append(out, data[start:i])
 			}
 		}
 
 		// Handle the last word if the string doesn't end with whitespace
 		if inWord {
-			result = append(result, data[start:])
+			out = append(out, data[start:])
 		}
 
-		return result
+		return out
 	}
 
 	// Using the provided separator
@@ -77,23 +77,23 @@ func Split(data string, separator ...string) (result []string) {
 		}
 
 		// Pre-allocate exact capacity for character count
-		result := make([]string, 0, len(data))
+		out := make([]string, 0, len(data))
 
 		// Use direct byte access for ASCII optimization
 		for i := 0; i < len(data); i++ {
 			if data[i] < 128 { // ASCII fast path
-				result = append(result, data[i:i+1])
+				out = append(out, data[i:i+1])
 			} else {
 				// UTF-8 handling (fallback)
 				for j, ch := range data[i:] {
-					result = append(result, string(ch))
+					out = append(out, string(ch))
 					i += j
 					break
 				}
 			}
 		}
 
-		return result
+		return out
 	}
 
 	// Inline splitBySeparator logic
@@ -113,18 +113,18 @@ func Split(data string, separator ...string) (result []string) {
 	}
 
 	// Allocate exact capacity
-	result = make([]string, 0, partCount)
+	out = make([]string, 0, partCount)
 	start := 0
 
 	// Extract parts
 	for i := 0; i <= len(data)-sepLen; i++ {
 		if data[i:i+sepLen] == sep {
-			result = append(result, data[start:i])
+			out = append(out, data[start:i])
 			start = i + sepLen
 			i += sepLen - 1 // Skip the characters we just checked
 		}
 	}
 	// Add the remaining substring
-	result = append(result, data[start:])
-	return result
+	out = append(out, data[start:])
+	return out
 }

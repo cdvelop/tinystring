@@ -2,11 +2,23 @@ package tinystring
 
 import "sync"
 
-// Phase 7: Conv Pool for memory optimization
 // Reuse conv objects to eliminate the 53.67% allocation hotspot from newConv()
 var convPool = sync.Pool{
 	New: func() any {
-		return &conv{}
+		return &conv{
+			out:  make([]byte, 0, 64),
+			work: make([]byte, 0, 64),
+			err:  make([]byte, 0, 64),
+			// TODO: Add bufFmt when struct is updated
+		}
+	},
+}
+
+// Rune Buffer Pool for memory optimization reuse rune buffers to eliminate allocation hotspot
+var runePool = sync.Pool{
+	New: func() any {
+		// Start with a reasonable default capacity
+		return make([]rune, 0, defaultBufCap)
 	},
 }
 
@@ -16,18 +28,23 @@ func getConv() *conv {
 }
 
 // putConv returns a conv to the pool after resetting it
-func (c *conv) putConv() { // Reset all fields to default state
-	c.stringVal = ""
+func (c *conv) putConv() {
+	// Reset all buffer positions using centralized method
+	c.resetAllBuffers()
+
+	// Clear buffer contents (keep capacity for reuse)
+	c.out = c.out[:0]
+	c.work = c.work[:0]
+	c.err = c.err[:0]
+
+	// Reset other fields to default state
 	c.intVal = 0
 	c.uintVal = 0
 	c.floatVal = 0
 	c.boolVal = false
 	c.stringSliceVal = nil
 	c.stringPtrVal = nil
-	c.vTpe = typeStr
-	c.tmpStr = "" // Phase 13.2: Reset cache
-	c.err = ""
-	c.buf = c.buf[:0] // Inline resetBuffer
+	c.kind = KString
 
 	convPool.Put(c)
 }
@@ -35,172 +52,182 @@ func (c *conv) putConv() { // Reset all fields to default state
 // Phase 6.2: Buffer reuse methods for memory optimization
 // ensureCapacity ensures the buffer has at least the specified capacity
 func (c *conv) ensureCapacity(capacity int) {
-	if cap(c.buf) < capacity {
-		newCap := capacity
-		if newCap < 32 {
-			newCap = 32
-		}
+	if cap(c.out) < capacity {
+		newCap := max(capacity, 32)
 		// Double the capacity if we need significant growth
-		if newCap > cap(c.buf)*2 {
+		if newCap > cap(c.out)*2 {
 			newCap = capacity
-		} else if cap(c.buf) > 0 {
-			newCap = cap(c.buf) * 2
-			if newCap < capacity {
-				newCap = capacity
-			}
+		} else if cap(c.out) > 0 {
+			newCap = max(cap(c.out)*2, capacity)
 		}
-		newBuf := make([]byte, len(c.buf), newCap)
-		copy(newBuf, c.buf)
-		c.buf = newBuf
+		newBuf := make([]byte, len(c.out), newCap)
+		copy(newBuf, c.out)
+		c.out = newBuf
 	}
 }
 
 // getReusableBuffer returns a buffer with specified capacity, reusing existing if possible
 func (c *conv) getReusableBuffer(capacity int) []byte {
 	c.ensureCapacity(capacity)
-	c.buf = c.buf[:0] // Inline resetBuffer
-	return c.buf
+	c.out = c.out[:0] // Inline resetBuffer
+	return c.out
 }
 
 // Phase 13.2: Highly optimized buffer management with minimal allocations
 func (c *conv) setStringFromBuffer() {
-	var resultStr string
-	if len(c.buf) == 0 {
-		resultStr = ""
-	} else {
-		// Phase 13.2: Direct string allocation without interning overhead
-		// Interning was causing more allocations than it saved
-		resultStr = string(c.buf)
-	}
-
-	c.stringVal = resultStr
+	// In the new system, the buffer already contains the string content
+	// We just need to update the length and ensure proper type
+	c.outLen = len(c.out)
 
 	// If working with string pointer, update the original string
-	if c.vTpe == typeStrPtr && c.stringPtrVal != nil {
-		*c.stringPtrVal = resultStr
-		// Keep the vTpe as stringPtr to maintain the pointer relationship
+	if c.kind == KPointer && c.stringPtrVal != nil {
+		*c.stringPtrVal = string(c.out)
+		// Keep the kind as stringPtr to maintain the pointer relationship
 	} else {
-		c.vTpe = typeStr
+		c.kind = KString
 	}
 
-	c.buf = c.buf[:0] // Reset buffer length, keep capacity
+	// Note: We don't reset the buffer here as it contains our data
+	// The buffer will be managed by the calling code as needed
 }
 
-// Phase 8.5: String interning cache for common small strings
-// Simple string cache for frequently used small strings to reduce allocations
-// Using slice-based cache for TinyGo compatibility and better performance
-type cachedString struct {
-	str string
-	ref string // Reference to the same string to avoid duplicates
+// =============================================================================
+// CENTRALIZED BUFFER MANAGEMENT - Phase 1 Implementation
+// All buffer operations consolidated here for memory optimization
+// =============================================================================
+
+// writeString appends string to main buffer using length-controlled writing
+func (c *conv) writeString(s string) {
+	c.out = append(c.out[:c.outLen], s...)
+	c.outLen = len(c.out)
 }
 
-var (
-	stringCache    [64]cachedString // Fixed-size array for interned strings - thread safe
-	stringCacheLen int              // Current number of entries in cache
-	stringCacheMu  sync.RWMutex     // Protect the cache
-	maxCacheSize   = 64             // Maximum cache entries
-)
-
-// internStringFromBytes attempts to return a cached string from bytes if available,
-// otherwise creates, caches and returns the string. This avoids temporary string allocation.
-func internStringFromBytes(b []byte) string {
-	// Only intern small strings (most common case)
-	if len(b) > 32 || len(b) == 0 {
-		return string(b)
-	}
-
-	// Create string once to avoid multiple allocations
-	s := string(b)
-
-	// Fast read-only check first - most cache hits happen here
-	stringCacheMu.RLock()
-	for i := 0; i < stringCacheLen; i++ {
-		if stringCache[i].str == s {
-			stringCacheMu.RUnlock()
-			return stringCache[i].ref
-		}
-	}
-	stringCacheMu.RUnlock()
-
-	// Not found, try to add to cache with write lock
-	stringCacheMu.Lock()
-	defer stringCacheMu.Unlock()
-
-	// Double-check pattern: another goroutine might have added it while we waited
-	for i := 0; i < stringCacheLen; i++ {
-		if stringCache[i].str == s {
-			return stringCache[i].ref
-		}
-	}
-
-	// Add to cache if not full
-	if stringCacheLen < maxCacheSize {
-		stringCache[stringCacheLen] = cachedString{
-			str: s,
-			ref: s,
-		}
-		stringCacheLen++
-	}
-
-	return s
+// writeToBuffer appends byte slice to main buffer using length-controlled writing
+func (c *conv) writeToBuffer(data []byte) {
+	c.out = append(c.out[:c.outLen], data...)
+	c.outLen = len(c.out)
 }
 
-// Phase 11: Rune Buffer Pool for memory optimization
-// Reuse rune buffers to eliminate makeRuneBuf() allocation hotspot
-var runeBufferPool = sync.Pool{
-	New: func() any {
-		// Start with a reasonable default capacity
-		return make([]rune, 0, defaultBufCap)
-	},
+// writeByte appends single byte to main buffer
+func (c *conv) writeByte(b byte) {
+	c.out = append(c.out[:c.outLen], b)
+	c.outLen = len(c.out)
 }
 
-// Phase 13: Helper to determine if a byte slice is likely to be reused
-// Only intern strings that are probably error messages or common values
-func isLikelyReusable(buf []byte) bool {
-	// Don't intern if too short or too long
-	if len(buf) < 3 || len(buf) > 16 {
-		return false
-	}
-
-	// Intern common error-like patterns
-	s := string(buf)
-
-	// Check if it looks like an error message (contains common error words)
-	if contains(s, "invalid") || contains(s, "error") || contains(s, "overflow") ||
-		contains(s, "base") || contains(s, "range") || contains(s, "character") {
-		return true
-	}
-
-	// Check if it's a common value (small numbers, true/false, etc.)
-	if len(buf) <= 5 {
-		// Numbers 0-99999, true, false, etc.
-		if isAllDigits(buf) || s == "true" || s == "false" {
-			return true
-		}
-	}
-
-	return false
+// resetBuffer resets write position to 0 (logical reset, keeps capacity)
+func (c *conv) resetBuffer() {
+	c.outLen = 0 // Previous data ignored, will be overwritten
 }
 
-// Helper to check if all bytes are digits
-func isAllDigits(buf []byte) bool {
-	for _, b := range buf {
-		if b < '0' || b > '9' {
-			return false
-		}
-	}
-	return len(buf) > 0
+// readBuffer returns only valid data from main buffer (up to outLen)
+func (c *conv) readBuffer() []byte {
+	return c.out[:c.outLen]
 }
 
-// Helper to check if string contains substring (simple implementation)
-func contains(s, substr string) bool {
-	if len(substr) > len(s) {
-		return false
-	}
-	for i := 0; i <= len(s)-len(substr); i++ {
-		if s[i:i+len(substr)] == substr {
-			return true
+// getMainString returns main buffer content as string (length-controlled)
+// Note: getString() exists in convert.go, this is the centralized version
+func (c *conv) getMainString() string {
+	return string(c.out[:c.outLen]) // Only valid data
+}
+
+// =============================================================================
+// ERROR BUFFER OPERATIONS (temporary implementation using len() directly)
+// TODO: Add bufErrLen field to conv struct for optimal performance
+// =============================================================================
+
+// writeToErrBuffer appends data to error buffer
+func (c *conv) writeToErrBuffer(data []byte) {
+	c.err = append(c.err, data...)
+}
+
+// writeStringToErr appends string to error buffer
+func (c *conv) writeStringToErr(s string) {
+	c.writeToErrBuffer([]byte(s))
+}
+
+// getErrorString returns error buffer content as string
+func (c *conv) getErrorString() string {
+	return string(c.err)
+}
+
+// resetErrBuffer resets error buffer
+func (c *conv) resetErrBuffer() {
+	c.err = c.err[:0]
+}
+
+// =============================================================================
+// TEMPORARY BUFFER OPERATIONS
+// =============================================================================
+
+// writeToTmpBuffer appends data to temporary buffer with length control
+func (c *conv) writeToTmpBuffer(data []byte) {
+	c.work = append(c.work[:c.workLen], data...)
+	c.workLen = len(c.work)
+}
+
+// writeStringToTmp appends string to temporary buffer
+func (c *conv) writeStringToTmp(s string) {
+	c.writeToTmpBuffer([]byte(s))
+}
+
+// getTmpString returns temporary buffer content as string
+func (c *conv) getTmpString() string {
+	return string(c.work[:c.workLen])
+}
+
+// resetTmpBuffer resets temporary buffer write position
+func (c *conv) resetTmpBuffer() {
+	c.workLen = 0
+}
+
+// =============================================================================
+// FORMAT BUFFER OPERATIONS (temporary implementation without bufFmt field)
+// TODO: Add bufFmt and bufFmtLen fields to conv struct for optimal performance
+// =============================================================================
+
+// cacheFormat stores format string in temporary buffer for now (shares work)
+func (c *conv) cacheFormat(format string) {
+	// For now, we'll implement format caching later when struct is updated
+	// This is a placeholder to avoid compilation errors
+}
+
+// getCachedFormat returns cached format string
+func (c *conv) getCachedFormat() string {
+	return "" // Placeholder implementation
+}
+
+// hasCachedFormat checks if format matches cached format
+func (c *conv) hasCachedFormat(format string) bool {
+	return false // Always reparse for now, optimize later
+}
+
+// =============================================================================
+// UNIFIED BUFFER STATE MANAGEMENT
+// =============================================================================
+
+// resetAllBuffers resets all buffer positions (used in putConv)
+func (c *conv) resetAllBuffers() {
+	c.outLen = 0
+	c.workLen = 0
+	// Note: bufErrLen and bufFmtLen will be added when struct is updated
+}
+
+// ensureMainCapacity ensures main buffer has at least the specified capacity
+func (c *conv) ensureMainCapacity(capacity int) {
+	if cap(c.out) < capacity {
+		newCap := max(capacity, 64) // Minimum 64 bytes
+		if cap(c.out) > 0 {
+			newCap = max(cap(c.out)*2, capacity) // Double if growing
 		}
+		newBuf := make([]byte, c.outLen, newCap)
+		copy(newBuf, c.out[:c.outLen])
+		c.out = newBuf
 	}
-	return false
+}
+
+// bufferStats returns current buffer usage statistics (for debugging/monitoring)
+func (c *conv) bufferStats() (mainLen, mainCap, tmpLen, tmpCap, errLen, errCap int) {
+	return c.outLen, cap(c.out),
+		c.workLen, cap(c.work),
+		len(c.err), cap(c.err) // Using len() until bufErrLen field added
 }

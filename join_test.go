@@ -47,16 +47,16 @@ func TestJoinMethod(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			var result string
+			var out string
 			if tt.sep == "" {
-				result = Convert(tt.input).Join().String()
+				out = Convert(tt.input).Join().String()
 			} else {
-				result = Convert(tt.input).Join(tt.sep).String()
+				out = Convert(tt.input).Join(tt.sep).String()
 			}
 
-			if result != tt.expected {
+			if out != tt.expected {
 				t.Errorf("Join test %q: expected %q, got %q",
-					tt.name, tt.expected, result)
+					tt.name, tt.expected, out)
 			}
 		})
 	}
@@ -97,10 +97,10 @@ func TestJoinChainMethods(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			result := tt.function(tt.input)
-			if result != tt.expected {
+			out := tt.function(tt.input)
+			if out != tt.expected {
 				t.Errorf("Chain test %q: expected %q, got %q",
-					tt.name, tt.expected, result)
+					tt.name, tt.expected, out)
 			}
 		})
 	}

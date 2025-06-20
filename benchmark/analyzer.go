@@ -318,7 +318,7 @@ func parseBenchmarkOutput(output, library string) []BenchmarkResult {
 			bytesPerOp, _ := strconv.ParseInt(matches[4], 10, 64)
 			allocsPerOp, _ := strconv.ParseInt(matches[5], 10, 64)
 
-			result := BenchmarkResult{
+			out := BenchmarkResult{
 				Name:        matches[1],
 				Library:     library,
 				Iterations:  iterations,
@@ -327,7 +327,7 @@ func parseBenchmarkOutput(output, library string) []BenchmarkResult {
 				AllocsPerOp: allocsPerOp,
 			}
 
-			results = append(results, result)
+			results = append(results, out)
 		}
 	}
 
@@ -343,11 +343,11 @@ func createComparison(category string, standard, tinystring BenchmarkResult) Mem
 	}
 }
 
-// findBenchmark finds a benchmark result by name
+// findBenchmark finds a benchmark out by name
 func findBenchmark(results []BenchmarkResult, name string) BenchmarkResult {
-	for _, result := range results {
-		if result.Name == name {
-			return result
+	for _, out := range results {
+		if out.Name == name {
+			return out
 		}
 	}
 	return BenchmarkResult{}

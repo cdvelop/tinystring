@@ -49,10 +49,10 @@ func TestRepeat(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			result := Convert(tt.input).Repeat(tt.count).String()
-			if result != tt.expected {
+			out := Convert(tt.input).Repeat(tt.count).String()
+			if out != tt.expected {
 				t.Errorf("Convert(%q).Repeat(%d) = %q, want %q",
-					tt.input, tt.count, result, tt.expected)
+					tt.input, tt.count, out, tt.expected)
 			}
 		})
 	}

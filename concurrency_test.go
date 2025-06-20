@@ -45,13 +45,13 @@ func TestConcurrentConvert(t *testing.T) {
 	for i := 0; i < numGoroutines; i++ {
 		go func(id int) {
 			defer wg.Done()
-			result := Convert(testString).
+			out := Convert(testString).
 				RemoveTilde().
 				CamelCaseLower().
 				String()
 
-			if result != expectedResult {
-				counter.addError(Fmt("goroutine %d: got %q, want %q", id, result, expectedResult).String())
+			if out != expectedResult {
+				counter.addError(Fmt("goroutine %d: got %q, want %q", id, out, expectedResult).String())
 			}
 		}(i)
 	}
@@ -88,8 +88,8 @@ func TestConcurrentUtilityFunctions(t *testing.T) {
 		{
 			name: "Split",
 			function: func() (string, error) {
-				result := Split("apple,banana,cherry", ",")
-				return result[1], nil
+				out := Split("apple,banana,cherry", ",")
+				return out[1], nil
 			},
 			expected: "banana",
 		},
@@ -146,12 +146,12 @@ func TestConcurrentUtilityFunctions(t *testing.T) {
 			for i := 0; i < numGoroutines; i++ {
 				go func(id int) {
 					defer wg.Done()
-					result, err := tc.function()
+					out, err := tc.function()
 					if err != nil {
 						counter.addError(Fmt("goroutine %d: error: %v", id, err).String())
 					}
-					if result != tc.expected {
-						counter.addError(Fmt("goroutine %d: got %q, want %q", id, result, tc.expected).String())
+					if out != tc.expected {
+						counter.addError(Fmt("goroutine %d: got %q, want %q", id, out, tc.expected).String())
 					}
 				}(i)
 			}
@@ -234,12 +234,12 @@ func TestConcurrentStringManipulation(t *testing.T) {
 					defer wg.Done()
 
 					for j := 0; j < iterations; j++ {
-						result := tc.process(tc.input)
-						if result != tc.expected {
+						out := tc.process(tc.input)
+						if out != tc.expected {
 							// Use simple string concatenation instead of Fmt to avoid race conditions
 							errMsg := "goroutine " + Convert(id).String() +
 								", iteration " + Convert(j).String() +
-								": got " + result + ", want " + tc.expected
+								": got " + out + ", want " + tc.expected
 							counter.addError(errMsg)
 							return
 						}
@@ -306,23 +306,23 @@ func TestConcurrentNumericOperations(t *testing.T) {
 		{
 			name: "RoundDecimals Operation",
 			function: func() (string, error) {
-				result := Convert(123.456789).RoundDecimals(2).String()
-				return result, nil
+				out := Convert(123.456789).RoundDecimals(2).String()
+				return out, nil
 			},
 			expected: "123.46",
 		},
 		{
 			name: "RoundDecimals Down Operation",
 			function: func() (string, error) {
-				result := Convert(123.456789).RoundDecimals(2).Down().String()
-				return result, nil
+				out := Convert(123.456789).RoundDecimals(2).Down().String()
+				return out, nil
 			},
 			expected: "123.45",
 		}, {
 			name: "FormatNumber Operation",
 			function: func() (string, error) {
-				result := Convert(1234567).FormatNumber().String()
-				return result, nil
+				out := Convert(1234567).FormatNumber().String()
+				return out, nil
 			},
 			expected: "1.234.567",
 		},
@@ -345,12 +345,12 @@ func TestConcurrentNumericOperations(t *testing.T) {
 			for i := 0; i < numGoroutines; i++ {
 				go func(id int) {
 					defer wg.Done()
-					result, err := tc.function()
+					out, err := tc.function()
 					if err != nil {
 						counter.addError(Fmt("goroutine %d: error: %v", id, err).String())
 					}
-					if result != tc.expected {
-						counter.addError(Fmt("goroutine %d: got %q, want %q", id, result, tc.expected).String())
+					if out != tc.expected {
+						counter.addError(Fmt("goroutine %d: got %q, want %q", id, out, tc.expected).String())
 					}
 				}(i)
 			}
@@ -472,9 +472,9 @@ func TestConcurrentFormattingOperations(t *testing.T) {
 			for i := 0; i < numGoroutines; i++ {
 				go func(id int) {
 					defer wg.Done()
-					result := tc.function()
-					if result != tc.expected {
-						counter.addError(Fmt("goroutine %d: got %q, want %q", id, result, tc.expected).String())
+					out := tc.function()
+					if out != tc.expected {
+						counter.addError(Fmt("goroutine %d: got %q, want %q", id, out, tc.expected).String())
 					}
 				}(i)
 			}
@@ -554,9 +554,9 @@ func TestConcurrentAdvancedCaseOperations(t *testing.T) {
 			for i := 0; i < numGoroutines; i++ {
 				go func(id int) {
 					defer wg.Done()
-					result := tc.function()
-					if result != tc.expected {
-						counter.addError(Fmt("goroutine %d: got %q, want %q", id, result, tc.expected).String())
+					out := tc.function()
+					if out != tc.expected {
+						counter.addError(Fmt("goroutine %d: got %q, want %q", id, out, tc.expected).String())
 					}
 				}(i)
 			}
@@ -622,9 +622,9 @@ func TestConcurrentTruncateOperations(t *testing.T) {
 			for i := 0; i < numGoroutines; i++ {
 				go func(id int) {
 					defer wg.Done()
-					result := tc.function()
-					if result != tc.expected {
-						counter.addError(Fmt("goroutine %d: got %q, want %q", id, result, tc.expected).String())
+					out := tc.function()
+					if out != tc.expected {
+						counter.addError(Fmt("goroutine %d: got %q, want %q", id, out, tc.expected).String())
 					}
 				}(i)
 			}
@@ -705,9 +705,9 @@ func TestConcurrentUtilityOperations(t *testing.T) {
 			for i := 0; i < numGoroutines; i++ {
 				go func(id int) {
 					defer wg.Done()
-					result := tc.function()
-					if result != tc.expected {
-						counter.addError(Fmt("goroutine %d: got %q, want %q", id, result, tc.expected).String())
+					out := tc.function()
+					if out != tc.expected {
+						counter.addError(Fmt("goroutine %d: got %q, want %q", id, out, tc.expected).String())
 					}
 				}(i)
 			}
@@ -769,7 +769,7 @@ func TestRaceConditionInComplexChaining(t *testing.T) {
 					expected := expectedResults[inputIndex]
 
 					// Complex chaining operation that exercises multiple code paths
-					result := Convert(input).
+					out := Convert(input).
 						RemoveTilde().
 						Trim().
 						Replace("_", " ").
@@ -779,22 +779,22 @@ func TestRaceConditionInComplexChaining(t *testing.T) {
 						ToLower().
 						String()
 
-					// Verify the result is consistent
-					if len(result) == 0 && len(input) > 0 {
+					// Verify the out is consistent
+					if len(out) == 0 && len(input) > 0 {
 						// Use simple string concatenation instead of Fmt to avoid race conditions
 						errMsg := "goroutine " + Convert(id).String() +
 							", iteration " + Convert(j).String() +
-							": got empty result for input " + input
+							": got empty out for input " + input
 						counter.addError(errMsg)
 						continue
 					}
 
 					// Validate specific expected results
-					if result != expected {
+					if out != expected {
 						// Use simple string concatenation instead of Fmt
 						errMsg := "goroutine " + Convert(id).String() +
 							", iteration " + Convert(j).String() +
-							": got " + result + ", want " + expected
+							": got " + out + ", want " + expected
 						counter.addError(errMsg)
 					}
 				}
@@ -817,7 +817,7 @@ func TestRaceConditionInComplexChaining(t *testing.T) {
 // TestConcurrentStringInterning tests the string interning functionality
 // under high concurrency to detect race conditions in the cache.
 // This test specifically targets the race condition that was found in
-// internStringFromBytes() function in memory.go
+
 func TestConcurrentStringInterning(t *testing.T) {
 	const numGoroutines = 500
 	const iterations = 20
@@ -920,11 +920,11 @@ func TestConcurrentStringCacheStress(t *testing.T) {
 
 					// Execute random operation
 					op := operations[j%len(operations)]
-					result := op()
+					out := op()
 
-					// Basic validation - ensure result is not empty
-					if result == "" {
-						counter.addError(Fmt("goroutine %d, iteration %d: got empty result", id, j).String())
+					// Basic validation - ensure out is not empty
+					if out == "" {
+						counter.addError(Fmt("goroutine %d, iteration %d: got empty out", id, j).String())
 					}
 				}
 			}(i)

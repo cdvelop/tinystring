@@ -66,9 +66,9 @@ func TestCount(t *testing.T) {
 
 	for name, tc := range testCases {
 		t.Run(name, func(t *testing.T) {
-			result := Count(tc.conv, tc.search)
-			if result != tc.expected {
-				t.Errorf("Error: Se esperaba %v, pero se obtuvo %v. Texto: %s, Búsqueda: %s", tc.expected, result, tc.conv, tc.search)
+			out := Count(tc.conv, tc.search)
+			if out != tc.expected {
+				t.Errorf("Error: Se esperaba %v, pero se obtuvo %v. Texto: %s, Búsqueda: %s", tc.expected, out, tc.conv, tc.search)
 			}
 		})
 	}
@@ -119,9 +119,9 @@ func TestContains(t *testing.T) {
 
 	for name, tc := range testCases {
 		t.Run(name, func(t *testing.T) {
-			result := Contains(tc.conv, tc.search)
-			if result != tc.expected {
-				t.Errorf("Error: Se esperaba %v, pero se obtuvo %v. Texto: %s, Búsqueda: %s", tc.expected, result, tc.conv, tc.search)
+			out := Contains(tc.conv, tc.search)
+			if out != tc.expected {
+				t.Errorf("Error: Se esperaba %v, pero se obtuvo %v. Texto: %s, Búsqueda: %s", tc.expected, out, tc.conv, tc.search)
 			}
 		})
 	}

@@ -11,7 +11,7 @@ package tinystring
 // eg: Convert("Hello, World!").Truncate(10, 3) => "Hell..."
 // eg: Convert("Hello").Truncate(10) => "Hello"
 func (t *conv) Truncate(maxWidth any, reservedChars ...any) *conv {
-	if t.err != "" {
+	if len(t.err) > 0 {
 		return t // Error chain interruption
 	}
 
@@ -133,23 +133,23 @@ func (t *conv) Truncate(maxWidth any, reservedChars ...any) *conv {
 			// Case 1: Reserved chars specified, and ellipsis fits within the effective width
 			cTK := min(max(eW-ellipsisLen, 0), oL)
 			// Phase 11: Use buffer instead of string concatenation to avoid allocation
-			t.buf = t.getReusableBuffer(cTK + len(ellipsisStr))
-			t.buf = append(t.buf, conv[:cTK]...)
-			t.buf = append(t.buf, ellipsisStr...)
+			t.out = t.getReusableBuffer(cTK + len(ellipsisStr))
+			t.out = append(t.out, conv[:cTK]...)
+			t.out = append(t.out, ellipsisStr...)
 			t.setStringFromBuffer()
 		} else if rCI == 0 && mWI >= ellipsisLen {
 			// Case 2: No reserved chars, ellipsis fits within maxWidth
 			cTK := min(max(mWI-ellipsisLen, 0), oL)
 			// Phase 11: Use buffer instead of string concatenation to avoid allocation
-			t.buf = t.getReusableBuffer(cTK + len(ellipsisStr))
-			t.buf = append(t.buf, conv[:cTK]...)
-			t.buf = append(t.buf, ellipsisStr...)
+			t.out = t.getReusableBuffer(cTK + len(ellipsisStr))
+			t.out = append(t.out, conv[:cTK]...)
+			t.out = append(t.out, ellipsisStr...)
 			t.setStringFromBuffer()
 		} else {
 			// Case 3: Ellipsis doesn't fit or reserved chars prevent it, just truncate
 			cTK := min(mWI, oL)
 			// Update buffer instead of using setString for buffer-first strategy
-			t.buf = append(t.buf[:0], conv[:cTK]...)
+			t.out = append(t.out[:0], conv[:cTK]...)
 		}
 	}
 
@@ -169,7 +169,7 @@ func (t *conv) Truncate(maxWidth any, reservedChars ...any) *conv {
 //   - Convert("Ana Maria Rodriguez").TruncateName(2, 10) => "An. Mar..."
 //   - Convert("Juan").TruncateName(3, 5) => "Juan"
 func (t *conv) TruncateName(maxCharsPerWord, maxWidth any) *conv {
-	if t.err != "" {
+	if len(t.err) > 0 {
 		return t // Error chain interruption
 	}
 
@@ -299,10 +299,10 @@ func (t *conv) TruncateName(maxCharsPerWord, maxWidth any) *conv {
 		}
 		res += processedWord
 	}
-	// Step 2: Check if the processed result fits within maxWidth
+	// Step 2: Check if the processed out fits within maxWidth
 	if len(res) <= mT {
 		// Update buffer instead of using setString for buffer-first strategy
-		t.buf = append(t.buf[:0], res...)
+		t.out = append(t.out[:0], res...)
 		return t
 	}
 
@@ -318,22 +318,22 @@ func (t *conv) TruncateName(maxCharsPerWord, maxWidth any) *conv {
 			availableForFirstWord := mT - len(ellipsisStr)
 			if len(words[0]) > availableForFirstWord {
 				// Phase 11: Use buffer instead of string concatenation to avoid allocation
-				t.buf = t.getReusableBuffer(availableForFirstWord + len(ellipsisStr))
-				t.buf = append(t.buf, words[0][:availableForFirstWord]...)
-				t.buf = append(t.buf, ellipsisStr...)
+				t.out = t.getReusableBuffer(availableForFirstWord + len(ellipsisStr))
+				t.out = append(t.out, words[0][:availableForFirstWord]...)
+				t.out = append(t.out, ellipsisStr...)
 				t.setStringFromBuffer()
 				return t
 			}
 		}
 	}
-	// Build result with remaining space tracking
-	var result string
+	// Build out with remaining space tracking
+	var out string
 	remaining := mT - len(ellipsisStr) // Reserve space for "..." suffix
 
 	for i, word := range words { // Check if we need to add a space
 		if i > 0 {
 			if remaining > 0 {
-				result += spaceStr
+				out += spaceStr
 				remaining--
 			} else {
 				break // No more space left
@@ -352,18 +352,18 @@ func (t *conv) TruncateName(maxCharsPerWord, maxWidth any) *conv {
 		// Check how much of this word we can include
 		if len(prW) <= remaining {
 			// We can include the entire word
-			result += prW
+			out += prW
 			remaining -= len(prW)
 		} else {
 			// We can only include part of the word
-			result += prW[:remaining]
+			out += prW[:remaining]
 			remaining = 0
 			break
 		}
 	}
 	// Add the suffix
-	result += ellipsisStr
+	out += ellipsisStr
 	// Update buffer instead of using setString for buffer-first strategy
-	t.buf = append(t.buf[:0], result...)
+	t.out = append(t.out[:0], out...)
 	return t
 }

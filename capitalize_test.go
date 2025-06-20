@@ -52,9 +52,9 @@ func TestCapitalize(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			result := Convert(tt.input).Capitalize().String()
-			if result != tt.expected {
-				t.Errorf("Capitalize() = %q, want %q", result, tt.expected)
+			out := Convert(tt.input).Capitalize().String()
+			if out != tt.expected {
+				t.Errorf("Capitalize() = %q, want %q", out, tt.expected)
 			}
 		})
 	}
@@ -87,9 +87,9 @@ func TestCapitalizeChaining(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			result := tt.chain(Convert(tt.input)).String()
-			if result != tt.expected {
-				t.Errorf("%s = %q, want %q", tt.name, result, tt.expected)
+			out := tt.chain(Convert(tt.input)).String()
+			if out != tt.expected {
+				t.Errorf("%s = %q, want %q", tt.name, out, tt.expected)
 			}
 		})
 	}

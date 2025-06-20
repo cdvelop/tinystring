@@ -13,18 +13,19 @@ const (
 // This is the core builder method that enables fluent chaining
 //
 // Usage:
-//   c.Write("hello").Write(" ").Write("world")  // Strings
-//   c.Write(42).Write(" items")                 // Numbers
-//   c.Write('A').Write(" grade")                // Runes
+//
+//	c.Write("hello").Write(" ").Write("world")  // Strings
+//	c.Write(42).Write(" items")                 // Numbers
+//	c.Write('A').Write(" grade")                // Runes
 func (c *conv) Write(v any) *conv {
-	if c.err != "" {
+	if len(c.err) > 0 {
 		return c // Error chain interruption
 	}
 	// BUILDER INTEGRATION: If buffer is empty but we have initial value, transfer it first
-	if len(c.buf) == 0 && ((c.vTpe == typeStr && c.stringVal != "") ||
-		(c.vTpe == typeStrPtr && c.stringPtrVal != nil && *c.stringPtrVal != "") ||
-		(c.vTpe == typeStrSlice && len(c.stringSliceVal) > 0) ||
-		(c.vTpe == typeInt || c.vTpe == typeUint || c.vTpe == typeFloat || c.vTpe == typeBool)) {
+	if len(c.out) == 0 && ((c.kind == KString && c.outLen > 0) ||
+		(c.kind == KPointer && c.stringPtrVal != nil && *c.stringPtrVal != "") ||
+		(c.kind == KSliceStr && len(c.stringSliceVal) > 0) ||
+		(c.kind == KInt || c.kind == KUint || c.kind == KFloat64 || c.kind == KBool)) {
 		c.val2Buf() // Transfer current value to buffer
 	}
 
@@ -37,29 +38,30 @@ func (c *conv) Write(v any) *conv {
 // Useful for reusing the same conv object for multiple operations
 func (c *conv) Reset() *conv {
 	// Reset all conv fields to default state
-	c.stringVal = "" // CRITICAL: Clear string value
+	c.out = c.out[:0] // Clear main buffer
+	c.outLen = 0
+	c.work = c.work[:0] // Clear temp buffer
+	c.workLen = 0
+	c.err = c.err[:0] // Clear error buffer
 	c.intVal = 0
 	c.uintVal = 0
 	c.floatVal = 0
 	c.boolVal = false
 	c.stringSliceVal = nil
 	c.stringPtrVal = nil
-	c.vTpe = typeStr
-	c.tmpStr = ""
-	c.err = ""
-	c.buf = c.buf[:0] // Reset buffer length, keep capacity - SINGLE SOURCE OF TRUTH
+	c.kind = KString
 	return c
 }
 
 // setVal is the unified type handling method that consolidates ALL type switches
 func (c *conv) setVal(v any, mode cm) {
-	if c.err != "" && mode != mi {
+	if len(c.err) > 0 && mode != mi {
 		return // Skip operations if error exists (except initial mode)
 	}
 
 	if v == nil {
 		if mode == mi {
-			c.err = T(D.String, D.Empty)
+			c.setErr(D.String, D.Empty)
 		}
 		return
 	}
@@ -67,31 +69,35 @@ func (c *conv) setVal(v any, mode cm) {
 	case string:
 		switch mode {
 		case mi: // Initial mode
-			c.stringVal = val
-			c.vTpe = typeStr
+			c.out = append(c.out[:0], val...)
+			c.outLen = len(val)
+			c.kind = KString
 		case mb: // Buffer mode
-			c.buf = append(c.buf, val...)
+			c.out = append(c.out, val...)
 		case ma: // Any mode
-			c.tmpStr = val
+			c.work = append(c.work[:0], val...)
+			c.workLen = len(val)
 		}
 	case []string:
 		switch mode {
 		case mi: // Initial mode
 			c.stringSliceVal = val
-			c.vTpe = typeStrSlice
+			c.kind = KSliceStr
 		case mb: // Buffer mode
 			// Join slice with space and append to buffer
 			for i, s := range val {
 				if i > 0 {
-					c.buf = append(c.buf, ' ')
+					c.out = append(c.out, ' ')
 				}
-				c.buf = append(c.buf, s...)
+				c.out = append(c.out, s...)
 			}
 		case ma: // Any mode
 			if len(val) == 0 {
-				c.tmpStr = ""
+				c.work = c.work[:0]
+				c.workLen = 0
 			} else if len(val) == 1 {
-				c.tmpStr = val[0]
+				c.work = append(c.work[:0], val[0]...)
+				c.workLen = len(val[0])
 			} else {
 				tmp := Convert()
 				for i, s := range val {
@@ -100,55 +106,61 @@ func (c *conv) setVal(v any, mode cm) {
 					}
 					tmp.Write(s)
 				}
-				c.tmpStr = tmp.String()
+				out := tmp.String()
+				c.work = append(c.work[:0], out...)
+				c.workLen = len(out)
 			}
 		}
 	case *string:
 		if val == nil {
 			if mode == mi {
-				c.err = T(D.String, D.Empty)
+				c.setErr(D.String, D.Empty)
 			}
 			return
 		}
 
 		switch mode {
 		case mi: // Initial mode
-			c.stringVal = *val
+			c.out = append(c.out[:0], *val...)
+			c.outLen = len(*val)
 			c.stringPtrVal = val
-			c.vTpe = typeStrPtr
+			c.kind = KPointer
 		case mb: // Buffer mode
-			c.buf = append(c.buf, *val...)
+			c.out = append(c.out, *val...)
 		case ma: // Any mode
-			c.tmpStr = *val
+			c.work = append(c.work[:0], *val...)
+			c.workLen = len(*val)
 		}
 	case bool:
 		switch mode {
 		case mi: // Initial mode
 			c.boolVal = val
-			c.vTpe = typeBool
+			c.kind = KBool
 		case mb: // Buffer mode
 			if val {
-				c.buf = append(c.buf, trueStr...)
+				c.out = append(c.out, trueStr...)
 			} else {
-				c.buf = append(c.buf, falseStr...)
+				c.out = append(c.out, falseStr...)
 			}
 		case ma: // Any mode
 			if val {
-				c.tmpStr = trueStr
+				c.work = append(c.work[:0], trueStr...)
+				c.workLen = len(trueStr)
 			} else {
-				c.tmpStr = falseStr
+				c.work = append(c.work[:0], falseStr...)
+				c.workLen = len(falseStr)
 			}
 		}
 	case error:
 		errStr := val.Error()
 		switch mode {
 		case mi: // Initial mode
-			c.err = errStr
-			c.vTpe = typeErr
+			c.setErr(errStr)
 		case mb: // Buffer mode
-			c.buf = append(c.buf, errStr...)
+			c.out = append(c.out, errStr...)
 		case ma: // Any mode
-			c.tmpStr = errStr
+			c.work = append(c.work[:0], errStr...)
+			c.workLen = len(errStr)
 		}
 	case int, int8, int16, int32, int64, uint, uint8, uint16, uint32, uint64, float32, float64:
 		// Phase 3G.6: Consolidated numeric handling
@@ -188,26 +200,25 @@ func (c *conv) setVal(v any, mode cm) {
 		case mi: // Initial mode
 			if isInt {
 				c.intVal = vInt
-				c.vTpe = typeInt
+				c.kind = KInt
 			} else if isUint {
 				c.uintVal = vUint
-				c.vTpe = typeUint
+				c.kind = KUint
 			} else if isFloat {
 				c.floatVal = vFloat
-				c.vTpe = typeFloat
+				c.kind = KFloat32
 			}
 		case mb: // Buffer mode
-			oldTmpStr := c.tmpStr
 			if isInt {
 				c.fmtIntGeneric(vInt, 10, true)
 			} else if isUint {
 				c.fmtIntGeneric(int64(vUint), 10, false)
 			} else if isFloat {
 				c.floatVal = vFloat
-				c.f2s()
+				c.floatToBufTmp()
 			}
-			c.buf = append(c.buf, c.tmpStr...)
-			c.tmpStr = oldTmpStr // Restore original tmpStr
+			c.out = append(c.out, c.work[:c.workLen]...)
+			// tmpStr restore not needed with new buffer system
 		case ma: // Any mode
 			if isInt {
 				c.intVal = vInt
@@ -217,51 +228,50 @@ func (c *conv) setVal(v any, mode cm) {
 				c.fmtIntGeneric(int64(vUint), 10, false)
 			} else if isFloat {
 				c.floatVal = vFloat
-				c.f2s()
+				c.floatToBufTmp()
 			}
 		}
 	default:
 		// Unsupported type
 		if mode == mi || mode == mb {
-			c.err = T(D.Type, D.Not, D.Supported)
+			c.setErr(D.Type, D.Not, D.Supported)
 		}
 	}
 }
 
 // val2Buf converts current value directly to buffer for maximum efficiency
 func (c *conv) val2Buf() {
-	c.buf = c.buf[:0] // Reset buffer for all cases
-	switch c.vTpe {
-	case typeStr:
-		c.buf = append(c.buf, c.stringVal...)
-	case typeStrPtr:
+	c.out = c.out[:0] // Reset buffer for all cases
+	switch c.kind {
+	case KString:
+		c.out = append(c.out, c.out[:c.outLen]...)
+	case KPointer:
 		if c.stringPtrVal != nil {
-			c.buf = append(c.buf, *c.stringPtrVal...)
+			c.out = append(c.out, *c.stringPtrVal...)
 		}
-	case typeStrSlice:
+	case KSliceStr:
 		for i, s := range c.stringSliceVal {
 			if i > 0 {
-				c.buf = append(c.buf, ' ')
+				c.out = append(c.out, ' ')
 			}
-			c.buf = append(c.buf, s...)
+			c.out = append(c.out, s...)
 		}
-	case typeInt, typeUint, typeFloat:
-		oldTmpStr := c.tmpStr
-		switch c.vTpe {
-		case typeInt:
+	case KInt, KUint, KFloat64:
+		switch c.kind {
+		case KInt:
 			c.fmtIntGeneric(c.intVal, 10, true)
-		case typeUint:
+		case KUint:
 			c.fmtIntGeneric(int64(c.uintVal), 10, false)
-		case typeFloat:
-			c.f2s()
+		case KFloat64:
+			c.floatToBufTmp()
 		}
-		c.buf = append(c.buf, c.tmpStr...)
-		c.tmpStr = oldTmpStr // Restore original tmpStr
-	case typeBool:
+		c.out = append(c.out, c.work[:c.workLen]...)
+		// tmpStr restore not needed with new buffer system
+	case KBool:
 		if c.boolVal {
-			c.buf = append(c.buf, trueStr...)
+			c.out = append(c.out, trueStr...)
 		} else {
-			c.buf = append(c.buf, falseStr...)
+			c.out = append(c.out, falseStr...)
 		}
 	}
 }

@@ -21,8 +21,8 @@ func processTextWithTinyString(texts []string) []string {
 		}
 
 		// Join words without spaces (equivalent to standard lib behavior)
-		result := tinystring.Convert(words).Join().String()
-		results[i] = result
+		out := tinystring.Convert(words).Join().String()
+		results[i] = out
 	}
 	return results
 }

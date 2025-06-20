@@ -16,26 +16,26 @@ func (t *conv) Quote() *conv {
 	if estimatedSize < defaultBufCap {
 		estimatedSize = defaultBufCap
 	}
-	result := make([]byte, 0, estimatedSize)
+	out := make([]byte, 0, estimatedSize)
 
-	result = append(result, '"')
+	out = append(out, '"')
 	for _, char := range inp {
 		switch char {
 		case '"':
-			result = append(result, '\\', '"')
+			out = append(out, '\\', '"')
 		case '\\':
-			result = append(result, '\\', '\\')
+			out = append(out, '\\', '\\')
 		case '\n':
-			result = append(result, '\\', 'n')
+			out = append(out, '\\', 'n')
 		case '\r':
-			result = append(result, '\\', 'r')
+			out = append(out, '\\', 'r')
 		case '\t':
-			result = append(result, '\\', 't')
+			out = append(out, '\\', 't')
 		default:
-			result = append(result, string(char)...)
+			out = append(out, string(char)...)
 		}
 	}
-	result = append(result, '"')
-	t.setString(string(result))
+	out = append(out, '"')
+	t.setString(string(out))
 	return t
 }

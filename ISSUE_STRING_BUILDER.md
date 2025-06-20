@@ -169,7 +169,7 @@ func (t *conv) ToUpper() *conv {
    - Eliminate `withValue()` - replace with `setVal(v, mi)` 
    - Rename `ensureCapacity()` to `grow()` 
    - Replace `getString()` with `getBuf()` (get buffer value - heavily used)   - Create `val2Buf()` method for direct buffer conversion
-   - Unify `i2sBuf()`, `f2sBuf()` with `appendValueToBuf(v any, typ vTpe)` method
+   - Unify `i2sBuf()`, `f2sBuf()` with `appendValueToBuf(v any, typ kind)` method
    - **ELIMINATE `stringVal` AND `tmpStr` fields**: Use only `buf` as single source of truth
 
 3. **setString() transition strategy**:
@@ -315,11 +315,11 @@ func (c *conv) Reset() *conv {
     c.boolVal = false
     c.stringSliceVal = nil
     c.stringPtrVal = nil
-    c.vTpe = typeStr
+    c.kind = KString
     c.roundDown = false
     c.separator = "_"
     c.tmpStr = ""
-    c.lastConvType = typeStr
+    c.lastConvType = KString
     c.err = ""
     c.buf = c.buf[:0] // Reset buffer length, keep capacity - SINGLE SOURCE OF TRUTH
     return c
@@ -334,7 +334,7 @@ func (c *conv) Reset() *conv {
 - **`grow()`**: Capacity management (renamed from `ensureCapacity` to avoid Go built-in conflicts)
 - **`getBuf()`**: Get buffer value - heavily used internal method (documented with //)
 - **`setVal()`**: **UNIFIED** type handling - consolidates ALL type switches into single method
-- **`val2Buf()`**: Direct conversion to buffer using unified `appendValueToBuf(v any, typ vTpe)` method
+- **`val2Buf()`**: Direct conversion to buffer using unified `appendValueToBuf(v any, typ kind)` method
 - **Error checking**: Each operation internally verifies `c.err` before processing
 - **`cm` type**: Convert mode constants (mi, mb, ma) for type-safe mode selection
 
@@ -342,8 +342,8 @@ func (c *conv) Reset() *conv {
 - **Buffer initialization strategy**: `c.buf = append(c.buf[:0], val...)` (reset + set)
 - **Convert mode constants**: `mi`=inicial, `mb`=buffer, `ma`=any (type cm uint8)
 - **Error chain behavior**: **ALL operations internally check `c.err` before processing** (error contaminates chain)
-- **Memory layout optimization**: Hot fields (`buf`, `vTpe`, `err`) placed first in struct for better cache locality
-- **`val2Buf()` strategy**: Direct conversion to buffer using unified `appendValueToBuf(v any, typ vTpe)` method
+- **Memory layout optimization**: Hot fields (`buf`, `kind`, `err`) placed first in struct for better cache locality
+- **`val2Buf()` strategy**: Direct conversion to buffer using unified `appendValueToBuf(v any, typ kind)` method
 - **Performance**: Each operation has minimal error check overhead: `if c.err != "" { return c }`
 
 ### Integration Points
@@ -390,7 +390,7 @@ func T(values ...any) string {
 func Err(values ...any) *conv {
     c := getConv() // Always obtain from pool
     c.err = T(values...)
-    c.vTpe = typeErr
+    c.kind = KErr
     return c
 }
 ```

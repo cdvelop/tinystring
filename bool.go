@@ -3,18 +3,18 @@ package tinystring
 // ToBool converts the conv content to a boolean value
 // Returns the boolean value and any error that occurred
 func (t *conv) ToBool() (bool, error) {
-	if t.err != "" {
+	if len(t.err) > 0 {
 		return false, t
 	}
 
-	switch t.vTpe {
-	case typeBool:
+	switch t.kind {
+	case KBool:
 		return t.boolVal, nil // Direct return for boolean values
-	case typeInt:
+	case KInt:
 		return t.intVal != 0, nil // Non-zero integers are true
-	case typeUint:
+	case KUint:
 		return t.uintVal != 0, nil // Non-zero unsigned integers are true
-	case typeFloat:
+	case KFloat64:
 		return t.floatVal != 0.0, nil // Non-zero floats are true
 	default:
 		// For string types, parse the string content
@@ -22,29 +22,29 @@ func (t *conv) ToBool() (bool, error) {
 		switch inp {
 		case "true", "True", "TRUE", "1", "t", "T":
 			t.boolVal = true
-			t.vTpe = typeBool
+			t.kind = KBool
 			return true, nil
 		case "false", "False", "FALSE", "0", "f", "F":
 			t.boolVal = false
-			t.vTpe = typeBool
+			t.kind = KBool
 			return false, nil
 		default:
 			// Try to parse as numeric - non-zero numbers are true
 			t.s2IntGeneric(10)
-			if t.err == "" {
+			if len(t.err) == 0 {
 				t.boolVal = t.intVal != 0
-				t.vTpe = typeBool
-				t.err = "" // Clear any errors since we successfully converted
+				t.kind = KBool
+				t.err = t.err[:0] // Clear any errors since we successfully converted
 				return t.boolVal, nil
 			}
 
 			// Reset error and try float
-			t.err = ""
+			t.err = t.err[:0]
 			t.s2Float()
-			if t.err == "" {
+			if len(t.err) == 0 {
 				t.boolVal = t.floatVal != 0.0
-				t.vTpe = typeBool
-				t.err = "" // Clear any errors since we successfully converted
+				t.kind = KBool
+				t.err = t.err[:0] // Clear any errors since we successfully converted
 				return t.boolVal, nil
 			}
 

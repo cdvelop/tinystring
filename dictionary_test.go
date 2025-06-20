@@ -47,15 +47,15 @@ func TestOLFallbackToEnglish(t *testing.T) {
 	// Test fallback when translation is empty
 	testOL := LocStr{"test", "", "", "", "", "", "", "", ""}
 	// Inline get logic for testing
-	result := func() string {
+	out := func() string {
 		if int(ES) < len(testOL) && testOL[ES] != "" {
 			return testOL[ES]
 		}
 		return testOL[EN] // Fallback to English
 	}()
 	expected := "test"
-	if result != expected {
-		t.Errorf("Expected fallback to English 'test', got '%s'", result)
+	if out != expected {
+		t.Errorf("Expected fallback to English 'test', got '%s'", out)
 	}
 }
 
@@ -78,7 +78,7 @@ func TestComplexErrorComposition(t *testing.T) {
 		t.Error("Complex error composition should not be empty")
 	}
 
-	t.Logf("Complex error result: %s", err)
+	t.Logf("Complex error out: %s", err)
 
 	// Reset to English
 	OutLang(EN)

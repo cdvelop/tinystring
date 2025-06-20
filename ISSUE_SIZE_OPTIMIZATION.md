@@ -113,7 +113,7 @@ Debug WASM:   1.8 MB → 904.7 KB   (50.6% reduction)
 **Analysis**: Optimized field order to place the most frequently accessed fields at the beginning of the struct for better CPU cache locality.
 
 **Optimization**:
-1. **Hot path fields first**: `buf`, `vTpe`, `err`, `stringVal`, `tmpStr`
+1. **Hot path fields first**: `buf`, `kind`, `err`, `stringVal`, `tmpStr`
 2. **Numeric fields grouped**: `intVal`, `uintVal`, `floatVal` together  
 3. **Less frequent fields last**: `stringSliceVal`, `stringPtrVal`, `boolVal`
 4. **Cache-friendly layout**: Optimized for typical access patterns

@@ -61,7 +61,7 @@ func TestToUint(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			result, err := Convert(tt.input).ToUint()
+			out, err := Convert(tt.input).ToUint()
 
 			if tt.hasError {
 				if err == nil {
@@ -71,8 +71,8 @@ func TestToUint(t *testing.T) {
 				if err != nil {
 					t.Errorf("Unexpected error: %v", err)
 				}
-				if uint64(result) != tt.expected {
-					t.Errorf("Expected %v, got %v", tt.expected, result)
+				if uint64(out) != tt.expected {
+					t.Errorf("Expected %v, got %v", tt.expected, out)
 				}
 			}
 		})
@@ -126,7 +126,7 @@ func TestToFloat(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			result, err := Convert(tt.input).ToFloat()
+			out, err := Convert(tt.input).ToFloat()
 
 			if tt.hasError {
 				if err == nil {
@@ -138,8 +138,8 @@ func TestToFloat(t *testing.T) {
 				}
 				// Use tolerance for floating-point comparison
 				tolerance := 1e-5 // Increased tolerance for floating-point precision issues
-				if result < tt.expected-tolerance || result > tt.expected+tolerance {
-					t.Errorf("Expected %v, got %v", tt.expected, result)
+				if out < tt.expected-tolerance || out > tt.expected+tolerance {
+					t.Errorf("Expected %v, got %v", tt.expected, out)
 				}
 			}
 		})
@@ -175,7 +175,7 @@ func TestToIntConversion(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			result, err := Convert(tt.input).ToInt()
+			out, err := Convert(tt.input).ToInt()
 
 			if tt.hasError {
 				if err == nil {
@@ -185,9 +185,9 @@ func TestToIntConversion(t *testing.T) {
 				if err != nil {
 					t.Errorf("Convert(%v).ToInt() unexpected error: %v", tt.input, err)
 				}
-				if int64(result) != tt.expected { // Cast result to int64 for comparison
+				if int64(out) != tt.expected { // Cast out to int64 for comparison
 					t.Errorf("Convert(%v).ToInt() = %v, want %v",
-						tt.input, result, tt.expected)
+						tt.input, out, tt.expected)
 				}
 			}
 		})
@@ -196,26 +196,26 @@ func TestToIntConversion(t *testing.T) {
 
 func TestFromNumeric(t *testing.T) {
 	t.Run("Convert from int", func(t *testing.T) {
-		result := Convert(-123).String()
+		out := Convert(-123).String()
 		expected := "-123"
-		if result != expected {
-			t.Errorf("Expected %q, got %q", expected, result)
+		if out != expected {
+			t.Errorf("Expected %q, got %q", expected, out)
 		}
 	})
 
 	t.Run("Convert from uint", func(t *testing.T) {
-		result := Convert(uint(456)).String()
+		out := Convert(uint(456)).String()
 		expected := "456"
-		if result != expected {
-			t.Errorf("Expected %q, got %q", expected, result)
+		if out != expected {
+			t.Errorf("Expected %q, got %q", expected, out)
 		}
 	})
 
 	t.Run("Convert from float", func(t *testing.T) {
-		result := Convert(123.5).String() // Use a value exactly representable in binary
+		out := Convert(123.5).String() // Use a value exactly representable in binary
 		expected := "123.5"
-		if result != expected {
-			t.Errorf("Expected %q, got %q", expected, result)
+		if out != expected {
+			t.Errorf("Expected %q, got %q", expected, out)
 		}
 	})
 }
@@ -232,28 +232,28 @@ func TestNumericChaining(t *testing.T) {
 	}
 
 	// Test with formatting
-	result := Convert(123.456).RoundDecimals(2).String()
+	out := Convert(123.456).RoundDecimals(2).String()
 	expected := "123.46"
-	if result != expected {
-		t.Errorf("Expected %q, got %q", expected, result)
+	if out != expected {
+		t.Errorf("Expected %q, got %q", expected, out)
 	}
 
 	// Test with formatting numbers
-	result = Convert(1234567).FormatNumber().String()
+	out = Convert(1234567).FormatNumber().String()
 	expected = "1.234.567"
-	if result != expected {
-		t.Errorf("Expected %q, got %q", expected, result)
+	if out != expected {
+		t.Errorf("Expected %q, got %q", expected, out)
 	}
 }
 
 func TestFixedNegativeNumbers(t *testing.T) {
 	// Test negative numbers in s2Int
-	result, err := Convert("-123").ToInt()
+	out, err := Convert("-123").ToInt()
 	if err != nil {
 		t.Errorf("ToInt(-123) failed: %v", err)
 	}
-	if result != -123 {
-		t.Errorf("ToInt(-123) = %d, want -123", result)
+	if out != -123 {
+		t.Errorf("ToInt(-123) = %d, want -123", out)
 	}
 
 	// Test negative numbers in s2Int64

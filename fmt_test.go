@@ -52,9 +52,9 @@ func TestRoundDecimals(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			result := Convert(tt.input).RoundDecimals(tt.decimals).String()
-			if result != tt.want {
-				t.Errorf("RoundDecimals() got = %v, want %v", result, tt.want)
+			out := Convert(tt.input).RoundDecimals(tt.decimals).String()
+			if out != tt.want {
+				t.Errorf("RoundDecimals() got = %v, want %v", out, tt.want)
 			}
 		})
 	}
@@ -110,9 +110,9 @@ func TestFormatNumber(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			result := Convert(tt.input).FormatNumber().String()
-			if result != tt.want {
-				t.Errorf("FormatNumber() got = %v, want %v", result, tt.want)
+			out := Convert(tt.input).FormatNumber().String()
+			if out != tt.want {
+				t.Errorf("FormatNumber() got = %v, want %v", out, tt.want)
 			}
 		})
 	}
@@ -200,7 +200,7 @@ func TestFormat(t *testing.T) {
 
 	for _, test := range tests {
 		t.Run(test.name, func(t *testing.T) {
-			result := Fmt(test.format, test.args...).String()
+			out := Fmt(test.format, test.args...).String()
 			resultWithError, err := Fmt(test.format, test.args...).StringError()
 
 			if test.hasError {
@@ -211,11 +211,11 @@ func TestFormat(t *testing.T) {
 				if err != nil {
 					t.Errorf("Unexpected error: %v", err)
 				}
-				if result != test.expected {
-					t.Errorf("Expected %q, got %q", test.expected, result)
+				if out != test.expected {
+					t.Errorf("Expected %q, got %q", test.expected, out)
 				}
 				if resultWithError != test.expected {
-					t.Errorf("StringError result: Expected %q, got %q", test.expected, resultWithError)
+					t.Errorf("StringError out: Expected %q, got %q", test.expected, resultWithError)
 				}
 			}
 		})
@@ -291,15 +291,15 @@ func TestRoundDecimalsEnhanced(t *testing.T) {
 
 	for _, test := range tests {
 		t.Run(test.name, func(t *testing.T) {
-			var result string
+			var out string
 			if test.down {
-				result = Convert(test.input).RoundDecimals(test.decimals).Down().String()
+				out = Convert(test.input).RoundDecimals(test.decimals).Down().String()
 			} else {
-				result = Convert(test.input).RoundDecimals(test.decimals).String()
+				out = Convert(test.input).RoundDecimals(test.decimals).String()
 			}
 
-			if result != test.expected {
-				t.Errorf("Expected %q, got %q", test.expected, result)
+			if out != test.expected {
+				t.Errorf("Expected %q, got %q", test.expected, out)
 			}
 		})
 	}
@@ -308,18 +308,18 @@ func TestRoundDecimalsEnhanced(t *testing.T) {
 func TestRoundDecimalsAPI(t *testing.T) {
 	// Test the corrected API as specified
 	t.Run("Default up rounding", func(t *testing.T) {
-		result := Convert(3.154).RoundDecimals(2).String()
+		out := Convert(3.154).RoundDecimals(2).String()
 		expected := "3.16"
-		if result != expected {
-			t.Errorf("Expected %q, got %q", expected, result)
+		if out != expected {
+			t.Errorf("Expected %q, got %q", expected, out)
 		}
 	})
 
 	t.Run("Explicit down rounding", func(t *testing.T) {
-		result := Convert(3.154).RoundDecimals(2).Down().String()
+		out := Convert(3.154).RoundDecimals(2).Down().String()
 		expected := "3.15"
-		if result != expected {
-			t.Errorf("Expected %q, got %q", expected, result)
+		if out != expected {
+			t.Errorf("Expected %q, got %q", expected, out)
 		}
 	})
 }
@@ -442,7 +442,7 @@ func TestReporterFormatting(t *testing.T) {
 
 	for _, test := range tests {
 		t.Run(test.name, func(t *testing.T) {
-			result := Fmt(test.format, test.args...).String()
+			out := Fmt(test.format, test.args...).String()
 			resultWithError, err := Fmt(test.format, test.args...).StringError()
 
 			if test.hasError {
@@ -453,11 +453,11 @@ func TestReporterFormatting(t *testing.T) {
 				if err != nil {
 					t.Errorf("Unexpected error: %v", err)
 				}
-				if result != test.expected {
-					t.Errorf("Expected %q, got %q", test.expected, result)
+				if out != test.expected {
+					t.Errorf("Expected %q, got %q", test.expected, out)
 				}
 				if resultWithError != test.expected {
-					t.Errorf("StringError result: Expected %q, got %q", test.expected, resultWithError)
+					t.Errorf("StringError out: Expected %q, got %q", test.expected, resultWithError)
 				}
 			}
 		})

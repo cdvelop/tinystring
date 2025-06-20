@@ -52,9 +52,9 @@ func TestQuote(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			result := Convert(tt.input).Quote().String()
-			if result != tt.expected {
-				t.Errorf("Quote() = %q, want %q", result, tt.expected)
+			out := Convert(tt.input).Quote().String()
+			if out != tt.expected {
+				t.Errorf("Quote() = %q, want %q", out, tt.expected)
 			}
 		})
 	}
@@ -62,22 +62,22 @@ func TestQuote(t *testing.T) {
 
 func TestQuoteWithError(t *testing.T) {
 	// Test quote functionality with error handling
-	result, err := Convert("test").Quote().StringError()
+	out, err := Convert("test").Quote().StringError()
 	if err != nil {
 		t.Errorf("Unexpected error: %v", err)
 	}
 	expected := `"test"`
-	if result != expected {
-		t.Errorf("Quote() = %q, want %q", result, expected)
+	if out != expected {
+		t.Errorf("Quote() = %q, want %q", out, expected)
 	}
 }
 
 func TestQuoteChaining(t *testing.T) {
 	// Test chaining quote with other operations
-	result := Convert("hello").Quote().String()
+	out := Convert("hello").Quote().String()
 	expected := `"hello"`
-	if result != expected {
-		t.Errorf("Quote chaining = %q, want %q", result, expected)
+	if out != expected {
+		t.Errorf("Quote chaining = %q, want %q", out, expected)
 	}
 
 	// Test quote after conversion
