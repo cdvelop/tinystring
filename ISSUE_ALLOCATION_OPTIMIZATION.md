@@ -1,323 +1,336 @@
-# TinyString Memory Allocation Optimization - Phase 13 (June 19, 2025)
+# TinyString Memory Allocation Optimization - Phase 13.3 (June 20, 2025)
 
 ## 🎯 **CURRENT STATUS & OBJECTIVE**
 
-**Library Performance Status (June 19, 2025 - Phase 13 ALLOCATION OPTIMIZATION):**
-- **Memory (String Processing):** 2.8 KB/op (140.3% WORSE than Go stdlib 1.2 KB/op) 🚨
-- **Memory (Number Processing):** 4.4 KB/op (389.8% WORSE than Go stdlib 912 B/op) 🚨
-- **Memory (Mixed Operations):** 1.7 KB/op (243.9% WORSE than Go stdlib 512 B/op) 🚨
-- **Allocations (String Processing):** 119 allocs/op (147.9% WORSE than Go stdlib 48 allocs/op) 🚨
-- **Allocations (Number Processing):** 88 allocs/op (109.5% WORSE than Go stdlib 42 allocs/op) 🚨
-- **Allocations (Mixed Operations):** 54 allocs/op (107.7% WORSE than Go stdlib 26 allocs/op) 🚨
-- **Thread Safety:** 100% SAFE (maintained from Phase 12) ✅
+**Library Performance Status (Updated June 20, 2025 - Phase 13.3 VARIABLE ELIMINATION):**
+- **Number Processing:** 624 B/op, 40 allocs/op (31.6% worse memory, 4.8% worse allocs vs stdlib) ✅ IMPROVED
+- **String Processing:** 2.8 KB/op, 119 allocs/op (140.3% worse memory, 147.9% worse allocs) 🚨 TARGET
+- **Mixed Operations:** 1.7 KB/op, 54 allocs/op (243.9% worse memory, 107.7% worse allocs) 🚨 TARGET
+- **Thread Safety:** 100% SAFE ✅
 - **Binary Size:** 55.1% BETTER than stdlib for WASM ✅
 
-**Phase 13 Focus:** ALLOCATION reduction while maintaining thread safety and binary size benefits
+**Phase 13.3 Focus:** ELIMINATE deprecated variables (`tmpStr`, `stringVal`, `err` string) + optimize remaining hotspots
 
-## 🚨 **PHASE 13 CRITICAL ISSUE IDENTIFIED**
+## 🚨 **CURRENT HOTSPOTS (Post Phase 13.1)**
 
-**Memory Allocation Crisis:**
-- **String Processing:** 2,867 B/op vs 1,228 B/op stdlib (233% worse)
-- **Number Processing:** 4,464 B/op vs 912 B/op stdlib (489% worse) 
-- **Mixed Operations:** 1,716 B/op vs 512 B/op stdlib (335% worse)
+**After s2n optimization, new allocation pattern:**
 
-**Allocation Explosion:**
-- **String Processing:** 119 allocs/op vs 48 allocs/op stdlib (248% worse)
-- **Number Processing:** 88 allocs/op vs 42 allocs/op stdlib (209% worse)
-- **Mixed Operations:** 54 allocs/op vs 26 allocs/op stdlib (208% worse)
+| Function | Memory % | Category | Priority |
+|----------|----------|----------|----------|
+| **`setStringFromBuffer`** | 42.12% | Number Processing | 🎯 **#1 TARGET** |
+| **`getString`** | 18.43% | String Processing | 🎯 **#2 TARGET** |
+| **`Join`** | 21.32% | String Processing | 🎯 **#3 TARGET** |
+| **`FormatNumber`** | 17.24% | Number Processing | 🎯 **#4 TARGET** |
 
-**Root Cause Hypothesis:**
-1. **Excessive string interning:** Every operation may be hitting string cache
-2. **Buffer pool inefficiency:** Multiple buffer allocations per operation
-3. **Type conversion overhead:** Frequent allocations during type conversions
-4. **Builder pattern overhead:** Multiple intermediate allocations
+## 🛠️ **PHASE 13.3: ESTRUCTURA OPTIMIZADA FINAL**
 
-## 🚨 **PHASE 13 CRITICAL HOTSPOTS IDENTIFIED**
+### **DECISIONES TOMADAS:**
 
-**Memory Profiling Results - Number Processing (WORST case: 4.4 KB/op, 88 allocs/op):**
+✅ **1. getString() sin stringVal:** Siempre usar buf
+✅ **2. Conversiones numéricas:** i2s(), u2s(), f2s() escriben al buf directamente  
+✅ **3. Traducción en errBuf:** Mantener soporte multiidioma + buffer temporal
+✅ **4. T() API pública:** Siempre retorna string
+✅ **5. Migración manual:** setErr() para asignaciones de error
 
-### **TOP ALLOCATION SOURCES (pprof analysis):**
+### **NUEVA ESTRUCTURA `conv` - DECISIONES FINALES:**
 
-| Function | Memory Allocated | % of Total | Issue Identified |
-|----------|------------------|------------|------------------|
-| **`(*conv).s2n`** | 749.10MB | **82.35%** | 🚨 **MAJOR HOTSPOT** - String to number conversion |
-| **`processNumbersWithTinyString`** | 50.50MB | 5.55% | Benchmark function overhead |
-| **`internStringFromBytes`** | 47.50MB | **5.22%** | 🚨 **String interning overhead** |
-| **`T()`** | 44MB | **4.84%** | 🚨 **Type conversion overhead** |
-| **`(*conv).FormatNumber`** | 17.50MB | 1.92% | Number formatting allocations |
+✅ **CONFIRMADO - Buffer dinámico sin truncación:**
+- `buf` y `errBuf` usan `[]byte` dinámico, no arrays fijos
+- Inician con capacidad 64, crecen ilimitadamente si es necesario
+- Evita truncación de datos completamente
 
-### **CRITICAL FINDINGS:**
-1. **`(*conv).s2n` is THE PROBLEM:** 82.35% of all allocations!
-2. **String interning overhead:** 5.22% from `internStringFromBytes`
-3. **Type conversion overhead:** 4.84% from `T()` function
-4. **Cumulative impact:** Top 3 functions account for 92.41% of allocations
+✅ **CONFIRMADO - Limpieza completa en putConv():**
+- Limpiar todos los bytes del errBuf (no solo errLen=0)
+- Garantiza seguridad de datos entre usos
 
-### **Call Chain Analysis:**
+```go
+type conv struct {
+    // Buffer principal - DINÁMICO, inicia cap=64, crece ilimitadamente
+    buf    []byte     // Buffer principal para strings normales
+    bufLen int        // Longitud actual en buf
+    
+    // Buffer temporal para traducción - DINÁMICO, inicia cap=64
+    bufTmp    []byte  // Buffer temporal para traducción multiidioma
+    bufTmpLen int     // Longitud actual en bufTmp
+    
+    // Error buffer - DINÁMICO, inicia cap=64, crece ilimitadamente
+    bufErr []byte     // Buffer de errores
+    
+    // Tipo de valor
+    vTpe vTpe
+    
+    // ELIMINADOS COMPLETAMENTE:
+    // tmpStr    string  ❌ DEPRECATED → Reemplazado por bufTmp
+    // stringVal string  ❌ DEPRECATED → Reemplazado por buf
+    // err       string  ❌ DEPRECATED → Reemplazado por bufErr
+    
+    // Valores numéricos (mantener)
+    intVal   int64
+    uintVal  uint64
+    floatVal float64
+    
+    // Otros valores (mantener)
+    stringSliceVal []string
+    stringPtrVal   *string
+    boolVal        bool
+}
 ```
-processNumbersWithTinyString (50.50MB)
- └─ (*conv).FormatNumber (17.50MB)
-    └─ (*conv).s2n (749.10MB) ← MAJOR BOTTLENECK
-       ├─ (*conv).s2IntGeneric (794.10MB cumulative)
-       └─ (*conv).setStringFromBuffer (47.50MB)
-          └─ internStringFromBytes (47.50MB)
+
+### **RECOMENDACIONES CONFIRMADAS:**
+**✅ DECISIONES FINALES PARA IMPLEMENTACIÓN:**
+
+1. **Buffer dinámico `buf []byte`:**
+   - ✅ Inicia con `buf := make([]byte, 0, 64)`
+   - ✅ Puede crecer ilimitadamente si se necesita  
+   - ✅ Evita errores de truncación completamente
+
+2. **Buffer de error `bufErr []byte`:**
+   - ✅ Inicia con `bufErr := make([]byte, 0, 64)`
+   - ✅ Sin truncación, crece según necesidad
+
+3. **Política de `putConv()` - Limpieza completa:**
+   - ✅ Limpiar siempre todos los bytes:
+   ```go
+   for i := range conv.bufErr {
+       conv.bufErr[i] = 0
+   }
+   conv.bufErr = conv.bufErr[:0] // Reset length
+   ```
+
+4. **Sin truncación:**
+   - ✅ Ambos buffers crecen dinámicamente
+   - ✅ No hay límites artificiales de tamaño
+
+## 🚀 **IMPLEMENTACIÓN INMEDIATA - TODAS LAS DUDAS RESUELTAS**
+
+**Estado:** ✅ **LISTO PARA IMPLEMENTAR** - Todas las orientaciones confirmadas
+
+### **SOLUCIÓN: T() MANTIENE API PÚBLICA + Métodos Privados de Error**
+
+**DECISIÓN 1: T() SIEMPRE RETORNA STRING (API Pública)**
+```go
+func T(values ...any) string {
+    var c *conv
+    var isErrorContext bool
+    
+    // Detectar si último parámetro es *conv
+    if len(values) > 0 {
+        if lastConv, ok := values[len(values)-1].(*conv); ok {
+            c = lastConv
+            values = values[:len(values)-1] // Remover conv de values
+            isErrorContext = (c.vTpe == typeErr)
+        } else {
+            c = getConv()
+            defer c.putConv()
+        }
+    } else {
+        c = getConv()
+        defer c.putConv()
+    }
+      if isErrorContext {
+        // DECISIÓN 3: Escribir DIRECTAMENTE al error buffer (no tocar buf principal)
+        conv.bufErr = conv.bufErr[:0] // Reset error buffer
+        
+        // Construir directamente en bufErr
+        for i := startIdx; i < len(values); i++ {
+            if i > startIdx && len(conv.bufErr) < cap(conv.bufErr)-1 {
+                conv.bufErr = append(conv.bufErr, ' ')
+            }
+            
+            // Escribir directamente al bufErr
+            switch v := values[i].(type) {
+            case LocStr:
+                translation := getTranslation(v, currentLang)
+                c.addToErrBuf(translation)
+            case string:
+                c.addToErrBuf(v)
+            default:
+                // Convert and append to bufErr
+                str := convertToString(v)
+                c.addToErrBuf(str)
+            }
+        }
+        
+        return string(conv.bufErr) // Return for public API
+    } else {
+        // Lógica normal usando buf principal
+        c.buf = c.buf[:0]
+        // ...lógica de traducción existente...
+        return string(c.buf)
+    }
+}
 ```
 
-### **Root Cause Analysis:**
-- **`s2n` function:** Massive allocations during string-to-number parsing
-- **String interning:** Every conversion triggers string cache operations
-- **Buffer management:** `setStringFromBuffer` creating excessive intermediates
-- **Type conversion:** `T()` function adding conversion overhead
+**DECISIÓN 2: Métodos Privados de Error para Migración**
 
-## 📊 **CURRENT PERFORMANCE ANALYSIS**
+**Problema:** Las asignaciones directas ya no funcionarán:
+```go
+c.err = T(D.Base, D.Invalid) // ❌ NO FUNCIONA (c.err cambia a []byte)
+```
 
-### **Benchmark Categories Breakdown:**
+**Solución:** Crear métodos privados que retornen `*conv`:
+```go
+// Método privado para setear errores
+func (c *conv) setErr(values ...any) *conv {
+    c.vTpe = typeErr // Setear ANTES de llamar T()
+    T(append(values, c)...) // T() escribirá directamente al bufErr
+    return c
+}
 
-| Category | TinyString | Go Stdlib | Memory Overhead | Alloc Overhead |
-|----------|------------|-----------|-----------------|----------------|
-| **String Processing** | 2.8 KB/op | 1.2 KB/op | +140.3% 🚨 | +147.9% 🚨 |
-| **Number Processing** | 4.4 KB/op | 912 B/op | +389.8% 🚨 | +109.5% 🚨 |
-| **Mixed Operations** | 1.7 KB/op | 512 B/op | +243.9% 🚨 | +107.7% 🚨 |
+// Migración de código:
+// ANTES:
+c.err = T(D.Base, D.Invalid)
 
-### **Critical Findings:**
-- **Number Processing is the WORST:** 4.4x more memory usage
-- **All categories exceed 100% overhead:** No acceptable performance
-- **Allocations are consistently 2x+ worse:** Fundamental allocation issue
+// DESPUÉS: 
+return c.setErr(D.Base, D.Invalid)
+```
 
-## 🛠️ **PHASE 13 INVESTIGATION PLAN**
+**Nueva Implementación de Err() y Errf():**
+```go
+func Err(values ...any) *conv {
+    c := getConv()
+    return c.setErr(values...) // Usa método privado
+}
 
-### **Step 1: Memory Profiling & Hotspot Identification**
-**Immediate Actions:**
-1. **Profile Number Processing:** Identify major allocation sources
-2. **Profile String Processing:** Understand allocation patterns  
-3. **Compare with stdlib:** Understand allocation differences
-4. **Identify hotspots:** Focus on biggest impact optimizations
+func Errf(format string, args ...any) *conv {
+    c := getConv()
+    c.vTpe = typeErr
+      c.sprintf(format, args...) // Esto escribe al buf
+    // Copiar buf al bufErr
+    msg := string(c.buf)
+    c.addToErrBuf(msg)
+    c.buf = c.buf[:0] // Limpiar buf
+    return c
+}
+```
 
-### **Step 2: Targeted Optimization Areas**
-**Primary Targets:**
-1. **String interning frequency:** Reduce cache operations
-2. **Buffer pool usage:** Optimize buffer reuse patterns
-3. **Type conversion paths:** Minimize intermediate allocations
-4. **Builder efficiency:** Reduce builder-related allocations
+### **ESTRUCTURA `conv` OPTIMIZADA:**
 
-### **Step 3: Implementation & Validation**
-**Validation Process:**
-1. **Benchmark before/after:** Measure exact impact
-2. **Race condition testing:** Maintain thread safety
-3. **Functionality testing:** Ensure no regressions
-4. **Binary size validation:** Maintain size benefits
+```go
+type conv struct {
+    // Buffer principal - DINÁMICO, inicia cap=64, crece ilimitadamente
+    buf    []byte    // Buffer principal para strings normales
+    bufLen int       // Longitud actual en buf
+    
+    // Buffer temporal para traducción - DINÁMICO, inicia cap=64
+    bufTmp    []byte // Buffer temporal para traducción multiidioma
+    bufTmpLen int    // Longitud actual en bufTmp
+    
+    // Error buffer - DINÁMICO, inicia cap=64, crece ilimitadamente
+    bufErr []byte    // Buffer de errores
+    
+    // Tipo de valor
+    vTpe vTpe
+    
+    // ELIMINAR COMPLETAMENTE:
+    // tmpStr    string  ❌ DEPRECATED
+    // stringVal string  ❌ DEPRECATED  
+    // err       string  ❌ DEPRECATED - Ahora es bufErr []byte
+    
+    // Valores numéricos (mantener)
+    intVal   int64
+    uintVal  uint64
+    floatVal float64
+    
+    // Otros valores (mantener)
+    stringSliceVal []string
+    stringPtrVal   *string
+    boolVal        bool
+}
 
-## 🔧 **DEVELOPMENT WORKFLOW**
+// Métodos helper para bufErr
+func (c *conv) addToErrBuf(s string) {
+    // Añadir al buffer dinámico
+    c.bufErr = append(c.bufErr, s...)
+}
 
-**MANDATORY Process for Each Optimization:**
-1. **Profile current state** with memory profiling
-2. **Identify specific hotspot** via pprof analysis
-3. **Create targeted optimization** with clear scope
-4. **Run tests immediately** (`go test ./... -v`) - ZERO regressions
-5. **Run race detector** (`go test -race ./...`) - ZERO race conditions
-6. **Benchmark before/after** with memory profiling
-7. **Update this document** with results and next steps
+func (c *conv) getError() string {
+    if len(c.bufErr) == 0 {
+        return ""
+    }
+    return string(c.bufErr)
+}
 
-## 🛠️ **TOOLS & COMMANDS**
+func (c *conv) Error() string {
+    return c.getError()
+}
+```
 
-**Memory Profiling Commands:**
+## 🎯 **PLAN DE IMPLEMENTACIÓN FINAL**
+
+### **ORDEN DE IMPLEMENTACIÓN:**
+
+1. **PREPARACIÓN:**
+   - ✅ Respaldo Git del estado actual
+   - ✅ Validar todos los tests pasan
+   - ⏳ **ORIENTACIÓN:** Confirmar tamaños de buffer
+
+2. **REFACTOR DE LA ESTRUCTURA:**
+   - Modificar `conv` para eliminar variables deprecadas
+   - Añadir errBuf, bufTmp con tamaños confirmados
+   - Actualizar constructores de conv
+
+3. **MIGRACIÓN T() + setErr():**
+   - Modificar T() para detectar contexto de error
+   - Implementar escritura directa a errBuf
+   - Migrar todas las asignaciones c.err = T(...) → c.setErr(...)
+
+4. **OPTIMIZACIÓN getString():**
+   - Eliminar dependencia de stringVal
+   - Usar solo buf para conversiones de string
+
+5. **OPTIMIZACIÓN CONVERSIONES NUMÉRICAS:**
+   - i2s(), u2s(), f2s() escriben directamente al buf
+   - Eliminar asignaciones intermedias
+
+6. **ACTUALIZACIÓN putConv():**
+   - Implementar limpieza de buffers según política confirmada
+   - Resetear correctamente bufLen, bufTmpLen, bufErr
+
+7. **VALIDACIÓN COMPLETA:**
+   - Todos los tests pasan
+   - Benchmarks mejoran significativamente
+   - Sin race conditions
+
+### **VALIDACIÓN POST-IMPLEMENTACIÓN:**
 ```bash
-# Navigate to benchmark directory
-cd /c/Users/Cesar/Packages/Internal/tinystring/benchmark/bench-memory-alloc/tinystring
+# Tests completos
+go test ./... -v
 
-# Profile Number Processing (WORST case)
-go test -bench=BenchmarkNumberProcessing -benchmem -memprofile=mem_phase13_baseline.prof
-go tool pprof -text mem_phase13_baseline.prof
+# Race detection
+go test -race ./...
 
-# Profile String Processing
-go test -bench=BenchmarkStringProcessing -benchmem -memprofile=mem_string_baseline.prof
-go tool pprof -text mem_string_baseline.prof
-
-# Profile Mixed Operations
-go test -bench=BenchmarkMixedOperations -benchmem -memprofile=mem_mixed_baseline.prof
-go tool pprof -text mem_mixed_baseline.prof
+# Benchmarks comparativos
+cd benchmark/bench-memory-alloc/tinystring
+go test -bench=. -benchmem
 ```
 
-**Race Detection & Testing:**
-```bash
-cd /c/Users/Cesar/Packages/Internal/tinystring
-go test -race ./...                                    # Full race detection
-go test -race -run TestConcurrent                      # Concurrency tests only
-go test ./... -v                                       # Full test suite
+## 🚀 **INICIANDO IMPLEMENTACIÓN COMPLETA**
+
+**Estado:** ✅ **TODAS LAS ORIENTACIONES CONFIRMADAS** - Procediendo con refactor completo
+
+### **PASO 1: RESPALDO Y VALIDACIÓN INICIAL**
+
+Ahora iniciando la implementación completa con todas las especificaciones confirmadas:
+
+**ESTRUCTURA FINAL CONFIRMADA:**
+```go
+type conv struct {
+    // Buffers dinámicos - todos inician con capacidad 64
+    buf       []byte // Buffer principal - make([]byte, 0, 64)
+    bufLen    int    // Longitud actual en buf
+    bufTmp    []byte // Buffer temporal - make([]byte, 0, 64) 
+    bufTmpLen int    // Longitud actual en bufTmp
+    bufErr    []byte // Buffer de errores - make([]byte, 0, 64)
+    
+    // Variables eliminadas completamente:
+    // tmpStr, stringVal, err (ahora son buffers dinámicos)
+    
+    // Resto de campos permanecen igual...
+}
 ```
 
-**Performance Verification:**
-```bash
-cd /c/Users/Cesar/Packages/Internal/tinystring/benchmark
-./memory-benchmark.sh                                 # Memory benchmarks only
-./build-and-measure.sh                                # Full benchmark suite
-```
-
-## 📋 **CONSTRAINTS & REQUIREMENTS**
-
-**Critical Requirements (MUST MAINTAIN):**
-- ✅ **Thread Safety:** NO race conditions allowed
-- ✅ **API Compatibility:** Public API unchanged
-- ✅ **Zero stdlib dependencies:** No fmt, strings, strconv imports
-- ✅ **TinyGo compatibility:** All optimizations must work with TinyGo
-- ✅ **Binary size benefits:** Maintain 55%+ WASM size improvement
-
-**Performance Targets:**
-1. **Primary Goal:** Reduce memory usage by 50%+ across all categories
-2. **Secondary Goal:** Reduce allocations by 50%+ across all categories  
-3. **Minimum Acceptable:** Memory usage within 50% of Go stdlib
-
-## 🎯 **SUCCESS METRICS**
-
-### **Phase 13 Targets:**
-
-| Category | Current | Target | Improvement Goal |
-|----------|---------|--------|------------------|
-| **String Processing** | 2.8 KB/op | <1.8 KB/op | -35% minimum |
-| **Number Processing** | 4.4 KB/op | <2.2 KB/op | -50% minimum |
-| **Mixed Operations** | 1.7 KB/op | <1.0 KB/op | -40% minimum |
-
-### **Allocation Targets:**
-
-| Category | Current | Target | Improvement Goal |
-|----------|---------|--------|------------------|
-| **String Processing** | 119 allocs/op | <80 allocs/op | -33% minimum |
-| **Number Processing** | 88 allocs/op | <60 allocs/op | -32% minimum |
-| **Mixed Operations** | 54 allocs/op | <35 allocs/op | -35% minimum |
-
-## 🚀 **NEXT IMMEDIATE ACTIONS**
-
-### **Priority 1: Memory Profiling (TODAY)**
-1. **Run Number Processing profile** - Identify worst allocation sources
-2. **Analyze pprof output** - Understand allocation call chains
-3. **Document findings** - Update this document with specific hotspots
-4. **Create optimization plan** - Target biggest impact changes
-
-### **Priority 2: Hotspot Analysis (TODAY)**  
-1. **Identify top 3 allocation sources** from profiling
-2. **Analyze each hotspot** for optimization potential
-3. **Plan implementation approach** for each optimization
-4. **Estimate impact** for each planned change
-
-### **Priority 3: Implementation (NEXT)**
-1. **Start with highest impact optimization**
-2. **Implement, test, and benchmark** one optimization at a time
-3. **Validate thread safety** after each change
-4. **Update metrics** in this document
-
-## 📈 **OPTIMIZATION HISTORY**
-
-- **Phase 9:** setStringFromBuffer() eliminated (36.92% → 0%) 🏆
-- **Phase 10:** FormatNumber() optimized, fmtIntGeneric() eliminated 🏆
-- **Phase 11:** String operations optimized (-13.4% total memory reduction) 🏆
-- **Phase 12:** Race condition eliminated, thread safety restored 🏆
-- **Phase 13:** Memory allocation optimization - IN PROGRESS 🔄
-
-## 🎉 **PHASE 13 FIRST OPTIMIZATION RESULTS**
-
-### **🏆 DRAMATIC IMPROVEMENT ACHIEVED! 🏆**
-
-**Number Processing Benchmark Results:**
-
-| Metric | BEFORE (Phase 12) | AFTER (Phase 13.1) | Improvement | Status |
-|--------|-------------------|---------------------|-------------|---------|
-| **Memory** | 4,467 B/op | **624 B/op** | **-86.0%** 🚀 | EXCELLENT |
-| **Allocations** | 88 allocs/op | **40 allocs/op** | **-54.5%** 🚀 | EXCELLENT |
-| **Speed** | 5,539 ns/op | **3,541 ns/op** | **-36.1%** 🚀 | EXCELLENT |
-
-### **🎯 IMPACT ANALYSIS:**
-
-**Memory Reduction:** From 4.4 KB/op to 624 B/op - **86% reduction!**
-- Previously: 389.8% WORSE than stdlib (912 B/op)
-- Now: Only **31.6% worse** than stdlib (624 vs 912 B/op)
-- **MASSIVE 358% improvement** in memory efficiency!
-
-**Allocation Reduction:** From 88 to 40 allocs/op - **54.5% reduction!**
-- Previously: 109.5% WORSE than stdlib (42 allocs/op)  
-- Now: Only **4.8% worse** than stdlib (40 vs 42 allocs/op)
-- **Nearly matching stdlib allocation efficiency!**
-
-**Speed Improvement:** From 5,539 to 3,541 ns/op - **36.1% faster!**
-- Additional benefit beyond memory optimization
-
-### **🚨 NEW HOTSPOT IDENTIFIED:**
-
-**After Phase 13.1 optimizations, new allocation pattern:**
-
-| Function | Memory | % of Total | Analysis |
-|----------|--------|------------|----------|
-| **`setStringFromBuffer`** | 85.50MB | **42.12%** | 🎯 **NEW PRIMARY TARGET** |
-| **`processNumbers...`** | 82.51MB | 40.64% | Benchmark overhead |
-| **`FormatNumber`** | 35MB | **17.24%** | 🎯 **SECONDARY TARGET** |
-
-**Key Insight:** Eliminating `s2n` T() calls was HUGELY successful, but now `setStringFromBuffer` is the new bottleneck!
-
-## 🏆 **PHASE 13 STATUS**
-
-**Current Status:** 🔄 **PHASE 13 IN PROGRESS - Allocation Optimization** 
-- **Start Date:** June 19, 2025
-- **Current Focus:** Memory profiling and hotspot identification
-- **Critical Issue:** 140-390% worse memory usage than stdlib
-- **Priority:** Reduce allocations while maintaining thread safety
-
-**Working Directory:** `c:\Users\Cesar\Packages\Internal\tinystring\`
-**Methodology:** Profile → Identify → Optimize → Test → Validate → Document
-**Focus:** Memory allocation reduction without compromising safety or binary size
-
-## 🛠️ **PHASE 13 OPTIMIZATION PLAN**
-
-### **PRIORITY 1: Optimize `s2n` Function (82.35% of allocations!)**
-
-**Problem Analysis:**
-- **Location:** `numeric.go:515` - `func (t *conv) s2n(base int)`
-- **Issue:** String conversion operations creating massive allocations
-- **Impact:** 749.10MB of 909.61MB total allocations (82.35%)
-
-**Root Causes Identified:**
-1. **Error message allocations:** `t.err = T(D.Base, D.Invalid)` calls `T()` which uses builder pattern
-2. **Character validation:** `string(ch)` creates allocation for error messages  
-3. **String processing:** Multiple intermediate string operations
-4. **parseSmallInt calls:** Even "optimized" path may have allocation overhead
-
-**Optimization Strategy:**
-1. **Pre-allocate error messages:** Use static error strings instead of `T()` in hot paths
-2. **Eliminate character string conversion:** Use byte values directly in error messages
-3. **Optimize parseSmallInt:** Ensure zero allocations for common case
-4. **Inline validation:** Remove function call overhead where possible
-
-### **PRIORITY 2: Reduce String Interning Overhead (5.22% of allocations)**
-
-**Problem Analysis:**
-- **Location:** `memory.go:110` - `internStringFromBytes()`
-- **Issue:** Every small string hits the interning cache
-- **Impact:** 47.50MB allocations from cache operations
-
-**Optimization Strategy:**
-1. **Selective interning:** Only intern strings that will likely be reused
-2. **Size threshold:** Increase threshold from 32 bytes to reduce cache hits
-3. **Cache efficiency:** Optimize cache lookup performance
-4. **Direct allocation path:** Bypass cache for known unique strings
-
-### **PRIORITY 3: Optimize `T()` Function (4.84% of allocations)**
-
-**Problem Analysis:**
-- **Location:** `translation.go:10` - `func T(values ...any) string`
-- **Issue:** Builder pattern + variadic args + translation logic
-- **Impact:** 44MB allocations from error message generation
-
-**Optimization Strategy:**
-1. **Static error strings:** Pre-define common error messages  
-2. **Avoid T() in hot paths:** Use direct strings for performance-critical code
-3. **Optimize builder usage:** Reduce buffer operations in T()
-4. **Lazy translation:** Only translate when needed
-
-### **PRIORITY 4: Reduce Buffer Operations**
-
-**Problem Analysis:**
-- **Location:** `memory.go:66` - `setStringFromBuffer()`
-- **Issue:** Buffer-to-string conversions in multiple paths
-- **Impact:** Cumulative allocation overhead
-
-**Optimization Strategy:**
-1. **Direct string operations:** Bypass buffer when possible
-2. **Reuse patterns:** Optimize buffer reuse across operations
-3. **Elimination opportunities:** Remove unnecessary buffer round-trips
+**POLÍTICA DE LIMPIEZA:**
+- `putConv()` limpia todos los bytes y resetea slices a [:0]
+- Sin truncación: todos los buffers crecen automáticamente
+- Capacidad inicial: 64 bytes para todos los buffers

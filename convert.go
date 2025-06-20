@@ -183,15 +183,19 @@ func (e *customError) Error() string {
 
 // getString converts the current value to string only when needed
 // BUILDER INTEGRATION: Prioritizes buffer content when available
-// Optimized with string caching to avoid repeated conversions
+// Phase 13.2: Optimized to eliminate repeated string(t.buf) allocations
 func (t *conv) getString() string {
 	if t.vTpe == typeErr {
 		return ""
 	}
 
 	// BUILDER PRIORITY: If buffer has content, use it as source of truth
+	// Phase 13.2: Cache the buffer conversion to avoid repeated allocations
 	if len(t.buf) > 0 {
-		return string(t.buf)
+		if t.tmpStr == "" || len(t.tmpStr) != len(t.buf) {
+			t.tmpStr = string(t.buf)
+		}
+		return t.tmpStr
 	}
 
 	// If we already have a string value and haven't changed types, reuse it

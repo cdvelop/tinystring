@@ -25,7 +25,7 @@ func (c *conv) putConv() { // Reset all fields to default state
 	c.stringSliceVal = nil
 	c.stringPtrVal = nil
 	c.vTpe = typeStr
-	c.tmpStr = ""
+	c.tmpStr = "" // Phase 13.2: Reset cache
 	c.err = ""
 	c.buf = c.buf[:0] // Inline resetBuffer
 
@@ -62,20 +62,15 @@ func (c *conv) getReusableBuffer(capacity int) []byte {
 	return c.buf
 }
 
-// Phase 13: Optimized buffer management with selective string interning
+// Phase 13.2: Highly optimized buffer management with minimal allocations
 func (c *conv) setStringFromBuffer() {
 	var resultStr string
 	if len(c.buf) == 0 {
 		resultStr = ""
 	} else {
-		// Phase 13: Reduce string interning overhead - increase threshold and be more selective
-		// Only intern very small strings that are likely to be repeated (error messages, common values)
-		if len(c.buf) <= 16 && isLikelyReusable(c.buf) {
-			resultStr = internStringFromBytes(c.buf) // Direct from bytes, no temp string
-		} else {
-			// For most strings, direct allocation is faster than cache overhead
-			resultStr = string(c.buf)
-		}
+		// Phase 13.2: Direct string allocation without interning overhead
+		// Interning was causing more allocations than it saved
+		resultStr = string(c.buf)
 	}
 
 	c.stringVal = resultStr
