@@ -5,5 +5,5 @@
 # Benchmark binaries (generated files, should not be tracked)
 benchmark/bench-binary-size/standard-lib/standard
 benchmark/bench-binary-size/tinystring-lib/tinystring
-benchmark/memory_benchmark_results.md
+benchmark/benchmark_results.md
 *.prof

@@ -32,7 +32,7 @@ TINYSTRING_RESULTS=$(go test -bench=. -benchmem 2>/dev/null | grep -E '^Benchmar
 echo "📝 Generating memory benchmark results..."
 
 # Create temporary benchmark results file
-TEMP_RESULTS="$BENCHMARK_DIR/memory_benchmark_results.md"
+TEMP_RESULTS="$BENCHMARK_DIR/benchmark_results.md"
 
 cat > "$TEMP_RESULTS" << EOF
 
@@ -72,6 +72,6 @@ go build -o "$ANALYZER_BINARY" .
 ./"$ANALYZER_BINARY" memory "$TEMP_RESULTS"
 
 # Clean up temporary file
-rm -f "$TEMP_RESULTS"
+# rm -f "$TEMP_RESULTS"
 
 echo "✅ Memory benchmarks completed and README updated"

@@ -62,17 +62,18 @@ func (c *conv) getReusableBuffer(capacity int) []byte {
 	return c.buf
 }
 
-// Phase 9: Optimized buffer management with direct string interning
+// Phase 13: Optimized buffer management with selective string interning
 func (c *conv) setStringFromBuffer() {
 	var resultStr string
 	if len(c.buf) == 0 {
 		resultStr = ""
 	} else {
-		// Direct string interning for small strings to avoid double allocation
-		if len(c.buf) <= 32 {
+		// Phase 13: Reduce string interning overhead - increase threshold and be more selective
+		// Only intern very small strings that are likely to be repeated (error messages, common values)
+		if len(c.buf) <= 16 && isLikelyReusable(c.buf) {
 			resultStr = internStringFromBytes(c.buf) // Direct from bytes, no temp string
 		} else {
-			// For large strings, direct allocation is still better
+			// For most strings, direct allocation is faster than cache overhead
 			resultStr = string(c.buf)
 		}
 	}
@@ -156,4 +157,55 @@ var runeBufferPool = sync.Pool{
 		// Start with a reasonable default capacity
 		return make([]rune, 0, defaultBufCap)
 	},
+}
+
+// Phase 13: Helper to determine if a byte slice is likely to be reused
+// Only intern strings that are probably error messages or common values
+func isLikelyReusable(buf []byte) bool {
+	// Don't intern if too short or too long
+	if len(buf) < 3 || len(buf) > 16 {
+		return false
+	}
+
+	// Intern common error-like patterns
+	s := string(buf)
+
+	// Check if it looks like an error message (contains common error words)
+	if contains(s, "invalid") || contains(s, "error") || contains(s, "overflow") ||
+		contains(s, "base") || contains(s, "range") || contains(s, "character") {
+		return true
+	}
+
+	// Check if it's a common value (small numbers, true/false, etc.)
+	if len(buf) <= 5 {
+		// Numbers 0-99999, true, false, etc.
+		if isAllDigits(buf) || s == "true" || s == "false" {
+			return true
+		}
+	}
+
+	return false
+}
+
+// Helper to check if all bytes are digits
+func isAllDigits(buf []byte) bool {
+	for _, b := range buf {
+		if b < '0' || b > '9' {
+			return false
+		}
+	}
+	return len(buf) > 0
+}
+
+// Helper to check if string contains substring (simple implementation)
+func contains(s, substr string) bool {
+	if len(substr) > len(s) {
+		return false
+	}
+	for i := 0; i <= len(s)-len(substr); i++ {
+		if s[i:i+len(substr)] == substr {
+			return true
+		}
+	}
+	return false
 }
