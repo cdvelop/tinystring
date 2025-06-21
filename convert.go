@@ -32,14 +32,14 @@ type conv struct {
 	// tmpStr    string ❌ DEPRECATED → Reemplazado por work []byte
 
 	// Numeric values grouped together
-	intVal   int64
-	uintVal  uint64
-	floatVal float64
+	intVal   int64   //❌ DEPRECATED
+	uintVal  uint64  //❌ DEPRECATED
+	floatVal float64 //❌ DEPRECATED
 
 	// Less frequently used fields
-	stringSliceVal []string
-	stringPtrVal   *string
-	boolVal        bool
+	stringSliceVal []string //❌ DEPRECATED
+	pointerVal     *string  // use for any element that is not supported for writing directly to the buffer
+	boolVal        bool     //❌ DEPRECATED
 }
 
 // Convert initializes a new conv struct with optional value for string,bool and number manipulation.
@@ -49,14 +49,14 @@ func Convert(v ...any) *conv {
 	c := getConv()
 	// Validation: Only accept 0 or 1 parameter
 	if len(v) > 1 {
-		return c.setErr(D.Invalid, D.Number, D.Of, D.Argument) // Consistent error handling pattern
+		return c.wrErr(D.Invalid, D.Number, D.Of, D.Argument) // Consistent error handling pattern
 	}
 	// Initialize with value if provided, empty otherwise
 	if len(v) == 1 {
 		// Inlined withValue logic for performance
 		val := v[0]
 		if val == nil {
-			return c.setErr(D.String, D.Empty)
+			return c.wrErr(D.String, D.Empty)
 		} else {
 			switch typedVal := val.(type) {
 			case string:
@@ -71,13 +71,13 @@ func Convert(v ...any) *conv {
 				// Store string content directly in out
 				c.out = append(c.out[:0], (*typedVal)...)
 				c.outLen = len(*typedVal)
-				c.stringPtrVal = typedVal
+				c.pointerVal = typedVal
 				c.kind = KPointer
 			case bool:
 				c.boolVal = typedVal
 				c.kind = KBool
 			case error:
-				return c.setErr(typedVal.Error())
+				return c.wrErr(typedVal.Error())
 			default:
 				// Handle numeric types using generics
 				c.handleAnyType(typedVal)
@@ -87,6 +87,141 @@ func Convert(v ...any) *conv {
 	// If no value provided, conv is ready for builder pattern
 
 	return c
+}
+
+// =============================================================================
+// CENTRALIZED CONVERSION HELPER METHODS
+// Implementation of type-specific conversions using centralized buffer ops
+// =============================================================================
+
+// fmtIntToOut converts integer to string and writes to out buffer
+// Replaces fmtIntGeneric() with centralized buffer management
+func (c *conv) fmtIntToOut(val int64, base int, signed bool) {
+	if val == 0 {
+		c.wrStringToOut("0")
+		return
+	}
+	// Handle negative numbers for signed integers
+	if signed && val < 0 {
+		val = -val
+		c.wrStringToOut("-")
+	}
+
+	// Convert using existing manual implementation logic
+	// Use work buffer for intermediate operations
+	c.rstWork()
+
+	// Build digits in reverse order in work buffer
+	for val > 0 {
+		digit := byte(val%int64(base)) + '0'
+		if digit > '9' {
+			digit += 'a' - '9' - 1
+		}
+		c.work = append(c.work, digit)
+		c.workLen++
+		val /= int64(base)
+	}
+
+	// Reverse and write to out buffer
+	for i := c.workLen - 1; i >= 0; i-- {
+		c.writeByte(c.work[i])
+	}
+}
+
+// floatToOut converts float64 to string and writes to out buffer
+// Replaces floatToBufTmp() with centralized buffer management
+func (c *conv) floatToOut() {
+	val := c.floatVal
+
+	// Handle special cases
+	if val != val { // NaN
+		c.wrStringToOut("NaN")
+		return
+	}
+	if val == 0 {
+		c.wrStringToOut("0")
+		return
+	}
+
+	// Handle infinity
+	if val > 1.7976931348623157e+308 {
+		c.wrStringToOut("+Inf")
+		return
+	}
+	if val < -1.7976931348623157e+308 {
+		c.wrStringToOut("-Inf")
+		return
+	}
+
+	// Handle negative numbers
+	if val < 0 {
+		c.wrStringToOut("-")
+		val = -val
+	}
+
+	// Use existing floatToStringOptimized logic but write to out buffer
+	// For now, use a simplified version - can be optimized later
+	c.rstWork()
+
+	// Integer part
+	intPart := int64(val)
+	c.fmtIntToWork(intPart, 10, false)
+
+	// Copy integer part from work to out
+	for i := 0; i < c.workLen; i++ {
+		c.writeByte(c.work[i])
+	}
+
+	// Fractional part
+	fracPart := val - float64(intPart)
+	if fracPart > 0 {
+		c.wrStringToOut(".")
+		// Simple fractional conversion (can be optimized later)
+		for i := 0; i < 6 && fracPart > 0; i++ {
+			fracPart *= 10
+			digit := int(fracPart)
+			c.writeByte(byte(digit) + '0')
+			fracPart -= float64(digit)
+		}
+	}
+}
+
+// fmtIntToWork converts integer to work buffer (helper for floatToOut)
+func (c *conv) fmtIntToWork(val int64, base int, signed bool) {
+	if val == 0 {
+		c.work = append(c.work, '0')
+		c.workLen++
+		return
+	}
+
+	// Handle negative numbers for signed integers
+	if signed && val < 0 {
+		c.work = append(c.work, '-')
+		c.workLen++
+		val = -val
+	}
+
+	// Store starting position for reversal
+	start := c.workLen
+
+	// Build digits in reverse order
+	for val > 0 {
+		digit := byte(val%int64(base)) + '0'
+		if digit > '9' {
+			digit += 'a' - '9' - 1
+		}
+		c.work = append(c.work, digit)
+		c.workLen++
+		val /= int64(base)
+	}
+
+	// Reverse the digits portion
+	end := c.workLen - 1
+	for start < end {
+		c.work[start], c.work[end] = c.work[end], c.work[start]
+		start++
+		end--
+	}
 }
 
 // Consolidated generic functions - single function per type with operation parameter
@@ -130,8 +265,8 @@ func genFloat[T anyFloat](c *conv, v T, op int) {
 // This method should be used when you want to modify the original string directly
 // without additional allocations.
 func (t *conv) Apply() {
-	if t.kind == KPointer && t.stringPtrVal != nil {
-		*t.stringPtrVal = t.getString()
+	if t.kind == KPointer && t.pointerVal != nil {
+		*t.pointerVal = t.ensureStringInOut()
 	}
 	// Auto-release back to pool for memory efficiency
 	t.putConv()
@@ -140,108 +275,10 @@ func (t *conv) Apply() {
 // String method to return the content of the conv and automatically returns object to pool
 // Phase 7: Auto-release makes pool usage completely transparent to user
 func (t *conv) String() string {
-	out := t.getString()
+	out := t.ensureStringInOut()
 	// Auto-release back to pool for memory efficiency
 	t.putConv()
 	return out
-}
-
-// getString converts the current value to string only when needed
-// BUILDER INTEGRATION: Prioritizes buffer content when available
-// Phase 13.2: Optimized to eliminate repeated string(t.out) allocations
-func (t *conv) getString() string {
-	if t.kind == KErr {
-		return ""
-	}
-
-	// BUILDER PRIORITY: If buffer has content, use it as source of truth
-	// Phase 13.2: Cache the buffer conversion using work to avoid repeated allocations
-	if t.outLen > 0 {
-		// Check if work needs to be updated (comparing lengths for efficiency)
-		if t.workLen != t.outLen {
-			// Copy out content to work and update string representation
-			t.work = append(t.work[:0], t.out[:t.outLen]...)
-			t.workLen = t.outLen
-		}
-		return string(t.work[:t.workLen])
-	}
-
-	// For string pointers, always return the current value (don't use cache)
-	if t.kind == KPointer && t.stringPtrVal != nil {
-		return *t.stringPtrVal
-	}
-
-	// Use cached string in work if available (simplified cache logic)
-	if t.workLen > 0 && t.kind != KPointer {
-		return string(t.work[:t.workLen])
-	}
-
-	// Convert to string using internal methods to avoid allocations
-	switch t.kind {
-	case KString:
-		// String content should already be in out from Convert()
-		if t.outLen > 0 {
-			return string(t.out[:t.outLen])
-		}
-		return ""
-	case KPointer: // now receive any pointer check please
-		// For string pointers, always get the current value from the pointer
-		if t.stringPtrVal != nil {
-			value := *t.stringPtrVal
-			// Store in work for caching
-			t.work = append(t.work[:0], value...)
-			t.workLen = len(value)
-			return value
-		}
-		return ""
-	case KSliceStr: // now receive any alice check please
-		if len(t.stringSliceVal) == 0 {
-			t.work = t.work[:0]
-			t.workLen = 0
-		} else if len(t.stringSliceVal) == 1 {
-			value := t.stringSliceVal[0]
-			t.work = append(t.work[:0], value...)
-			t.workLen = len(value)
-		} else {
-			// Use builder API for zero-allocation string construction
-			c := Convert() // Empty initialization for builder pattern
-			for i, s := range t.stringSliceVal {
-				if i > 0 {
-					c.Write(" ")
-				}
-				c.Write(s)
-			}
-			out := c.String() // Auto-release to pool
-			t.work = append(t.work[:0], out...)
-			t.workLen = len(out)
-		}
-		return string(t.work[:t.workLen])
-	case KInt:
-		// Use internal method instead of external function
-		t.fmtIntGeneric(t.intVal, 10, true)
-	case KUint:
-		// Use internal method instead of external function
-		t.fmtIntGeneric(int64(t.uintVal), 10, false)
-	case KFloat64:
-		// Use internal method instead of external function
-		t.floatToBufTmp()
-	case KBool:
-		var value string
-		if t.boolVal {
-			value = trueStr
-		} else {
-			value = falseStr
-		}
-		// Store in work for caching
-		t.work = append(t.work[:0], value...)
-		t.workLen = len(value)
-		return value
-	default:
-		t.work = t.work[:0]
-		t.workLen = 0
-	}
-	// Cache is now updated (simplified without type tracking)
-	return string(t.work[:t.workLen])
 }
 
 // addRne2Buf manually encodes a rune to UTF-8 and appends it to the byte slice.
@@ -265,8 +302,8 @@ func (t *conv) setString(s string) {
 	t.outLen = len(s)
 
 	// If working with string pointer, update the original string
-	if t.kind == KPointer && t.stringPtrVal != nil {
-		*t.stringPtrVal = s
+	if t.kind == KPointer && t.pointerVal != nil {
+		*t.pointerVal = s
 		// Keep the kind as stringPtr to maintain the pointer relationship
 	} else {
 		t.kind = KString
@@ -292,7 +329,7 @@ func (t *conv) setString(s string) {
 func (t *conv) any2s(v any) {
 	switch val := v.(type) {
 	case error:
-		t.setErr(val.Error())
+		t.wrErr(val.Error())
 	case string:
 		// Store string content directly in out
 		t.out = append(t.out[:0], val...)

@@ -16,7 +16,7 @@ func (t *conv) Replace(oldAny, newAny any, n ...int) *conv {
 	newStr := tmp.String() // return tmp to pool
 
 	// Convert parameters to strings using the consistent Convert pattern
-	str := t.getString()
+	str := t.ensureStringInOut()
 	if len(old) == 0 || len(str) == 0 {
 		return t
 	}
@@ -67,7 +67,7 @@ func (t *conv) TrimSuffix(suffix string) *conv {
 		return t // Error chain interruption
 	}
 
-	str := t.getString()
+	str := t.ensureStringInOut()
 	if len(str) < len(suffix) || str[len(str)-len(suffix):] != suffix {
 		return t
 	}
@@ -84,7 +84,7 @@ func (t *conv) TrimPrefix(prefix string) *conv {
 		return t // Error chain interruption
 	}
 
-	str := t.getString()
+	str := t.ensureStringInOut()
 	if len(str) < len(prefix) || str[:len(prefix)] != prefix {
 		return t
 	}
@@ -101,7 +101,7 @@ func (t *conv) Trim() *conv {
 		return t // Error chain interruption
 	}
 
-	str := t.getString()
+	str := t.ensureStringInOut()
 	if len(str) == 0 {
 		return t
 	}

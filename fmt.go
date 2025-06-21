@@ -75,7 +75,7 @@ func (t *conv) roundDecimalsInternal(decimals int, roundDown bool) *conv {
 	if t.kind == KFloat64 {
 		val = t.floatVal
 	} else { // Parse current string content as float without creating temporary conv
-		t.s2Float()
+		t.stringToFloat()
 		if len(t.err) > 0 { // If cannot parse as number, set to 0 and continue with formatting
 			val = 0
 			t.err = t.err[:0] // Clear error buffer
@@ -143,7 +143,7 @@ func (t *conv) Down() *conv {
 		val = t.floatVal
 	} else {
 		// Parse current string content as float directly
-		t.s2Float()
+		t.stringToFloat()
 		if len(t.err) > 0 {
 			// Not a number, return as-is
 			return t
@@ -152,7 +152,7 @@ func (t *conv) Down() *conv {
 	}
 	// Detect decimal places from the current content
 	decimalPlaces := 0
-	str := t.getString()
+	str := t.ensureStringInOut()
 	if dotIndex := func() int {
 		for i := range len(str) {
 			if str[i] == '.' {
@@ -219,7 +219,7 @@ func (t *conv) FormatNumber() *conv {
 	if t.kind == KFloat64 {
 		// We already have a float value, use it directly
 		t.f2sMan(-1)
-		fStr := t.getString()
+		fStr := t.ensureStringInOut()
 		// Inline rmZeros logic
 		fStr = func(s string) string {
 			dotIndex := func() int {
@@ -254,7 +254,7 @@ func (t *conv) FormatNumber() *conv {
 		// Phase 8.2 Optimization: Use optimized split without extra allocations
 		// Inline splitFloatIndices logic
 		intPart, decPart, hasDecimal := func() (string, string, bool) {
-			str := t.getString()
+			str := t.ensureStringInOut()
 			for i, char := range str {
 				if char == '.' {
 					return str[:i], str[i+1:], true
@@ -265,7 +265,7 @@ func (t *conv) FormatNumber() *conv {
 		// Fmt the integer part with commas directly
 		t.setString(intPart)
 		t.fmtNum()
-		iPart := t.getString()
+		iPart := t.ensureStringInOut()
 
 		// Reconstruct the number
 		var out string
@@ -280,14 +280,14 @@ func (t *conv) FormatNumber() *conv {
 	}
 
 	// For string values, parse them directly using existing methods
-	str := t.getString()
+	str := t.ensureStringInOut()
 	// Save original state BEFORE any parsing attempts
 	oBuf := make([]byte, t.outLen)
 	copy(oBuf, t.out[:t.outLen])
 	oType := t.kind
 	// Try to parse as integer first using existing s2Int
 	t.setString(str)
-	t.s2IntGeneric(10)
+	t.stringToInt(10)
 	if len(t.err) == 0 {
 		// Phase 10 Optimization: Use direct formatting for parsed integer
 		t.formatIntDirectly(t.intVal)
@@ -298,11 +298,11 @@ func (t *conv) FormatNumber() *conv {
 	t.err = t.err[:0] // Reset error before trying float parsing
 	t.setString(str)
 	// Inline parseFloat logic
-	t.s2Float()
+	t.stringToFloat()
 	if len(t.err) == 0 { // Use the parsed float value
 		t.kind = KFloat64
 		t.f2sMan(-1)
-		fStr := t.getString()
+		fStr := t.ensureStringInOut()
 		// Inline rmZeros logic
 		fStr = func(s string) string {
 			dotIndex := func() int {
@@ -337,7 +337,7 @@ func (t *conv) FormatNumber() *conv {
 		// Phase 8.2 Optimization: Use optimized split without allocations
 		// Inline splitFloatIndices logic
 		intPart, decPart, hasDecimal := func() (string, string, bool) {
-			str := t.getString()
+			str := t.ensureStringInOut()
 			for i, char := range str {
 				if char == '.' {
 					return str[:i], str[i+1:], true
@@ -349,7 +349,7 @@ func (t *conv) FormatNumber() *conv {
 		if intPart != "" {
 			t.setString(intPart)
 			t.fmtNum()
-			iPart := t.getString()
+			iPart := t.ensureStringInOut()
 
 			// Reconstruct the number with formatted decimal part
 			var out string
@@ -357,10 +357,10 @@ func (t *conv) FormatNumber() *conv {
 				// Also format the decimal part with commas for consistency with test expectation
 				dPart := decPart
 				if len(dPart) > 3 { // Save current state
-					sIP := t.getString()
+					sIP := t.ensureStringInOut()
 					t.setString(dPart)
 					t.fmtNum()
-					dPart = t.getString()
+					dPart = t.ensureStringInOut()
 					// Restore state for final out construction
 					t.setString(sIP)
 				}
@@ -390,7 +390,7 @@ func (t *conv) FormatNumber() *conv {
 // This is an internal conv method that modifies the struct instead of returning values.
 // Optimized to minimize allocations and use more efficient buffer operations.
 func (c *conv) fmtNum() {
-	numStr := c.getString()
+	numStr := c.ensureStringInOut()
 	if len(numStr) == 0 {
 		return
 	}
@@ -597,7 +597,7 @@ func (c *conv) i2sBase(base int) {
 
 	// Inline validateBase logic
 	if base < 2 || base > 36 {
-		c.setErr(D.Base, D.Invalid)
+		c.wrErr(D.Base, D.Invalid)
 		return
 	}
 
@@ -708,7 +708,7 @@ func (c *conv) sprintf(format string, args ...any) {
 					c.out = append(c.out, '%')
 					continue
 				default:
-					c.setErr(D.Format, D.Specifier, D.Not, D.Supported, format[i])
+					c.wrErr(D.Format, D.Specifier, D.Not, D.Supported, format[i])
 					c.kind = KErr
 					return
 				} // Common format handling logic for all specifiers except '%'
@@ -716,7 +716,7 @@ func (c *conv) sprintf(format string, args ...any) {
 					// Inline handleFormat logic
 					if argIndex >= len(args) {
 						errConv := Err(D.Argument, D.Missing, formatSpec)
-						c.setErr(errConv.Error())
+						c.wrErr(errConv.Error())
 						c.kind = KErr
 						return
 					}
@@ -777,13 +777,13 @@ func (c *conv) sprintf(format string, args ...any) {
 							} else {
 								c.i2sBase(param)
 							}
-							str = c.getString()
+							str = c.ensureStringInOut()
 
 							// Restore original state including buffer
 							c.kind = oldVTpe
 							c.out = oldBuf
 						} else {
-							c.setErr(D.Invalid, D.Type, D.Of, D.Argument, formatSpec)
+							c.wrErr(D.Invalid, D.Type, D.Of, D.Argument, formatSpec)
 							c.kind = KErr
 							return
 						}
@@ -798,14 +798,14 @@ func (c *conv) sprintf(format string, args ...any) {
 							c.floatVal = floatVal
 							c.kind = KFloat64
 							c.f2sMan(param)
-							str = c.getString()
+							str = c.ensureStringInOut()
 
 							// Restore original state including buffer
 							c.floatVal = oldFloatVal
 							c.kind = oldVTpe
 							c.out = oldBuf
 						} else {
-							c.setErr(D.Invalid, D.Type, D.Of, D.Argument, formatSpec)
+							c.wrErr(D.Invalid, D.Type, D.Of, D.Argument, formatSpec)
 							c.kind = KErr
 							return
 						}
@@ -813,7 +813,7 @@ func (c *conv) sprintf(format string, args ...any) {
 						if strVal, ok := arg.(string); ok {
 							str = strVal
 						} else {
-							c.setErr(D.Invalid, D.Type, D.Of, D.Argument, formatSpec)
+							c.wrErr(D.Invalid, D.Type, D.Of, D.Argument, formatSpec)
 							c.kind = KErr
 							return
 						}
@@ -826,7 +826,7 @@ func (c *conv) sprintf(format string, args ...any) {
 						// Perform calculation with isolated buffer
 						c.out = c.out[:0] // Inline resetBuffer
 						c.formatValue(arg)
-						str = c.getString()
+						str = c.ensureStringInOut()
 
 						// Restore original state including buffer
 						c.kind = oldVTpe

@@ -31,7 +31,7 @@ func (t *conv) Join(sep ...string) *conv {
 	}
 
 	// If content is already a string, we split it and join it again with the new separator
-	str := t.getString()
+	str := t.ensureStringInOut()
 	if str != "" {
 		// Split content by whitespace using simple string operations
 		var parts []string

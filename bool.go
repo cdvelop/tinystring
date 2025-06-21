@@ -18,7 +18,7 @@ func (t *conv) ToBool() (bool, error) {
 		return t.floatVal != 0.0, nil // Non-zero floats are true
 	default:
 		// For string types, parse the string content
-		inp := t.getString()
+		inp := t.ensureStringInOut()
 		switch inp {
 		case "true", "True", "TRUE", "1", "t", "T":
 			t.boolVal = true
@@ -30,7 +30,7 @@ func (t *conv) ToBool() (bool, error) {
 			return false, nil
 		default:
 			// Try to parse as numeric - non-zero numbers are true
-			t.s2IntGeneric(10)
+			t.stringToInt(10)
 			if len(t.err) == 0 {
 				t.boolVal = t.intVal != 0
 				t.kind = KBool
@@ -40,7 +40,7 @@ func (t *conv) ToBool() (bool, error) {
 
 			// Reset error and try float
 			t.err = t.err[:0]
-			t.s2Float()
+			t.stringToFloat()
 			if len(t.err) == 0 {
 				t.boolVal = t.floatVal != 0.0
 				t.kind = KBool

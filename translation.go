@@ -51,7 +51,7 @@ func T(values ...any) string {
 		default:
 			// Convert other types to string and append
 			c.setVal(v, 0) // Use mode 0 for initial conversion
-			str := c.getString()
+			str := c.ensureStringInOut()
 			c.out = append(c.out, str...)
 		}
 	}

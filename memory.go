@@ -43,7 +43,7 @@ func (c *conv) putConv() {
 	c.floatVal = 0
 	c.boolVal = false
 	c.stringSliceVal = nil
-	c.stringPtrVal = nil
+	c.pointerVal = nil
 	c.kind = KString
 
 	convPool.Put(c)
@@ -80,8 +80,8 @@ func (c *conv) setStringFromBuffer() {
 	c.outLen = len(c.out)
 
 	// If working with string pointer, update the original string
-	if c.kind == KPointer && c.stringPtrVal != nil {
-		*c.stringPtrVal = string(c.out)
+	if c.kind == KPointer && c.pointerVal != nil {
+		*c.pointerVal = string(c.out)
 		// Keep the kind as stringPtr to maintain the pointer relationship
 	} else {
 		c.kind = KString
@@ -96,14 +96,14 @@ func (c *conv) setStringFromBuffer() {
 // All buffer operations consolidated here for memory optimization
 // =============================================================================
 
-// writeString appends string to main buffer using length-controlled writing
-func (c *conv) writeString(s string) {
+// wrStringToOut appends string to main buffer using length-controlled writing
+func (c *conv) wrStringToOut(s string) {
 	c.out = append(c.out[:c.outLen], s...)
 	c.outLen = len(c.out)
 }
 
-// writeToBuffer appends byte slice to main buffer using length-controlled writing
-func (c *conv) writeToBuffer(data []byte) {
+// wrToOut appends byte slice to main buffer using length-controlled writing
+func (c *conv) wrToOut(data []byte) {
 	c.out = append(c.out[:c.outLen], data...)
 	c.outLen = len(c.out)
 }
@@ -114,69 +114,69 @@ func (c *conv) writeByte(b byte) {
 	c.outLen = len(c.out)
 }
 
-// resetBuffer resets write position to 0 (logical reset, keeps capacity)
-func (c *conv) resetBuffer() {
+// rstOut resets write position to 0 (logical reset, keeps capacity)
+func (c *conv) rstOut() {
 	c.outLen = 0 // Previous data ignored, will be overwritten
 }
 
-// readBuffer returns only valid data from main buffer (up to outLen)
-func (c *conv) readBuffer() []byte {
+// readOut returns only valid data from main buffer (up to outLen)
+func (c *conv) readOut() []byte {
 	return c.out[:c.outLen]
 }
 
-// getMainString returns main buffer content as string (length-controlled)
-// Note: getString() exists in convert.go, this is the centralized version
-func (c *conv) getMainString() string {
+// getOutString returns main buffer content as string (length-controlled)
+// Note: ensureStringInOut() exists in convert.go, this is the centralized version
+func (c *conv) getOutString() string {
 	return string(c.out[:c.outLen]) // Only valid data
 }
 
 // =============================================================================
-// ERROR BUFFER OPERATIONS (temporary implementation using len() directly)
-// TODO: Add bufErrLen field to conv struct for optimal performance
+// ERROR BUFFER OPERATIONS (using errLen for length control)
 // =============================================================================
 
-// writeToErrBuffer appends data to error buffer
-func (c *conv) writeToErrBuffer(data []byte) {
-	c.err = append(c.err, data...)
+// wrToErr appends data to error buffer with length control
+func (c *conv) wrToErr(data []byte) {
+	c.err = append(c.err[:c.errLen], data...)
+	c.errLen = len(c.err)
 }
 
-// writeStringToErr appends string to error buffer
+// writeStringToErr appends string to error buffer with length control
 func (c *conv) writeStringToErr(s string) {
-	c.writeToErrBuffer([]byte(s))
+	c.wrToErr([]byte(s))
 }
 
-// getErrorString returns error buffer content as string
+// getErrorString returns error buffer content as string using errLen
 func (c *conv) getErrorString() string {
-	return string(c.err)
+	return string(c.err[:c.errLen])
 }
 
-// resetErrBuffer resets error buffer
-func (c *conv) resetErrBuffer() {
-	c.err = c.err[:0]
+// resetErr resets error buffer write position
+func (c *conv) resetErr() {
+	c.errLen = 0
 }
 
 // =============================================================================
 // TEMPORARY BUFFER OPERATIONS
 // =============================================================================
 
-// writeToTmpBuffer appends data to temporary buffer with length control
-func (c *conv) writeToTmpBuffer(data []byte) {
+// wrToWork appends data to temporary buffer with length control
+func (c *conv) wrToWork(data []byte) {
 	c.work = append(c.work[:c.workLen], data...)
 	c.workLen = len(c.work)
 }
 
-// writeStringToTmp appends string to temporary buffer
-func (c *conv) writeStringToTmp(s string) {
-	c.writeToTmpBuffer([]byte(s))
+// wrStringToWork appends string to temporary buffer
+func (c *conv) wrStringToWork(s string) {
+	c.wrToWork([]byte(s))
 }
 
-// getTmpString returns temporary buffer content as string
-func (c *conv) getTmpString() string {
+// getWorkString returns temporary buffer content as string
+func (c *conv) getWorkString() string {
 	return string(c.work[:c.workLen])
 }
 
-// resetTmpBuffer resets temporary buffer write position
-func (c *conv) resetTmpBuffer() {
+// rstWork resets temporary buffer write position
+func (c *conv) rstWork() {
 	c.workLen = 0
 }
 
@@ -209,11 +209,11 @@ func (c *conv) hasCachedFormat(format string) bool {
 func (c *conv) resetAllBuffers() {
 	c.outLen = 0
 	c.workLen = 0
-	// Note: bufErrLen and bufFmtLen will be added when struct is updated
+	c.errLen = 0
 }
 
-// ensureMainCapacity ensures main buffer has at least the specified capacity
-func (c *conv) ensureMainCapacity(capacity int) {
+// ensureOutCapacity ensures main buffer has at least the specified capacity
+func (c *conv) ensureOutCapacity(capacity int) {
 	if cap(c.out) < capacity {
 		newCap := max(capacity, 64) // Minimum 64 bytes
 		if cap(c.out) > 0 {
@@ -230,4 +230,123 @@ func (c *conv) bufferStats() (mainLen, mainCap, tmpLen, tmpCap, errLen, errCap i
 	return c.outLen, cap(c.out),
 		c.workLen, cap(c.work),
 		len(c.err), cap(c.err) // Using len() until bufErrLen field added
+}
+
+// =============================================================================
+// BUFFER STATE CHECKING METHODS
+// Use these instead of direct len() checks for buffer length control
+// =============================================================================
+
+// hasError checks if there's an error using errLen field
+func (c *conv) hasError() bool {
+	return c.errLen > 0
+}
+
+// hasWorkContent checks if work buffer has content using workLen field
+func (c *conv) hasWorkContent() bool {
+	return c.workLen > 0
+}
+
+// hasOutContent checks if out buffer has content using outLen field
+func (c *conv) hasOutContent() bool {
+	return c.outLen > 0
+}
+
+// isEmpty checks if all buffers are empty
+func (c *conv) isEmpty() bool {
+	return c.outLen == 0 && c.workLen == 0 && c.errLen == 0
+}
+
+// clearError resets error state
+func (c *conv) clearError() {
+	c.errLen = 0
+}
+
+// =============================================================================
+// CENTRALIZED CONVERSION METHODS - Replacement for ensureStringInOut()
+// Separated responsibilities: conversion logic vs buffer management
+// =============================================================================
+
+// convertToOutBuffer converts current value to out buffer using centralized methods
+// This replaces the conversion logic from ensureStringInOut() without buffer management
+func (c *conv) convertToOutBuffer() {
+	if c.kind == KErr {
+		return
+	}
+
+	// Only convert if out buffer is empty (avoid redundant conversions)
+	if c.outLen > 0 {
+		return // Already converted
+	}
+
+	switch c.kind {
+	case KString:
+		// String values should already be in out buffer from assignment
+		// This is a defensive case - shouldn't normally happen
+		return
+
+	case KPointer:
+		// For string pointers, get current value and store in out buffer
+		if c.pointerVal != nil {
+			c.rstOut()
+			c.wrStringToOut(*c.pointerVal)
+		}
+
+	case KSliceStr:
+		// Convert string slice to space-separated string in out buffer
+		c.rstOut()
+		if len(c.stringSliceVal) == 0 {
+			// Empty slice = empty buffer (already reset)
+			return
+		} else if len(c.stringSliceVal) == 1 {
+			// Single element - direct write
+			c.wrStringToOut(c.stringSliceVal[0])
+		} else {
+			// Multiple elements - join with spaces using centralized methods
+			for i, s := range c.stringSliceVal {
+				if i > 0 {
+					c.wrStringToOut(" ")
+				}
+				c.wrStringToOut(s)
+			}
+		}
+
+	case KInt:
+		// Convert integer to string using centralized output
+		c.rstOut()
+		c.fmtIntToOut(c.intVal, 10, true)
+
+	case KUint:
+		// Convert unsigned integer to string using centralized output
+		c.rstOut()
+		c.fmtIntToOut(int64(c.uintVal), 10, false)
+
+	case KFloat64:
+		// Convert float64 to string using centralized output
+		c.rstOut()
+		c.floatToOut()
+
+	case KBool:
+		// Convert boolean to string using centralized output
+		c.rstOut()
+		if c.boolVal {
+			c.wrStringToOut(trueStr)
+		} else {
+			c.wrStringToOut(falseStr)
+		}
+
+	default:
+		// Unknown kind - reset to empty
+		c.rstOut()
+	}
+}
+
+// ensureStringInOut ensures string representation is available in out buffer
+// This is the main replacement for ensureStringInOut() calls across the codebase
+func (c *conv) ensureStringInOut() string {
+	// Convert current value to out buffer if needed
+	c.convertToOutBuffer()
+
+	// Return string from centralized buffer management
+	return c.getOutString()
 }

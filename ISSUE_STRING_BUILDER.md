@@ -314,7 +314,7 @@ func (c *conv) Reset() *conv {
     c.floatVal = 0
     c.boolVal = false
     c.stringSliceVal = nil
-    c.stringPtrVal = nil
+    c.pointerVal = nil
     c.kind = KString
     c.roundDown = false
     c.separator = "_"

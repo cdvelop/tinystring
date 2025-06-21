@@ -3,7 +3,7 @@ package tinystring
 // Quote wraps a string in double quotes and escapes any special characters
 // Example: Quote("hello \"world\"") returns "\"hello \\\"world\\\"\""
 func (t *conv) Quote() *conv {
-	inp := t.getString()
+	inp := t.ensureStringInOut()
 	if len(inp) == 0 {
 		t.setString(quoteStr)
 		return t

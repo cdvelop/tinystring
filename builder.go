@@ -23,7 +23,7 @@ func (c *conv) Write(v any) *conv {
 	}
 	// BUILDER INTEGRATION: If buffer is empty but we have initial value, transfer it first
 	if len(c.out) == 0 && ((c.kind == KString && c.outLen > 0) ||
-		(c.kind == KPointer && c.stringPtrVal != nil && *c.stringPtrVal != "") ||
+		(c.kind == KPointer && c.pointerVal != nil && *c.pointerVal != "") ||
 		(c.kind == KSliceStr && len(c.stringSliceVal) > 0) ||
 		(c.kind == KInt || c.kind == KUint || c.kind == KFloat64 || c.kind == KBool)) {
 		c.val2Buf() // Transfer current value to buffer
@@ -48,7 +48,7 @@ func (c *conv) Reset() *conv {
 	c.floatVal = 0
 	c.boolVal = false
 	c.stringSliceVal = nil
-	c.stringPtrVal = nil
+	c.pointerVal = nil
 	c.kind = KString
 	return c
 }
@@ -61,7 +61,7 @@ func (c *conv) setVal(v any, mode cm) {
 
 	if v == nil {
 		if mode == mi {
-			c.setErr(D.String, D.Empty)
+			c.wrErr(D.String, D.Empty)
 		}
 		return
 	}
@@ -114,7 +114,7 @@ func (c *conv) setVal(v any, mode cm) {
 	case *string:
 		if val == nil {
 			if mode == mi {
-				c.setErr(D.String, D.Empty)
+				c.wrErr(D.String, D.Empty)
 			}
 			return
 		}
@@ -123,7 +123,7 @@ func (c *conv) setVal(v any, mode cm) {
 		case mi: // Initial mode
 			c.out = append(c.out[:0], *val...)
 			c.outLen = len(*val)
-			c.stringPtrVal = val
+			c.pointerVal = val
 			c.kind = KPointer
 		case mb: // Buffer mode
 			c.out = append(c.out, *val...)
@@ -155,7 +155,7 @@ func (c *conv) setVal(v any, mode cm) {
 		errStr := val.Error()
 		switch mode {
 		case mi: // Initial mode
-			c.setErr(errStr)
+			c.wrErr(errStr)
 		case mb: // Buffer mode
 			c.out = append(c.out, errStr...)
 		case ma: // Any mode
@@ -234,7 +234,7 @@ func (c *conv) setVal(v any, mode cm) {
 	default:
 		// Unsupported type
 		if mode == mi || mode == mb {
-			c.setErr(D.Type, D.Not, D.Supported)
+			c.wrErr(D.Type, D.Not, D.Supported)
 		}
 	}
 }
@@ -246,8 +246,8 @@ func (c *conv) val2Buf() {
 	case KString:
 		c.out = append(c.out, c.out[:c.outLen]...)
 	case KPointer:
-		if c.stringPtrVal != nil {
-			c.out = append(c.out, *c.stringPtrVal...)
+		if c.pointerVal != nil {
+			c.out = append(c.out, *c.pointerVal...)
 		}
 	case KSliceStr:
 		for i, s := range c.stringSliceVal {

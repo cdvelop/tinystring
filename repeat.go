@@ -14,7 +14,7 @@ func (t *conv) Repeat(n int) *conv {
 		return t
 	}
 	// Phase 4.2: Inline newBuf method to eliminate function call overhead
-	str := t.getString()
+	str := t.ensureStringInOut()
 	if len(str) == 0 {
 		// Clear buffer for empty out
 		t.out = t.out[:0]

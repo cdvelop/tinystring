@@ -85,10 +85,10 @@ func (t *conv) tryParseAs(parseType kind, base int) bool {
 	// Try direct parsing based on type
 	switch parseType {
 	case KInt:
-		t.s2IntGeneric(base)
+		t.stringToInt(base)
 	case KUint:
-		// For s2Uint, we need the string content
-		t.s2Uint(string(t.out[:t.outLen]), base)
+		// For stringToUint, we need the string content
+		t.stringToUint(string(t.out[:t.outLen]), base)
 	}
 
 	if len(t.err) == 0 {
@@ -107,7 +107,7 @@ func (t *conv) tryParseAs(parseType kind, base int) bool {
 	t.outLen = len(oBuf)
 	t.kind = oVT
 	t.err = t.err[:0] // Reset error when restoring state
-	t.s2Float()
+	t.stringToFloat()
 	if len(t.err) == 0 {
 		switch parseType {
 		case KInt:
@@ -115,7 +115,7 @@ func (t *conv) tryParseAs(parseType kind, base int) bool {
 			t.kind = KInt
 		case KUint:
 			if t.floatVal < 0 {
-				t.setErr(D.Number, D.Negative, D.Not, D.Supported)
+				t.wrErr(D.Number, D.Negative, D.Not, D.Supported)
 				return false
 			}
 			t.uintVal = uint64(t.floatVal)
@@ -326,13 +326,13 @@ func (t *conv) ToUint(base ...int) (uint, error) {
 		return uint(t.uintVal), nil // Direct return for uint values
 	case KInt:
 		if t.intVal < 0 {
-			t.setErr(D.Number, D.Negative, D.Not, D.Supported)
+			t.wrErr(D.Number, D.Negative, D.Not, D.Supported)
 			return 0, t
 		}
 		return uint(t.intVal), nil // Direct conversion from int if positive
 	case KFloat64:
 		if t.floatVal < 0 {
-			t.setErr(D.Number, D.Negative, D.Not, D.Supported)
+			t.wrErr(D.Number, D.Negative, D.Not, D.Supported)
 			return 0, t
 		}
 		return uint(t.floatVal), nil // Direct truncation from float if positive
@@ -395,7 +395,7 @@ func (t *conv) ToFloat() (float64, error) {
 	case KUint:
 		return float64(t.uintVal), nil // Direct conversion from uint
 	default: // For string types and other types, parse as float
-		t.s2Float()
+		t.stringToFloat()
 		if len(t.err) > 0 {
 			return 0, t
 		}
@@ -403,10 +403,10 @@ func (t *conv) ToFloat() (float64, error) {
 	}
 }
 
-// s2IntGeneric converts string to signed integer with specified base and stores in conv struct.
+// stringToInt converts string to signed integer with specified base and stores in conv struct.
 // This unified method handles both int and int64 conversions.
-func (t *conv) s2IntGeneric(base int) {
-	inp := t.getString()
+func (t *conv) stringToInt(base int) {
+	inp := t.ensureStringInOut()
 	if len(inp) == 0 {
 		return
 	}
@@ -414,7 +414,7 @@ func (t *conv) s2IntGeneric(base int) {
 	isNeg := false
 	if inp[0] == '-' {
 		if base != 10 {
-			t.setErr(D.Base, D.Decimal, D.Invalid)
+			t.wrErr(D.Base, D.Decimal, D.Invalid)
 			return
 		}
 		isNeg = true // Update the conv struct with the string without the negative sign
@@ -433,14 +433,14 @@ func (t *conv) s2IntGeneric(base int) {
 	t.kind = KInt
 }
 
-// s2Uint converts string to uint with specified base and stores in conv struct.
+// stringToUint converts string to uint with specified base and stores in conv struct.
 // This is an internal conv method that modifies the struct instead of returning values.
-func (t *conv) s2Uint(input string, base int) {
+func (t *conv) stringToUint(input string, base int) {
 	if len(input) == 0 {
 		return
 	}
 	if input[0] == '-' {
-		t.setErr(D.Number, D.Negative, D.Not, D.Supported)
+		t.wrErr(D.Number, D.Negative, D.Not, D.Supported)
 		return
 	}
 	// Update the conv struct with the provided input string
@@ -449,10 +449,10 @@ func (t *conv) s2Uint(input string, base int) {
 	// Result already stored in t.uintVal by s2n
 }
 
-// s2Float converts string to float64 and stores in conv struct.
+// stringToFloat converts string to float64 and stores in conv struct.
 // This is an internal conv method that modifies the struct instead of returning values.
-func (t *conv) s2Float() {
-	inp := t.getString()
+func (t *conv) stringToFloat() {
+	inp := t.ensureStringInOut()
 	if len(inp) == 0 {
 		return
 	}
@@ -462,13 +462,13 @@ func (t *conv) s2Float() {
 		isNeg = true
 		sIdx = 1
 		if len(inp) == 1 { // Just a "-" sign
-			t.setErr(D.Float, D.String, D.Invalid)
+			t.wrErr(D.Float, D.String, D.Invalid)
 			return
 		}
 	} else if inp[0] == '+' {
 		sIdx = 1
 		if len(inp) == 1 { // Just a "+" sign
-			t.setErr(D.Float, D.String, D.Invalid)
+			t.wrErr(D.Float, D.String, D.Invalid)
 			return
 		}
 	}
@@ -484,7 +484,7 @@ func (t *conv) s2Float() {
 		ch := inp[i] // char
 		if ch == '.' {
 			if dps {
-				t.setErr(D.Float, D.String, D.Invalid)
+				t.wrErr(D.Float, D.String, D.Invalid)
 				return
 			}
 			dps = true
@@ -497,18 +497,18 @@ func (t *conv) s2Float() {
 				fd *= 10.0
 			} else { // Check for overflow in integer part
 				if ip > ^uint64(0)/10 || (ip == ^uint64(0)/10 && dgt > ^uint64(0)%10) {
-					t.setErr(D.Number, D.Overflow)
+					t.wrErr(D.Number, D.Overflow)
 					return
 				}
 				ip = ip*10 + dgt
 			}
 		} else {
-			t.setErr(D.Float, D.String, D.Invalid)
+			t.wrErr(D.Float, D.String, D.Invalid)
 			return
 		}
 	}
 	if !hd {
-		t.setErr(D.Float, D.String, D.Invalid)
+		t.wrErr(D.Float, D.String, D.Invalid)
 		return
 	}
 
@@ -528,10 +528,10 @@ func (t *conv) s2Float() {
 // This is an internal conv method that modifies the struct instead of returning values.
 // Phase 13: Optimized to eliminate 82.35% of allocations by removing T() calls
 func (t *conv) s2n(base int) {
-	inp := t.getString()
+	inp := t.ensureStringInOut()
 	// Inline validateBase logic - use static error string
 	if base < 2 || base > 36 {
-		t.setErr(errBaseInvalid)
+		t.wrErr(errBaseInvalid)
 		return
 	}
 
@@ -553,14 +553,14 @@ func (t *conv) s2n(base int) {
 			ch := inp[i]
 			if ch < '0' || ch > '9' {
 				// Phase 13: Use static error string instead of T() + string(ch)
-				t.setErr(errInvalidNonNumeric)
+				t.wrErr(errInvalidNonNumeric)
 				return
 			}
 
 			d := uint64(ch - '0')
 			// Check for overflow - optimized for base 10
 			if res > 1844674407370955161 || (res == 1844674407370955161 && d > 5) { // (2^64-1)/10
-				t.setErr(errNumberOverflow)
+				t.wrErr(errNumberOverflow)
 				return
 			}
 
@@ -578,17 +578,17 @@ func (t *conv) s2n(base int) {
 				d = int(ch-'A') + 10
 			} else {
 				// Phase 13: Use static error string
-				t.setErr(errCharacterInvalid)
+				t.wrErr(errCharacterInvalid)
 				return
 			}
 
 			if d >= base {
-				t.setErr(errDigitOutOfRange)
+				t.wrErr(errDigitOutOfRange)
 				return
 			}
 			// Check for overflow
 			if res > (^uint64(0))/uint64(base) {
-				t.setErr(errNumberOverflow)
+				t.wrErr(errNumberOverflow)
 				return
 			}
 
@@ -690,34 +690,34 @@ func (t *conv) floatToBufTmp() {
 
 	// Handle special cases using centralized buffer methods
 	if val != val { // NaN
-		t.writeString("NaN")
+		t.wrStringToOut("NaN")
 		return
 	}
 
 	// Handle infinity
 	if val > 1e308 || val < -1e308 {
 		if val < 0 {
-			t.writeString("-Inf")
+			t.wrStringToOut("-Inf")
 		} else {
-			t.writeString("+Inf")
+			t.wrStringToOut("+Inf")
 		}
 		return
 	}
 
 	// Handle zero (reuse existing constants)
 	if val == 0 {
-		t.writeString("0")
+		t.wrStringToOut("0")
 		return
 	}
 
 	// Reset buffer for new conversion
-	t.resetBuffer()
+	t.rstOut()
 
 	// Handle negative sign
 	isNegative := val < 0
 	if isNegative {
 		val = -val
-		t.writeString("-")
+		t.wrStringToOut("-")
 	}
 
 	// Extract integer and fractional parts
@@ -727,7 +727,7 @@ func (t *conv) floatToBufTmp() {
 	// Convert integer part using existing optimized methods
 	if integerPart >= 0 && integerPart < int64(len(smallInts)) {
 		// Use lookup table for small integers
-		t.writeString(smallInts[integerPart])
+		t.wrStringToOut(smallInts[integerPart])
 	} else {
 		// Use existing optimized integer conversion
 		// Save current state, convert integer, then restore float context
@@ -745,7 +745,7 @@ func (t *conv) floatToBufTmp() {
 
 	// Add fractional part if significant
 	if fractionalPart > 1e-6 { // Avoid tiny fractions
-		t.writeString(".")
+		t.wrStringToOut(".")
 
 		// Convert fractional part directly to buffer (no intermediate strings)
 		multiplier := 1e6
@@ -770,7 +770,7 @@ func (t *conv) floatToBufTmp() {
 
 		// Write only significant fractional digits
 		if digits > 0 {
-			t.writeToBuffer(fracBuf[6-digits : 6])
+			t.wrToOut(fracBuf[6-digits : 6])
 		}
 	}
 }

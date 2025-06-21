@@ -4,16 +4,15 @@ package tinystring
 // This keeps the binary size minimal for embedded systems and WebAssembly
 
 // Err creates a new error message with support for multilingual translations
-// REFACTORED: Uses T function and pool for optimal performance
 // Supports LocStr types for translations and lang types for language specification
-// Maintains backward compatibility with existing string-based errors
 // eg:
 // tinystring.Err("invalid format") returns "invalid format"
 // tinystring.Err(D.Format, D.Invalid) returns "invalid format"
 // tinystring.Err(ES,D.Format, D.Invalid) returns "formato inválido"
+
 func Err(values ...any) *conv {
 	c := getConv() // Always obtain from pool
-	return c.setErr(values...)
+	return c.wrErr(values...)
 }
 
 // Errf creates a new conv instance with error formatting similar to fmt.Errf
@@ -44,25 +43,15 @@ func (t *conv) StringError() (string, error) {
 	return out, err
 }
 
-// // ❌ DEPRECATED implements error interface for StringError
-type customError struct {
-	message string
-}
-
-// ❌ DEPRECATED
-func (e *customError) Error() string {
-	return e.message
-}
-
 // Phase 13.3: Helper methods for dynamic buffer management
 func (c *conv) addToErrBuf(s string) {
 	// Añadir al buffer dinámico de errores
 	c.err = append(c.err, s...)
 }
 
-// setErr - método privado para migración de asignaciones de error
-// eg: c.setErr(D.String, D.Empty) // Setear error de cadena vacía
-func (c *conv) setErr(values ...any) *conv {
+// wrErr - método privado para migración de asignaciones de error
+// eg: c.wrErr(D.String, D.Empty) // Setear error de cadena vacía
+func (c *conv) wrErr(values ...any) *conv {
 	c.kind = KErr           // Setear ANTES de llamar T()
 	T(append(values, c)...) // T() escribirá directamente al err
 	return c

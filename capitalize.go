@@ -5,7 +5,7 @@ package tinystring
 // Phase 11 Optimization: Reduced buffer allocations through pooling
 // For example: "  hello   world  " -> "Hello World"
 func (t *conv) Capitalize() *conv {
-	str := t.getString()
+	str := t.ensureStringInOut()
 	if len(str) == 0 {
 		return t
 	}
@@ -94,7 +94,7 @@ func (t *conv) changeCase(toLower bool) *conv {
 		return t // Error chain interruption
 	}
 
-	str := t.getString()
+	str := t.ensureStringInOut()
 	if len(str) == 0 {
 		return t
 	}
@@ -163,7 +163,7 @@ func (t *conv) toCaseTransformMinimal(firstWordLower bool, separator string) *co
 		return t // Error chain interruption
 	}
 
-	str := t.getString()
+	str := t.ensureStringInOut()
 	if len(str) == 0 {
 		return t
 	} // Pre-allocate buffer with estimated size

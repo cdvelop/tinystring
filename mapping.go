@@ -76,7 +76,7 @@ func (t *conv) RemoveTilde() *conv {
 		return t
 	}
 
-	str := t.getString()
+	str := t.ensureStringInOut()
 	if len(str) == 0 {
 		return t
 	}
