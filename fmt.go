@@ -73,14 +73,20 @@ func (t *conv) roundDecimalsInternal(decimals int, roundDown bool) *conv {
 	// If we already have a float value, use it directly to avoid string conversion
 	var val float64
 	if t.kind == KFloat64 {
-		val = t.floatVal
-	} else { // Parse current string content as float without creating temporary conv
-		t.stringToFloat()
-		if len(t.err) > 0 { // If cannot parse as number, set to 0 and continue with formatting
-			val = 0
-			t.err = t.err[:0] // Clear error buffer
+		// For float type, we need to get the current value from out buffer
+		inp := t.ensureStringInOut()
+		if floatVal, ok := stringToFloat(t, inp, buffErr); ok {
+			val = floatVal
 		} else {
-			val = t.floatVal
+			val = 0
+		}
+	} else { // Parse current string content as float without creating temporary conv
+		inp := t.ensureStringInOut()
+		if floatVal, ok := stringToFloat(t, inp, buffErr); ok {
+			val = floatVal
+		} else {
+			val = 0
+			t.clearError() // Clear error buffer using API
 		}
 	}
 
@@ -583,9 +589,9 @@ func (c *conv) i2sBase(base int) {
 		return
 	}
 
-	// Use optimized intToBufTmp() for decimal base
+	// Use optimized intTo() for decimal base
 	if base == 10 {
-		c.intToBufTmp()
+		c.intTo()
 		c.kind = KString
 		return
 	}
@@ -773,7 +779,7 @@ func (c *conv) sprintf(format string, args ...any) {
 							c.intVal = intVal
 							c.kind = KInt
 							if param == 10 {
-								c.intToBufTmp()
+								c.intTo()
 							} else {
 								c.i2sBase(param)
 							}

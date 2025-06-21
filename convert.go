@@ -31,18 +31,11 @@ type conv struct {
 	workLen int    // Longitud actual en work
 	err     []byte // Buffer de errores - make([]byte, 0, 64)
 	errLen  int    // Longitud actual en err
-	// Type indicator - most frequently accessed
+	// Type indicator - most frequently accessed	// Type indicator - most frequently accessed
 	kind kind // Hot path: type checking
 
 	// ✅ UNIFIED BUFFER ARCHITECTURE - Only essential fields remain
 	pointerVal any // ✅ Universal pointer for complex types ([]string, map[string]any, etc.)
-
-	// TEMPORARY: Keep these fields until full migration to anyToBuff() completed
-	intVal         int64    // TODO: eliminate after anyToBuff() migration
-	uintVal        uint64   // TODO: eliminate after anyToBuff() migration
-	floatVal       float64  // TODO: eliminate after anyToBuff() migration
-	boolVal        bool     // TODO: eliminate after anyToBuff() migration
-	stringSliceVal []string // TODO: eliminate after anyToBuff() migration
 }
 
 // Convert initializes a new conv struct with optional value for string,bool and number manipulation.
@@ -63,12 +56,13 @@ func Convert(v ...any) *conv {
 		} else {
 			switch typedVal := val.(type) {
 			case string:
-				// Store string content directly in out
-				c.out = append(c.out[:0], typedVal...)
-				c.outLen = len(typedVal)
+				// ✅ Store string content directly in out using API
+				c.rstOut()                // Clear buffer using API
+				c.wrStringToOut(typedVal) // Write using API
 				c.kind = KString
 			case []string:
-				c.stringSliceVal = typedVal
+				// ✅ Store pointer for complex type - use lazy conversion
+				c.pointerVal = typedVal
 				c.kind = KSliceStr
 			case *string:
 				// Store string content directly in out
@@ -132,11 +126,9 @@ func (c *conv) fmtIntToOut(val int64, base int, signed bool) {
 	}
 }
 
-// floatToOut converts float64 to string and writes to out buffer
-// Replaces floatToBufTmp() with centralized buffer management
-func (c *conv) floatToOut() {
-	val := c.floatVal
-
+// floatToOut converts value to string and writes to out buffer
+// Updated to receive value as parameter instead of using field
+func (c *conv) floatToOut(val float64) {
 	// Handle special cases
 	if val != val { // NaN
 		c.wrStringToOut("NaN")
@@ -228,40 +220,44 @@ func (c *conv) fmtIntToWork(val int64, base int, signed bool) {
 	}
 }
 
-// Consolidated generic functions - single function per type with operation parameter
+// Consolidated generic functions - eliminated temp field dependencies
 func genInt[T anyInt](c *conv, v T, op int) {
-	c.intVal = int64(v)
+	intVal := int64(v)
 	switch op {
 	case 0:
-		c.kind = KInt // setValue
-	case 1:
-		c.fmtIntGeneric(c.intVal, 10, true) // any2s
+		c.kind = KInt                               // setValue	case 1:
+		fmtIntGeneric(c, intVal, 10, true, buffOut) // any2s
 	case 2:
-		c.intToBufTmp() // format
+		// Direct conversion to out buffer
+		c.fmtIntToOut(intVal, 10, true)
 	}
 }
 
 func genUint[T anyUint](c *conv, v T, op int) {
-	c.uintVal = uint64(v)
+	uintVal := uint64(v)
 	switch op {
 	case 0:
-		c.kind = KUint // setValue
-	case 1:
-		c.fmtIntGeneric(int64(c.uintVal), 10, false) // any2s
+		c.kind = KUint                                       // setValue	case 1:
+		fmtIntGeneric(c, int64(uintVal), 10, false, buffOut) // any2s
 	case 2:
-		c.uint64ToBufTmp() // format
+		// Direct conversion to out buffer
+		c.fmtIntToOut(int64(uintVal), 10, false)
 	}
 }
 
 func genFloat[T anyFloat](c *conv, v T, op int) {
-	c.floatVal = float64(v)
+	floatVal := float64(v)
 	switch op {
 	case 0:
 		c.kind = KFloat64 // setValue
 	case 1:
-		c.floatToBufTmp() // any2s
+		// Direct float to string conversion
+		c.rstOut()
+		c.floatToOut(floatVal)
 	case 2:
-		c.f2sMan(-1) // format
+		// Direct format to out buffer
+		c.rstOut()
+		c.floatToOut(floatVal)
 	}
 }
 
@@ -317,12 +313,9 @@ func (t *conv) setString(s string) { // Store string content directly in out usi
 		t.kind = KString
 	}
 
-	// Clear other values to save memory
-	t.intVal = 0
-	t.uintVal = 0
-	t.floatVal = 0
-	t.boolVal = false
-	t.stringSliceVal = nil
+	// Note: Temporary fields (intVal, uintVal, floatVal, boolVal, stringSliceVal)
+	// have been eliminated from the architecture
+
 	// Invalidate cache since we changed the string
 	t.work = t.work[:0]
 	t.workLen = 0
@@ -588,15 +581,8 @@ func writeFloatToDest(c *conv, dest buffDest, val float64) {
 		c.rstOut()
 	}
 
-	// Store current floatVal and restore after
-	oldFloatVal := c.floatVal
-	c.floatVal = val
-
-	// REUSE existing floatToOut implementation
-	c.floatToOut()
-
-	// Restore floatVal
-	c.floatVal = oldFloatVal
+	// REUSE existing floatToOut implementation (now takes parameter)
+	c.floatToOut(val)
 
 	// Move result to correct destination if not buffOut
 	if dest != buffOut {

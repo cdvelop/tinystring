@@ -22,7 +22,7 @@ func (c *conv) Write(v any) *conv {
 
 	if !c.hasOutContent() && ((c.kind == KString && c.outLen > 0) ||
 		hasStringPointer ||
-		(c.kind == KSliceStr && len(c.stringSliceVal) > 0) ||
+		(c.kind == KSliceStr) ||
 		(c.kind == KInt || c.kind == KUint || c.kind == KFloat64 || c.kind == KBool)) {
 		// Convert current value to buffer using anyToBuff()
 		anyToBuff(c, buffOut, c.pointerVal) // Use unified conversion
@@ -40,11 +40,6 @@ func (c *conv) Reset() *conv {
 	c.rstOut()     // Clear main buffer using API
 	c.rstWork()    // Clear temp buffer using API
 	c.clearError() // Clear error buffer using API
-	c.intVal = 0
-	c.uintVal = 0
-	c.floatVal = 0
-	c.boolVal = false
-	c.stringSliceVal = nil
 	c.pointerVal = nil
 	c.kind = KString
 	return c

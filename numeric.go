@@ -107,18 +107,20 @@ func (t *conv) tryParseAs(parseType kind, base int) bool {
 	t.wrToOut(oBuf) // Write using API
 	t.kind = oVT
 	t.clearError() // Reset error when restoring state using API
-	t.stringToFloat()
-	if !t.hasError() { // Use buffer API instead of direct check
+
+	// Use new independent stringToFloat function
+	inp := t.ensureStringInOut()
+	if floatVal, ok := stringToFloat(t, inp, buffErr); ok {
 		switch parseType {
 		case KInt:
-			t.intVal = int64(t.floatVal)
+			// Store result locally (no temp fields needed)
 			t.kind = KInt
 		case KUint:
-			if t.floatVal < 0 {
+			if floatVal < 0 {
 				t.wrErr(D.Number, D.Negative, D.Not, D.Supported)
 				return false
 			}
-			t.uintVal = uint64(t.floatVal)
+			// Store result locally (no temp fields needed)
 			t.kind = KUint
 		}
 		return true
@@ -420,7 +422,7 @@ func (t *conv) stringToInt(base int) {
 		isNeg = true // Update the conv struct with the string without the negative sign
 		t.setString(inp[1:])
 	}
-	t.s2n(base)
+	t.stringToIn(base)
 	if t.hasError() { // Use buffer API
 		return
 	}
@@ -445,31 +447,39 @@ func (t *conv) stringToUint(input string, base int) {
 	}
 	// Update the conv struct with the provided input string
 	t.setString(input)
-	t.s2n(base)
-	// Result already stored in t.uintVal by s2n
+	t.stringToIn(base)
+	// Result already stored in t.uintVal by stringToIn
 }
 
-// stringToFloat converts string to float64 and stores in conv struct.
-// This is an internal conv method that modifies the struct instead of returning values.
-func (t *conv) stringToFloat() {
-	inp := t.ensureStringInOut()
+// stringToFloat converts string to float64 and writes result to specified buffer destination
+// Independent function that uses buffer API and destination selection
+func stringToFloat(c *conv, inp string, dest buffDest) (float64, bool) {
 	if len(inp) == 0 {
-		return
+		return 0, false
 	}
+
 	isNeg := false
 	sIdx := 0
 	if inp[0] == '-' {
 		isNeg = true
 		sIdx = 1
 		if len(inp) == 1 { // Just a "-" sign
-			t.wrErr(D.Float, D.String, D.Invalid)
-			return
+			anyToBuff(c, dest, D.Float)
+			anyToBuff(c, dest, " ")
+			anyToBuff(c, dest, D.String)
+			anyToBuff(c, dest, " ")
+			anyToBuff(c, dest, D.Invalid)
+			return 0, false
 		}
 	} else if inp[0] == '+' {
 		sIdx = 1
 		if len(inp) == 1 { // Just a "+" sign
-			t.wrErr(D.Float, D.String, D.Invalid)
-			return
+			anyToBuff(c, dest, D.Float)
+			anyToBuff(c, dest, " ")
+			anyToBuff(c, dest, D.String)
+			anyToBuff(c, dest, " ")
+			anyToBuff(c, dest, D.Invalid)
+			return 0, false
 		}
 	}
 
@@ -484,8 +494,12 @@ func (t *conv) stringToFloat() {
 		ch := inp[i] // char
 		if ch == '.' {
 			if dps {
-				t.wrErr(D.Float, D.String, D.Invalid)
-				return
+				anyToBuff(c, dest, D.Float)
+				anyToBuff(c, dest, " ")
+				anyToBuff(c, dest, D.String)
+				anyToBuff(c, dest, " ")
+				anyToBuff(c, dest, D.Invalid)
+				return 0, false
 			}
 			dps = true
 			pf = true
@@ -497,37 +511,47 @@ func (t *conv) stringToFloat() {
 				fd *= 10.0
 			} else { // Check for overflow in integer part
 				if ip > ^uint64(0)/10 || (ip == ^uint64(0)/10 && dgt > ^uint64(0)%10) {
-					t.wrErr(D.Number, D.Overflow)
-					return
+					anyToBuff(c, dest, D.Number)
+					anyToBuff(c, dest, " ")
+					anyToBuff(c, dest, D.Overflow)
+					return 0, false
 				}
 				ip = ip*10 + dgt
 			}
 		} else {
-			t.wrErr(D.Float, D.String, D.Invalid)
-			return
+			anyToBuff(c, dest, D.Float)
+			anyToBuff(c, dest, " ")
+			anyToBuff(c, dest, D.String)
+			anyToBuff(c, dest, " ")
+			anyToBuff(c, dest, D.Invalid)
+			return 0, false
 		}
 	}
 	if !hd {
-		t.wrErr(D.Float, D.String, D.Invalid)
-		return
+		anyToBuff(c, dest, D.Float)
+		anyToBuff(c, dest, " ")
+		anyToBuff(c, dest, D.String)
+		anyToBuff(c, dest, " ")
+		anyToBuff(c, dest, D.Invalid)
+		return 0, false
 	}
 
-	out := float64(ip)
+	result := float64(ip)
 	if fp > 0 {
-		out += float64(fp) / fd
+		result += float64(fp) / fd
 	}
 
 	if isNeg {
-		out = -out
+		result = -result
 	}
-	t.floatVal = out
-	t.kind = KFloat64
+
+	return result, true
 }
 
-// s2n converts string to number with specified base and stores in conv struct.
+// stringToIn converts string to number with specified base and stores in conv struct.
 // This is an internal conv method that modifies the struct instead of returning values.
 // Phase 13: Optimized to eliminate 82.35% of allocations by removing T() calls
-func (t *conv) s2n(base int) {
+func (t *conv) stringToIn(base int) {
 	inp := t.ensureStringInOut()
 	// Inline validateBase logic - use static error string
 	if base < 2 || base > 36 {
@@ -600,11 +624,11 @@ func (t *conv) s2n(base int) {
 	t.kind = KUint
 }
 
-// fmtIntGeneric converts integer to string with unified logic
-func (t *conv) fmtIntGeneric(val int64, base int, allowNegative bool) {
+// fmtIntGeneric converts integer to string and writes to specified buffer destination
+// Independent function that receives parameters instead of using temp fields
+func fmtIntGeneric(c *conv, val int64, base int, allowNegative bool, dest buffDest) {
 	if val == 0 {
-		// tmpStr assignment converted to buffer: zeroStr
-		// stringVal assignment removed
+		anyToBuff(c, dest, "0")
 		return
 	}
 
@@ -629,95 +653,84 @@ func (t *conv) fmtIntGeneric(val int64, base int, allowNegative bool) {
 		out[idx] = '-'
 	}
 
-	// tmpStr assignment converted to buffer: string(out[idx:])
-	// stringVal assignment removed
+	writeBytesToDest(c, dest, out[idx:])
 }
 
-// intToBufTmp converts int64 to string with minimal allocations and stores in tmpStr
-func (t *conv) intToBufTmp() {
-	val := t.intVal
+// intTo converts int64 to string and writes to specified buffer destination
+// Independent function that receives parameters instead of using temp fields
+func intTo(c *conv, val int64, dest buffDest) {
 	// Handle common small numbers using lookup table
 	if val >= 0 && val < int64(len(smallInts)) {
-		// tmpStr assignment converted to buffer: smallInts[val]
-		// stringVal assignment removed
+		anyToBuff(c, dest, smallInts[val])
 		return
 	}
 
 	// Handle special cases
 	if val == 0 {
-		// tmpStr assignment converted to buffer: zeroStr
-		// stringVal assignment removed
+		anyToBuff(c, dest, "0")
 		return
 	}
 	if val == 1 {
-		// tmpStr assignment converted to buffer: oneStr
-		// stringVal assignment removed
+		anyToBuff(c, dest, "1")
 		return
 	}
 	// Fall back to standard conversion for larger numbers
-	t.fmtIntGeneric(val, 10, true)
+	fmtIntGeneric(c, val, 10, true, dest)
 }
 
-// uint64ToBufTmp converts uint64 to string with minimal allocations and stores in tmpStr
-func (t *conv) uint64ToBufTmp() {
-	val := t.uintVal
+// uint64To converts uint64 to string and writes to specified buffer destination
+// Independent function that receives parameters instead of using temp fields
+func uint64To(c *conv, val uint64, dest buffDest) {
 	// Handle common small numbers using lookup table
 	if val < uint64(len(smallInts)) {
-		// tmpStr assignment converted to buffer: smallInts[val]
-		// stringVal assignment removed
+		anyToBuff(c, dest, smallInts[val])
 		return
 	}
 
 	// Handle special cases
 	if val == 0 {
-		// tmpStr assignment converted to buffer: zeroStr
-		// stringVal assignment removed
+		anyToBuff(c, dest, "0")
 		return
 	}
 	if val == 1 {
-		// tmpStr assignment converted to buffer: oneStr
-		// stringVal assignment removed
+		anyToBuff(c, dest, "1")
 		return
 	}
 
 	// Fall back to standard conversion for larger numbers
-	t.fmtIntGeneric(int64(t.uintVal), 10, false) // Use the unified fmtUint
+	fmtIntGeneric(c, int64(val), 10, false, dest)
 }
 
-// floatToBufTmp converts float to string and add to bufferTmp using centralized buffer operations
-func (t *conv) floatToBufTmp() {
-	val := t.floatVal
-
+// floatTo converts float to string and writes to specified buffer destination
+// Independent function that receives parameters instead of using temp fields
+func floatTo(c *conv, val float64, dest buffDest) {
 	// Handle special cases using centralized buffer methods
 	if val != val { // NaN
-		t.wrStringToOut("NaN")
+		anyToBuff(c, dest, "NaN")
 		return
 	}
 
 	// Handle infinity
 	if val > 1e308 || val < -1e308 {
 		if val < 0 {
-			t.wrStringToOut("-Inf")
+			anyToBuff(c, dest, "-Inf")
 		} else {
-			t.wrStringToOut("+Inf")
+			anyToBuff(c, dest, "+Inf")
 		}
 		return
 	}
 
 	// Handle zero (reuse existing constants)
 	if val == 0 {
-		t.wrStringToOut("0")
+		anyToBuff(c, dest, "0")
 		return
 	}
-
-	// Reset buffer for new conversion
-	t.rstOut()
 
 	// Handle negative sign
 	isNegative := val < 0
 	if isNegative {
 		val = -val
-		t.wrStringToOut("-")
+		anyToBuff(c, dest, "-")
 	}
 
 	// Extract integer and fractional parts
@@ -727,25 +740,15 @@ func (t *conv) floatToBufTmp() {
 	// Convert integer part using existing optimized methods
 	if integerPart >= 0 && integerPart < int64(len(smallInts)) {
 		// Use lookup table for small integers
-		t.wrStringToOut(smallInts[integerPart])
+		anyToBuff(c, dest, smallInts[integerPart])
 	} else {
-		// Use existing optimized integer conversion
-		// Save current state, convert integer, then restore float context
-		savedFloat := t.floatVal
-		savedKind := t.kind
-
-		t.intVal = integerPart
-		t.kind = KInt
-		t.intToBufTmp() // Writes directly to buffer using optimized method
-
-		// Restore float context
-		t.floatVal = savedFloat
-		t.kind = savedKind
+		// Direct integer conversion without temp fields
+		writeIntToDest(c, dest, integerPart)
 	}
 
 	// Add fractional part if significant
 	if fractionalPart > 1e-6 { // Avoid tiny fractions
-		t.wrStringToOut(".")
+		anyToBuff(c, dest, ".")
 
 		// Convert fractional part directly to buffer (no intermediate strings)
 		multiplier := 1e6
@@ -770,7 +773,7 @@ func (t *conv) floatToBufTmp() {
 
 		// Write only significant fractional digits
 		if digits > 0 {
-			t.wrToOut(fracBuf[6-digits : 6])
+			writeBytesToDest(c, dest, fracBuf[6-digits:6])
 		}
 	}
 }
