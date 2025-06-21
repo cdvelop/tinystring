@@ -125,31 +125,31 @@ func (t *conv) Truncate(maxWidth any, reservedChars ...any) *conv {
 		// Ensure rCI does not exceed mWI
 		if rCI > mWI {
 			rCI = mWI
-		}
-		// Calculate the width available for the conv itself, excluding reserved chars
+		} // Calculate the width available for the conv itself, excluding reserved chars
 		eW := max(mWI-rCI, 0)
 		ellipsisLen := len(ellipsisStr)
 		if rCI > 0 && mWI >= ellipsisLen && eW >= ellipsisLen {
 			// Case 1: Reserved chars specified, and ellipsis fits within the effective width
 			cTK := min(max(eW-ellipsisLen, 0), oL)
-			// Phase 11: Use buffer instead of string concatenation to avoid allocation
-			t.out = t.getReusableBuffer(cTK + len(ellipsisStr))
-			t.out = append(t.out, conv[:cTK]...)
-			t.out = append(t.out, ellipsisStr...)
+			// ✅ Use buffer API instead of direct buffer manipulation
+			t.rstOut()                   // Clear buffer using API
+			t.wrStringToOut(conv[:cTK])  // Write using API
+			t.wrStringToOut(ellipsisStr) // Append ellipsis using API
 			t.setStringFromBuffer()
 		} else if rCI == 0 && mWI >= ellipsisLen {
 			// Case 2: No reserved chars, ellipsis fits within maxWidth
 			cTK := min(max(mWI-ellipsisLen, 0), oL)
-			// Phase 11: Use buffer instead of string concatenation to avoid allocation
-			t.out = t.getReusableBuffer(cTK + len(ellipsisStr))
-			t.out = append(t.out, conv[:cTK]...)
-			t.out = append(t.out, ellipsisStr...)
+			// ✅ Use buffer API instead of direct buffer manipulation
+			t.rstOut()                   // Clear buffer using API
+			t.wrStringToOut(conv[:cTK])  // Write using API
+			t.wrStringToOut(ellipsisStr) // Append ellipsis using API
 			t.setStringFromBuffer()
 		} else {
 			// Case 3: Ellipsis doesn't fit or reserved chars prevent it, just truncate
 			cTK := min(mWI, oL)
-			// Update buffer instead of using setString for buffer-first strategy
-			t.out = append(t.out[:0], conv[:cTK]...)
+			// ✅ Update buffer using API instead of direct manipulation
+			t.rstOut()                  // Clear buffer using API
+			t.wrStringToOut(conv[:cTK]) // Write using API
 		}
 	}
 
@@ -298,11 +298,11 @@ func (t *conv) TruncateName(maxCharsPerWord, maxWidth any) *conv {
 			processedWord = word
 		}
 		res += processedWord
-	}
-	// Step 2: Check if the processed out fits within maxWidth
+	} // Step 2: Check if the processed out fits within maxWidth
 	if len(res) <= mT {
-		// Update buffer instead of using setString for buffer-first strategy
-		t.out = append(t.out[:0], res...)
+		// ✅ Update buffer using API instead of direct manipulation
+		t.rstOut()           // Clear buffer using API
+		t.wrStringToOut(res) // Write using API
 		return t
 	}
 
@@ -313,14 +313,15 @@ func (t *conv) TruncateName(maxCharsPerWord, maxWidth any) *conv {
 		minNeeded := mC + 1 + 1 + min(mC+1, len(words[1])) // "Abc. D..." pattern
 		if len(words) > 2 {
 			minNeeded = mC + 1 + 1 + mC + 1 // "Abc. D..." for 3+ words
-		} // If we can't fit the normal pattern, use all space for first word
+		}
+		// If we can't fit the normal pattern, use all space for first word
 		if mT < minNeeded && mT >= 4 { // minimum "X..." is 4 chars
 			availableForFirstWord := mT - len(ellipsisStr)
 			if len(words[0]) > availableForFirstWord {
-				// Phase 11: Use buffer instead of string concatenation to avoid allocation
-				t.out = t.getReusableBuffer(availableForFirstWord + len(ellipsisStr))
-				t.out = append(t.out, words[0][:availableForFirstWord]...)
-				t.out = append(t.out, ellipsisStr...)
+				// ✅ Use buffer API instead of direct buffer manipulation
+				t.rstOut()                                        // Clear buffer using API
+				t.wrStringToOut(words[0][:availableForFirstWord]) // Write using API
+				t.wrStringToOut(ellipsisStr)                      // Append ellipsis using API
 				t.setStringFromBuffer()
 				return t
 			}
@@ -360,10 +361,10 @@ func (t *conv) TruncateName(maxCharsPerWord, maxWidth any) *conv {
 			remaining = 0
 			break
 		}
-	}
-	// Add the suffix
+	} // Add the suffix
 	out += ellipsisStr
-	// Update buffer instead of using setString for buffer-first strategy
-	t.out = append(t.out[:0], out...)
+	// ✅ Update buffer using API instead of direct manipulation
+	t.rstOut()           // Clear buffer using API
+	t.wrStringToOut(out) // Write using API
 	return t
 }

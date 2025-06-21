@@ -54,9 +54,9 @@ func (t *conv) Replace(oldAny, newAny any, n ...int) *conv {
 			out = append(out, str[i])
 		}
 	}
-
-	// Update buffer instead of using setString for buffer-first strategy
-	t.out = append(t.out[:0], out...)
+	// ✅ Update buffer using API instead of direct manipulation
+	t.rstOut()     // Clear buffer using API
+	t.wrToOut(out) // Write using API
 	return t
 }
 
@@ -70,10 +70,10 @@ func (t *conv) TrimSuffix(suffix string) *conv {
 	str := t.ensureStringInOut()
 	if len(str) < len(suffix) || str[len(str)-len(suffix):] != suffix {
 		return t
-	}
-	// Update buffer instead of using setString for buffer-first strategy
+	} // ✅ Update buffer using API instead of direct manipulation
 	out := str[:len(str)-len(suffix)]
-	t.out = append(t.out[:0], out...)
+	t.rstOut()           // Clear buffer using API
+	t.wrStringToOut(out) // Write using API
 	return t
 }
 
@@ -87,10 +87,10 @@ func (t *conv) TrimPrefix(prefix string) *conv {
 	str := t.ensureStringInOut()
 	if len(str) < len(prefix) || str[:len(prefix)] != prefix {
 		return t
-	}
-	// Update buffer instead of using setString for buffer-first strategy
+	} // ✅ Update buffer using API instead of direct manipulation
 	out := str[len(prefix):]
-	t.out = append(t.out[:0], out...)
+	t.rstOut()           // Clear buffer using API
+	t.wrStringToOut(out) // Write using API
 	return t
 }
 
@@ -122,9 +122,9 @@ func (t *conv) Trim() *conv {
 		t.rstOut()
 		return t
 	}
-
-	// Set the substring without spaces using buffer-first strategy
+	// ✅ Set the substring without spaces using API
 	out := str[start : end+1]
-	t.out = append(t.out[:0], out...)
+	t.rstOut()           // Clear buffer using API
+	t.wrStringToOut(out) // Write using API
 	return t
 }

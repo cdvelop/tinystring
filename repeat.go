@@ -21,11 +21,11 @@ func (t *conv) Repeat(n int) *conv {
 	}
 	// Use buffer API ONLY - no direct buffer manipulation
 	t.rstOut() // Clear output buffer using API
-	
+
 	// Write string n times using buffer API
 	for range n {
 		t.wrStringToOut(str) // Use API to write to output buffer
 	}
-	
+
 	return t
 }

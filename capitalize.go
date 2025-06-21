@@ -74,7 +74,9 @@ func (t *conv) Capitalize() *conv {
 		}
 	}
 
-	t.out = append(t.out[:0], string(out)...)
+	// ✅ Use buffer API instead of direct manipulation
+	t.rstOut()                   // Clear buffer using API
+	t.wrStringToOut(string(out)) // Write using API
 	return t
 }
 
@@ -90,7 +92,7 @@ func (t *conv) ToUpper() *conv {
 
 // changeCase consolidates ToLower and ToUpper functionality - optimized with buffer-first strategy
 func (t *conv) changeCase(toLower bool) *conv {
-	if len(t.err) > 0 {
+	if t.hasError() {
 		return t // Error chain interruption
 	}
 
@@ -110,10 +112,10 @@ func (t *conv) changeCase(toLower bool) *conv {
 			runes[i] = toUpperRune(r)
 		}
 	}
-
-	// Convert back to string and store in buffer
+	// Convert back to string and store in buffer using API
 	out := string(runes)
-	t.out = append(t.out[:0], out...)
+	t.rstOut()           // Clear buffer using API
+	t.wrStringToOut(out) // Write using API
 
 	return t
 }
@@ -159,7 +161,7 @@ func (t *conv) ToSnakeCaseUpper(sep ...string) *conv {
 
 // Minimal implementation without pools or builders - optimized for minimal allocations
 func (t *conv) toCaseTransformMinimal(firstWordLower bool, separator string) *conv {
-	if len(t.err) > 0 {
+	if t.hasError() {
 		return t // Error chain interruption
 	}
 
@@ -254,8 +256,9 @@ func (t *conv) toCaseTransformMinimal(firstWordLower bool, separator string) *co
 		pWD = cID
 	}
 
-	// Update buffer instead of using setString for buffer-first strategy
-	t.out = append(t.out[:0], out...)
+	// ✅ Update buffer using API instead of direct manipulation
+	t.rstOut()     // Clear buffer using API
+	t.wrToOut(out) // Write bytes using API
 	return t
 }
 

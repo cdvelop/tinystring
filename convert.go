@@ -4,9 +4,9 @@ package tinystring
 type buffDest int
 
 const (
-	buffOut buffDest = iota // Primary output buffer
-	buffWork                // Working/temporary buffer
-	buffErr                 // Error message buffer
+	buffOut  buffDest = iota // Primary output buffer
+	buffWork                 // Working/temporary buffer
+	buffErr                  // Error message buffer
 )
 
 // Generic type interfaces for consolidating repetitive type switches
@@ -59,13 +59,15 @@ func Convert(v ...any) *conv {
 		// Inlined withValue logic for performance
 		val := v[0]
 		if val == nil {
-			return c.wrErr(D.String, D.Empty)		} else {
+			return c.wrErr(D.String, D.Empty)
+		} else {
 			switch typedVal := val.(type) {
 			case string:
 				// Store string content directly in out
 				c.out = append(c.out[:0], typedVal...)
 				c.outLen = len(typedVal)
-				c.kind = KString			case []string:
+				c.kind = KString
+			case []string:
 				c.stringSliceVal = typedVal
 				c.kind = KSliceStr
 			case *string:
@@ -301,10 +303,9 @@ func addRne2Buf(out []byte, r rune) []byte {
 }
 
 // setString converts to string type and stores the value
-func (t *conv) setString(s string) {
-	// Store string content directly in out
-	t.out = append(t.out[:0], s...)
-	t.outLen = len(s)
+func (t *conv) setString(s string) { // Store string content directly in out using API
+	t.rstOut()         // Clear buffer using API
+	t.wrStringToOut(s) // Write using API
 	// If working with string pointer, update the original string
 	if t.kind == KPointer && t.pointerVal != nil {
 		// Type assert to *string for pointer functionality
@@ -337,20 +338,18 @@ func (t *conv) any2s(v any) {
 	switch val := v.(type) {
 	case error:
 		t.wrErr(val.Error())
-	case string:
-		// Store string content directly in out
-		t.out = append(t.out[:0], val...)
-		t.outLen = len(val)
+	case string: // Store string content directly in out using API
+		t.rstOut()           // Clear buffer using API
+		t.wrStringToOut(val) // Write using API
 	case bool:
 		var out string
 		if val {
 			out = trueStr
 		} else {
 			out = falseStr
-		}
-		// Store boolean out in out
-		t.out = append(t.out[:0], out...)
-		t.outLen = len(out)
+		} // Store boolean out in out using API
+		t.rstOut()           // Clear buffer using API
+		t.wrStringToOut(out) // Write using API
 	default:
 		// Inline handleAnyTypeForAny2s logic for numeric types
 		switch v := v.(type) {
@@ -429,7 +428,7 @@ func anyToBuff(c *conv, dest buffDest, value any) {
 	// IMMEDIATE CONVERSION - Simple Types (REUSE existing implementations)
 	case string:
 		writeStringToDest(c, dest, v)
-		
+
 	case int:
 		writeIntToDest(c, dest, int64(v))
 	case int8:
@@ -440,7 +439,7 @@ func anyToBuff(c *conv, dest buffDest, value any) {
 		writeIntToDest(c, dest, int64(v))
 	case int64:
 		writeIntToDest(c, dest, v)
-		
+
 	case uint:
 		writeUintToDest(c, dest, uint64(v))
 	case uint8:
@@ -451,41 +450,41 @@ func anyToBuff(c *conv, dest buffDest, value any) {
 		writeUintToDest(c, dest, uint64(v))
 	case uint64:
 		writeUintToDest(c, dest, v)
-		
+
 	case float32:
 		writeFloatToDest(c, dest, float64(v))
 	case float64:
 		writeFloatToDest(c, dest, v)
-		
+
 	case bool:
 		if v {
 			writeStringToDest(c, dest, "true")
 		} else {
 			writeStringToDest(c, dest, "false")
 		}
-		
+
 	case []byte:
 		writeBytesToDest(c, dest, v)
-			case LocStr:
+	case LocStr:
 		// LocStr needs translation - for now use first language (English)
-		writeStringToDest(c, dest, v[0])  // v[0] is English translation
-		
+		writeStringToDest(c, dest, v[0]) // v[0] is English translation
+
 	// LAZY CONVERSION - Complex Types (store pointer, convert on demand)
 	case []string:
 		c.pointerVal = v
 		c.kind = KSliceStr
 		// No immediate conversion - wait for operation
-		
+
 	case map[string]string:
 		c.pointerVal = v
 		c.kind = KMap
 		// No immediate conversion - wait for operation
-		
+
 	case map[string]any:
 		c.pointerVal = v
 		c.kind = KMap
 		// No immediate conversion - wait for operation
-		
+
 	default:
 		// Unknown type - write error using DICTIONARY (REUSE existing wrErr)
 		c.wrErr(D.Type, D.Not, D.Supported)
@@ -509,7 +508,7 @@ func writeStringToDest(c *conv, dest buffDest, s string) {
 	}
 }
 
-// writeBytesToDest writes bytes to specified buffer destination  
+// writeBytesToDest writes bytes to specified buffer destination
 // REUSES: wrToOut, wrToWork, wrToErr
 func writeBytesToDest(c *conv, dest buffDest, data []byte) {
 	switch dest {
@@ -534,10 +533,10 @@ func writeIntToDest(c *conv, dest buffDest, val int64) {
 		tempOutLen = c.outLen
 		c.rstOut()
 	}
-	
+
 	// REUSE existing fmtIntToOut implementation
 	c.fmtIntToOut(val, 10, true)
-	
+
 	// Move result to correct destination if not buffOut
 	if dest != buffOut {
 		result := string(c.out[:c.outLen])
@@ -561,10 +560,10 @@ func writeUintToDest(c *conv, dest buffDest, val uint64) {
 		tempOutLen = c.outLen
 		c.rstOut()
 	}
-	
+
 	// REUSE existing fmtIntToOut implementation for unsigned
 	c.fmtIntToOut(int64(val), 10, false)
-	
+
 	// Move result to correct destination if not buffOut
 	if dest != buffOut {
 		result := string(c.out[:c.outLen])
@@ -579,7 +578,7 @@ func writeUintToDest(c *conv, dest buffDest, val uint64) {
 // writeFloatToDest converts float64 to string and writes to destination buffer
 // REUSES: floatToOut logic adapted for destination selection
 func writeFloatToDest(c *conv, dest buffDest, val float64) {
-	// Store current out state  
+	// Store current out state
 	var tempOut []byte
 	var tempOutLen int
 	if dest != buffOut {
@@ -588,17 +587,17 @@ func writeFloatToDest(c *conv, dest buffDest, val float64) {
 		tempOutLen = c.outLen
 		c.rstOut()
 	}
-	
+
 	// Store current floatVal and restore after
 	oldFloatVal := c.floatVal
 	c.floatVal = val
-	
+
 	// REUSE existing floatToOut implementation
 	c.floatToOut()
-	
+
 	// Restore floatVal
 	c.floatVal = oldFloatVal
-	
+
 	// Move result to correct destination if not buffOut
 	if dest != buffOut {
 		result := string(c.out[:c.outLen])

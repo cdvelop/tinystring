@@ -29,12 +29,12 @@ func (t *conv) StringError() (string, error) {
 	var out string
 	var err error
 	// BUILDER INTEGRATION: Check for error condition more comprehensively
-	if t.hasError() {  // ✅ Use new buffer state checking method
+	if t.hasError() { // ✅ Use new buffer state checking method
 		// If there's an error, return empty string and the error
 		out = ""
-		err = &simpleError{message: string(t.err[:t.errLen])}  // ✅ Use errLen for length control
+		err = &simpleError{message: string(t.err[:t.errLen])} // ✅ Use errLen for length control
 	} else {
-		out = t.ensureStringInOut()  // ✅ Use new centralized method
+		out = t.ensureStringInOut() // ✅ Use new centralized method
 		err = nil
 	}
 
@@ -65,10 +65,10 @@ func (c *conv) wrErr(msgs ...any) *conv {
 		return c
 	}
 
-	c.kind = KErr  // Set error kind first
+	c.kind = KErr // Set error kind first
 
 	// Reset error buffer using API ONLY
-	c.clearError()  // ✅ Use API method instead of manual c.errLen = 0
+	c.clearError() // ✅ Use API method instead of manual c.errLen = 0
 
 	// STEP 1: Language detection (no c.language field dependency)
 	currentLang := detectLanguage(c)
@@ -77,27 +77,27 @@ func (c *conv) wrErr(msgs ...any) *conv {
 	for i, msg := range msgs {
 		if i > 0 {
 			// Add space between words for readability
-			c.writeStringToErr(" ")  // ✅ Use API
+			c.writeStringToErr(" ") // ✅ Use API
 		}
 
 		switch v := msg.(type) {
 		case LocStr:
 			// STEP 3: Translate LocStr using detected language
 			translation := getTranslation(v, currentLang)
-			c.writeStringToErr(translation)  // ✅ Use API
-			
+			c.writeStringToErr(translation) // ✅ Use API
+
 		case string:
 			// Direct string - write as-is
-			c.writeStringToErr(v)  // ✅ Use API
-			
+			c.writeStringToErr(v) // ✅ Use API
+
 		default:
 			// Convert other types to string (int, float, etc.)
 			// Use anyToBuff to convert to work buffer, then transfer result
-			anyToBuff(c, buffWork, v)  // Convert to work buffer of CURRENT conv
-			
-			if c.hasWorkContent() {  // ✅ Use API method
+			anyToBuff(c, buffWork, v) // Convert to work buffer of CURRENT conv
+
+			if c.hasWorkContent() { // ✅ Use API method
 				// Transfer work result to error buffer using API
-				c.writeStringToErr(c.getWorkString())  // ✅ Use API
+				c.writeStringToErr(c.getWorkString()) // ✅ Use API
 			}
 		}
 	}
@@ -105,10 +105,10 @@ func (c *conv) wrErr(msgs ...any) *conv {
 }
 
 func (c *conv) getError() string {
-	if !c.hasError() {  // ✅ Use API method instead of len(c.err)
+	if !c.hasError() { // ✅ Use API method instead of len(c.err)
 		return ""
 	}
-	return c.getErrorString()  // ✅ Use API method instead of direct string(c.err)
+	return c.getErrorString() // ✅ Use API method instead of direct string(c.err)
 }
 
 func (c *conv) Error() string {

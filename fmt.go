@@ -373,11 +373,11 @@ func (t *conv) FormatNumber() *conv {
 		t.err = t.err[:0]
 		return t
 	} else {
-		// Restore original state if parsing failed
-		t.out = append(t.out[:0], oBuf...)
-		t.outLen = len(oBuf)
+		// ✅ Restore original state if parsing failed using API
+		t.rstOut()      // Clear buffer using API
+		t.wrToOut(oBuf) // Write using API
 		t.kind = oType
-		t.err = t.err[:0]
+		t.clearError() // Clear error using API
 	}
 
 	// If both integer and float parsing fail, return original string unchanged

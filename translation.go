@@ -33,7 +33,8 @@ func T(values ...any) string {
 		if i > startIdx {
 			c.out = append(c.out, ' ') // Add space between words
 		}
-		switch v := values[i].(type) {		case LocStr:
+		switch v := values[i].(type) {
+		case LocStr:
 			// Dictionary term - get translation for current language
 			// REUSE getTranslation() function
 			translation := getTranslation(v, currentLang)
@@ -61,7 +62,7 @@ func T(values ...any) string {
 func detectLanguage(c *conv) lang {
 	// STEP 1: Use default language (can be extended later for auto-detection)
 	// Note: c.language field doesn't exist in current struct, use global default
-	return defLang  // REUSE existing global language setting
+	return defLang // REUSE existing global language setting
 }
 
 // getTranslation extracts translation for specific language from LocStr

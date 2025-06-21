@@ -102,9 +102,9 @@ func (t *conv) tryParseAs(parseType kind, base int) bool {
 	}
 
 	// If that fails, restore state and try to parse as float then convert
-	// Inline restoreState logic
-	t.out = append(t.out[:0], oBuf...)
-	t.outLen = len(oBuf)
+	// ✅ Inline restoreState logic using API
+	t.rstOut()      // Clear buffer using API
+	t.wrToOut(oBuf) // Write using API
 	t.kind = oVT
 	t.clearError() // Reset error when restoring state using API
 	t.stringToFloat()

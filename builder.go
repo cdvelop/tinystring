@@ -19,7 +19,7 @@ func (c *conv) Write(v any) *conv {
 			hasStringPointer = true
 		}
 	}
-	
+
 	if !c.hasOutContent() && ((c.kind == KString && c.outLen > 0) ||
 		hasStringPointer ||
 		(c.kind == KSliceStr && len(c.stringSliceVal) > 0) ||
@@ -37,9 +37,9 @@ func (c *conv) Write(v any) *conv {
 // Useful for reusing the same conv object for multiple operations
 func (c *conv) Reset() *conv {
 	// Reset all conv fields to default state using buffer API
-	c.rstOut()        // Clear main buffer using API
-	c.rstWork()       // Clear temp buffer using API  
-	c.clearError()    // Clear error buffer using API
+	c.rstOut()     // Clear main buffer using API
+	c.rstWork()    // Clear temp buffer using API
+	c.clearError() // Clear error buffer using API
 	c.intVal = 0
 	c.uintVal = 0
 	c.floatVal = 0
