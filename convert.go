@@ -1,5 +1,14 @@
 package tinystring
 
+// Buffer destination selection for anyToBuff universal conversion function
+type buffDest int
+
+const (
+	buffOut buffDest = iota // Primary output buffer
+	buffWork                // Working/temporary buffer
+	buffErr                 // Error message buffer
+)
+
 // Generic type interfaces for consolidating repetitive type switches
 type anyInt interface {
 	~int | ~int8 | ~int16 | ~int32 | ~int64
@@ -22,24 +31,18 @@ type conv struct {
 	workLen int    // Longitud actual en work
 	err     []byte // Buffer de errores - make([]byte, 0, 64)
 	errLen  int    // Longitud actual en err
-
 	// Type indicator - most frequently accessed
 	kind kind // Hot path: type checking
 
-	// PHASE 13.3: Variables ELIMINADAS completamente:
-	// err       string ❌ DEPRECATED → Reemplazado por err []byte
-	// stringVal string ❌ DEPRECATED → Reemplazado por out []byte
-	// tmpStr    string ❌ DEPRECATED → Reemplazado por work []byte
+	// ✅ UNIFIED BUFFER ARCHITECTURE - Only essential fields remain
+	pointerVal any // ✅ Universal pointer for complex types ([]string, map[string]any, etc.)
 
-	// Numeric values grouped together
-	intVal   int64   //❌ DEPRECATED
-	uintVal  uint64  //❌ DEPRECATED
-	floatVal float64 //❌ DEPRECATED
-
-	// Less frequently used fields
-	stringSliceVal []string //❌ DEPRECATED
-	pointerVal     *string  // use for any element that is not supported for writing directly to the buffer
-	boolVal        bool     //❌ DEPRECATED
+	// TEMPORARY: Keep these fields until full migration to anyToBuff() completed
+	intVal         int64    // TODO: eliminate after anyToBuff() migration
+	uintVal        uint64   // TODO: eliminate after anyToBuff() migration
+	floatVal       float64  // TODO: eliminate after anyToBuff() migration
+	boolVal        bool     // TODO: eliminate after anyToBuff() migration
+	stringSliceVal []string // TODO: eliminate after anyToBuff() migration
 }
 
 // Convert initializes a new conv struct with optional value for string,bool and number manipulation.
@@ -56,15 +59,13 @@ func Convert(v ...any) *conv {
 		// Inlined withValue logic for performance
 		val := v[0]
 		if val == nil {
-			return c.wrErr(D.String, D.Empty)
-		} else {
+			return c.wrErr(D.String, D.Empty)		} else {
 			switch typedVal := val.(type) {
 			case string:
 				// Store string content directly in out
 				c.out = append(c.out[:0], typedVal...)
 				c.outLen = len(typedVal)
-				c.kind = KString
-			case []string:
+				c.kind = KString			case []string:
 				c.stringSliceVal = typedVal
 				c.kind = KSliceStr
 			case *string:
@@ -74,7 +75,8 @@ func Convert(v ...any) *conv {
 				c.pointerVal = typedVal
 				c.kind = KPointer
 			case bool:
-				c.boolVal = typedVal
+				// Use anyToBuff() for immediate conversion instead of storing in field
+				anyToBuff(c, buffOut, typedVal)
 				c.kind = KBool
 			case error:
 				return c.wrErr(typedVal.Error())
@@ -266,7 +268,10 @@ func genFloat[T anyFloat](c *conv, v T, op int) {
 // without additional allocations.
 func (t *conv) Apply() {
 	if t.kind == KPointer && t.pointerVal != nil {
-		*t.pointerVal = t.ensureStringInOut()
+		// Type assert to *string for Apply() functionality
+		if strPtr, ok := t.pointerVal.(*string); ok {
+			*strPtr = t.ensureStringInOut()
+		}
 	}
 	// Auto-release back to pool for memory efficiency
 	t.putConv()
@@ -300,10 +305,12 @@ func (t *conv) setString(s string) {
 	// Store string content directly in out
 	t.out = append(t.out[:0], s...)
 	t.outLen = len(s)
-
 	// If working with string pointer, update the original string
 	if t.kind == KPointer && t.pointerVal != nil {
-		*t.pointerVal = s
+		// Type assert to *string for pointer functionality
+		if strPtr, ok := t.pointerVal.(*string); ok {
+			*strPtr = s
+		}
 		// Keep the kind as stringPtr to maintain the pointer relationship
 	} else {
 		t.kind = KString
@@ -407,5 +414,198 @@ func (c *conv) handleAnyType(val any) {
 		genFloat(c, v, 0)
 	case float64:
 		genFloat(c, v, 0)
+	}
+}
+
+// =============================================================================
+// UNIVERSAL CONVERSION FUNCTION - REUSES EXISTING IMPLEMENTATIONS
+// =============================================================================
+
+// anyToBuff converts any supported type to buffer using existing conversion logic
+// REUSES: fmtIntToOut, floatToOut, wrStringToOut, writeStringToErr
+// Supports: string, int variants, uint variants, float variants, bool, []byte, LocStr
+func anyToBuff(c *conv, dest buffDest, value any) {
+	switch v := value.(type) {
+	// IMMEDIATE CONVERSION - Simple Types (REUSE existing implementations)
+	case string:
+		writeStringToDest(c, dest, v)
+		
+	case int:
+		writeIntToDest(c, dest, int64(v))
+	case int8:
+		writeIntToDest(c, dest, int64(v))
+	case int16:
+		writeIntToDest(c, dest, int64(v))
+	case int32:
+		writeIntToDest(c, dest, int64(v))
+	case int64:
+		writeIntToDest(c, dest, v)
+		
+	case uint:
+		writeUintToDest(c, dest, uint64(v))
+	case uint8:
+		writeUintToDest(c, dest, uint64(v))
+	case uint16:
+		writeUintToDest(c, dest, uint64(v))
+	case uint32:
+		writeUintToDest(c, dest, uint64(v))
+	case uint64:
+		writeUintToDest(c, dest, v)
+		
+	case float32:
+		writeFloatToDest(c, dest, float64(v))
+	case float64:
+		writeFloatToDest(c, dest, v)
+		
+	case bool:
+		if v {
+			writeStringToDest(c, dest, "true")
+		} else {
+			writeStringToDest(c, dest, "false")
+		}
+		
+	case []byte:
+		writeBytesToDest(c, dest, v)
+			case LocStr:
+		// LocStr needs translation - for now use first language (English)
+		writeStringToDest(c, dest, v[0])  // v[0] is English translation
+		
+	// LAZY CONVERSION - Complex Types (store pointer, convert on demand)
+	case []string:
+		c.pointerVal = v
+		c.kind = KSliceStr
+		// No immediate conversion - wait for operation
+		
+	case map[string]string:
+		c.pointerVal = v
+		c.kind = KMap
+		// No immediate conversion - wait for operation
+		
+	case map[string]any:
+		c.pointerVal = v
+		c.kind = KMap
+		// No immediate conversion - wait for operation
+		
+	default:
+		// Unknown type - write error using DICTIONARY (REUSE existing wrErr)
+		c.wrErr(D.Type, D.Not, D.Supported)
+	}
+}
+
+// =============================================================================
+// BUFFER DESTINATION HELPERS - REUSE EXISTING BUFFER OPERATIONS
+// =============================================================================
+
+// writeStringToDest writes string to specified buffer destination
+// REUSES: wrStringToOut, wrStringToWork, writeStringToErr
+func writeStringToDest(c *conv, dest buffDest, s string) {
+	switch dest {
+	case buffOut:
+		c.wrStringToOut(s)
+	case buffWork:
+		c.wrStringToWork(s)
+	case buffErr:
+		c.writeStringToErr(s)
+	}
+}
+
+// writeBytesToDest writes bytes to specified buffer destination  
+// REUSES: wrToOut, wrToWork, wrToErr
+func writeBytesToDest(c *conv, dest buffDest, data []byte) {
+	switch dest {
+	case buffOut:
+		c.wrToOut(data)
+	case buffWork:
+		c.wrToWork(data)
+	case buffErr:
+		c.wrToErr(data)
+	}
+}
+
+// writeIntToDest converts int64 to string and writes to destination buffer
+// REUSES: fmtIntToOut logic adapted for destination selection
+func writeIntToDest(c *conv, dest buffDest, val int64) {
+	// Store current out state
+	var tempOut []byte
+	var tempOutLen int
+	if dest != buffOut {
+		tempOut = make([]byte, len(c.out))
+		copy(tempOut, c.out)
+		tempOutLen = c.outLen
+		c.rstOut()
+	}
+	
+	// REUSE existing fmtIntToOut implementation
+	c.fmtIntToOut(val, 10, true)
+	
+	// Move result to correct destination if not buffOut
+	if dest != buffOut {
+		result := string(c.out[:c.outLen])
+		// Restore original out state
+		c.out = tempOut
+		c.outLen = tempOutLen
+		// Write to correct destination
+		writeStringToDest(c, dest, result)
+	}
+}
+
+// writeUintToDest converts uint64 to string and writes to destination buffer
+// REUSES: fmtIntToOut logic with unsigned flag
+func writeUintToDest(c *conv, dest buffDest, val uint64) {
+	// Store current out state
+	var tempOut []byte
+	var tempOutLen int
+	if dest != buffOut {
+		tempOut = make([]byte, len(c.out))
+		copy(tempOut, c.out)
+		tempOutLen = c.outLen
+		c.rstOut()
+	}
+	
+	// REUSE existing fmtIntToOut implementation for unsigned
+	c.fmtIntToOut(int64(val), 10, false)
+	
+	// Move result to correct destination if not buffOut
+	if dest != buffOut {
+		result := string(c.out[:c.outLen])
+		// Restore original out state
+		c.out = tempOut
+		c.outLen = tempOutLen
+		// Write to correct destination
+		writeStringToDest(c, dest, result)
+	}
+}
+
+// writeFloatToDest converts float64 to string and writes to destination buffer
+// REUSES: floatToOut logic adapted for destination selection
+func writeFloatToDest(c *conv, dest buffDest, val float64) {
+	// Store current out state  
+	var tempOut []byte
+	var tempOutLen int
+	if dest != buffOut {
+		tempOut = make([]byte, len(c.out))
+		copy(tempOut, c.out)
+		tempOutLen = c.outLen
+		c.rstOut()
+	}
+	
+	// Store current floatVal and restore after
+	oldFloatVal := c.floatVal
+	c.floatVal = val
+	
+	// REUSE existing floatToOut implementation
+	c.floatToOut()
+	
+	// Restore floatVal
+	c.floatVal = oldFloatVal
+	
+	// Move result to correct destination if not buffOut
+	if dest != buffOut {
+		result := string(c.out[:c.outLen])
+		// Restore original out state
+		c.out = tempOut
+		c.outLen = tempOutLen
+		// Write to correct destination
+		writeStringToDest(c, dest, result)
 	}
 }

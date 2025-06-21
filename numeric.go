@@ -91,7 +91,7 @@ func (t *conv) tryParseAs(parseType kind, base int) bool {
 		t.stringToUint(string(t.out[:t.outLen]), base)
 	}
 
-	if len(t.err) == 0 {
+	if !t.hasError() {
 		return true
 	}
 
@@ -106,9 +106,9 @@ func (t *conv) tryParseAs(parseType kind, base int) bool {
 	t.out = append(t.out[:0], oBuf...)
 	t.outLen = len(oBuf)
 	t.kind = oVT
-	t.err = t.err[:0] // Reset error when restoring state
+	t.clearError() // Reset error when restoring state using API
 	t.stringToFloat()
-	if len(t.err) == 0 {
+	if !t.hasError() { // Use buffer API instead of direct check
 		switch parseType {
 		case KInt:
 			t.intVal = int64(t.floatVal)
@@ -173,7 +173,7 @@ func (t *conv) tryParseAs(parseType kind, base int) bool {
 // Note: Negative numbers are only supported for base 10. For other bases,
 // negative signs will out in an error.
 func (t *conv) ToInt(base ...int) (int, error) {
-	if len(t.err) > 0 {
+	if t.hasError() { // Use buffer API
 		return 0, t
 	}
 
@@ -249,7 +249,7 @@ func (t *conv) ToInt(base ...int) (int, error) {
 // Note: This method provides the full range of 64-bit integers, which is useful
 // for large numeric values that exceed the range of regular int type.
 func (t *conv) ToInt64(base ...int) (int64, error) {
-	if len(t.err) > 0 {
+	if t.hasError() { // Use buffer API
 		return 0, t
 	}
 
@@ -312,7 +312,7 @@ func (t *conv) ToInt64(base ...int) (int64, error) {
 // Note: Negative numbers are never supported for unsigned integers and will
 // always out in an error, regardless of the base.
 func (t *conv) ToUint(base ...int) (uint, error) {
-	if len(t.err) > 0 {
+	if t.hasError() { // Use buffer API
 		return 0, t
 	}
 
@@ -385,7 +385,7 @@ func (t *conv) ToUint(base ...int) (uint, error) {
 // Note: This method uses a custom float parsing implementation that may have
 // different precision characteristics compared to the standard library.
 func (t *conv) ToFloat() (float64, error) {
-	if len(t.err) > 0 {
+	if t.hasError() { // Use buffer API
 		return 0, t
 	}
 
@@ -396,7 +396,7 @@ func (t *conv) ToFloat() (float64, error) {
 		return float64(t.uintVal), nil // Direct conversion from uint
 	default: // For string types and other types, parse as float
 		t.stringToFloat()
-		if len(t.err) > 0 {
+		if t.hasError() { // Use buffer API
 			return 0, t
 		}
 		return t.floatVal, nil
@@ -421,7 +421,7 @@ func (t *conv) stringToInt(base int) {
 		t.setString(inp[1:])
 	}
 	t.s2n(base)
-	if len(t.err) > 0 {
+	if t.hasError() { // Use buffer API
 		return
 	}
 

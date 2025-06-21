@@ -33,29 +33,45 @@ func T(values ...any) string {
 		if i > startIdx {
 			c.out = append(c.out, ' ') // Add space between words
 		}
-
-		switch v := values[i].(type) {
-		case LocStr:
+		switch v := values[i].(type) {		case LocStr:
 			// Dictionary term - get translation for current language
-			// Inline get logic
-			translation := func() string {
-				if int(currentLang) < len(v) && v[currentLang] != "" {
-					return v[currentLang]
-				}
-				return v[EN] // Fallback to English
-			}()
+			// REUSE getTranslation() function
+			translation := getTranslation(v, currentLang)
 			c.out = append(c.out, translation...)
 		case string:
 			// Direct string
 			c.out = append(c.out, v...)
 		default:
-			// Convert other types to string and append
-			c.setVal(v, 0) // Use mode 0 for initial conversion
+			// Convert other types to string using anyToBuff()
+			anyToBuff(c, buffOut, v) // Use unified conversion function
 			str := c.ensureStringInOut()
 			c.out = append(c.out, str...)
 		}
 	}
-
 	// Return the constructed string
 	return string(c.out)
+}
+
+// =============================================================================
+// SHARED LANGUAGE SYSTEM FUNCTIONS - REUSED BY ERROR.GO AND TRANSLATION.GO
+// =============================================================================
+
+// detectLanguage determines the current language for translations and errors
+// REUSES: existing defLang from language.go
+func detectLanguage(c *conv) lang {
+	// STEP 1: Use default language (can be extended later for auto-detection)
+	// Note: c.language field doesn't exist in current struct, use global default
+	return defLang  // REUSE existing global language setting
+}
+
+// getTranslation extracts translation for specific language from LocStr
+// REUSES: existing LocStr array indexing logic
+func getTranslation(locStr LocStr, currentLang lang) string {
+	// STEP 2: Get translation for current language with fallback
+	// REUSE logic from T() function
+	if int(currentLang) < len(locStr) && locStr[currentLang] != "" {
+		return locStr[currentLang]
+	}
+	// Fallback to English if translation not available
+	return locStr[EN]
 }

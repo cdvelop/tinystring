@@ -78,10 +78,11 @@ func (c *conv) setStringFromBuffer() {
 	// In the new system, the buffer already contains the string content
 	// We just need to update the length and ensure proper type
 	c.outLen = len(c.out)
-
 	// If working with string pointer, update the original string
 	if c.kind == KPointer && c.pointerVal != nil {
-		*c.pointerVal = string(c.out)
+		if strPtr, ok := c.pointerVal.(*string); ok {
+			*strPtr = string(c.out)
+		}
 		// Keep the kind as stringPtr to maintain the pointer relationship
 	} else {
 		c.kind = KString
@@ -257,7 +258,7 @@ func (c *conv) isEmpty() bool {
 	return c.outLen == 0 && c.workLen == 0 && c.errLen == 0
 }
 
-// clearError resets error state
+// clearError resets the error buffer length
 func (c *conv) clearError() {
 	c.errLen = 0
 }
@@ -284,12 +285,13 @@ func (c *conv) convertToOutBuffer() {
 		// String values should already be in out buffer from assignment
 		// This is a defensive case - shouldn't normally happen
 		return
-
 	case KPointer:
 		// For string pointers, get current value and store in out buffer
 		if c.pointerVal != nil {
-			c.rstOut()
-			c.wrStringToOut(*c.pointerVal)
+			if strPtr, ok := c.pointerVal.(*string); ok {
+				c.rstOut()
+				c.wrStringToOut(*strPtr)
+			}
 		}
 
 	case KSliceStr:

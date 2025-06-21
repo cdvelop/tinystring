@@ -5,7 +5,7 @@ package tinystring
 // eg: "hello world" with old "world" and new "universe" will return "hello universe"
 // Old and new can be any type, they will be converted to string using Convert
 func (t *conv) Replace(oldAny, newAny any, n ...int) *conv {
-	if len(t.err) > 0 {
+	if t.hasError() {
 		return t // Error chain interruption
 	}
 	tmp := getConv()
@@ -63,7 +63,7 @@ func (t *conv) Replace(oldAny, newAny any, n ...int) *conv {
 // TrimSuffix removes the specified suffix from the conv content if it exists
 // eg: "hello.txt" with suffix ".txt" will return "hello"
 func (t *conv) TrimSuffix(suffix string) *conv {
-	if len(t.err) > 0 {
+	if t.hasError() {
 		return t // Error chain interruption
 	}
 
@@ -80,7 +80,7 @@ func (t *conv) TrimSuffix(suffix string) *conv {
 // TrimPrefix removes the specified prefix from the conv content if it exists
 // eg: "prefix-hello" with prefix "prefix-" will return "hello"
 func (t *conv) TrimPrefix(prefix string) *conv {
-	if len(t.err) > 0 {
+	if t.hasError() {
 		return t // Error chain interruption
 	}
 
@@ -97,7 +97,7 @@ func (t *conv) TrimPrefix(prefix string) *conv {
 // Trim removes spaces at the beginning and end of the conv content
 // eg: "  hello world  " will return "hello world"
 func (t *conv) Trim() *conv {
-	if len(t.err) > 0 {
+	if t.hasError() {
 		return t // Error chain interruption
 	}
 
@@ -116,12 +116,10 @@ func (t *conv) Trim() *conv {
 	end := len(str) - 1
 	for end >= 0 && (str[end] == ' ' || str[end] == '\n' || str[end] == '\t') {
 		end--
-
 	} // Special case: empty string
 	if start > end {
 		// Clear buffer for empty out
-		t.out = t.out[:0]
-		t.outLen = 0
+		t.rstOut()
 		return t
 	}
 

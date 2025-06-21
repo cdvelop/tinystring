@@ -11,7 +11,7 @@ package tinystring
 // eg: Convert("Hello, World!").Truncate(10, 3) => "Hell..."
 // eg: Convert("Hello").Truncate(10) => "Hello"
 func (t *conv) Truncate(maxWidth any, reservedChars ...any) *conv {
-	if len(t.err) > 0 {
+	if t.hasError() {
 		return t // Error chain interruption
 	}
 
@@ -169,7 +169,7 @@ func (t *conv) Truncate(maxWidth any, reservedChars ...any) *conv {
 //   - Convert("Ana Maria Rodriguez").TruncateName(2, 10) => "An. Mar..."
 //   - Convert("Juan").TruncateName(3, 5) => "Juan"
 func (t *conv) TruncateName(maxCharsPerWord, maxWidth any) *conv {
-	if len(t.err) > 0 {
+	if t.hasError() {
 		return t // Error chain interruption
 	}
 

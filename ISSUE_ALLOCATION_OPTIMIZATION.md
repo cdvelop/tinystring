@@ -1,17 +1,107 @@
-# tinystring Memory Allocation Optimization - UNIFIED BUFFER ARCHITECTURE
+# TinyString - Unified Buffer Architecture Implementation Guide
 
-## 🎯 **CURRENT STATUS**
+## 🎯 **MISSION CRITICAL**
+- **Reduce 50% allocations** via unified buffer architecture
+- **Single conversion function**: `anyToBuff(c *conv, dest buffDest, value any)`
+- **Non-recursive error system**: `wrErr()` with language support
+- **Buffer API ONLY**: Never modify buffers manually
 
-**Context:** WebAssembly-first library with manual implementations (no stdlib dependencies)
+## ⚠️ **ABSOLUTE RULES - NO EXCEPTIONS**
 
-**Performance Targets:**
-- String Processing: 2.8KB/op, 119 allocs/op → **Reduce 50%** 🚧 **IN PROGRESS**
-- Mixed Operations: 1.7KB/op, 54 allocs/op → **Reduce 40%** 🚧 **IN PROGRESS**  
-- Binary Size: 55.1% better than stdlib ✅ **MAINTAINED**
+### **🚨 BUFFER ACCESS RULES**
+```go
+// ❌ FORBIDDEN - Manual buffer manipulation:
+c.errLen = 0              // NEVER
+c.out = c.out[:0]         // NEVER  
+len(c.err)                // NEVER
+c.work[i] = x             // NEVER
 
-**Current Phase:** Implement unified buffer architecture with single conversion function
+// ✅ MANDATORY - API usage only:
+c.clearError()            // Reset error
+c.hasError()              // Check error  
+c.writeStringToErr(s)     // Write error
+c.getErrorString()        // Read error
+```
 
-⚠️ **CRITICAL CONSTRAINTS:** TinyString operates at **133% higher memory usage** and **173% more allocations** than standard library as baseline. Optimization targets are relative to current TinyString performance, prioritizing binary size reduction for WebAssembly deployment over runtime efficiency.
+### **🎯 CORE FUNCTIONS SPECIFICATION**
+```go
+// anyToBuff - Universal conversion (REUSE existing implementations)
+func anyToBuff(c *conv, dest buffDest, value any)
+// dest: buffOut | buffWork | buffErr
+// NO error return, writes errors via c.wrErr()
+
+// wrErr - Language-aware error system (NO T() dependency)  
+func (c *conv) wrErr(msgs ...any) *conv
+// Direct buffer writing, uses detectLanguage() & getTranslation()
+// NO recursion, NO new conv creation
+
+// detectLanguage - Helper (REUSE defLang)
+func detectLanguage(c *conv) lang
+
+// getTranslation - Helper (REUSE LocStr indexing)  
+func getTranslation(locStr LocStr, currentLang lang) string
+```
+
+### **📋 BUFFER STATE API**
+```go
+// ✅ USE THESE METHODS ONLY:
+c.hasError()              // c.errLen > 0
+c.hasWorkContent()        // c.workLen > 0  
+c.hasOutContent()         // c.outLen > 0
+c.clearError()            // c.errLen = 0
+c.writeStringToErr(s)     // Write to error buffer
+c.getErrorString()        // Read error buffer
+c.wrStringToWork(s)       // Write to work buffer
+c.getWorkString()         // Read work buffer
+```
+
+## 🔧 **IMPLEMENTATION PRIORITIES**
+
+### **Priority 1: Complete anyToBuff()**
+- REUSE existing: `fmtIntToOut()`, `floatToOut()`, `wrStringToOut()`
+- Add helpers: `writeStringToDest()`, `writeIntToDest()`, `writeFloatToDest()`
+- Handle complex types: store in `pointerVal` (type `any`)
+
+### **Priority 2: Complete wrErr()**  
+- NO manual buffer access
+- Use `detectLanguage()` & `getTranslation()`
+- Convert non-LocStr types via `anyToBuff(c, buffWork, v)`
+
+### **Priority 3: Buffer API Migration**
+- Replace all `len(c.err) > 0` with `c.hasError()`
+- Replace all manual buffer resets with API calls
+- Update error access to use `c.getErrorString()`
+
+## 🚧 **CURRENT ISSUES TO FIX**
+
+### **Critical Errors in Code:**
+1. **error.go**: Still accessing `string(t.err[:t.errLen])` manually
+2. **Inconsistent API usage**: Mix of manual and API access
+3. **wrErr()**: Not using work buffer correctly for type conversion
+
+### **Next Actions:**
+1. Fix error.go to use ONLY buffer API
+2. Test anyToBuff() with simple types  
+3. Implement missing buffer state methods
+4. Update all error checking to use hasError()
+
+## 📝 **ARCHITECTURAL CONSTRAINTS**
+- **WebAssembly-first**: Binary size over runtime performance
+- **No stdlib**: Manual implementations only (no fmt, strings, strconv)
+- **Dictionary errors**: Use D.* constants only
+- **TinyGo compatible**: Limited reflection, manual conversions
+- **Current baseline**: 133% more memory than stdlib (optimize from here)
+
+## ✅ **SUCCESS CRITERIA**
+- [ ] anyToBuff() works for all supported types
+- [ ] wrErr() writes errors without recursion/new conv
+- [ ] All buffer access via API methods only
+- [ ] Tests pass with unified architecture
+- [ ] Memory allocation reduction measurable
+
+---
+**FOCUS**: Implement buffer API compliance FIRST, then optimize performance.
+**RULE**: When in doubt, use the buffer API method, never direct access.
 
 ## 🏗️ **UNIFIED BUFFER ARCHITECTURE**
 
