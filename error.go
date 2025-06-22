@@ -19,7 +19,7 @@ func Err(values ...any) *conv {
 // Example: tinystring.Errf("invalid value: %s", value).Error()
 func Errf(format string, args ...any) *conv {
 	c := getConv() // Always obtain from pool
-	c.sprintf(format, args...)
+	c.applyFormatTemplate(format, args...)
 	c.kind = KErr
 	return c
 }

@@ -31,18 +31,12 @@ func getConv() *conv {
 func (c *conv) putConv() {
 	// Reset all buffer positions using centralized method
 	c.resetAllBuffers()
-
 	// Clear buffer contents (keep capacity for reuse)
 	c.out = c.out[:0]
 	c.work = c.work[:0]
 	c.err = c.err[:0]
 
-	// Reset other fields to default state
-	c.intVal = 0
-	c.uintVal = 0
-	c.floatVal = 0
-	c.boolVal = false
-	c.stringSliceVal = nil
+	// Reset other fields to default state - only keep pointerVal and kind
 	c.pointerVal = nil
 	c.kind = KString
 
@@ -264,91 +258,26 @@ func (c *conv) clearError() {
 }
 
 // =============================================================================
-// CENTRALIZED CONVERSION METHODS - Replacement for ensureStringInOut()
-// Separated responsibilities: conversion logic vs buffer management
+// SIMPLIFIED CONVERSION - Uses only anyToBuff universal function
 // =============================================================================
 
-// convertToOutBuffer converts current value to out buffer using centralized methods
-// This replaces the conversion logic from ensureStringInOut() without buffer management
-func (c *conv) convertToOutBuffer() {
+// ensureStringInOut ensures string representation is available in out buffer using anyToBuff
+// Simplified to use only the universal anyToBuff function instead of custom conversion logic
+func (c *conv) ensureStringInOut() string {
 	if c.kind == KErr {
-		return
+		return c.getErrorString()
 	}
 
 	// Only convert if out buffer is empty (avoid redundant conversions)
 	if c.outLen > 0 {
-		return // Already converted
+		return c.getOutString() // Already converted
 	}
 
-	switch c.kind {
-	case KString:
-		// String values should already be in out buffer from assignment
-		// This is a defensive case - shouldn't normally happen
-		return
-	case KPointer:
-		// For string pointers, get current value and store in out buffer
-		if c.pointerVal != nil {
-			if strPtr, ok := c.pointerVal.(*string); ok {
-				c.rstOut()
-				c.wrStringToOut(*strPtr)
-			}
-		}
-
-	case KSliceStr:
-		// Convert string slice to space-separated string in out buffer
+	// Use anyToBuff for all conversions - universal approach
+	if c.pointerVal != nil {
 		c.rstOut()
-		if len(c.stringSliceVal) == 0 {
-			// Empty slice = empty buffer (already reset)
-			return
-		} else if len(c.stringSliceVal) == 1 {
-			// Single element - direct write
-			c.wrStringToOut(c.stringSliceVal[0])
-		} else {
-			// Multiple elements - join with spaces using centralized methods
-			for i, s := range c.stringSliceVal {
-				if i > 0 {
-					c.wrStringToOut(" ")
-				}
-				c.wrStringToOut(s)
-			}
-		}
-
-	case KInt:
-		// Convert integer to string using centralized output
-		c.rstOut()
-		c.fmtIntToOut(c.intVal, 10, true)
-
-	case KUint:
-		// Convert unsigned integer to string using centralized output
-		c.rstOut()
-		c.fmtIntToOut(int64(c.uintVal), 10, false)
-
-	case KFloat64:
-		// Convert float64 to string using centralized output
-		c.rstOut()
-		c.floatToOut()
-
-	case KBool:
-		// Convert boolean to string using centralized output
-		c.rstOut()
-		if c.boolVal {
-			c.wrStringToOut(trueStr)
-		} else {
-			c.wrStringToOut(falseStr)
-		}
-
-	default:
-		// Unknown kind - reset to empty
-		c.rstOut()
+		anyToBuff(c, buffOut, c.pointerVal)
 	}
-}
 
-// ensureStringInOut ensures string representation is available in out buffer
-// This is the main replacement for ensureStringInOut() calls across the codebase
-func (c *conv) ensureStringInOut() string {
-	// Convert current value to out buffer if needed
-	c.convertToOutBuffer()
-
-	// Return string from centralized buffer management
 	return c.getOutString()
 }

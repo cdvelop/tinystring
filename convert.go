@@ -225,7 +225,10 @@ func genInt[T anyInt](c *conv, v T, op int) {
 	intVal := int64(v)
 	switch op {
 	case 0:
-		c.kind = KInt                               // setValue	case 1:
+		c.kind = KInt                               // setValue
+		c.pointerVal = intVal                       // Store original value
+		fmtIntGeneric(c, intVal, 10, true, buffOut) // any2s
+	case 1:
 		fmtIntGeneric(c, intVal, 10, true, buffOut) // any2s
 	case 2:
 		// Direct conversion to out buffer
@@ -237,7 +240,10 @@ func genUint[T anyUint](c *conv, v T, op int) {
 	uintVal := uint64(v)
 	switch op {
 	case 0:
-		c.kind = KUint                                       // setValue	case 1:
+		c.kind = KUint                                       // setValue
+		c.pointerVal = uintVal                               // Store original value
+		fmtIntGeneric(c, int64(uintVal), 10, false, buffOut) // any2s
+	case 1:
 		fmtIntGeneric(c, int64(uintVal), 10, false, buffOut) // any2s
 	case 2:
 		// Direct conversion to out buffer
@@ -249,7 +255,10 @@ func genFloat[T anyFloat](c *conv, v T, op int) {
 	floatVal := float64(v)
 	switch op {
 	case 0:
-		c.kind = KFloat64 // setValue
+		c.kind = KFloat64                    // setValue
+		c.pointerVal = floatVal              // Store original value
+		c.rstOut()
+		c.floatToOut(floatVal)
 	case 1:
 		// Direct float to string conversion
 		c.rstOut()

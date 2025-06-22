@@ -1,6 +1,6 @@
 package tinystring
 
-// Phase 13: Static error messages to eliminate T() allocations in hot path
+// Phase 13: Static error messages to eliminate T() allocations
 var (
 	errBaseInvalid       = "base invalid"
 	errNumberOverflow    = "number overflow"
@@ -77,51 +77,67 @@ func parseSmallInt(s string) (int, error) {
 // Shared helper methods to reduce code duplication between numeric.go and format.go
 
 // tryParseAs attempts to parse content as the specified numeric type with fallback to float
-func (t *conv) tryParseAs(parseType kind, base int) bool {
+func (c *conv) tryParseAs(parseType kind, base int) bool {
 	// Save original state (inline saveState)
-	oBuf := make([]byte, t.outLen)
-	copy(oBuf, t.out[:t.outLen])
-	oVT := t.kind
+	oBuf := make([]byte, c.outLen)
+	copy(oBuf, c.out[:c.outLen])
+	oVT := c.kind
+	
 	// Try direct parsing based on type
 	switch parseType {
 	case KInt:
-		t.stringToInt(base)
+		inp := c.ensureStringInOut()
+		c.clearError() // Clear error before parsing
+		if stringToInt(c, inp, base, buffOut) { // Write result directly to output buffer
+			c.kind = KInt
+		} else {
+			// Set appropriate error for failed integer parsing
+			if len(inp) == 0 {
+				c.wrErr(D.String, D.Empty)
+			} else if base != 10 && inp[0] == '-' {
+				c.wrErr(D.Base, D.Decimal, D.Invalid)
+			} else {
+				c.wrErr(D.Format, D.Invalid)
+			}
+		}
 	case KUint:
 		// For stringToUint, we need the string content
-		t.stringToUint(string(t.out[:t.outLen]), base)
+		c.stringToUint(string(c.out[:c.outLen]), base)
 	}
 
-	if !t.hasError() {
+	if !c.hasError() {
 		return true
 	}
 
 	// Check if the error is due to invalid base with negative numbers
 	// If so, don't attempt float fallback as it would bypass base validation
-	if base != 10 && t.outLen > 0 && t.out[0] == '-' {
+	if base != 10 && c.outLen > 0 && c.out[0] == '-' {
 		return false
 	}
 
 	// If that fails, restore state and try to parse as float then convert
 	// ✅ Inline restoreState logic using API
-	t.rstOut()      // Clear buffer using API
-	t.wrToOut(oBuf) // Write using API
-	t.kind = oVT
-	t.clearError() // Reset error when restoring state using API
+	c.rstOut()      // Clear buffer using API
+	c.wrToOut(oBuf) // Write using API
+	c.kind = oVT
+	c.clearError() // Reset error when restoring state using API
 
 	// Use new independent stringToFloat function
-	inp := t.ensureStringInOut()
-	if floatVal, ok := stringToFloat(t, inp, buffErr); ok {
+	inp := c.ensureStringInOut()
+	if floatVal, ok := stringToFloat(c, inp, buffErr); ok {
 		switch parseType {
 		case KInt:
-			// Store result locally (no temp fields needed)
-			t.kind = KInt
+			// Store result using anyToBuff (no temp fields needed)
+			c.kind = KInt
+			anyToBuff(c, buffOut, int64(floatVal))
 		case KUint:
 			if floatVal < 0 {
-				t.wrErr(D.Number, D.Negative, D.Not, D.Supported)
+				c.wrErr(D.Number, D.Negative, D.Not, D.Supported)
 				return false
 			}
-			// Store result locally (no temp fields needed)
-			t.kind = KUint
+			// Store result using anyToBuff (no temp fields needed)
+			c.kind = KUint
+			anyToBuff(c, buffOut, uint64(floatVal))
 		}
 		return true
 	}
@@ -174,30 +190,53 @@ func (t *conv) tryParseAs(parseType kind, base int) bool {
 //
 // Note: Negative numbers are only supported for base 10. For other bases,
 // negative signs will out in an error.
-func (t *conv) ToInt(base ...int) (int, error) {
-	if t.hasError() { // Use buffer API
-		return 0, t
+func (c *conv) ToInt(base ...int) (int, error) {
+	if c.hasError() { // Use buffer API
+		return 0, c
 	}
 
 	b := 10 // default base
 	if len(base) > 0 {
 		b = base[0]
 	}
-	switch t.kind {
-	case KInt:
-		return int(t.intVal), nil // Direct return for integer values
-	case KUint:
-		return int(t.uintVal), nil // Direct conversion from uint
-	case KFloat64:
-		return int(t.floatVal), nil // Direct truncation from float
-	default:
-		// For string types and other types, use shared helper method for parsing with fallback
-		if t.tryParseAs(KInt, b) {
-			return int(t.intVal), nil
+
+	// For typed values, convert using anyToBuff to work buffer then parse back
+	if c.kind != KString {
+		// If we already have an integer type, use the stored value directly
+		if c.kind == KInt {
+			if intVal, ok := c.pointerVal.(int64); ok {
+				return int(intVal), nil
+			}
+		} else if c.kind == KUint {
+			if uintVal, ok := c.pointerVal.(uint64); ok {
+				return int(uintVal), nil
+			}
+		} else if c.kind == KFloat64 {
+			if floatVal, ok := c.pointerVal.(float64); ok {
+				return int(floatVal), nil // Truncate float to int
+			}
 		}
-		// Return error if parsing failed
-		return 0, t
+		// Otherwise, convert current value to string using anyToBuff
+		c.rstWork()
+		anyToBuff(c, buffWork, c.pointerVal)
+		str := c.getWorkString()
+
+		// Parse the string representation
+		if intVal, err := parseSmallInt(str); err == nil {
+			return intVal, nil
+		}
+		// If parseSmallInt failed, continue to tryParseAs for fallback
 	}
+
+	// For string types and other types, use shared helper method for parsing with fallback
+	if c.tryParseAs(KInt, b) {
+		// tryParseAs succeeded and stringToInt stored result in pointerVal
+		if intVal, ok := c.pointerVal.(int64); ok {
+			return int(intVal), nil
+		}
+	}
+	// Return error if parsing failed
+	return 0, c
 }
 
 // ToInt64 converts the conv content to a 64-bit integer with optional base specification.
@@ -250,22 +289,27 @@ func (t *conv) ToInt(base ...int) (int, error) {
 //
 // Note: This method provides the full range of 64-bit integers, which is useful
 // for large numeric values that exceed the range of regular int type.
-func (t *conv) ToInt64(base ...int) (int64, error) {
-	if t.hasError() { // Use buffer API
-		return 0, t
+func (c *conv) ToInt64(base ...int) (int64, error) {
+	if c.hasError() { // Use buffer API
+		return 0, c
 	}
 
 	b := 10 // default base
 	if len(base) > 0 {
 		b = base[0]
 	}
+
 	// Use shared helper method for parsing with fallback
-	if t.tryParseAs(KInt, b) {
-		return t.intVal, nil
+	if c.tryParseAs(KInt, b) {
+		// Parse the resulting buffer content as int64
+		str := c.ensureStringInOut()
+		if intVal, err := parseSmallInt(str); err == nil {
+			return int64(intVal), nil
+		}
 	}
 
 	// Return error if parsing failed
-	return 0, t
+	return 0, c
 }
 
 // ToUint converts the conv content to an unsigned integer with optional base specification.
@@ -313,9 +357,9 @@ func (t *conv) ToInt64(base ...int) (int64, error) {
 //
 // Note: Negative numbers are never supported for unsigned integers and will
 // always out in an error, regardless of the base.
-func (t *conv) ToUint(base ...int) (uint, error) {
-	if t.hasError() { // Use buffer API
-		return 0, t
+func (c *conv) ToUint(base ...int) (uint, error) {
+	if c.hasError() { // Use buffer API
+		return 0, c
 	}
 
 	b := 10 // default base
@@ -323,29 +367,35 @@ func (t *conv) ToUint(base ...int) (uint, error) {
 		b = base[0]
 	}
 
-	switch t.kind {
-	case KUint:
-		return uint(t.uintVal), nil // Direct return for uint values
-	case KInt:
-		if t.intVal < 0 {
-			t.wrErr(D.Number, D.Negative, D.Not, D.Supported)
-			return 0, t
+	// For typed values, convert using anyToBuff and check for negatives
+	if c.kind != KString {
+		// Convert current value to string first
+		c.rstWork()
+		anyToBuff(c, buffWork, c.pointerVal)
+		str := c.getWorkString()
+
+		// Check for negative values
+		if len(str) > 0 && str[0] == '-' {
+			c.wrErr(D.Number, D.Negative, D.Not, D.Supported)
+			return 0, c
 		}
-		return uint(t.intVal), nil // Direct conversion from int if positive
-	case KFloat64:
-		if t.floatVal < 0 {
-			t.wrErr(D.Number, D.Negative, D.Not, D.Supported)
-			return 0, t
+
+		// Parse as unsigned
+		if intVal, err := parseSmallInt(str); err == nil && intVal >= 0 {
+			return uint(intVal), nil
 		}
-		return uint(t.floatVal), nil // Direct truncation from float if positive
-	default:
-		// For string types and other types, use shared helper method for parsing with fallback
-		if t.tryParseAs(KUint, b) {
-			return uint(t.uintVal), nil
-		}
-		// Return error if parsing failed
-		return 0, t
 	}
+
+	// For string types and other types, use shared helper method for parsing with fallback
+	if c.tryParseAs(KUint, b) {
+		// Parse the resulting buffer content
+		str := c.ensureStringInOut()
+		if intVal, err := parseSmallInt(str); err == nil && intVal >= 0 {
+			return uint(intVal), nil
+		}
+	}
+	// Return error if parsing failed
+	return 0, c
 }
 
 // ToFloat converts the conv content to a float64 (double precision floating point).
@@ -386,53 +436,74 @@ func (t *conv) ToUint(base ...int) (uint, error) {
 //
 // Note: This method uses a custom float parsing implementation that may have
 // different precision characteristics compared to the standard library.
-func (t *conv) ToFloat() (float64, error) {
-	if t.hasError() { // Use buffer API
-		return 0, t
+func (c *conv) ToFloat() (float64, error) {
+	if c.hasError() { // Use buffer API
+		return 0, c
 	}
 
-	switch t.kind {
-	case KFloat32:
-		return t.floatVal, nil // Direct return for float values	case KInt:
-	case KUint:
-		return float64(t.uintVal), nil // Direct conversion from uint
-	default: // For string types and other types, parse as float
-		t.stringToFloat()
-		if t.hasError() { // Use buffer API
-			return 0, t
+	// For typed values, convert using anyToBuff to work buffer then parse
+	if c.kind != KString {
+		c.rstWork()
+		anyToBuff(c, buffWork, c.pointerVal)
+		str := c.getWorkString()
+
+		// Use stringToFloat to parse
+		if floatVal, ok := stringToFloat(c, str, buffErr); ok {
+			return floatVal, nil
 		}
-		return t.floatVal, nil
+		return 0, c
 	}
+
+	// For string types, parse as float directly
+	str := c.ensureStringInOut()
+	if floatVal, ok := stringToFloat(c, str, buffErr); ok {
+		return floatVal, nil
+	}
+
+	return 0, c
 }
 
-// stringToInt converts string to signed integer with specified base and stores in conv struct.
-// This unified method handles both int and int64 conversions.
-func (t *conv) stringToInt(base int) {
-	inp := t.ensureStringInOut()
+// stringToInt converts string to signed integer with specified base and stores result in pointerVal
+// Independent function that receives parameters instead of using temp fields
+// This unified function handles both int and int64 conversions using buffer API only
+// Returns success status - does not set errors (caller handles error reporting)
+func stringToInt(c *conv, inp string, base int, dest buffDest) bool {
 	if len(inp) == 0 {
-		return
+		return false
 	}
 
 	isNeg := false
 	if inp[0] == '-' {
 		if base != 10 {
-			t.wrErr(D.Base, D.Decimal, D.Invalid)
-			return
+			return false
 		}
-		isNeg = true // Update the conv struct with the string without the negative sign
-		t.setString(inp[1:])
-	}
-	t.stringToIn(base)
-	if t.hasError() { // Use buffer API
-		return
+		isNeg = true
+		inp = inp[1:] // Process without negative sign
 	}
 
-	if isNeg {
-		t.intVal = -int64(t.uintVal)
-	} else {
-		t.intVal = int64(t.uintVal)
+	// Try parsing with parseSmallInt first
+	if intVal, err := parseSmallInt(inp); err == nil {
+		if isNeg {
+			intVal = -intVal
+		}
+		// Store the result in pointerVal and update buffer state based on destination
+		c.pointerVal = int64(intVal)
+		switch dest {
+		case buffOut:
+			// Write the integer value as string to output buffer for string representation
+			anyToBuff(c, buffOut, int64(intVal))
+		case buffWork:
+			// Write the integer value as string to work buffer
+			anyToBuff(c, buffWork, int64(intVal))
+		case buffErr:
+			// This case shouldn't happen for successful parsing
+			anyToBuff(c, buffErr, int64(intVal))
+		}
+		return true
 	}
-	t.kind = KInt
+
+	// If parseSmallInt fails, return false (no error set)
+	return false
 }
 
 // stringToUint converts string to uint with specified base and stores in conv struct.
@@ -562,7 +633,9 @@ func (t *conv) stringToIn(base int) {
 	// Phase 11: Extended fast path for common numbers (0-99999) in base 10
 	if base == 10 && len(inp) <= 5 && len(inp) > 0 {
 		if num, err := parseSmallInt(inp); err == nil {
-			t.uintVal = uint64(num)
+			// Store result using anyToBuff to output buffer
+			t.rstOut()
+			anyToBuff(t, buffOut, uint64(num))
 			t.kind = KUint
 			return
 		}
@@ -620,7 +693,9 @@ func (t *conv) stringToIn(base int) {
 		}
 	}
 
-	t.uintVal = res
+	// Store result using anyToBuff to output buffer
+	t.rstOut()
+	anyToBuff(t, buffOut, res)
 	t.kind = KUint
 }
 

@@ -11,29 +11,25 @@ func (t *conv) Join(sep ...string) *conv {
 		separator = sep[0]
 	}
 
-	// Handle case when we have a string slice stored
-	if t.kind == KSliceStr {
-		if len(t.stringSliceVal) == 0 {
-			t.setString("")
-		} else if len(t.stringSliceVal) == 1 {
-			t.setString(t.stringSliceVal[0])
-		} else {
-			c := Convert()
-			for i, s := range t.stringSliceVal {
+	// Handle case when we have a string slice stored (LAZY CONVERSION)
+	if t.kind == KSliceStr && t.pointerVal != nil {
+		if slice, ok := t.pointerVal.([]string); ok {
+			// Direct join using anyToBuff to output buffer
+			t.rstOut()
+			for i, s := range slice {
 				if i > 0 {
-					c.Write(separator)
+					anyToBuff(t, buffOut, separator)
 				}
-				c.Write(s)
+				anyToBuff(t, buffOut, s)
 			}
-			t.setString(c.String())
 		}
 		return t
 	}
 
-	// If content is already a string, we split it and join it again with the new separator
+	// For other types, convert to string first using anyToBuff through ensureStringInOut
 	str := t.ensureStringInOut()
 	if str != "" {
-		// Split content by whitespace using simple string operations
+		// Split content by whitespace and rejoin with new separator
 		var parts []string
 		runes := []rune(str)
 		start := 0
@@ -50,27 +46,15 @@ func (t *conv) Join(sep ...string) *conv {
 			parts = append(parts, string(runes[start:]))
 		}
 
-		// Join parts with the separator using pre-allocated buffer
+		// Join parts with the separator using anyToBuff only
 		if len(parts) > 0 {
-			tL := 0
-			for _, part := range parts {
-				tL += len(part)
-			}
-			tL += (len(parts) - 1) * len(separator)
-
-			// Inline makeBuf logic
-			bufCap := tL
-			if bufCap < defaultBufCap {
-				bufCap = defaultBufCap
-			}
-			out := make([]byte, 0, bufCap)
+			t.rstOut() // Reset output buffer
 			for i, part := range parts {
-				out = append(out, part...)
-				if i < len(parts)-1 {
-					out = append(out, separator...)
+				if i > 0 {
+					anyToBuff(t, buffOut, separator)
 				}
+				anyToBuff(t, buffOut, part)
 			}
-			t.setString(string(out))
 		}
 	}
 

@@ -7,13 +7,13 @@ package tinystring
 func Fmt(format string, args ...any) *conv {
 	// Inline unifiedFormat logic - eliminated wrapper function
 	out := getConv() // Always obtain from pool
-	out.sprintf(format, args...)
+	out.applyFormatTemplate(format, args...)
 	return out
 }
 
-// formatValue converts any value to string and stores in conv struct.
-// This is an internal conv method that modifies the struct instead of returning values.
-func (c *conv) formatValue(value any) {
+// writeValueToBuffer converts any value to string and writes to buffer using anyToBuff.
+// This follows the unified buffer architecture - no manual buffer access.
+func (c *conv) writeValueToBuffer(value any) {
 	switch val := value.(type) {
 	case bool:
 		if val {
@@ -58,43 +58,33 @@ func (c *conv) formatValue(value any) {
 	}
 }
 
-// RoundDecimals rounds a numeric value to the specified number of decimal places
+// applyRoundingToNumber rounds a numeric value to the specified number of decimal places
 // Default behavior is rounding up. Use .Down() to round down.
 // Example: Convert(3.154).RoundDecimals(2).String() → "3.16"
 func (t *conv) RoundDecimals(decimals int) *conv {
-	return t.roundDecimalsInternal(decimals, false) // false = round up (default)
+	return t.applyRoundingToNumber(decimals, false) // false = round up (default)
 }
 
-// roundDecimalsInternal handles rounding with specified direction
-func (t *conv) roundDecimalsInternal(decimals int, roundDown bool) *conv {
-	if len(t.err) > 0 {
+// applyRoundingToNumber handles rounding with specified direction using buffer API
+func (t *conv) applyRoundingToNumber(decimals int, roundDown bool) *conv {
+	if t.hasError() {
 		return t
 	}
-	// If we already have a float value, use it directly to avoid string conversion
-	var val float64
-	if t.kind == KFloat64 {
-		// For float type, we need to get the current value from out buffer
-		inp := t.ensureStringInOut()
-		if floatVal, ok := stringToFloat(t, inp, buffErr); ok {
-			val = floatVal
-		} else {
-			val = 0
-		}
-	} else { // Parse current string content as float without creating temporary conv
-		inp := t.ensureStringInOut()
-		if floatVal, ok := stringToFloat(t, inp, buffErr); ok {
-			val = floatVal
-		} else {
-			val = 0
-			t.clearError() // Clear error buffer using API
-		}
+
+	// Parse current buffer content as float using independent conversion
+	currentStr := t.ensureStringInOut()
+	val, ok := stringToFloat(t, currentStr, buffErr)
+	if !ok {
+		// Not a valid number, keep original value
+		return t
 	}
 
-	// Apply rounding directly without creating temporary objects
+	// Apply rounding directly using buffer API
 	multiplier := 1.0
 	for i := 0; i < decimals; i++ {
 		multiplier *= 10
 	}
+
 	var rounded float64
 	if roundDown {
 		// Round down (floor)
@@ -127,7 +117,7 @@ func (t *conv) roundDecimalsInternal(decimals int, roundDown bool) *conv {
 		}
 	}
 
-	// Update the current conv object directly instead of creating a new one
+	// Write result back to buffer using independent conversion
 	t.rstOut()
 	floatTo(t, rounded, buffOut)
 	t.clearError()
@@ -138,29 +128,16 @@ func (t *conv) roundDecimalsInternal(decimals int, roundDown bool) *conv {
 // This method works by taking the current rounded value and ensuring it represents the floor
 // Example: Convert(3.154).RoundDecimals(2).Down().String() → "3.15"
 func (t *conv) Down() *conv {
-	if len(t.err) > 0 {
+	if t.hasError() {
 		return t
 	}
 
-	// Parse the current value directly into existing conv
-	var val float64
-	if t.kind == KFloat64 {
-		// Get float value from buffer
-		inp := t.ensureStringInOut()
-		if floatVal, ok := stringToFloat(t, inp, buffErr); ok {
-			val = floatVal
-		} else {
-			val = 0
-		}
-	} else {
-		// Parse current string content as float directly
-		inp := t.ensureStringInOut()
-		if floatVal, ok := stringToFloat(t, inp, buffErr); ok {
-			val = floatVal
-		} else {
-			// Not a number, return as-is
-			return t
-		}
+	// Parse current buffer content as float using independent conversion
+	currentStr := t.ensureStringInOut()
+	val, ok := stringToFloat(t, currentStr, buffErr)
+	if !ok {
+		// Not a number, return as-is
+		return t
 	}
 	// Detect decimal places from the current content
 	decimalPlaces := 0
@@ -216,18 +193,18 @@ func (t *conv) Down() *conv {
 func (t *conv) FormatNumber() *conv {
 	if t.hasError() {
 		return t
-	} 
-	
+	}
+
 	// Get current string content and try to parse as number
 	inp := t.ensureStringInOut()
-	
+
 	// Try to parse as integer first using parseSmallInt
 	if intVal, err := parseSmallInt(inp); err == nil {
 		// Direct formatting for parsed integer
 		t.formatIntDirectly(int64(intVal))
 		return t
 	}
-	
+
 	// Try to parse as float using stringToFloat
 	if floatVal, ok := stringToFloat(t, inp, buffErr); ok {
 		// Use the parsed float value for formatting
@@ -278,7 +255,7 @@ func (t *conv) FormatNumber() *conv {
 		}()
 		// Fmt the integer part with commas directly
 		t.setString(intPart)
-		t.fmtNum()
+		t.addThousandSeparators()
 		iPart := t.ensureStringInOut()
 
 		// Reconstruct the number
@@ -299,92 +276,20 @@ func (t *conv) FormatNumber() *conv {
 	oBuf := make([]byte, t.outLen)
 	copy(oBuf, t.out[:t.outLen])
 	oType := t.kind
-	// Try to parse as integer first using existing s2Int
-	t.setString(str)
-	t.stringToInt(10)
-	if len(t.err) == 0 {
+	// Try to parse as integer first using parseSmallInt
+	if intVal, err := parseSmallInt(str); err == nil {
 		// Phase 10 Optimization: Use direct formatting for parsed integer
-		t.formatIntDirectly(t.intVal)
-		t.err = t.err[:0]
+		t.formatIntDirectly(int64(intVal))
+		t.clearError()
 		return t
 	}
-	// Try to parse as float using existing parseFloatManual
-	t.err = t.err[:0] // Reset error before trying float parsing
-	t.setString(str)
-	// Inline parseFloat logic
-	t.stringToFloat()
-	if len(t.err) == 0 { // Use the parsed float value
-		t.kind = KFloat64
-		t.f2sMan(-1)
-		fStr := t.ensureStringInOut()
-		// Inline rmZeros logic
-		fStr = func(s string) string {
-			dotIndex := func() int {
-				for i := range len(s) {
-					if s[i] == '.' {
-						return i
-					}
-				}
-				return -1
-			}()
-			if dotIndex == -1 {
-				return s // No decimal point, return as is
-			}
-
-			// Find the last non-zero digit after decimal point
-			lastNonZero := len(s) - 1
-			for i := len(s) - 1; i > dotIndex; i-- {
-				if s[i] != '0' {
-					lastNonZero = i
-					break
-				}
-			}
-
-			// If all digits after decimal are zeros, remove decimal point too
-			if lastNonZero == dotIndex {
-				return s[:dotIndex]
-			}
-
-			return s[:lastNonZero+1]
-		}(fStr)
-		t.setString(fStr)
-		// Phase 8.2 Optimization: Use optimized split without allocations
-		// Inline splitFloatIndices logic
-		intPart, decPart, hasDecimal := func() (string, string, bool) {
-			str := t.ensureStringInOut()
-			for i, char := range str {
-				if char == '.' {
-					return str[:i], str[i+1:], true
-				}
-			}
-			return str, "", false
-		}()
-		// Fmt the integer part with commas directly
-		if intPart != "" {
-			t.setString(intPart)
-			t.fmtNum()
-			iPart := t.ensureStringInOut()
-
-			// Reconstruct the number with formatted decimal part
-			var out string
-			if hasDecimal && decPart != "" {
-				// Also format the decimal part with commas for consistency with test expectation
-				dPart := decPart
-				if len(dPart) > 3 { // Save current state
-					sIP := t.ensureStringInOut()
-					t.setString(dPart)
-					t.fmtNum()
-					dPart = t.ensureStringInOut()
-					// Restore state for final out construction
-					t.setString(sIP)
-				}
-				out = iPart + "." + dPart
-			} else {
-				out = iPart
-			}
-			t.setString(out)
-		}
-		t.err = t.err[:0]
+	// Try to parse as float using stringToFloat
+	if floatVal, ok := stringToFloat(t, str, buffErr); ok {
+		// Use the parsed float value
+		t.rstOut()
+		floatTo(t, floatVal, buffOut)
+		t.addThousandSeparators() // Add thousand separators
+		t.clearError()
 		return t
 	} else {
 		// ✅ Restore original state if parsing failed using API
@@ -400,10 +305,9 @@ func (t *conv) FormatNumber() *conv {
 }
 
 // rmZeros removes trailing zeros from decimal numbers
-// formatNumberWithCommas adds thousand separators to the numeric string in conv struct.
-// This is an internal conv method that modifies the struct instead of returning values.
-// Optimized to minimize allocations and use more efficient buffer operations.
-func (c *conv) fmtNum() {
+// addThousandSeparators adds thousand separators to the numeric string in buffer.
+// This follows the unified buffer architecture - operates on current buffer content.
+func (c *conv) addThousandSeparators() {
 	numStr := c.ensureStringInOut()
 	if len(numStr) == 0 {
 		return
@@ -446,11 +350,9 @@ func (c *conv) fmtNum() {
 // splitFloat splits a float string into integer and decimal parts.
 // Phase 8.2: Optimized version that returns split indices without allocating new strings
 
-// f2sMan converts a float64 to a string and stores in conv struct.
-// This is an internal conv method that modifies the struct instead of returning values.
-// Optimized to avoid string concatenations and reduce allocations.
-func (c *conv) f2sMan(precision int) {
-	value := c.floatVal
+// writeFloatToBuffer converts a float64 to a string and writes to buffer using buffer API.
+// This follows the unified buffer architecture - accepts value as parameter instead of using struct field.
+func (c *conv) writeFloatToBuffer(value float64, precision int) {
 
 	if value == 0 {
 		if precision > 0 {
@@ -588,7 +490,9 @@ func (c *conv) f2sMan(precision int) {
 
 // Unified handler for all format specifiers
 
-func (c *conv) sprintf(format string, args ...any) {
+// applyFormatTemplate applies printf-style formatting to arguments and writes to buffer.
+// This follows the unified buffer architecture - all operations use buffer API.
+func (c *conv) applyFormatTemplate(format string, args ...any) {
 	// Reset buffer at start to avoid concatenation issues
 	c.out = c.out[:0] // Inline resetBuffer
 
@@ -717,7 +621,7 @@ func (c *conv) sprintf(format string, args ...any) {
 							oldBuf := make([]byte, len(c.out))
 							copy(oldBuf, c.out) // Perform calculation with isolated buffer
 							c.out = c.out[:0]   // Inline resetBuffer
-							
+
 							if param == 10 {
 								intTo(c, intVal, buffOut)
 							} else {
@@ -740,7 +644,7 @@ func (c *conv) sprintf(format string, args ...any) {
 							oldBuf := make([]byte, len(c.out))
 							copy(oldBuf, c.out) // Perform calculation with isolated buffer
 							c.out = c.out[:0]   // Inline resetBuffer
-							
+
 							floatTo(c, floatVal, buffOut)
 							str = c.ensureStringInOut()
 
@@ -768,7 +672,7 @@ func (c *conv) sprintf(format string, args ...any) {
 
 						// Perform calculation with isolated buffer
 						c.out = c.out[:0] // Inline resetBuffer
-						c.formatValue(arg)
+						c.writeValueToBuffer(arg)
 						str = c.ensureStringInOut()
 
 						// Restore original state including buffer
