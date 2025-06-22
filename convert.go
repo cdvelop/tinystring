@@ -594,3 +594,54 @@ func writeFloatToDest(c *conv, dest buffDest, val float64) {
 		writeStringToDest(c, dest, result)
 	}
 }
+
+// =============================================================================
+// BASE CONVERSION FUNCTIONS - MOVED FROM FMT.GO
+// =============================================================================
+
+// i2sBase converts an int64 to a string with specified base and writes to destination buffer
+// Independent function that receives parameters instead of using temp fields
+func i2sBase(c *conv, number int64, base int, dest buffDest) {
+	if number == 0 {
+		anyToBuff(c, dest, "0")
+		return
+	}
+
+	// Use optimized intTo() for decimal base
+	if base == 10 {
+		intTo(c, number, dest)
+		return
+	}
+
+	isNegative := number < 0
+	if isNegative {
+		number = -number
+	}
+
+	// Inline validateBase logic
+	if base < 2 || base > 36 {
+		anyToBuff(c, buffErr, D.Base)
+		anyToBuff(c, buffErr, " ")
+		anyToBuff(c, buffErr, D.Invalid)
+		return
+	}
+
+	// Convert to string with base
+	digits := "0123456789abcdef"
+	var out [64]byte // Maximum digits for int64 in base 2
+	idx := len(out)
+
+	// Build string backwards
+	for number > 0 {
+		idx--
+		out[idx] = digits[number%int64(base)]
+		number /= int64(base)
+	}
+
+	if isNegative {
+		idx--
+		out[idx] = '-'
+	}
+
+	writeBytesToDest(c, dest, out[idx:])
+}

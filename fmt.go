@@ -128,10 +128,9 @@ func (t *conv) roundDecimalsInternal(decimals int, roundDown bool) *conv {
 	}
 
 	// Update the current conv object directly instead of creating a new one
-	t.floatVal = rounded
-	t.kind = KFloat64
-	t.f2sMan(decimals)
-	t.err = t.err[:0]
+	t.rstOut()
+	floatTo(t, rounded, buffOut)
+	t.clearError()
 	return t
 }
 
@@ -146,15 +145,22 @@ func (t *conv) Down() *conv {
 	// Parse the current value directly into existing conv
 	var val float64
 	if t.kind == KFloat64 {
-		val = t.floatVal
+		// Get float value from buffer
+		inp := t.ensureStringInOut()
+		if floatVal, ok := stringToFloat(t, inp, buffErr); ok {
+			val = floatVal
+		} else {
+			val = 0
+		}
 	} else {
 		// Parse current string content as float directly
-		t.stringToFloat()
-		if len(t.err) > 0 {
+		inp := t.ensureStringInOut()
+		if floatVal, ok := stringToFloat(t, inp, buffErr); ok {
+			val = floatVal
+		} else {
 			// Not a number, return as-is
 			return t
 		}
-		val = t.floatVal
 	}
 	// Detect decimal places from the current content
 	decimalPlaces := 0
@@ -199,32 +205,34 @@ func (t *conv) Down() *conv {
 	}
 
 	// Update the current conv object directly instead of creating new ones
-	t.floatVal = adjustedVal
-	t.kind = KFloat64
-	t.f2sMan(decimalPlaces)
-	t.err = t.err[:0]
+	t.rstOut()
+	floatTo(t, adjustedVal, buffOut)
+	t.clearError()
 	return t
 }
 
 // FormatNumber formats a numeric value with thousand separators
 // Example: Convert(1234567).FormatNumber().String() → "1,234,567"
 func (t *conv) FormatNumber() *conv {
-	if len(t.err) > 0 {
+	if t.hasError() {
 		return t
-	} // Try to use existing values directly to avoid string conversions
-	if t.kind == KInt { // We already have an integer value, use it directly
-		// Phase 10 Optimization: Direct int64 to formatted string conversion
-		t.formatIntDirectly(t.intVal)
+	} 
+	
+	// Get current string content and try to parse as number
+	inp := t.ensureStringInOut()
+	
+	// Try to parse as integer first using parseSmallInt
+	if intVal, err := parseSmallInt(inp); err == nil {
+		// Direct formatting for parsed integer
+		t.formatIntDirectly(int64(intVal))
 		return t
 	}
-	if t.kind == KUint { // Convert uint to int64 and format directly
-		// Phase 10 Optimization: Direct uint64 to formatted string conversion
-		t.formatIntDirectly(int64(t.uintVal))
-		return t
-	}
-	if t.kind == KFloat64 {
-		// We already have a float value, use it directly
-		t.f2sMan(-1)
+	
+	// Try to parse as float using stringToFloat
+	if floatVal, ok := stringToFloat(t, inp, buffErr); ok {
+		// Use the parsed float value for formatting
+		t.rstOut()
+		floatTo(t, floatVal, buffOut)
 		fStr := t.ensureStringInOut()
 		// Inline rmZeros logic
 		fStr = func(s string) string {
@@ -578,73 +586,6 @@ func (c *conv) f2sMan(precision int) {
 	c.kind = KString
 }
 
-// i2sBase converts an int64 to a string with specified base and stores in conv struct.
-// This is an internal conv method that modifies the struct instead of returning values.
-func (c *conv) i2sBase(base int) {
-	number := c.intVal
-
-	if number == 0 {
-		c.setString("0")
-		c.kind = KString
-		return
-	}
-
-	// Use optimized intTo() for decimal base
-	if base == 10 {
-		c.intTo()
-		c.kind = KString
-		return
-	}
-
-	isNegative := number < 0
-	if isNegative {
-		number = -number
-	}
-
-	// Inline validateBase logic
-	if base < 2 || base > 36 {
-		c.wrErr(D.Base, D.Invalid)
-		return
-	}
-
-	// Calculate buffer size needed
-	maxDigits := 64                            // Maximum digits for int64 in base 2
-	c.out = c.getReusableBuffer(maxDigits + 1) // +1 for potential negative sign
-
-	// Convert to string with base
-	digits := "0123456789abcdef"
-	digitCount := 0
-	temp := number
-
-	// Count digits first
-	for temp > 0 {
-		digitCount++
-		temp /= int64(base)
-	}
-
-	// Build string backwards
-	for i := digitCount - 1; i >= 0; i-- {
-		c.out = append(c.out, digits[number%int64(base)])
-		number /= int64(base)
-	}
-
-	// Reverse the buffer since we built it backwards
-	for i, j := 0, len(c.out)-1; i < j; i, j = i+1, j-1 {
-		c.out[i], c.out[j] = c.out[j], c.out[i]
-	}
-
-	if isNegative {
-		// Prepend negative sign
-		temp := make([]byte, 1+len(c.out))
-		temp[0] = '-'
-		copy(temp[1:], c.out)
-		c.out = temp
-	}
-
-	c.setStringFromBuffer()
-	c.kind = KString
-}
-
 // Unified handler for all format specifiers
 
 func (c *conv) sprintf(format string, args ...any) {
@@ -776,12 +717,11 @@ func (c *conv) sprintf(format string, args ...any) {
 							oldBuf := make([]byte, len(c.out))
 							copy(oldBuf, c.out) // Perform calculation with isolated buffer
 							c.out = c.out[:0]   // Inline resetBuffer
-							c.intVal = intVal
-							c.kind = KInt
+							
 							if param == 10 {
-								c.intTo()
+								intTo(c, intVal, buffOut)
 							} else {
-								c.i2sBase(param)
+								i2sBase(c, intVal, param, buffOut)
 							}
 							str = c.ensureStringInOut()
 
@@ -796,18 +736,15 @@ func (c *conv) sprintf(format string, args ...any) {
 					case 'f':
 						if floatVal, ok := arg.(float64); ok {
 							// Save current state including buffer
-							oldFloatVal := c.floatVal
 							oldVTpe := c.kind
 							oldBuf := make([]byte, len(c.out))
 							copy(oldBuf, c.out) // Perform calculation with isolated buffer
 							c.out = c.out[:0]   // Inline resetBuffer
-							c.floatVal = floatVal
-							c.kind = KFloat64
-							c.f2sMan(param)
+							
+							floatTo(c, floatVal, buffOut)
 							str = c.ensureStringInOut()
 
 							// Restore original state including buffer
-							c.floatVal = oldFloatVal
 							c.kind = oldVTpe
 							c.out = oldBuf
 						} else {
