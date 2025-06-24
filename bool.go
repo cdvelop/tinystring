@@ -8,7 +8,7 @@ func (t *conv) ToBool() (bool, error) {
 	}
 
 	// Get string representation using buffer API
-	inp := t.ensureStringInOut()
+	inp := t.getBuffString()
 
 	// Direct boolean string matches
 	switch inp {

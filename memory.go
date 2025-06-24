@@ -42,30 +42,11 @@ func (c *conv) resetAllBuffers() {
 	c.errLen = 0
 }
 
-// ensureOutCapacity ensures main buffer has at least the specified capacity (legacy compatibility)
-func (c *conv) ensureOutCapacity(capacity int) {
-	if cap(c.out) < capacity {
-		newCap := max(capacity, 64) // Minimum 64 bytes
-		if cap(c.out) > 0 {
-			newCap = max(cap(c.out)*2, capacity) // Double if growing
-		}
-		newBuf := make([]byte, c.outLen, newCap)
-		copy(newBuf, c.out[:c.outLen])
-		c.out = newBuf
-	}
-}
-
-// getStringFromBuffer returns string content from specified buffer destination
-// OPTIMIZED: Only reads from buffers, no ptrValue conversion for simple types
-func (c *conv) getStringFromBuffer(dest buffDest) string {
-	return c.getString(dest)
-}
-
-// ensureStringInOut ensures string representation is available in out buffer
+// getBuffString ensures string representation is available in out buffer
 // LEGACY: Maintains backward compatibility, will be deprecated
 // CRITICAL: Cannot use anyToBuff to prevent infinite recursion
 // Uses direct primitive conversion methods only
-func (c *conv) ensureStringInOut() string {
+func (c *conv) getBuffString() string {
 	if c.kind == KErr {
 		return c.getString(buffErr)
 	}

@@ -10,11 +10,11 @@ func (t *conv) Repeat(n int) *conv {
 	if n <= 0 {
 		// Clear buffer for empty out and clear ptrValue to prevent reconstruction
 		t.rstBuffer(buffOut)
-		t.ptrValue = "" // Set to empty string to prevent ensureStringInOut from reconstructing
+		t.ptrValue = "" // Set to empty string to prevent getBuffString from reconstructing
 		return t
 	}
 	// Phase 4.2: Inline newBuf method to eliminate function call overhead
-	str := t.ensureStringInOut()
+	str := t.getBuffString()
 	if len(str) == 0 {
 		// Clear buffer for empty out
 		t.rstBuffer(buffOut)

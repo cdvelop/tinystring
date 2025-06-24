@@ -81,7 +81,7 @@ func (t *conv) Truncate(maxWidth any, reservedChars ...any) *conv {
 		return t // Error chain interruption
 	}
 
-	conv := t.ensureStringInOut()
+	conv := t.getBuffString()
 	oL := len(conv) // Validate maxWidth parameter
 	mWI, ok := t.validateIntParam(maxWidth, false)
 	if !ok {
@@ -136,7 +136,7 @@ func (t *conv) TruncateName(maxCharsPerWord, maxWidth any) *conv {
 		return t // Error chain interruption
 	}
 
-	if len(t.ensureStringInOut()) == 0 {
+	if len(t.getBuffString()) == 0 {
 		return t
 	} // Validate parameters
 	mC, ok := t.validateIntParam(maxCharsPerWord, false)
@@ -149,7 +149,7 @@ func (t *conv) TruncateName(maxCharsPerWord, maxWidth any) *conv {
 		return t
 	}
 
-	words := Split(t.ensureStringInOut())
+	words := Split(t.getBuffString())
 	if len(words) == 0 {
 		return t
 	} // Step 1: Apply maxCharsPerWord rule to each word

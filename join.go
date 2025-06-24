@@ -26,8 +26,8 @@ func (t *conv) Join(sep ...string) *conv {
 		return t
 	}
 
-	// For other types, convert to string first using anyToBuff through ensureStringInOut
-	str := t.ensureStringInOut()
+	// For other types, convert to string first using anyToBuff through getBuffString
+	str := t.getBuffString()
 	if str != "" {
 		// Split content by whitespace and rejoin with new separator
 		var parts []string

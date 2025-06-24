@@ -26,8 +26,7 @@ func (c *conv) ToInt(base ...int) (int, error) {
 	// because the numeric value might have been parsed with base 10 initially
 	if baseVal != 10 {
 		// We need to parse the original string representation with the specified base
-		inp := c.ensureStringInOut()
-		c.rstBuffer(buffErr) // Clear any previous errors
+		inp := c.getBuffString()
 		if stringToInt(c, inp, baseVal, buffWork) {
 			if val, ok := c.ptrValue.(int64); ok {
 				// Check if int64 fits in int
@@ -96,7 +95,7 @@ func (c *conv) ToInt(base ...int) (int, error) {
 
 	// For string inputs, try parsing as float first if it contains decimal point
 	if c.kind == KString {
-		inp := c.ensureStringInOut()
+		inp := c.getBuffString()
 
 		// If it contains a decimal point, try parsing as float first
 		if Contains(inp, ".") {
@@ -239,7 +238,7 @@ func (c *conv) ToUint(base ...int) (uint, error) {
 
 	// For string inputs, try parsing as float first if it contains decimal point
 	if c.kind == KString {
-		inp := c.ensureStringInOut()
+		inp := c.getBuffString()
 
 		// If it contains a decimal point, try parsing as float first
 		if Contains(inp, ".") {

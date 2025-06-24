@@ -9,7 +9,7 @@ func (t *conv) Capitalize() *conv {
 		return t // Error chain interruption
 	}
 
-	str := t.ensureStringInOut()
+	str := t.getBuffString()
 	if len(str) == 0 {
 		return t
 	}
@@ -67,7 +67,7 @@ func (t *conv) changeCase(toLower bool) *conv {
 		return t // Error chain interruption
 	}
 
-	str := t.ensureStringInOut()
+	str := t.getBuffString()
 	if len(str) == 0 {
 		return t
 	}
@@ -136,7 +136,7 @@ func (t *conv) toCaseTransformMinimal(firstWordLower bool, separator string) *co
 		return t // Error chain interruption
 	}
 
-	str := t.ensureStringInOut()
+	str := t.getBuffString()
 	if len(str) == 0 {
 		return t
 	} // Pre-allocate buffer with estimated size

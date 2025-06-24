@@ -14,7 +14,7 @@
 ## Root Cause Analysis
 1. **Excessive ptrValue usage**: Storing simple types (string, int, bool) in `any` interface causes boxing allocations
 2. **Double storage**: Data stored in both buffer AND ptrValue for simple types
-3. **ensureStringInOut() redundancy**: Re-converts from ptrValue even when buffer has data
+3. **getBuffString() redundancy**: Re-converts from ptrValue even when buffer has data
 
 ## Optimization Plan
 
@@ -37,7 +37,7 @@ case string:
     // No ptrValue assignment
 ```
 
-### Phase 3: Optimize ensureStringInOut()
+### Phase 3: Optimize getBuffString()
 ```go
 // BEFORE (double work)
 if c.ptrValue != nil {
@@ -89,7 +89,7 @@ type conv struct {
 - **Implementation**: Convert numbers to string immediately in anyToBuff(), store only in buffers
 
 ### 5. API Refactoring Decisions
-- **getStringFromBuffer()**: Must use wrString API internally
+- **getBuffString()**: Must use wrString API internally
 - **Method renaming**: `fmtIntToOut` → `wrInt` with buffDest parameter
 - **Consistency**: All write methods follow pattern: `wr{Type}(dest buffDest, value)`
 - **File organization**: Each file handles its responsibilities (bool.go, numeric, etc.)
@@ -121,8 +121,8 @@ type conv struct {
    - Eliminate ptrValue assignment for simple types (string, int, bool, float)
    - Keep ptrValue only for: *string, []string, map
    - Convert numbers to string immediately via wr* methods
-3. **Replace ensureStringInOut()**: 
-   - Rename to `getStringFromBuffer(dest buffDest)`
+3. **Replace getBuffString()**: 
+   - Rename to `getBuffString(dest buffDest)`
    - Remove ptrValue logic for simple types
    - Use buffer-only approach
 4. **Update putConv()**: Keep `ptrValue = nil` (most efficient cleanup)
@@ -147,7 +147,11 @@ type conv struct {
 ```bash
 cd /c/Users/Cesar/Packages/Internal/tinystring
 
-./memory-benchmark.sh  #  Run memory benchmarks results in benchmark/benchmark_results.md
+go build -gcflags="-m" ./... # Detect variables escaping to the heap
+go test -bench=. -benchmem -memprofile=mem.prof # Profile memory from benchmarks
+go tool pprof -text ./yourbinary.test mem.prof # Analyze memory profile
+benchstat old.txt new.txt # Compare memory usage between versions
+./memory-benchmark.sh  # Run memory benchmarks results in benchmark/benchmark_results.md
 ```
 
 ## Success Metrics
@@ -159,3 +163,5 @@ cd /c/Users/Cesar/Packages/Internal/tinystring
 ## Continuous Development Notes
 - Dead code in `fmt_number.go` has been removed and tests have been run and passed.
 - Rounding logic in `fmt_precision.go` has been adjusted to align with test expectations.
+- Los intentos de optimización de capacidad de buffer no fueron efectivos y se revirtieron.
+- El enfoque actual se centra en la optimización de la manipulación de cadenas/bytes en métodos como `Capitalize`, `ToLower`, `ToUpper` para reducir las asignaciones.

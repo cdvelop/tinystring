@@ -125,7 +125,7 @@ func (c *conv) wrString(dest buffDest, s string) {
 ```go
 // ✅ OPTIMIZED - Single-pass replace with capacity estimation
 func (c *conv) optimizedReplace(old, new string) *conv {
-    s := c.ensureStringInOut()
+    s := c.getBuffString()
     if old == "" || !strings.Contains(s, old) {
         return c
     }

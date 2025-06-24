@@ -36,8 +36,6 @@ func (c *conv) wrFormat(dest buffDest, format string, args ...any) {
 	// Reset buffer at start BEFORE capacity estimation to avoid contamination
 	c.rstBuffer(dest)
 
-	// Initialize buffer with estimated size using buffer API
-	c.ensureOutCapacity(eSz)
 	argIndex := 0
 
 	for i := 0; i < len(format); i++ {

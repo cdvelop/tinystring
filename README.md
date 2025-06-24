@@ -608,17 +608,17 @@ tinystring.Convert(&originalText).RemoveTilde().ToLower().Apply()
 [Standard Library Example](benchmark/bench-memory-alloc/standard) | [TinyString Example](benchmark/bench-memory-alloc/tinystring)
 
 <!-- This table is automatically generated from memory-benchmark.sh -->
-*Last updated: 2025-06-24 14:52:01*
+*Last updated: 2025-06-24 17:18:44*
 
 Performance benchmarks comparing memory allocation patterns between standard Go library and TinyString:
 
 | 🧪 **Benchmark Category** | 📚 **Library** | 💾 **Memory/Op** | 🔢 **Allocs/Op** | ⏱️ **Time/Op** | 📈 **Memory Trend** | 🎯 **Alloc Trend** | 🏆 **Performance** |
 |----------------------------|----------------|-------------------|-------------------|-----------------|---------------------|---------------------|--------------------|
-| 📝 **String Processing** | 📊 Standard | `1.2 KB` | `48` | `3.3μs` | - | - | - |
-| | 🚀 TinyString | `3.1 KB` | `135` | `14.8μs` | ❌ **165.5% more** | ❌ **181.3% more** | ❌ **Poor** |
+| 📝 **String Processing** | 📊 Standard | `1.2 KB` | `48` | `3.1μs` | - | - | - |
+| | 🚀 TinyString | `3.1 KB` | `135` | `14.3μs` | ❌ **165.5% more** | ❌ **181.3% more** | ❌ **Poor** |
 | 🔢 **Number Processing** | 📊 Standard | `912 B` | `42` | `2.4μs` | - | - | - |
 | | 🚀 TinyString | `576 B` | `49` | `2.5μs` | 🏆 **36.8% less** | ⚠️ **16.7% more** | ✅ **Good** |
-| 🔄 **Mixed Operations** | 📊 Standard | `512 B` | `26` | `1.8μs` | - | - | - |
+| 🔄 **Mixed Operations** | 📊 Standard | `512 B` | `26` | `1.7μs` | - | - | - |
 | | 🚀 TinyString | `880 B` | `48` | `4.3μs` | ❌ **71.9% more** | ❌ **84.6% more** | ❌ **Poor** |
 
 ### 🎯 Performance Summary

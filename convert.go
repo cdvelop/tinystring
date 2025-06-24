@@ -159,7 +159,7 @@ func (t *conv) Apply() {
 	if t.kind == KPointer && t.ptrValue != nil {
 		// Type assert to *string for Apply() functionality
 		if strPtr, ok := t.ptrValue.(*string); ok && strPtr != nil {
-			*strPtr = t.ensureStringInOut()
+			*strPtr = t.getBuffString()
 		}
 	}
 	// Auto-release back to pool for memory efficiency
@@ -175,7 +175,7 @@ func (c *conv) String() string {
 		return ""
 	}
 
-	out := c.ensureStringInOut()
+	out := c.getBuffString()
 	// Auto-release back to pool for memory efficiency
 	c.putConv()
 	return out

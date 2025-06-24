@@ -66,7 +66,7 @@ func (t *conv) RemoveTilde() *conv {
 		return t
 	}
 
-	str := t.ensureStringInOut()
+	str := t.getBuffString()
 	if len(str) == 0 {
 		return t
 	}

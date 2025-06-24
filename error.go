@@ -35,7 +35,7 @@ func (c *conv) StringError() (out string, err error) {
 	}
 
 	// Otherwise return the string content and no error (safe to release to pool)
-	out = c.ensureStringInOut()
+	out = c.getBuffString()
 	c.putConv()
 	return out, nil
 }
