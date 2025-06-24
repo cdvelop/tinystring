@@ -1,0 +1,222 @@
+./memory.go:8:10: &conv{...} escapes to heap:
+./memory.go:11:14: make([]byte, 0, 64) escapes to heap:
+./memory.go:10:14: make([]byte, 0, 64) escapes to heap:
+./memory.go:9:14: make([]byte, 0, 64) escapes to heap:
+./memory.go:8:10: &conv{...} escapes to heap
+./memory.go:9:14: make([]byte, 0, 64) escapes to heap
+./memory.go:10:14: make([]byte, 0, 64) escapes to heap
+./memory.go:11:14: make([]byte, 0, 64) escapes to heap
+./num_float.go:99:15: val escapes to heap:
+./num_float.go:99:15: val escapes to heap
+./memory.go:112:20: string(c.err[:c.errLen]) escapes to heap:
+./memory.go:112:20: string(c.work[:c.workLen]) escapes to heap:
+./memory.go:112:20: string(c.out[:c.outLen]) escapes to heap:
+./memory.go:68:21: string(c.err[:c.errLen]) escapes to heap:
+./memory.go:68:21: string(c.work[:c.workLen]) escapes to heap:
+./memory.go:68:21: string(c.out[:c.outLen]) escapes to heap:
+./memory.go:63:21: string(c.err[:c.errLen]) escapes to heap:
+./memory.go:63:21: string(c.work[:c.workLen]) escapes to heap:
+./memory.go:63:21: string(c.out[:c.outLen]) escapes to heap:
+./memory.go:63:21: string(c.out[:c.outLen]) escapes to heap
+./memory.go:63:21: string(c.work[:c.workLen]) escapes to heap
+./memory.go:63:21: string(c.err[:c.errLen]) escapes to heap
+./memory.go:68:21: string(c.out[:c.outLen]) escapes to heap
+./memory.go:68:21: string(c.work[:c.workLen]) escapes to heap
+./memory.go:68:21: string(c.err[:c.errLen]) escapes to heap
+./memory.go:112:20: string(c.out[:c.outLen]) escapes to heap
+./memory.go:112:20: string(c.work[:c.workLen]) escapes to heap
+./memory.go:112:20: string(c.err[:c.errLen]) escapes to heap
+./convert.go:76:16: v escapes to heap:
+./convert.go:94:10: v escapes to heap:
+./convert.go:95:16: v escapes to heap:
+./convert.go:98:10: v escapes to heap:
+./convert.go:99:16: v escapes to heap:
+./convert.go:102:10: v escapes to heap:
+./convert.go:103:16: v escapes to heap:
+./convert.go:105:10: v escapes to heap:
+./convert.go:107:16: v escapes to heap:
+./convert.go:110:10: v escapes to heap:
+./convert.go:111:16: v escapes to heap:
+./convert.go:113:11: v escapes to heap:
+./convert.go:115:16: v escapes to heap:
+./convert.go:118:11: v escapes to heap:
+./convert.go:119:16: v escapes to heap:
+./convert.go:122:11: v escapes to heap:
+./convert.go:123:16: v escapes to heap:
+./convert.go:126:11: v escapes to heap:
+./convert.go:127:16: v escapes to heap:
+./convert.go:130:11: v escapes to heap:
+./convert.go:131:16: v escapes to heap:
+./convert.go:135:16: v escapes to heap:
+./convert.go:139:16: v escapes to heap:
+./convert.go:148:16: v escapes to heap:
+./convert.go:156:16: v escapes to heap:
+./convert.go:76:16: v escapes to heap
+./convert.go:94:10: v escapes to heap
+./convert.go:95:16: v escapes to heap
+./convert.go:98:10: v escapes to heap
+./convert.go:99:16: v escapes to heap
+./convert.go:102:10: v escapes to heap
+./convert.go:103:16: v escapes to heap
+./convert.go:105:10: v escapes to heap
+./convert.go:107:16: v escapes to heap
+./convert.go:110:10: v escapes to heap
+./convert.go:111:16: v escapes to heap
+./convert.go:113:11: v escapes to heap
+./convert.go:115:16: v escapes to heap
+./convert.go:118:11: v escapes to heap
+./convert.go:119:16: v escapes to heap
+./convert.go:122:11: v escapes to heap
+./convert.go:123:16: v escapes to heap
+./convert.go:126:11: v escapes to heap
+./convert.go:127:16: v escapes to heap
+./convert.go:130:11: v escapes to heap
+./convert.go:131:16: v escapes to heap
+./convert.go:135:16: v escapes to heap
+./convert.go:139:16: v escapes to heap
+./convert.go:148:16: v escapes to heap
+./convert.go:156:16: v escapes to heap
+./capitalize.go:149:13: make([]byte, 0, resultCap) escapes to heap:
+./capitalize.go:149:13: make([]byte, 0, resultCap) escapes to heap
+./split.go:89:31: string(ch) escapes to heap:
+./split.go:37:14: make([]string, 0, wordCount) escapes to heap:
+./split.go:80:14: make([]string, 0, len(data)) escapes to heap:
+./split.go:116:12: make([]string, 0, partCount) escapes to heap:
+./split.go:101:18: []string{...} escapes to heap:
+./split.go:76:19: []string{} escapes to heap:
+./split.go:69:18: []string{...} escapes to heap:
+./split.go:33:19: []string{} escapes to heap:
+./split.go:15:19: []string{} escapes to heap:
+./split.go:15:19: []string{} escapes to heap
+./split.go:33:19: []string{} escapes to heap
+./split.go:37:14: make([]string, 0, wordCount) escapes to heap
+./split.go:69:18: []string{...} escapes to heap
+./split.go:76:19: []string{} escapes to heap
+./split.go:80:14: make([]string, 0, len(data)) escapes to heap
+./split.go:89:31: string(ch) escapes to heap
+./split.go:101:18: []string{...} escapes to heap
+./split.go:116:12: make([]string, 0, partCount) escapes to heap
+./language.go:89:18: code escapes to heap:
+./language.go:89:18: code escapes to heap
+./translation.go:21:20: string(c.err[:c.errLen]) escapes to heap:
+./translation.go:21:20: string(c.work[:c.workLen]) escapes to heap:
+./translation.go:21:20: string(c.out[:c.outLen]) escapes to heap:
+./translation.go:21:20: string(c.out[:c.outLen]) escapes to heap
+./translation.go:21:20: string(c.work[:c.workLen]) escapes to heap
+./translation.go:21:20: string(c.err[:c.errLen]) escapes to heap
+./num_int.go:308:10: v escapes to heap:
+./num_int.go:319:39: D.Invalid escapes to heap:
+./num_int.go:319:33: " " escapes to heap:
+./num_int.go:319:26: D.Base escapes to heap:
+./num_int.go:308:10: v escapes to heap
+./num_int.go:319:26: D.Base escapes to heap
+./num_int.go:319:33: " " escapes to heap
+./num_int.go:319:39: D.Invalid escapes to heap
+./fmt_precision.go:332:9: v escapes to heap:
+./fmt_precision.go:332:9: v escapes to heap
+./fmt_template.go:146:16: v escapes to heap:
+./fmt_template.go:40:21: make([]byte, c.outLen, newCap) escapes to heap:
+./fmt_template.go:40:21: make([]byte, c.outLen, newCap) escapes to heap
+./fmt_template.go:146:16: v escapes to heap
+./error.go:99:20: string(c.err[:c.errLen]) escapes to heap:
+./error.go:99:20: string(c.work[:c.workLen]) escapes to heap:
+./error.go:99:20: string(c.out[:c.outLen]) escapes to heap:
+./error.go:99:20: string(c.out[:c.outLen]) escapes to heap
+./error.go:99:20: string(c.work[:c.workLen]) escapes to heap
+./error.go:99:20: string(c.err[:c.errLen]) escapes to heap
+./error.go:103:19: string(c.err[:c.errLen]) escapes to heap:
+./error.go:103:19: string(c.work[:c.workLen]) escapes to heap:
+./error.go:103:19: string(c.out[:c.outLen]) escapes to heap:
+./error.go:103:19: string(c.out[:c.outLen]) escapes to heap
+./error.go:103:19: string(c.work[:c.workLen]) escapes to heap
+./error.go:103:19: string(c.err[:c.errLen]) escapes to heap
+./fmt_number.go:33:14: v escapes to heap:
+./fmt_number.go:54:10: v escapes to heap:
+./fmt_number.go:70:11: v escapes to heap:
+./fmt_number.go:33:14: v escapes to heap
+./fmt_number.go:54:10: v escapes to heap
+./fmt_number.go:70:11: v escapes to heap
+./join.go:21:28: separator escapes to heap:
+./join.go:23:27: s escapes to heap:
+./join.go:40:40: string(runes[start:i]) escapes to heap:
+./join.go:46:38: string(runes[start:]) escapes to heap:
+./join.go:54:28: separator escapes to heap:
+./join.go:56:27: part escapes to heap:
+./join.go:21:28: separator escapes to heap
+./join.go:23:27: s escapes to heap
+./join.go:40:40: string(runes[start:i]) escapes to heap
+./join.go:46:38: string(runes[start:]) escapes to heap
+./join.go:54:28: separator escapes to heap
+./join.go:56:27: part escapes to heap
+./mapping.go:75:17: make([]byte, 0, len(str) * 2) escapes to heap:
+./mapping.go:75:17: make([]byte, 0, len(str) * 2) escapes to heap
+./memory.go:52:17: make([]byte, c.outLen, newCap) escapes to heap:
+./memory.go:52:17: make([]byte, c.outLen, newCap) escapes to heap
+./memory.go:175:22: string(c.err[:c.errLen]) escapes to heap:
+./memory.go:173:23: string(c.work[:c.workLen]) escapes to heap:
+./memory.go:171:22: string(c.out[:c.outLen]) escapes to heap:
+./memory.go:171:22: string(c.out[:c.outLen]) escapes to heap
+./memory.go:173:23: string(c.work[:c.workLen]) escapes to heap
+./memory.go:175:22: string(c.err[:c.errLen]) escapes to heap
+./num_validation.go:200:11: v escapes to heap:
+./num_validation.go:201:22: int64(val) escapes to heap:
+./num_validation.go:269:9: v escapes to heap:
+./num_validation.go:270:15: result escapes to heap:
+./num_validation.go:200:11: v escapes to heap
+./num_validation.go:201:22: int64(val) escapes to heap
+./num_validation.go:269:9: v escapes to heap
+./num_validation.go:270:15: result escapes to heap
+./num_validation.go:131:23: uint64(val) escapes to heap:
+./num_validation.go:190:15: result escapes to heap:
+./num_validation.go:131:23: uint64(val) escapes to heap
+./num_validation.go:190:15: result escapes to heap
+./num_validation.go:284:15: val escapes to heap:
+./num_validation.go:284:15: val escapes to heap
+./num_validation.go:68:14: make([]byte, c.outLen) escapes to heap:
+./num_validation.go:68:14: make([]byte, c.outLen) escapes to heap
+./num_int.go:282:15: v escapes to heap:
+./num_int.go:282:15: v escapes to heap
+./num_int.go:292:15: v escapes to heap:
+./num_int.go:292:15: v escapes to heap
+./parse.go:41:60: D.Found escapes to heap:
+./parse.go:41:53: D.Not escapes to heap:
+./parse.go:41:40: D.Delimiter escapes to heap:
+./parse.go:41:29: D.Invalid escapes to heap:
+./parse.go:41:19: D.Format escapes to heap:
+./parse.go:27:57: D.Allowed escapes to heap:
+./parse.go:27:44: D.Delimiter escapes to heap:
+./parse.go:27:40: 1 escapes to heap:
+./parse.go:27:30: D.Invalid escapes to heap:
+./parse.go:27:20: D.Format escapes to heap:
+./parse.go:59:21: string(c.err[:c.errLen]) escapes to heap:
+./parse.go:59:21: string(c.work[:c.workLen]) escapes to heap:
+./parse.go:59:21: string(c.out[:c.outLen]) escapes to heap:
+./parse.go:27:20: D.Format escapes to heap
+./parse.go:27:30: D.Invalid escapes to heap
+./parse.go:27:40: 1 escapes to heap
+./parse.go:27:44: D.Delimiter escapes to heap
+./parse.go:27:57: D.Allowed escapes to heap
+./parse.go:41:19: D.Format escapes to heap
+./parse.go:41:29: D.Invalid escapes to heap
+./parse.go:41:40: D.Delimiter escapes to heap
+./parse.go:41:53: D.Not escapes to heap
+./parse.go:41:60: D.Found escapes to heap
+./parse.go:59:21: string(c.out[:c.outLen]) escapes to heap
+./parse.go:59:21: string(c.work[:c.workLen]) escapes to heap
+./parse.go:59:21: string(c.err[:c.errLen]) escapes to heap
+./quote.go:23:13: make([]byte, 0, estimatedSize) escapes to heap:
+./quote.go:23:13: make([]byte, 0, estimatedSize) escapes to heap
+./repeat.go:13:16: "" escapes to heap:
+./repeat.go:13:16: "" escapes to heap
+./replace.go:48:13: make([]byte, 0, bufCap) escapes to heap:
+./replace.go:48:13: make([]byte, 0, bufCap) escapes to heap
+./replace.go:141:16: "" escapes to heap:
+./replace.go:141:16: "" escapes to heap
+./truncate.go:214:15: word + "." escapes to heap:
+./truncate.go:211:20: word[:mC] + "." escapes to heap:
+./truncate.go:167:25: word + "." escapes to heap:
+./truncate.go:164:30: word[:mC] + "." escapes to heap:
+./truncate.go:164:30: word[:mC] + "." escapes to heap
+./truncate.go:167:25: word + "." escapes to heap
+./truncate.go:211:20: word[:mC] + "." escapes to heap
+./truncate.go:214:15: word + "." escapes to heap
