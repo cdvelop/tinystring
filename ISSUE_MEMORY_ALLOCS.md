@@ -155,3 +155,7 @@ cd /c/Users/Cesar/Packages/Internal/tinystring
 - ✅ Memory usage reduced by 60%+
 - ✅ All existing tests pass
 - ✅ Apply() method still works for *string
+
+## Continuous Development Notes
+- Dead code in `fmt_number.go` has been removed and tests have been run and passed.
+- Rounding logic in `fmt_precision.go` has been adjusted to align with test expectations.

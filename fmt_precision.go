@@ -11,30 +11,12 @@ func (t *conv) RoundDecimals(decimals int) *conv {
 		return t
 	}
 
-	// OPTIMIZED: Buffer-first approach - ensure we have content in buffOut
-	if !t.hasContent(buffOut) && t.ptrValue != nil {
-		t.rstBuffer(buffOut) // Reset buffer before conversion
-		t.anyToBuff(buffOut, t.ptrValue)
-		if t.hasContent(buffErr) {
-			return t
-		}
-	}
-
 	// Now apply rounding to the string in buffOut
 	t.applyRoundingToNumber(buffOut, decimals, false)
 
 	// If the result is not numeric, set to zero with correct decimals
 	str := t.getString(buffOut)
-	isNumeric := false
-	for i := 0; i < len(str); i++ {
-		if (str[i] >= '0' && str[i] <= '9') || str[i] == '.' || str[i] == '-' {
-			isNumeric = true
-		} else {
-			isNumeric = false
-			break
-		}
-	}
-	if !isNumeric || str == "" || str == "-" {
+	if !t.isNumericString(str) || str == "" || str == "-" {
 		t.rstBuffer(buffOut)
 		t.wrString(buffOut, "0")
 		if decimals > 0 {
@@ -190,28 +172,8 @@ func (t *conv) downToBuffer(dest buffDest) *conv {
 		decimals = len(currentStr) - dotIndex - 1
 	}
 
-	// Strategy: Re-apply rounding using the original value but with floor behavior
-	// This avoids precision issues while ensuring consistent rounding behavior
-	if t.ptrValue != nil {
-		// For string inputs, we can re-apply safely
-		if _, isString := t.ptrValue.(string); isString {
-			t.rstBuffer(buffWork)
-			t.anyToBuff(buffWork, t.ptrValue)
-			if !t.hasContent(buffErr) {
-				workStr := t.getString(buffWork)
-				t.rstBuffer(dest)
-				t.wrString(dest, workStr)
-				return t.applyRoundingToNumber(dest, decimals, true) // roundDown = true
-			}
-		} else {
-			// For numeric inputs (float, int), use a more robust approach
-			// Convert the current rounded-up result to implement floor behavior
-			return t.applyFloorRoundingToResult(dest, decimals)
-		}
-	}
-
-	// Fallback
-	return t
+	// Apply floor rounding to the current result
+	return t.applyFloorRoundingToResult(dest, decimals)
 }
 
 // applyFloorRoundingToResult implements floor rounding by adjusting the last decimal digit down
@@ -253,7 +215,7 @@ func (t *conv) applyFloorRoundingToResult(dest buffDest, decimals int) *conv {
 			}
 
 			t.rstBuffer(dest)
-			t.fmtIntToDest(dest, parsed, 10, false)
+			t.wrInt(dest, parsed)
 		}
 		return t
 	}
