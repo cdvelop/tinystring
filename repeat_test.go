@@ -2,6 +2,19 @@ package tinystring
 
 import "testing"
 
+func TestDebugRepeat(t *testing.T) {
+	// Test: Convert("test").Repeat(0) should be ""
+
+	result := Convert("test").Repeat(0).String()
+	expected := ""
+
+	if result != expected {
+		t.Errorf("Convert(\"test\").Repeat(0) = %q, want %q", result, expected)
+	} else {
+		t.Logf("Success: Convert(\"test\").Repeat(0) = %q", result)
+	}
+}
+
 func TestRepeat(t *testing.T) {
 	tests := []struct {
 		name     string

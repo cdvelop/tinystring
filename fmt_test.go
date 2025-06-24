@@ -69,27 +69,27 @@ func TestFormatNumber(t *testing.T) {
 		{
 			name:  "Fmt integer with thousand separators",
 			input: 2189009,
-			want:  "2.189.009",
+			want:  "2,189,009",
 		},
 		{
 			name:  "Fmt decimal number with trailing zeros",
 			input: 2189009.00,
-			want:  "2.189.009",
+			want:  "2,189,009",
 		},
 		{
 			name:  "Fmt decimal number",
 			input: 2189009.123,
-			want:  "2.189.009.123",
+			want:  "2,189,009.123",
 		},
 		{
 			name:  "Fmt string number",
 			input: "2189009.00",
-			want:  "2.189.009",
+			want:  "2,189,009",
 		},
 		{
 			name:  "Fmt negative number",
 			input: -2189009,
-			want:  "-2.189.009",
+			want:  "-2,189,009",
 		},
 		{
 			name:  "Fmt small number",
@@ -120,81 +120,81 @@ func TestFormatNumber(t *testing.T) {
 
 func TestFormat(t *testing.T) {
 	tests := []struct {
-		name     string
-		format   string
-		args     []any
-		expected string
-		hasError bool
+		name       string
+		format     string
+		args       []any
+		expected   string
+		hasContent bool
 	}{
 		{
-			name:     "String formatting",
-			format:   "Hello %s!",
-			args:     []any{"World"},
-			expected: "Hello World!",
-			hasError: false,
+			name:       "String formatting",
+			format:     "Hello %s!",
+			args:       []any{"World"},
+			expected:   "Hello World!",
+			hasContent: false,
 		},
 		{
-			name:     "Integer formatting",
-			format:   "Value: %d",
-			args:     []any{42},
-			expected: "Value: 42",
-			hasError: false,
+			name:       "Integer formatting",
+			format:     "Value: %d",
+			args:       []any{42},
+			expected:   "Value: 42",
+			hasContent: false,
 		},
 		{
-			name:     "Float formatting",
-			format:   "Pi: %.2f",
-			args:     []any{3.14159},
-			expected: "Pi: 3.14",
-			hasError: false,
+			name:       "Float formatting",
+			format:     "Pi: %.2f",
+			args:       []any{3.14159},
+			expected:   "Pi: 3.14",
+			hasContent: false,
 		},
 		{
-			name:     "Multiple arguments",
-			format:   "Hello %s, you have %d messages",
-			args:     []any{"Alice", 5},
-			expected: "Hello Alice, you have 5 messages",
-			hasError: false,
+			name:       "Multiple arguments",
+			format:     "Hello %s, you have %d messages",
+			args:       []any{"Alice", 5},
+			expected:   "Hello Alice, you have 5 messages",
+			hasContent: false,
 		},
 		{
-			name:     "Binary formatting",
-			format:   "Binary: %b",
-			args:     []any{7},
-			expected: "Binary: 111",
-			hasError: false,
+			name:       "Binary formatting",
+			format:     "Binary: %b",
+			args:       []any{7},
+			expected:   "Binary: 111",
+			hasContent: false,
 		},
 		{
-			name:     "Hexadecimal formatting",
-			format:   "Hex: %x",
-			args:     []any{255},
-			expected: "Hex: ff",
-			hasError: false,
+			name:       "Hexadecimal formatting",
+			format:     "Hex: %x",
+			args:       []any{255},
+			expected:   "Hex: ff",
+			hasContent: false,
 		},
 		{
-			name:     "Octal formatting",
-			format:   "Octal: %o",
-			args:     []any{64},
-			expected: "Octal: 100",
-			hasError: false,
+			name:       "Octal formatting",
+			format:     "Octal: %o",
+			args:       []any{64},
+			expected:   "Octal: 100",
+			hasContent: false,
 		},
 		{
-			name:     "Value formatting",
-			format:   "Bool: %v",
-			args:     []any{true},
-			expected: "Bool: true",
-			hasError: false,
+			name:       "Value formatting",
+			format:     "Bool: %v",
+			args:       []any{true},
+			expected:   "Bool: true",
+			hasContent: false,
 		},
 		{
-			name:     "Percent sign",
-			format:   "100%% complete",
-			args:     []any{},
-			expected: "100% complete",
-			hasError: false,
+			name:       "Percent sign",
+			format:     "100%% complete",
+			args:       []any{},
+			expected:   "100% complete",
+			hasContent: false,
 		},
 		{
-			name:     "Missing argument",
-			format:   "Value: %d",
-			args:     []any{},
-			expected: "",
-			hasError: true,
+			name:       "Missing argument",
+			format:     "Value: %d",
+			args:       []any{},
+			expected:   "",
+			hasContent: true,
 		},
 	}
 
@@ -203,7 +203,7 @@ func TestFormat(t *testing.T) {
 			out := Fmt(test.format, test.args...).String()
 			resultWithError, err := Fmt(test.format, test.args...).StringError()
 
-			if test.hasError {
+			if test.hasContent {
 				if err == nil {
 					t.Errorf("Expected error but got none")
 				}
@@ -327,116 +327,116 @@ func TestRoundDecimalsAPI(t *testing.T) {
 func TestReporterFormatting(t *testing.T) {
 	// Test cases based on actual usage in reporter.go
 	tests := []struct {
-		name     string
-		format   string
-		args     []any
-		expected string
-		hasError bool
+		name       string
+		format     string
+		args       []any
+		expected   string
+		hasContent bool
 	}{
 		{
-			name:     "Peak reduction percentage",
-			format:   "- 🏆 **Peak Reduction: %.1f%%** (Best optimization)\n",
-			args:     []any{71.5},
-			expected: "- 🏆 **Peak Reduction: 71.5%** (Best optimization)\n",
-			hasError: false,
+			name:       "Peak reduction percentage",
+			format:     "- 🏆 **Peak Reduction: %.1f%%** (Best optimization)\n",
+			args:       []any{71.5},
+			expected:   "- 🏆 **Peak Reduction: 71.5%** (Best optimization)\n",
+			hasContent: false,
 		},
 		{
-			name:     "Average WebAssembly reduction",
-			format:   "- ✅ **Average WebAssembly Reduction: %.1f%%**\n",
-			args:     []any{53.2},
-			expected: "- ✅ **Average WebAssembly Reduction: 53.2%**\n",
-			hasError: false,
+			name:       "Average WebAssembly reduction",
+			format:     "- ✅ **Average WebAssembly Reduction: %.1f%%**\n",
+			args:       []any{53.2},
+			expected:   "- ✅ **Average WebAssembly Reduction: 53.2%**\n",
+			hasContent: false,
 		},
 		{
-			name:     "Size savings with string",
-			format:   "- 📦 **Total Size Savings: %s across all builds**\n\n",
-			args:     []any{"1.7 MB"},
-			expected: "- 📦 **Total Size Savings: 1.7 MB across all builds**\n\n",
-			hasError: false,
+			name:       "Size savings with string",
+			format:     "- 📦 **Total Size Savings: %s across all builds**\n\n",
+			args:       []any{"1.7 MB"},
+			expected:   "- 📦 **Total Size Savings: 1.7 MB across all builds**\n\n",
+			hasContent: false,
 		},
 		{
-			name:     "Memory efficiency class",
-			format:   "- 💾 **Memory Efficiency**: %s (%.1f%% average change)\n",
-			args:     []any{"❌ **Poor** (Significant overhead)", 154.2},
-			expected: "- 💾 **Memory Efficiency**: ❌ **Poor** (Significant overhead) (154.2% average change)\n",
-			hasError: false,
+			name:       "Memory efficiency class",
+			format:     "- 💾 **Memory Efficiency**: %s (%.1f%% average change)\n",
+			args:       []any{"❌ **Poor** (Significant overhead)", 154.2},
+			expected:   "- 💾 **Memory Efficiency**: ❌ **Poor** (Significant overhead) (154.2% average change)\n",
+			hasContent: false,
 		},
 		{
-			name:     "Allocation efficiency class",
-			format:   "- 🔢 **Allocation Efficiency**: %s (%.1f%% average change)\n",
-			args:     []any{"❌ **Poor** (Excessive allocations)", 118.4},
-			expected: "- 🔢 **Allocation Efficiency**: ❌ **Poor** (Excessive allocations) (118.4% average change)\n",
-			hasError: false,
+			name:       "Allocation efficiency class",
+			format:     "- 🔢 **Allocation Efficiency**: %s (%.1f%% average change)\n",
+			args:       []any{"❌ **Poor** (Excessive allocations)", 118.4},
+			expected:   "- 🔢 **Allocation Efficiency**: ❌ **Poor** (Excessive allocations) (118.4% average change)\n",
+			hasContent: false,
 		},
 		{
-			name:     "Benchmarks analyzed count",
-			format:   "- 📊 **Benchmarks Analyzed**: %d categories\n",
-			args:     []any{3},
-			expected: "- 📊 **Benchmarks Analyzed**: 3 categories\n",
-			hasError: false,
+			name:       "Benchmarks analyzed count",
+			format:     "- 📊 **Benchmarks Analyzed**: %d categories\n",
+			args:       []any{3},
+			expected:   "- 📊 **Benchmarks Analyzed**: 3 categories\n",
+			hasContent: false,
 		},
 		{
-			name:     "Complex table row with multiple formats",
-			format:   "| %s **%s** | 📊 Standard | `%s` | `%d` | `%s` | - | - | - |\n",
-			args:     []any{"📝", "String Processing", "1.2 KB", 48, "3.4μs"},
-			expected: "| 📝 **String Processing** | 📊 Standard | `1.2 KB` | `48` | `3.4μs` | - | - | - |\n",
-			hasError: false,
+			name:       "Complex table row with multiple formats",
+			format:     "| %s **%s** | 📊 Standard | `%s` | `%d` | `%s` | - | - | - |\n",
+			args:       []any{"📝", "String Processing", "1.2 KB", 48, "3.4μs"},
+			expected:   "| 📝 **String Processing** | 📊 Standard | `1.2 KB` | `48` | `3.4μs` | - | - | - |\n",
+			hasContent: false,
 		},
 		{
-			name:     "TinyString performance row",
-			format:   "| | 🚀 TinyString | `%s` | `%d` | `%s` | %s **%s** | %s **%s** | %s |\n",
-			args:     []any{"2.8 KB", 119, "13.7μs", "❌", "140.3% more", "❌", "147.9% more", "❌ **Poor**"},
-			expected: "| | 🚀 TinyString | `2.8 KB` | `119` | `13.7μs` | ❌ **140.3% more** | ❌ **147.9% more** | ❌ **Poor** |\n",
-			hasError: false,
+			name:       "TinyString performance row",
+			format:     "| | 🚀 TinyString | `%s` | `%d` | `%s` | %s **%s** | %s **%s** | %s |\n",
+			args:       []any{"2.8 KB", 119, "13.7μs", "❌", "140.3% more", "❌", "147.9% more", "❌ **Poor**"},
+			expected:   "| | 🚀 TinyString | `2.8 KB` | `119` | `13.7μs` | ❌ **140.3% more** | ❌ **147.9% more** | ❌ **Poor** |\n",
+			hasContent: false,
 		},
 		{
-			name:     "Binary size table row",
-			format:   "| %s **%s Native** | `%s` | %s | %s | **-%s** | %s **%.1f%%** |\n",
-			args:     []any{"🖥️", "Default", "-ldflags=\"-s -w\"", "1.3 MB", "1.1 MB", "176.0 KB", "➖", 13.4},
-			expected: "| 🖥️ **Default Native** | `-ldflags=\"-s -w\"` | 1.3 MB | 1.1 MB | **-176.0 KB** | ➖ **13.4%** |\n",
-			hasError: false,
+			name:       "Binary size table row",
+			format:     "| %s **%s Native** | `%s` | %s | %s | **-%s** | %s **%.1f%%** |\n",
+			args:       []any{"🖥️", "Default", "-ldflags=\"-s -w\"", "1.3 MB", "1.1 MB", "176.0 KB", "➖", 13.4},
+			expected:   "| 🖥️ **Default Native** | `-ldflags=\"-s -w\"` | 1.3 MB | 1.1 MB | **-176.0 KB** | ➖ **13.4%** |\n",
+			hasContent: false,
 		},
 		{
-			name:     "Error message formatting",
-			format:   "Failed to read README: %v",
-			args:     []any{Err("file not found")},
-			expected: "Failed to read README: file not found",
-			hasError: false,
+			name:       "Error message formatting",
+			format:     "Failed to read README: %v",
+			args:       []any{Err("file not found")},
+			expected:   "Failed to read README: file not found",
+			hasContent: false,
 		},
 		{
-			name:     "Memory improvement percentage",
-			format:   "%.1f%% less",
-			args:     []any{44.2},
-			expected: "44.2% less",
-			hasError: false,
+			name:       "Memory improvement percentage",
+			format:     "%.1f%% less",
+			args:       []any{44.2},
+			expected:   "44.2% less",
+			hasContent: false,
 		},
 		{
-			name:     "Memory improvement percentage more",
-			format:   "%.1f%% more",
-			args:     []any{140.3},
-			expected: "140.3% more",
-			hasError: false,
+			name:       "Memory improvement percentage more",
+			format:     "%.1f%% more",
+			args:       []any{140.3},
+			expected:   "140.3% more",
+			hasContent: false,
 		},
 		{
-			name:     "Nanosecond formatting",
-			format:   "%dns",
-			args:     []any{int64(500)},
-			expected: "500ns",
-			hasError: false,
+			name:       "Nanosecond formatting",
+			format:     "%dns",
+			args:       []any{int64(500)},
+			expected:   "500ns",
+			hasContent: false,
 		},
 		{
-			name:     "Microsecond formatting",
-			format:   "%.1fμs",
-			args:     []any{3.4},
-			expected: "3.4μs",
-			hasError: false,
+			name:       "Microsecond formatting",
+			format:     "%.1fμs",
+			args:       []any{3.4},
+			expected:   "3.4μs",
+			hasContent: false,
 		},
 		{
-			name:     "Millisecond formatting",
-			format:   "%.1fms",
-			args:     []any{1.5},
-			expected: "1.5ms",
-			hasError: false,
+			name:       "Millisecond formatting",
+			format:     "%.1fms",
+			args:       []any{1.5},
+			expected:   "1.5ms",
+			hasContent: false,
 		},
 	}
 
@@ -445,7 +445,7 @@ func TestReporterFormatting(t *testing.T) {
 			out := Fmt(test.format, test.args...).String()
 			resultWithError, err := Fmt(test.format, test.args...).StringError()
 
-			if test.hasError {
+			if test.hasContent {
 				if err == nil {
 					t.Errorf("Expected error but got none")
 				}

@@ -3,7 +3,7 @@ package tinystring
 // ToBool converts the conv content to a boolean value using internal implementations
 // Returns the boolean value and any error that occurred
 func (t *conv) ToBool() (bool, error) {
-	if t.hasError() {
+	if t.hasContent(buffErr) {
 		return false, t
 	}
 
@@ -19,7 +19,7 @@ func (t *conv) ToBool() (bool, error) {
 		t.kind = KBool
 		return false, nil
 	} // Try to parse as integer using internal parseSmallInt
-	if intVal, err := parseSmallInt(inp); err == nil {
+	if intVal, err := t.parseSmallInt(inp); err == nil {
 		t.kind = KBool
 		return intVal != 0, nil
 	}

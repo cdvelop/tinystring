@@ -324,7 +324,7 @@ func TestConcurrentNumericOperations(t *testing.T) {
 				out := Convert(1234567).FormatNumber().String()
 				return out, nil
 			},
-			expected: "1.234.567",
+			expected: "1,234,567",
 		},
 	}
 

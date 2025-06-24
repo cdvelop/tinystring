@@ -2,6 +2,72 @@ package tinystring
 
 // Using shared constants from mapping.go for consistency
 
+// validateIntParam validates and converts any numeric type to int
+// Universal method that follows buffer API architecture - eliminates code duplication
+func (c *conv) validateIntParam(param any, allowZero bool) (int, bool) {
+	var val int
+	var ok bool
+	switch v := param.(type) {
+	case int, int8, int16, int32, int64:
+		// Use type assertion to handle all integer types
+		if i, isInt := param.(int); isInt {
+			val, ok = i, true
+		} else if i8, isInt8 := param.(int8); isInt8 {
+			val, ok = int(i8), true
+		} else if i16, isInt16 := param.(int16); isInt16 {
+			val, ok = int(i16), true
+		} else if i32, isInt32 := param.(int32); isInt32 {
+			val, ok = int(i32), true
+		} else if i64, isInt64 := param.(int64); isInt64 {
+			val, ok = int(i64), true
+		}
+	case uint, uint8, uint16, uint32, uint64:
+		if u, isUint := param.(uint); isUint {
+			val, ok = int(u), true
+		} else if u8, isUint8 := param.(uint8); isUint8 {
+			val, ok = int(u8), true
+		} else if u16, isUint16 := param.(uint16); isUint16 {
+			val, ok = int(u16), true
+		} else if u32, isUint32 := param.(uint32); isUint32 {
+			val, ok = int(u32), true
+		} else if u64, isUint64 := param.(uint64); isUint64 {
+			val, ok = int(u64), true
+		}
+	case float32:
+		val, ok = int(v), true
+	case float64:
+		val, ok = int(v), true
+	default:
+		val, ok = 0, false
+	}
+
+	if !ok {
+		return 0, false
+	}
+	// Unified validation logic
+	if allowZero {
+		return val, val >= 0
+	}
+	return val, val > 0
+}
+
+// truncateWithEllipsis helper method to reduce code duplication
+// Handles the common pattern of truncating content and adding ellipsis
+func (c *conv) truncateWithEllipsis(content string, maxWidth int) {
+	ellipsisLen := len(ellipsisStr)
+	if maxWidth >= ellipsisLen {
+		contentToKeep := min(max(maxWidth-ellipsisLen, 0), len(content))
+		c.rstBuffer(buffOut)                         // Clear buffer using API
+		c.wrString(buffOut, content[:contentToKeep]) // Write content using API
+		c.wrString(buffOut, ellipsisStr)             // Append ellipsis using API
+	} else {
+		// Ellipsis doesn't fit, just truncate
+		contentToKeep := min(maxWidth, len(content))
+		c.rstBuffer(buffOut)                         // Clear buffer using API
+		c.wrString(buffOut, content[:contentToKeep]) // Write using API
+	}
+}
+
 // Truncate truncates a conv so that it does not exceed the specified width.
 // If the conv is longer, it truncates it and adds "..." if there is space.
 // If the conv is shorter or equal to the width, it remains unchanged.
@@ -11,59 +77,13 @@ package tinystring
 // eg: Convert("Hello, World!").Truncate(10, 3) => "Hell..."
 // eg: Convert("Hello").Truncate(10) => "Hello"
 func (t *conv) Truncate(maxWidth any, reservedChars ...any) *conv {
-	if t.hasError() {
+	if t.hasContent(buffErr) {
 		return t // Error chain interruption
 	}
 
 	conv := t.ensureStringInOut()
 	oL := len(conv) // Validate maxWidth parameter
-	// Inline validateIntParam logic
-	mWI, ok := func(param any, allowZero bool) (int, bool) {
-		var val int
-		var ok bool
-		switch v := param.(type) {
-		case int, int8, int16, int32, int64:
-			// Use type assertion to handle all integer types
-			if i, isInt := param.(int); isInt {
-				val, ok = i, true
-			} else if i8, isInt8 := param.(int8); isInt8 {
-				val, ok = int(i8), true
-			} else if i16, isInt16 := param.(int16); isInt16 {
-				val, ok = int(i16), true
-			} else if i32, isInt32 := param.(int32); isInt32 {
-				val, ok = int(i32), true
-			} else if i64, isInt64 := param.(int64); isInt64 {
-				val, ok = int(i64), true
-			}
-		case uint, uint8, uint16, uint32, uint64:
-			if u, isUint := param.(uint); isUint {
-				val, ok = int(u), true
-			} else if u8, isUint8 := param.(uint8); isUint8 {
-				val, ok = int(u8), true
-			} else if u16, isUint16 := param.(uint16); isUint16 {
-				val, ok = int(u16), true
-			} else if u32, isUint32 := param.(uint32); isUint32 {
-				val, ok = int(u32), true
-			} else if u64, isUint64 := param.(uint64); isUint64 {
-				val, ok = int(u64), true
-			}
-		case float32:
-			val, ok = int(v), true
-		case float64:
-			val, ok = int(v), true
-		default:
-			val, ok = 0, false
-		}
-
-		if !ok {
-			return 0, false
-		}
-		// Unified validation logic
-		if allowZero {
-			return val, val >= 0
-		}
-		return val, val > 0
-	}(maxWidth, false)
+	mWI, ok := t.validateIntParam(maxWidth, false)
 	if !ok {
 		return t
 	}
@@ -72,53 +92,7 @@ func (t *conv) Truncate(maxWidth any, reservedChars ...any) *conv {
 		// Get reserved chars value
 		rCI := 0
 		if len(reservedChars) > 0 {
-			// Inline validateIntParam logic
-			if val, ok := func(param any, allowZero bool) (int, bool) {
-				var val int
-				var ok bool
-				switch v := param.(type) {
-				case int, int8, int16, int32, int64:
-					// Use type assertion to handle all integer types
-					if i, isInt := param.(int); isInt {
-						val, ok = i, true
-					} else if i8, isInt8 := param.(int8); isInt8 {
-						val, ok = int(i8), true
-					} else if i16, isInt16 := param.(int16); isInt16 {
-						val, ok = int(i16), true
-					} else if i32, isInt32 := param.(int32); isInt32 {
-						val, ok = int(i32), true
-					} else if i64, isInt64 := param.(int64); isInt64 {
-						val, ok = int(i64), true
-					}
-				case uint, uint8, uint16, uint32, uint64:
-					if u, isUint := param.(uint); isUint {
-						val, ok = int(u), true
-					} else if u8, isUint8 := param.(uint8); isUint8 {
-						val, ok = int(u8), true
-					} else if u16, isUint16 := param.(uint16); isUint16 {
-						val, ok = int(u16), true
-					} else if u32, isUint32 := param.(uint32); isUint32 {
-						val, ok = int(u32), true
-					} else if u64, isUint64 := param.(uint64); isUint64 {
-						val, ok = int(u64), true
-					}
-				case float32:
-					val, ok = int(v), true
-				case float64:
-					val, ok = int(v), true
-				default:
-					val, ok = 0, false
-				}
-
-				if !ok {
-					return 0, false
-				}
-				// Unified validation logic
-				if allowZero {
-					return val, val >= 0
-				}
-				return val, val > 0
-			}(reservedChars[0], true); ok {
+			if val, ok := t.validateIntParam(reservedChars[0], true); ok {
 				rCI = val
 			}
 		}
@@ -130,26 +104,15 @@ func (t *conv) Truncate(maxWidth any, reservedChars ...any) *conv {
 		ellipsisLen := len(ellipsisStr)
 		if rCI > 0 && mWI >= ellipsisLen && eW >= ellipsisLen {
 			// Case 1: Reserved chars specified, and ellipsis fits within the effective width
-			cTK := min(max(eW-ellipsisLen, 0), oL)
-			// ✅ Use buffer API instead of direct buffer manipulation
-			t.rstOut()                   // Clear buffer using API
-			t.wrStringToOut(conv[:cTK])  // Write using API
-			t.wrStringToOut(ellipsisStr) // Append ellipsis using API
-			t.setStringFromBuffer()
+			t.truncateWithEllipsis(conv, eW)
 		} else if rCI == 0 && mWI >= ellipsisLen {
 			// Case 2: No reserved chars, ellipsis fits within maxWidth
-			cTK := min(max(mWI-ellipsisLen, 0), oL)
-			// ✅ Use buffer API instead of direct buffer manipulation
-			t.rstOut()                   // Clear buffer using API
-			t.wrStringToOut(conv[:cTK])  // Write using API
-			t.wrStringToOut(ellipsisStr) // Append ellipsis using API
-			t.setStringFromBuffer()
+			t.truncateWithEllipsis(conv, mWI)
 		} else {
 			// Case 3: Ellipsis doesn't fit or reserved chars prevent it, just truncate
 			cTK := min(mWI, oL)
-			// ✅ Update buffer using API instead of direct manipulation
-			t.rstOut()                  // Clear buffer using API
-			t.wrStringToOut(conv[:cTK]) // Write using API
+			t.rstBuffer(buffOut)            // Clear buffer using API
+			t.wrString(buffOut, conv[:cTK]) // Write using API
 		}
 	}
 
@@ -169,111 +132,19 @@ func (t *conv) Truncate(maxWidth any, reservedChars ...any) *conv {
 //   - Convert("Ana Maria Rodriguez").TruncateName(2, 10) => "An. Mar..."
 //   - Convert("Juan").TruncateName(3, 5) => "Juan"
 func (t *conv) TruncateName(maxCharsPerWord, maxWidth any) *conv {
-	if t.hasError() {
+	if t.hasContent(buffErr) {
 		return t // Error chain interruption
 	}
 
 	if len(t.ensureStringInOut()) == 0 {
 		return t
 	} // Validate parameters
-	// Inline validateIntParam logic
-	mC, ok := func(param any, allowZero bool) (int, bool) {
-		var val int
-		var ok bool
-		switch v := param.(type) {
-		case int, int8, int16, int32, int64:
-			// Use type assertion to handle all integer types
-			if i, isInt := param.(int); isInt {
-				val, ok = i, true
-			} else if i8, isInt8 := param.(int8); isInt8 {
-				val, ok = int(i8), true
-			} else if i16, isInt16 := param.(int16); isInt16 {
-				val, ok = int(i16), true
-			} else if i32, isInt32 := param.(int32); isInt32 {
-				val, ok = int(i32), true
-			} else if i64, isInt64 := param.(int64); isInt64 {
-				val, ok = int(i64), true
-			}
-		case uint, uint8, uint16, uint32, uint64:
-			if u, isUint := param.(uint); isUint {
-				val, ok = int(u), true
-			} else if u8, isUint8 := param.(uint8); isUint8 {
-				val, ok = int(u8), true
-			} else if u16, isUint16 := param.(uint16); isUint16 {
-				val, ok = int(u16), true
-			} else if u32, isUint32 := param.(uint32); isUint32 {
-				val, ok = int(u32), true
-			} else if u64, isUint64 := param.(uint64); isUint64 {
-				val, ok = int(u64), true
-			}
-		case float32:
-			val, ok = int(v), true
-		case float64:
-			val, ok = int(v), true
-		default:
-			val, ok = 0, false
-		}
-
-		if !ok {
-			return 0, false
-		}
-		// Unified validation logic
-		if allowZero {
-			return val, val >= 0
-		}
-		return val, val > 0
-	}(maxCharsPerWord, false)
+	mC, ok := t.validateIntParam(maxCharsPerWord, false)
 	if !ok {
 		return t
 	}
 
-	// Inline validateIntParam logic
-	mT, ok := func(param any, allowZero bool) (int, bool) {
-		var val int
-		var ok bool
-		switch v := param.(type) {
-		case int, int8, int16, int32, int64:
-			// Use type assertion to handle all integer types
-			if i, isInt := param.(int); isInt {
-				val, ok = i, true
-			} else if i8, isInt8 := param.(int8); isInt8 {
-				val, ok = int(i8), true
-			} else if i16, isInt16 := param.(int16); isInt16 {
-				val, ok = int(i16), true
-			} else if i32, isInt32 := param.(int32); isInt32 {
-				val, ok = int(i32), true
-			} else if i64, isInt64 := param.(int64); isInt64 {
-				val, ok = int(i64), true
-			}
-		case uint, uint8, uint16, uint32, uint64:
-			if u, isUint := param.(uint); isUint {
-				val, ok = int(u), true
-			} else if u8, isUint8 := param.(uint8); isUint8 {
-				val, ok = int(u8), true
-			} else if u16, isUint16 := param.(uint16); isUint16 {
-				val, ok = int(u16), true
-			} else if u32, isUint32 := param.(uint32); isUint32 {
-				val, ok = int(u32), true
-			} else if u64, isUint64 := param.(uint64); isUint64 {
-				val, ok = int(u64), true
-			}
-		case float32:
-			val, ok = int(v), true
-		case float64:
-			val, ok = int(v), true
-		default:
-			val, ok = 0, false
-		}
-
-		if !ok {
-			return 0, false
-		}
-		// Unified validation logic
-		if allowZero {
-			return val, val >= 0
-		}
-		return val, val > 0
-	}(maxWidth, false)
+	mT, ok := t.validateIntParam(maxWidth, false)
 	if !ok {
 		return t
 	}
@@ -301,8 +172,8 @@ func (t *conv) TruncateName(maxCharsPerWord, maxWidth any) *conv {
 	} // Step 2: Check if the processed out fits within maxWidth
 	if len(res) <= mT {
 		// ✅ Update buffer using API instead of direct manipulation
-		t.rstOut()           // Clear buffer using API
-		t.wrStringToOut(res) // Write using API
+		t.rstBuffer(buffOut)     // Clear buffer using API
+		t.wrString(buffOut, res) // Write using API
 		return t
 	}
 
@@ -316,13 +187,8 @@ func (t *conv) TruncateName(maxCharsPerWord, maxWidth any) *conv {
 		}
 		// If we can't fit the normal pattern, use all space for first word
 		if mT < minNeeded && mT >= 4 { // minimum "X..." is 4 chars
-			availableForFirstWord := mT - len(ellipsisStr)
-			if len(words[0]) > availableForFirstWord {
-				// ✅ Use buffer API instead of direct buffer manipulation
-				t.rstOut()                                        // Clear buffer using API
-				t.wrStringToOut(words[0][:availableForFirstWord]) // Write using API
-				t.wrStringToOut(ellipsisStr)                      // Append ellipsis using API
-				t.setStringFromBuffer()
+			if len(words[0]) > mT-len(ellipsisStr) {
+				t.truncateWithEllipsis(words[0], mT)
 				return t
 			}
 		}
@@ -364,7 +230,7 @@ func (t *conv) TruncateName(maxCharsPerWord, maxWidth any) *conv {
 	} // Add the suffix
 	out += ellipsisStr
 	// ✅ Update buffer using API instead of direct manipulation
-	t.rstOut()           // Clear buffer using API
-	t.wrStringToOut(out) // Write using API
+	t.rstBuffer(buffOut)     // Clear buffer using API
+	t.wrString(buffOut, out) // Write using API
 	return t
 }

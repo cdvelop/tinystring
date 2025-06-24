@@ -171,7 +171,7 @@ go test -bench=. -benchmem                            # All benchmarks
 
 ## 📈 **OPTIMIZATION HISTORY (Updated)**
 
-- **Phase 9:** setStringFromBuffer() eliminated (36.92% → 0%) 🏆
+- **Phase 9:** setString() eliminated (36.92% → 0%) 🏆
 - **Phase 10:** FormatNumber() optimized, fmtIntGeneric() eliminated 🏆
 - **Phase 11:** String operations optimized (-13.4% total memory reduction) 🏆
 - **Phase 12:** Race condition eliminated, thread safety restored 🏆 **NEW**

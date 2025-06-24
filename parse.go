@@ -15,6 +15,10 @@ package tinystring
 //	value, err := ParseKeyValue("invalid-string")
 //	// value = "", err = error containing "delimiter ':' not found in string invalid-string"
 func ParseKeyValue(in string, delimiters ...string) (value string, err error) {
+	// Use unified buffer architecture to minimize allocations
+	c := getConv()
+	defer c.putConv()
+
 	// Default delimiter is ":"
 	d := ":"
 	// Check for a custom delimiter
@@ -36,6 +40,7 @@ func ParseKeyValue(in string, delimiters ...string) (value string, err error) {
 	if !Contains(in, d) {
 		return "", Err(D.Format, D.Invalid, D.Delimiter, D.Not, D.Found)
 	}
+
 	// Extract value part (everything after the first occurrence of the delimiter)
 	// Find the position of the first delimiter
 	di := -1
@@ -46,9 +51,12 @@ func ParseKeyValue(in string, delimiters ...string) (value string, err error) {
 		}
 	}
 
-	// Return everything after the first delimiter
+	// Use buffer to build result (minimizes allocations)
 	if di >= 0 {
-		return in[di+len(d):], nil
+		// Write result to buffer instead of creating substring allocation
+		result := in[di+len(d):]
+		c.wrString(buffOut, result)
+		return c.getString(buffOut), nil
 	}
 
 	// This should never happen if Contains returned true

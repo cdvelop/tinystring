@@ -115,7 +115,7 @@ Debug WASM:   1.8 MB → 904.7 KB   (50.6% reduction)
 **Optimization**:
 1. **Hot path fields first**: `buf`, `kind`, `err`, `stringVal`, `tmpStr`
 2. **Numeric fields grouped**: `intVal`, `uintVal`, `floatVal` together  
-3. **Less frequent fields last**: `stringSliceVal`, `pointerVal`, `boolVal`
+3. **Less frequent fields last**: `stringSliceVal`, `anyValue`, `boolVal`
 4. **Cache-friendly layout**: Optimized for typical access patterns
 
 **Code Changes**:

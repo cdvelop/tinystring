@@ -4,8 +4,12 @@ package tinystring
 // Example: Quote("hello \"world\"") returns "\"hello \\\"world\\\"\""
 func (t *conv) Quote() *conv {
 	inp := t.ensureStringInOut()
+
+	// Reset output buffer before writing quoted result
+	t.rstBuffer(buffOut)
+
 	if len(inp) == 0 {
-		t.setString(quoteStr)
+		t.wrString(buffOut, quoteStr)
 		return t
 	}
 
@@ -36,6 +40,6 @@ func (t *conv) Quote() *conv {
 		}
 	}
 	out = append(out, '"')
-	t.setString(string(out))
+	t.wrString(buffOut, string(out))
 	return t
 }

@@ -2,55 +2,25 @@ package tinystring
 
 // Capitalize transforms the first letter of each word to uppercase and the rest to lowercase.
 // Also normalizes whitespace (collapses multiple spaces into single space and trims).
-// Phase 11 Optimization: Reduced buffer allocations through pooling
+// Optimized to use internal work buffer instead of separate pool allocations
 // For example: "  hello   world  " -> "Hello World"
 func (t *conv) Capitalize() *conv {
+	if t.hasContent(buffErr) {
+		return t // Error chain interruption
+	}
+
 	str := t.ensureStringInOut()
 	if len(str) == 0 {
 		return t
 	}
 
-	// Phase 11: Use single buffer approach to reduce allocations
-	runes := []rune(str)
-	if len(runes) == 0 {
-		return t
-	} // Get pooled buffer for out
-	// Inline getRuneBuffer logic
-	out := func(capacity int) []rune {
-		bufInterface := runePool.Get()
-		buffer := bufInterface.([]rune)
+	// Use internal work buffer for intermediate processing (follows Unified Buffer Architecture)
+	t.rstBuffer(buffWork)
 
-		// Reset the buffer
-		buffer = buffer[:0]
-		// Grow if needed
-		if capacity > cap(buffer) {
-			// If requested capacity is much larger, allocate new buffer
-			if capacity > cap(buffer)*2 {
-				runePool.Put(buffer[:0]) // SA6002: sync.Pool expects interface{}
-				return make([]rune, 0, capacity)
-			}
-			// Otherwise, grow the buffer
-			runePool.Put(buffer[:0]) // SA6002: sync.Pool expects interface{}
-			return make([]rune, 0, capacity)
-		}
-
-		return buffer
-	}(len(runes))
-	// Inline putRuneBuffer logic
-	defer func(buffer *[]rune) {
-		if buffer == nil {
-			return
-		}
-		// Only pool buffers that aren't too large to avoid memory leaks
-		if cap(*buffer) <= defaultBufCap*4 {
-			resetBuf := (*buffer)[:0]
-			runePool.Put(resetBuf) // SA6002: sync.Pool expects interface{}
-		}
-	}(&out)
 	inWord := false
 	addSpace := false // Flag to add space before next word
 
-	for _, r := range runes {
+	for _, r := range str {
 		if r == ' ' || r == '\t' || r == '\n' || r == '\r' {
 			if inWord {
 				// End of word, mark that we need a space before next word
@@ -61,22 +31,23 @@ func (t *conv) Capitalize() *conv {
 		} else {
 			if !inWord {
 				// Start of new word
-				if addSpace && len(out) > 0 {
-					out = append(out, ' ')
+				if addSpace && t.hasContent(buffWork) {
+					t.wrString(buffWork, " ")
 				}
-				out = append(out, toUpperRune(r))
+				t.wrString(buffWork, string(toUpperRune(r)))
 				inWord = true
 				addSpace = false
 			} else {
 				// Lowercase other letters in word
-				out = append(out, toLowerRune(r))
+				t.wrString(buffWork, string(toLowerRune(r)))
 			}
 		}
 	}
 
-	// ✅ Use buffer API instead of direct manipulation
-	t.rstOut()                   // Clear buffer using API
-	t.wrStringToOut(string(out)) // Write using API
+	// Copy result from work buffer to output buffer using API
+	result := t.getString(buffWork)
+	t.rstBuffer(buffOut)        // Clear output buffer using API
+	t.wrString(buffOut, result) // Write using API
 	return t
 }
 
@@ -92,7 +63,7 @@ func (t *conv) ToUpper() *conv {
 
 // changeCase consolidates ToLower and ToUpper functionality - optimized with buffer-first strategy
 func (t *conv) changeCase(toLower bool) *conv {
-	if t.hasError() {
+	if t.hasContent(buffErr) {
 		return t // Error chain interruption
 	}
 
@@ -114,8 +85,8 @@ func (t *conv) changeCase(toLower bool) *conv {
 	}
 	// Convert back to string and store in buffer using API
 	out := string(runes)
-	t.rstOut()           // Clear buffer using API
-	t.wrStringToOut(out) // Write using API
+	t.rstBuffer(buffOut)     // Clear buffer using API
+	t.wrString(buffOut, out) // Write using API
 
 	return t
 }
@@ -161,7 +132,7 @@ func (t *conv) ToSnakeCaseUpper(sep ...string) *conv {
 
 // Minimal implementation without pools or builders - optimized for minimal allocations
 func (t *conv) toCaseTransformMinimal(firstWordLower bool, separator string) *conv {
-	if t.hasError() {
+	if t.hasContent(buffErr) {
 		return t // Error chain interruption
 	}
 
@@ -257,8 +228,8 @@ func (t *conv) toCaseTransformMinimal(firstWordLower bool, separator string) *co
 	}
 
 	// ✅ Update buffer using API instead of direct manipulation
-	t.rstOut()     // Clear buffer using API
-	t.wrToOut(out) // Write bytes using API
+	t.rstBuffer(buffOut)    // Clear buffer using API
+	t.wrBytes(buffOut, out) // Write bytes using API
 	return t
 }
 

@@ -4,76 +4,76 @@ import "testing"
 
 func TestToBool(t *testing.T) {
 	tests := []struct {
-		name     string
-		input    any
-		expected bool
-		hasError bool
+		name       string
+		input      any
+		expected   bool
+		hasContent bool
 	}{
 		{
-			name:     "String true",
-			input:    "true",
-			expected: true,
-			hasError: false,
+			name:       "String true",
+			input:      "true",
+			expected:   true,
+			hasContent: false,
 		},
 		{
-			name:     "String false",
-			input:    "false",
-			expected: false,
-			hasError: false,
+			name:       "String false",
+			input:      "false",
+			expected:   false,
+			hasContent: false,
 		},
 		{
-			name:     "String 1",
-			input:    "1",
-			expected: true,
-			hasError: false,
+			name:       "String 1",
+			input:      "1",
+			expected:   true,
+			hasContent: false,
 		},
 		{
-			name:     "String 0",
-			input:    "0",
-			expected: false,
-			hasError: false,
+			name:       "String 0",
+			input:      "0",
+			expected:   false,
+			hasContent: false,
 		},
 		{
-			name:     "Boolean true",
-			input:    true,
-			expected: true,
-			hasError: false,
+			name:       "Boolean true",
+			input:      true,
+			expected:   true,
+			hasContent: false,
 		},
 		{
-			name:     "Boolean false",
-			input:    false,
-			expected: false,
-			hasError: false,
+			name:       "Boolean false",
+			input:      false,
+			expected:   false,
+			hasContent: false,
 		},
 		{
-			name:     "Integer 1",
-			input:    1,
-			expected: true,
-			hasError: false,
+			name:       "Integer 1",
+			input:      1,
+			expected:   true,
+			hasContent: false,
 		},
 		{
-			name:     "Integer 0",
-			input:    0,
-			expected: false,
-			hasError: false,
+			name:       "Integer 0",
+			input:      0,
+			expected:   false,
+			hasContent: false,
 		},
 		{
-			name:     "Integer non-zero",
-			input:    42,
-			expected: true,
-			hasError: false,
+			name:       "Integer non-zero",
+			input:      42,
+			expected:   true,
+			hasContent: false,
 		},
 		{
-			name:     "Invalid string",
-			input:    "invalid",
-			expected: false,
-			hasError: true,
+			name:       "Invalid string",
+			input:      "invalid",
+			expected:   false,
+			hasContent: true,
 		},
 		{
-			name:     "Nil input",
-			input:    nil,
-			expected: false,
-			hasError: true,
+			name:       "Nil input",
+			input:      nil,
+			expected:   false,
+			hasContent: true,
 		},
 	}
 
@@ -81,7 +81,7 @@ func TestToBool(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			out, err := Convert(tt.input).ToBool()
 
-			if tt.hasError {
+			if tt.hasContent {
 				if err == nil {
 					t.Errorf("Expected error, but got none")
 				}

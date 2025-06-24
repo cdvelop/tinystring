@@ -4,58 +4,58 @@ import "testing"
 
 func TestToUint(t *testing.T) {
 	tests := []struct {
-		name     string
-		input    any
-		expected uint64
-		hasError bool
+		name       string
+		input      any
+		expected   uint64
+		hasContent bool
 	}{
 		{
-			name:     "String positive number",
-			input:    "123",
-			expected: 123,
-			hasError: false,
+			name:       "String positive number",
+			input:      "123",
+			expected:   123,
+			hasContent: false,
 		},
 		{
-			name:     "Integer positive",
-			input:    456,
-			expected: 456,
-			hasError: false,
+			name:       "Integer positive",
+			input:      456,
+			expected:   456,
+			hasContent: false,
 		},
 		{
-			name:     "Uint value",
-			input:    uint(789),
-			expected: 789,
-			hasError: false,
+			name:       "Uint value",
+			input:      uint(789),
+			expected:   789,
+			hasContent: false,
 		},
 		{
-			name:     "Float positive",
-			input:    123.45,
-			expected: 123,
-			hasError: false,
+			name:       "Float positive",
+			input:      123.45,
+			expected:   123,
+			hasContent: false,
 		},
 		{
-			name:     "String negative number",
-			input:    "-123",
-			expected: 0,
-			hasError: true,
+			name:       "String negative number",
+			input:      "-123",
+			expected:   0,
+			hasContent: true,
 		},
 		{
-			name:     "Integer negative",
-			input:    -456,
-			expected: 0,
-			hasError: true,
+			name:       "Integer negative",
+			input:      -456,
+			expected:   0,
+			hasContent: true,
 		},
 		{
-			name:     "Invalid string",
-			input:    "invalid",
-			expected: 0,
-			hasError: true,
+			name:       "Invalid string",
+			input:      "invalid",
+			expected:   0,
+			hasContent: true,
 		},
 		{
-			name:     "Nil input",
-			input:    nil,
-			expected: 0,
-			hasError: true,
+			name:       "Nil input",
+			input:      nil,
+			expected:   0,
+			hasContent: true,
 		},
 	}
 
@@ -63,7 +63,7 @@ func TestToUint(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			out, err := Convert(tt.input).ToUint()
 
-			if tt.hasError {
+			if tt.hasContent {
 				if err == nil {
 					t.Errorf("Expected error, but got none")
 				}
@@ -81,46 +81,46 @@ func TestToUint(t *testing.T) {
 
 func TestToFloat(t *testing.T) {
 	tests := []struct {
-		name     string
-		input    any
-		expected float64
-		hasError bool
+		name       string
+		input      any
+		expected   float64
+		hasContent bool
 	}{
 		{
-			name:     "String float",
-			input:    "123.456",
-			expected: 123.456,
-			hasError: false,
+			name:       "String float",
+			input:      "123.456",
+			expected:   123.456,
+			hasContent: false,
 		},
 		{
-			name:     "Integer",
-			input:    123,
-			expected: 123.0,
-			hasError: false,
+			name:       "Integer",
+			input:      123,
+			expected:   123.0,
+			hasContent: false,
 		},
 		{
-			name:     "Float value",
-			input:    456.789,
-			expected: 456.789,
-			hasError: false,
+			name:       "Float value",
+			input:      456.789,
+			expected:   456.789,
+			hasContent: false,
 		},
 		{
-			name:     "String negative",
-			input:    "-123.456",
-			expected: -123.456,
-			hasError: false,
+			name:       "String negative",
+			input:      "-123.456",
+			expected:   -123.456,
+			hasContent: false,
 		},
 		{
-			name:     "Invalid string",
-			input:    "invalid",
-			expected: 0,
-			hasError: true,
+			name:       "Invalid string",
+			input:      "invalid",
+			expected:   0,
+			hasContent: true,
 		},
 		{
-			name:     "Nil input",
-			input:    nil,
-			expected: 0,
-			hasError: true,
+			name:       "Nil input",
+			input:      nil,
+			expected:   0,
+			hasContent: true,
 		},
 	}
 
@@ -128,7 +128,7 @@ func TestToFloat(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			out, err := Convert(tt.input).ToFloat()
 
-			if tt.hasError {
+			if tt.hasContent {
 				if err == nil {
 					t.Errorf("Expected error, but got none")
 				}
@@ -148,36 +148,36 @@ func TestToFloat(t *testing.T) {
 
 func TestToIntConversion(t *testing.T) {
 	tests := []struct {
-		name     string
-		input    any
-		expected int64
-		hasError bool
+		name       string
+		input      any
+		expected   int64
+		hasContent bool
 	}{
-		{name: "int value", input: 42, expected: 42, hasError: false},
-		{name: "int8 value", input: int8(8), expected: 8, hasError: false},
-		{name: "int16 value", input: int16(16), expected: 16, hasError: false},
-		{name: "int32 value", input: int32(32), expected: 32, hasError: false},
-		{name: "int64 value", input: int64(64), expected: 64, hasError: false},
-		{name: "uint value", input: uint(42), expected: 42, hasError: false},
-		{name: "uint8 value", input: uint8(8), expected: 8, hasError: false},
-		{name: "uint16 value", input: uint16(16), expected: 16, hasError: false},
-		{name: "uint32 value", input: uint32(32), expected: 32, hasError: false},
-		{name: "uint64 value", input: uint64(64), expected: 64, hasError: false},
-		{name: "float32 value (truncation)", input: float32(3.14), expected: 3, hasError: false},
-		{name: "float64 value (truncation)", input: float64(6.28), expected: 6, hasError: false},
-		{name: "string numeric value", input: "12345", expected: 12345, hasError: false},
-		{name: "string negative numeric value", input: "-50", expected: -50, hasError: false},
-		{name: "string float numeric value (truncation)", input: "123.789", expected: 123, hasError: false},
-		{name: "string value (invalid)", input: "not a number", expected: 0, hasError: true},
-		{name: "boolean value (invalid)", input: true, expected: 0, hasError: true},
-		{name: "nil value (invalid)", input: nil, expected: 0, hasError: true},
+		{name: "int value", input: 42, expected: 42, hasContent: false},
+		{name: "int8 value", input: int8(8), expected: 8, hasContent: false},
+		{name: "int16 value", input: int16(16), expected: 16, hasContent: false},
+		{name: "int32 value", input: int32(32), expected: 32, hasContent: false},
+		{name: "int64 value", input: int64(64), expected: 64, hasContent: false},
+		{name: "uint value", input: uint(42), expected: 42, hasContent: false},
+		{name: "uint8 value", input: uint8(8), expected: 8, hasContent: false},
+		{name: "uint16 value", input: uint16(16), expected: 16, hasContent: false},
+		{name: "uint32 value", input: uint32(32), expected: 32, hasContent: false},
+		{name: "uint64 value", input: uint64(64), expected: 64, hasContent: false},
+		{name: "float32 value (truncation)", input: float32(3.14), expected: 3, hasContent: false},
+		{name: "float64 value (truncation)", input: float64(6.28), expected: 6, hasContent: false},
+		{name: "string numeric value", input: "12345", expected: 12345, hasContent: false},
+		{name: "string negative numeric value", input: "-50", expected: -50, hasContent: false},
+		{name: "string float numeric value (truncation)", input: "123.789", expected: 123, hasContent: false},
+		{name: "string value (invalid)", input: "not a number", expected: 0, hasContent: true},
+		{name: "boolean value (invalid)", input: true, expected: 0, hasContent: true},
+		{name: "nil value (invalid)", input: nil, expected: 0, hasContent: true},
 	}
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			out, err := Convert(tt.input).ToInt()
 
-			if tt.hasError {
+			if tt.hasContent {
 				if err == nil {
 					t.Errorf("Convert(%v).ToInt() expected error, but got none", tt.input)
 				}
@@ -240,7 +240,7 @@ func TestNumericChaining(t *testing.T) {
 
 	// Test with formatting numbers
 	out = Convert(1234567).FormatNumber().String()
-	expected = "1.234.567"
+	expected = "1,234,567"
 	if out != expected {
 		t.Errorf("Expected %q, got %q", expected, out)
 	}

@@ -6,6 +6,17 @@ import (
 	. "github.com/cdvelop/tinystring"
 )
 
+func TestDebugReplaceEmpty(t *testing.T) {
+	// Test case: Convert("").Replace("", "123") should be ""
+
+	result := Convert("").Replace("", "123").String()
+	t.Logf("Convert(\"\").Replace(\"\", \"123\").String(): %q", result)
+
+	if result != "" {
+		t.Errorf("Expected empty string, got %q", result)
+	}
+}
+
 func TestStringOperations(t *testing.T) {
 	t.Run("Replace", func(t *testing.T) {
 		tests := []struct {

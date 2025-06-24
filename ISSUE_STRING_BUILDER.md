@@ -27,7 +27,7 @@
 - **[x] Performance Benchmarking** - Builder pattern validation complete
 - **[x] Concurrency Safety Review** - Fixed race conditions in complex chaining
 - **[x] Memory Analysis** - Allocation reduction validated (44%+ reduction achieved)
-- **[x] String Pointer Fixes** - Fixed getString() for string pointers and setStringFromBuffer()
+- **[x] String Pointer Fixes** - Fixed getString() for string pointers and setString()
 
 ### ✅ **IMPLEMENTATION COMPLETE**
 All core string builder features have been successfully implemented and integrated. The TinyString library now features:
@@ -314,7 +314,7 @@ func (c *conv) Reset() *conv {
     c.floatVal = 0
     c.boolVal = false
     c.stringSliceVal = nil
-    c.pointerVal = nil
+    c.anyValue = nil
     c.kind = KString
     c.roundDown = false
     c.separator = "_"
@@ -554,7 +554,7 @@ The implementation maintains full backward compatibility while providing signifi
 - High-demand process optimization (joinSlice, unifiedFormat, transformations)
 - Buffer consistency across all string operations (Replace, CamelCase, Repeat, RemoveTilde)
 - Performance validation with 44% allocation reduction
-- String pointer fixes (getString() and setStringFromBuffer() consistency)
+- String pointer fixes (getString() and setString() consistency)
 - Thread-safety and concurrency validation
 - Complete test suite coverage including edge cases
 

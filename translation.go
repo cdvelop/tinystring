@@ -16,63 +16,99 @@ func T(values ...any) string {
 	c := getConv()
 	defer c.putConv()
 
-	// Check if first argument is a language selector
-	startIdx := 0
-	currentLang := defLang
-
-	// Language detection - check if first value is a language
-	if len(values) > 0 {
-		if l, ok := values[0].(lang); ok {
-			currentLang = l
-			startIdx = 1
-		}
-	}
-
-	// Process remaining values and build the translated string
-	for i := startIdx; i < len(values); i++ {
-		if i > startIdx {
-			c.out = append(c.out, ' ') // Add space between words
-		}
-		switch v := values[i].(type) {
-		case LocStr:
-			// Dictionary term - get translation for current language
-			// REUSE getTranslation() function
-			translation := getTranslation(v, currentLang)
-			c.out = append(c.out, translation...)
-		case string:
-			// Direct string
-			c.out = append(c.out, v...)
-		default:
-			// Convert other types to string using anyToBuff()
-			anyToBuff(c, buffOut, v) // Use unified conversion function
-			str := c.ensureStringInOut()
-			c.out = append(c.out, str...)
-		}
-	}
+	// UNIFIED PROCESSING: Use shared intermediate function
+	processTranslatedMessage(c, buffOut, values...)
+	out := c.getString(buffOut)
 	// Return the constructed string
-	return string(c.out)
+	return out
+}
+
+// =============================================================================
+// FUNCIÓN INTERMEDIA UNIFICADA - REUTILIZADA POR T() Y ERR()
+// =============================================================================
+
+// processTranslatedMessage procesa argumentos variádicos con traducción y escribe al buffer especificado
+// FUNCIÓN UNIFICADA: Reduce duplicación de código entre T() y Err()
+// Maneja detección de idioma, traducción de LocStr, y escritura al buffer destino
+func processTranslatedMessage(c *conv, dest buffDest, values ...any) {
+	if len(values) == 0 {
+		return
+	}
+
+	// PASO 1: Detección unificada de idioma
+	currentLang, startIdx := detectLanguage(values)
+
+	// PASO 2: Procesamiento unificado de argumentos
+	processTranslatedArgs(c, dest, values, currentLang, startIdx)
 }
 
 // =============================================================================
 // SHARED LANGUAGE SYSTEM FUNCTIONS - REUSED BY ERROR.GO AND TRANSLATION.GO
 // =============================================================================
 
-// detectLanguage determines the current language for translations and errors
-// REUSES: existing defLang from language.go
-func detectLanguage(c *conv) lang {
-	// STEP 1: Use default language (can be extended later for auto-detection)
-	// Note: c.language field doesn't exist in current struct, use global default
-	return defLang // REUSE existing global language setting
+// detectLanguage determines the current language and start index from variadic arguments
+// UNIFIED FUNCTION: Handles language detection for both T() and wrErr()
+// Returns: (language, startIndex) where startIndex skips the language argument if present
+func detectLanguage(args []any) (lang, int) {
+	if len(args) == 0 {
+		return defLang, 0
+	}
+
+	// Check if first argument is a language specifier
+	if langVal, ok := args[0].(lang); ok {
+		return langVal, 1 // Skip the language argument in processing
+	}
+
+	// No language specified, use default
+	return defLang, 0
 }
 
-// getTranslation extracts translation for specific language from LocStr
-// REUSES: existing LocStr array indexing logic
-func getTranslation(locStr LocStr, currentLang lang) string {
-	// STEP 2: Get translation for current language with fallback
-	// REUSE logic from T() function
-	if int(currentLang) < len(locStr) && locStr[currentLang] != "" {
-		return locStr[currentLang]
+// processTranslatedArgs processes arguments with language-aware translation
+// UNIFIED FUNCTION: Handles argument processing for both T() and wrErr()
+// Eliminates code duplication between T() and wrErr()
+// REFACTORED: Uses wrString instead of direct buffer access
+func processTranslatedArgs(c *conv, dest buffDest, args []any, currentLang lang, startIndex int) {
+	for i := startIndex; i < len(args); i++ {
+		if i > startIndex {
+			// Add space between words for readability using wrString
+			c.wrString(dest, " ")
+		}
+
+		arg := args[i]
+		switch v := arg.(type) {
+		case LocStr:
+			// Translate LocStr using specified/detected language
+			c.wrTranslation(v, currentLang, dest)
+
+		case string:
+			// Direct string - write using wrString
+			c.wrString(dest, v)
+
+		default:
+			// Convert other types to string using anyToBuff
+			c.anyToBuff(buffWork, v) // Convert to work buffer first
+			if c.hasContent(buffWork) {
+				workResult := c.getString(buffWork)
+				c.wrString(dest, workResult)
+				c.rstBuffer(buffWork) // Clear work buffer for next use
+			}
+		}
 	}
-	// Fallback to English if translation not available
-	return locStr[EN]
+}
+
+// wrTranslation extracts translation for specific language from LocStr and writes to destination buffer
+// REUSES: existing LocStr array indexing logic
+// METHOD: Now a conv method that writes directly to buffer without returning anything
+func (c *conv) wrTranslation(locStr LocStr, currentLang lang, dest buffDest) {
+	// Get translation for current language with fallback
+	var translation string
+	if int(currentLang) < len(locStr) && locStr[currentLang] != "" {
+		translation = locStr[currentLang]
+	} else {
+		// Fallback to English if translation not available
+		translation = locStr[EN]
+	}
+
+	// Write directly to destination buffer
+	c.wrString(dest, translation)
 }

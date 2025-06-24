@@ -2,23 +2,13 @@ package tinystring
 
 // Shared constants for maximum code reuse and minimal binary size
 const (
-	// Digit characters for base conversion (supports bases 2-36)
-	digs = "0123456789abcdefghijklmnopqrstuvwxyz"
-	// Common string constants to avoid allocations for frequently used values
-	emptyStr = ""
-	trueStr  = "true"
-	falseStr = "false"
-	zeroStr  = "0"
-	oneStr   = "1"
+
 	// Common punctuation
 	dotStr      = "."
 	spaceStr    = " "
 	ellipsisStr = "..."
 	quoteStr    = "\"\""
-	// Numeric special values - Phase 3G.7: String constant consolidation
-	nanStr    = "NaN"
-	infStr    = "Inf"
-	negInfStr = "-Inf"
+
 	// ASCII case conversion constant
 	asciiCaseDiff = 32
 	// Buffer capacity constants
@@ -72,7 +62,7 @@ func toLowerRune(r rune) rune {
 // RemoveTilde removes accents and diacritics using index-based lookup
 func (t *conv) RemoveTilde() *conv {
 	// Check for error chain interruption
-	if t.hasError() {
+	if t.hasContent(buffErr) {
 		return t
 	}
 
@@ -110,9 +100,23 @@ func (t *conv) RemoveTilde() *conv {
 		}
 	}
 	// ✅ Always update the buffer using API - consistency with buffer-first strategy
-	t.rstOut()         // Clear buffer using API
-	t.wrToOut(tempBuf) // Write using API
-	t.setStringFromBuffer()
+	t.rstBuffer(buffOut)        // Clear buffer using API
+	t.wrBytes(buffOut, tempBuf) // Write using API
+	// Final output is ready in buffOut - no setString needed
 
 	return t
+}
+
+// addRne2Buf manually encodes a rune to UTF-8 and appends it to the byte slice.
+// This avoids importing the unicode/utf8 package for size optimization.
+func addRne2Buf(out []byte, r rune) []byte {
+	if r < 0x80 {
+		return append(out, byte(r))
+	} else if r < 0x800 {
+		return append(out, byte(0xC0|(r>>6)), byte(0x80|(r&0x3F)))
+	} else if r < 0x10000 {
+		return append(out, byte(0xE0|(r>>12)), byte(0x80|((r>>6)&0x3F)), byte(0x80|(r&0x3F)))
+	} else {
+		return append(out, byte(0xF0|(r>>18)), byte(0x80|((r>>12)&0x3F)), byte(0x80|((r>>6)&0x3F)), byte(0x80|(r&0x3F)))
+	}
 }

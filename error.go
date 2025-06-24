@@ -10,105 +10,93 @@ package tinystring
 // tinystring.Err(D.Format, D.Invalid) returns "invalid format"
 // tinystring.Err(ES,D.Format, D.Invalid) returns "formato inválido"
 
-func Err(values ...any) *conv {
+func Err(msgs ...any) *conv {
 	c := getConv() // Always obtain from pool
-	return c.wrErr(values...)
+	c.kind = KErr
+	// UNIFIED PROCESSING: Use same intermediate function as T() but write to buffErr
+	processTranslatedMessage(c, buffErr, msgs...)
+	return c
 }
 
 // Errf creates a new conv instance with error formatting similar to fmt.Errf
 // Example: tinystring.Errf("invalid value: %s", value).Error()
 func Errf(format string, args ...any) *conv {
 	c := getConv() // Always obtain from pool
-	c.applyFormatTemplate(format, args...)
+	c.wrFormat(buffErr, format, args...)
 	c.kind = KErr
 	return c
 }
 
 // StringError returns the content of the conv along with any error and auto-releases to pool
-func (t *conv) StringError() (string, error) {
-	var out string
-	var err error
-	// BUILDER INTEGRATION: Check for error condition more comprehensively
-	if t.hasError() { // ✅ Use new buffer state checking method
-		// If there's an error, return empty string and the error
-		out = ""
-		err = &simpleError{message: string(t.err[:t.errLen])} // ✅ Use errLen for length control
-	} else {
-		out = t.ensureStringInOut() // ✅ Use new centralized method
-		err = nil
+func (c *conv) StringError() (out string, err error) {
+	// If there's an error, return empty string and the error object (do NOT release to pool)
+	if c.hasContent(buffErr) {
+		return "", c
 	}
 
-	// Auto-release back to pool for memory efficiency
-	t.putConv()
-	return out, err
+	// Otherwise return the string content and no error (safe to release to pool)
+	out = c.ensureStringInOut()
+	c.putConv()
+	return out, nil
 }
 
-// simpleError implements error interface without importing errors package
-type simpleError struct {
-	message string
-}
-
-func (e *simpleError) Error() string {
-	return e.message
-}
-
-// =============================================================================
-// LANGUAGE-AWARE ERROR SYSTEM - ARCHITECTURAL IMPLEMENTATION
-// NO T() DEPENDENCY - DIRECT BUFFER WRITING - NO ERROR RETURN
-// =============================================================================
-
-// wrErr writes error messages using language detection and LocStr translation
-// ARCHITECTURAL SPECIFICATION: NO error return, direct buffer writing
-// REUSES: detectLanguage, getTranslation, writeStringToErr
+// wrErr writes error messages with support for int, string and LocStr
+// ENHANCED: Now supports int, string and LocStr parameters
+// Used internally by anyToBuff for type error messages
 func (c *conv) wrErr(msgs ...any) *conv {
-	if len(msgs) == 0 {
-		return c
-	}
-
 	c.kind = KErr // Set error kind first
 
-	// Reset error buffer using API ONLY
-	c.clearError() // ✅ Use API method instead of manual c.errLen = 0
-
-	// STEP 1: Language detection (no c.language field dependency)
-	currentLang := detectLanguage(c)
-
-	// STEP 2: Process each message argument
+	// Write messages using default language (no detection needed)
 	for i, msg := range msgs {
 		if i > 0 {
-			// Add space between words for readability
-			c.writeStringToErr(" ") // ✅ Use API
+			// Add space between words
+			c.wrString(buffErr, " ")
 		}
 
 		switch v := msg.(type) {
 		case LocStr:
-			// STEP 3: Translate LocStr using detected language
-			translation := getTranslation(v, currentLang)
-			c.writeStringToErr(translation) // ✅ Use API
-
+			// Translate LocStr using default language
+			c.wrTranslation(v, defLang, buffErr)
 		case string:
-			// Direct string - write as-is
-			c.writeStringToErr(v) // ✅ Use API
-
-		default:
-			// Convert other types to string (int, float, etc.)
-			// Use anyToBuff to convert to work buffer, then transfer result
-			anyToBuff(c, buffWork, v) // Convert to work buffer of CURRENT conv
-
-			if c.hasWorkContent() { // ✅ Use API method
-				// Transfer work result to error buffer using API
-				c.writeStringToErr(c.getWorkString()) // ✅ Use API
+			// Direct string write
+			c.wrString(buffErr, v)
+		case int:
+			// Convert int to string and write - simple conversion for errors
+			if v == 0 {
+				c.wrString(buffErr, "0")
+			} else {
+				// Simple int to string conversion for error messages
+				var buf [20]byte // Enough for 64-bit int
+				n := len(buf)
+				negative := v < 0
+				if negative {
+					v = -v
+				}
+				for v > 0 {
+					n--
+					buf[n] = byte(v%10) + '0'
+					v /= 10
+				}
+				if negative {
+					n--
+					buf[n] = '-'
+				}
+				c.wrString(buffErr, string(buf[n:]))
 			}
+		default:
+			// For other types, convert to string representation
+			c.wrString(buffErr, "<unsupported>")
 		}
 	}
+
 	return c
 }
 
 func (c *conv) getError() string {
-	if !c.hasError() { // ✅ Use API method instead of len(c.err)
+	if !c.hasContent(buffErr) { // ✅ Use API method instead of len(c.err)
 		return ""
 	}
-	return c.getErrorString() // ✅ Use API method instead of direct string(c.err)
+	return c.getString(buffErr) // ✅ Use API method instead of direct string(c.err)
 }
 
 func (c *conv) Error() string {
