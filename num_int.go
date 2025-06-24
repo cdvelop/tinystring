@@ -29,7 +29,7 @@ func (c *conv) ToInt(base ...int) (int, error) {
 		inp := c.ensureStringInOut()
 		c.rstBuffer(buffErr) // Clear any previous errors
 		if stringToInt(c, inp, baseVal, buffWork) {
-			if val, ok := c.anyValue.(int64); ok {
+			if val, ok := c.ptrValue.(int64); ok {
 				// Check if int64 fits in int
 				if val < -2147483648 || val > 2147483647 {
 					return 0, c.wrErr(D.Number, D.Overflow)
@@ -52,8 +52,8 @@ func (c *conv) ToInt(base ...int) (int, error) {
 	}
 
 	// For base 10, direct conversion for numeric types already in memory is OK
-	if c.anyValue != nil {
-		switch v := c.anyValue.(type) {
+	if c.ptrValue != nil {
+		switch v := c.ptrValue.(type) {
 		case int:
 			return v, nil
 		case int8:
@@ -112,7 +112,7 @@ func (c *conv) ToInt(base ...int) (int, error) {
 
 	// Try parsing current content as integer with base 10
 	if c.tryParseAs(KInt, 10) {
-		if val, ok := c.anyValue.(int64); ok {
+		if val, ok := c.ptrValue.(int64); ok {
 			// Check if int64 fits in int
 			if val < -2147483648 || val > 2147483647 {
 				return 0, c.wrErr(D.Number, D.Overflow)
@@ -149,7 +149,7 @@ func (c *conv) ToInt64(base ...int) (int64, error) {
 
 	// Try parsing current content as integer
 	if c.tryParseAs(KInt, baseVal) {
-		if val, ok := c.anyValue.(int64); ok {
+		if val, ok := c.ptrValue.(int64); ok {
 			return val, nil
 		}
 	}
@@ -172,8 +172,8 @@ func (c *conv) ToUint(base ...int) (uint, error) {
 	}
 
 	// Direct conversion for numeric types already in memory
-	if c.anyValue != nil {
-		switch v := c.anyValue.(type) {
+	if c.ptrValue != nil {
+		switch v := c.ptrValue.(type) {
 		case int:
 			if v < 0 {
 				return 0, c.wrErr(D.Number, D.Negative, D.Not, D.Allowed)
@@ -258,7 +258,7 @@ func (c *conv) ToUint(base ...int) (uint, error) {
 
 	// Try parsing current content as unsigned integer
 	if c.tryParseAs(KUint, baseVal) {
-		if val, ok := c.anyValue.(uint64); ok {
+		if val, ok := c.ptrValue.(uint64); ok {
 			// Check if uint64 fits in uint
 			if val > 4294967295 {
 				return 0, c.wrErr(D.Number, D.Overflow)
@@ -279,7 +279,7 @@ func (c *conv) ToUint(base ...int) (uint, error) {
 // Universal method with dest-first parameter order - eliminates duplicate code
 func (c *conv) wrInt(dest buffDest, v int64) {
 	c.kind = KInt  // Set type
-	c.anyValue = v // Store original value
+	c.ptrValue = v // Store original value
 
 	// Use existing fmtIntToDest for conversion
 	c.fmtIntToDest(dest, v, 10, true)
@@ -289,7 +289,7 @@ func (c *conv) wrInt(dest buffDest, v int64) {
 // Universal method with dest-first parameter order - eliminates duplicate code
 func (c *conv) wrUint(dest buffDest, v uint64) {
 	c.kind = KUint // Set type
-	c.anyValue = v // Store original value
+	c.ptrValue = v // Store original value
 
 	// Use existing fmtIntToDest for conversion
 	c.fmtIntToDest(dest, int64(v), 10, false)

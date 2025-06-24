@@ -11,10 +11,10 @@ func (t *conv) RoundDecimals(decimals int) *conv {
 		return t
 	}
 
-	// First, ensure we have the string representation in buffOut
-	if t.anyValue != nil {
+	// OPTIMIZED: Buffer-first approach - ensure we have content in buffOut
+	if !t.hasContent(buffOut) && t.ptrValue != nil {
 		t.rstBuffer(buffOut) // Reset buffer before conversion
-		t.anyToBuff(buffOut, t.anyValue)
+		t.anyToBuff(buffOut, t.ptrValue)
 		if t.hasContent(buffErr) {
 			return t
 		}
@@ -192,11 +192,11 @@ func (t *conv) downToBuffer(dest buffDest) *conv {
 
 	// Strategy: Re-apply rounding using the original value but with floor behavior
 	// This avoids precision issues while ensuring consistent rounding behavior
-	if t.anyValue != nil {
+	if t.ptrValue != nil {
 		// For string inputs, we can re-apply safely
-		if _, isString := t.anyValue.(string); isString {
+		if _, isString := t.ptrValue.(string); isString {
 			t.rstBuffer(buffWork)
-			t.anyToBuff(buffWork, t.anyValue)
+			t.anyToBuff(buffWork, t.ptrValue)
 			if !t.hasContent(buffErr) {
 				workStr := t.getString(buffWork)
 				t.rstBuffer(dest)

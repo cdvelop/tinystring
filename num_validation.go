@@ -128,7 +128,7 @@ func (c *conv) stringToUint(input string, base int) {
 	if base == 10 {
 		if val, err := c.parseSmallInt(input); err == nil && val >= 0 {
 			uint64To(c, uint64(val), buffOut)
-			c.anyValue = uint64(val)
+			c.ptrValue = uint64(val)
 			c.kind = KUint
 			return
 		}
@@ -187,7 +187,7 @@ func (c *conv) stringToUint(input string, base int) {
 	}
 
 	uint64To(c, result, buffOut)
-	c.anyValue = result
+	c.ptrValue = result
 	c.kind = KUint
 }
 
@@ -198,7 +198,7 @@ func stringToInt(c *conv, inp string, base int, dest buffDest) bool {
 	if base == 10 {
 		if val, err := c.parseSmallInt(inp); err == nil {
 			c.wrInt(dest, int64(val))
-			c.anyValue = int64(val)
+			c.ptrValue = int64(val)
 			c.kind = KInt
 			return true
 		}
@@ -267,7 +267,7 @@ func stringToInt(c *conv, inp string, base int, dest buffDest) bool {
 	}
 
 	c.wrInt(dest, result)
-	c.anyValue = result
+	c.ptrValue = result
 	c.kind = KInt
 	return true
 }
@@ -281,7 +281,7 @@ func stringToFloat(c *conv, inp string, dest buffDest) (float64, bool) {
 	}
 
 	c.wrFloat(dest, val)
-	c.anyValue = val
+	c.ptrValue = val
 	c.kind = KFloat64
 	return val, true
 }

@@ -15,9 +15,9 @@ func (c *conv) Write(v any) *conv {
 
 	// BUILDER INTEGRATION: Only transfer initial value if buffer is empty
 	// and we have a stored value that hasn't been converted yet
-	if c.outLen == 0 && c.anyValue != nil {
+	if c.outLen == 0 && c.ptrValue != nil {
 		// Convert current value to buffer using anyToBuff()
-		c.anyToBuff(buffOut, c.anyValue) // Use unified conversion
+		c.anyToBuff(buffOut, c.ptrValue) // Use unified conversion
 	}
 
 	// Use unified anyToBuff() function to append new value
@@ -30,7 +30,7 @@ func (c *conv) Write(v any) *conv {
 func (c *conv) Reset() *conv {
 	// Reset all conv fields to default state using buffer API
 	c.resetAllBuffers()
-	c.anyValue = nil
+	c.ptrValue = nil
 	c.kind = KString
 	return c
 }

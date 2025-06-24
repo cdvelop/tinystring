@@ -8,9 +8,9 @@ func (t *conv) Repeat(n int) *conv {
 		return t // Error chain interruption
 	}
 	if n <= 0 {
-		// Clear buffer for empty out and clear anyValue to prevent reconstruction
+		// Clear buffer for empty out and clear ptrValue to prevent reconstruction
 		t.rstBuffer(buffOut)
-		t.anyValue = "" // Set to empty string to prevent ensureStringInOut from reconstructing
+		t.ptrValue = "" // Set to empty string to prevent ensureStringInOut from reconstructing
 		return t
 	}
 	// Phase 4.2: Inline newBuf method to eliminate function call overhead

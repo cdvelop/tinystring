@@ -12,12 +12,34 @@ func (t *conv) FormatNumber() *conv {
 		return t
 	}
 
-	// Use anyValue directly if available - follows unified buffer architecture
-	if t.anyValue != nil {
+	// OPTIMIZED: Buffer-first approach - check if we already have content
+	if t.hasContent(buffOut) {
+		str := t.getString(buffOut)
+		// Only add thousand separators if it's actually a number
+		if t.isNumericString(str) {
+			// For numeric strings, try to parse as float first to handle .00 cases
+			floatVal := t.parseFloat(str)
+			if !t.hasContent(buffErr) {
+				t.rstBuffer(buffOut)
+				// Check if it's effectively an integer (.00 case)
+				if floatVal == float64(int64(floatVal)) {
+					t.wrInt(buffOut, int64(floatVal))
+				} else {
+					t.wrFloat(buffOut, floatVal)
+					t.removeTrailingZeros(buffOut)
+				}
+			}
+			t.addThousandSeparators(buffOut)
+		}
+		return t
+	}
+
+	// Fallback: Use ptrValue for complex types that need lazy conversion
+	if t.ptrValue != nil {
 		// Clear any existing errors before processing
 		t.rstBuffer(buffErr)
 		t.rstBuffer(buffOut)
-		t.anyToBuff(buffOut, t.anyValue)
+		t.anyToBuff(buffOut, t.ptrValue)
 
 		// Check if conversion was successful
 		if !t.hasContent(buffErr) {

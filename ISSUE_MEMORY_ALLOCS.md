@@ -104,6 +104,13 @@ type conv struct {
 - **ptrValue cleanup**: Continue setting `ptrValue = nil` in putConv() (most efficient)
 - **API Pattern**: All methods follow `wr{Type}(dest buffDest, value {type})` exactly
 
+## Clean Code & Minimal Binary Policy
+- **No dead code**: All unused, unreachable, or obsolete code must be removed immediately after refactoring.
+- **No legacy branches**: After migration, fallback or legacy code paths must be deleted, not commented.
+- **Minimal binary**: Every line must be justified for runtime or API; no helpers or debug code left behind.
+- **Review**: Each refactor must include a pass to remove all code that is no longer needed.
+- **Commit rule**: No commit is allowed if dead/unused code remains after a refactor.
+
 ## Implementation Strategy
 1. **API Refactoring First**: 
    - Rename `fmtIntToOut` → `wrInt(dest buffDest, val int64)`
@@ -134,6 +141,13 @@ type conv struct {
     // ONLY for complex types and pointers needing Apply()
     ptrValue any // *string, []string, map ONLY
 }
+```
+
+## 🛠️ **TOOLS & COMMANDS**
+```bash
+cd /c/Users/Cesar/Packages/Internal/tinystring
+
+./memory-benchmark.sh  #  Run memory benchmarks results in benchmark/benchmark_results.md
 ```
 
 ## Success Metrics

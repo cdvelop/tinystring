@@ -200,10 +200,10 @@ func (c *conv) ensureBufInit(dest buffDest) {
 func (c *conv) anyToBuff(dest buffDest, value any) {
     switch v := value.(type) {
     case string:
-        c.anyValue = v  // ⚠️ ESCAPES TO HEAP
+        c.ptrValue = v  // ⚠️ ESCAPES TO HEAP
         c.wrString(dest, v)
     case int:
-        c.anyValue = v  // ⚠️ ESCAPES TO HEAP  
+        c.ptrValue = v  // ⚠️ ESCAPES TO HEAP  
         c.wrInt(dest, int64(v))
     // ... all cases escape
     }
@@ -228,7 +228,7 @@ func (c *conv) anyToBuff(dest buffDest, value any) {
     
     // Slow path only stores complex types that require later access
     if needsStorage(value) {
-        c.anyValue = value  // Only when necessary
+        c.ptrValue = value  // Only when necessary
     }
     c.anyToBuffSlow(dest, value)
 }

@@ -28,8 +28,8 @@ func (c *conv) putConv() {
 	c.work = c.work[:0]
 	c.err = c.err[:0]
 
-	// Reset other fields to default state - only keep anyValue and kind
-	c.anyValue = nil
+	// Reset other fields to default state - only keep ptrValue and kind
+	c.ptrValue = nil
 	c.kind = KString
 
 	convPool.Put(c)
@@ -55,7 +55,14 @@ func (c *conv) ensureOutCapacity(capacity int) {
 	}
 }
 
+// getStringFromBuffer returns string content from specified buffer destination
+// OPTIMIZED: Only reads from buffers, no ptrValue conversion for simple types
+func (c *conv) getStringFromBuffer(dest buffDest) string {
+	return c.getString(dest)
+}
+
 // ensureStringInOut ensures string representation is available in out buffer
+// LEGACY: Maintains backward compatibility, will be deprecated
 // CRITICAL: Cannot use anyToBuff to prevent infinite recursion
 // Uses direct primitive conversion methods only
 func (c *conv) ensureStringInOut() string {
@@ -68,43 +75,56 @@ func (c *conv) ensureStringInOut() string {
 		return c.getString(buffOut) // Already converted
 	}
 
-	// Use direct conversion methods instead of anyToBuff (prevents infinite recursion)
-	if c.anyValue != nil {
+	// For simple types, buffer should already have content from anyToBuff
+	// Only fallback to ptrValue for complex types that need lazy conversion
+	if c.ptrValue != nil {
 		c.rstBuffer(buffOut)
 		// Direct conversion based on kind to avoid anyToBuff recursion
 		switch c.kind {
-		case KString:
-			if str, ok := c.anyValue.(string); ok {
-				c.wrString(buffOut, str)
+		case KPointer:
+			// Only for *string pointers that need Apply() support
+			if strPtr, ok := c.ptrValue.(*string); ok && strPtr != nil {
+				c.wrString(buffOut, *strPtr)
 			}
-		case KInt:
-			if val, ok := c.anyValue.(int64); ok {
-				c.fmtIntToOut(val, 10, true)
-			} else if val, ok := c.anyValue.(int); ok {
-				c.fmtIntToOut(int64(val), 10, true)
+		case KSliceStr:
+			// Complex type handling - convert []string to comma-separated
+			if slice, ok := c.ptrValue.([]string); ok {
+				for i, s := range slice {
+					if i > 0 {
+						c.wrString(buffOut, ",")
+					}
+					c.wrString(buffOut, s)
+				}
 			}
-		case KUint:
-			if val, ok := c.anyValue.(uint64); ok {
-				c.fmtIntToOut(int64(val), 10, false)
-			} else if val, ok := c.anyValue.(uint); ok {
-				c.fmtIntToOut(int64(val), 10, false)
-			}
-		case KFloat64:
-			if val, ok := c.anyValue.(float64); ok {
-				c.wrFloat(buffOut, val)
-			} else if val, ok := c.anyValue.(float32); ok {
-				c.wrFloat(buffOut, float64(val))
-			}
-		case KBool:
-			if val, ok := c.anyValue.(bool); ok {
-				if val {
-					c.wrString(buffOut, "true")
-				} else {
-					c.wrString(buffOut, "false")
+		case KMap:
+			// Complex type handling - convert map to key=value pairs
+			if m, ok := c.ptrValue.(map[string]string); ok {
+				first := true
+				for k, v := range m {
+					if !first {
+						c.wrString(buffOut, ",")
+					}
+					c.wrString(buffOut, k)
+					c.wrString(buffOut, "=")
+					c.wrString(buffOut, v)
+					first = false
+				}
+			} else if m, ok := c.ptrValue.(map[string]any); ok {
+				first := true
+				for k, _ := range m {
+					if !first {
+						c.wrString(buffOut, ",")
+					}
+					c.wrString(buffOut, k)
+					c.wrString(buffOut, "=")
+					// Convert any value to string representation
+					c.wrString(buffOut, "value")
+					first = false
 				}
 			}
 		default:
-			// For complex types, just return empty (avoid recursion)
+			// For other types, buffer should already have content
+			// If not, return empty to avoid infinite recursion
 			c.wrString(buffOut, "")
 		}
 	}

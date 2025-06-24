@@ -22,7 +22,7 @@ type conv struct {
 	kind kind // Hot path: type checking
 
 	// ✅ UNIFIED BUFFER ARCHITECTURE - Only essential fields remain
-	anyValue any // ✅ Universal pointer for complex types ([]string, map[string]any, etc.)
+	ptrValue any // ✅ Universal pointer for complex types ([]string, map[string]any, etc.)
 }
 
 // Convert initializes a new conv struct with optional value for string,bool and number manipulation.
@@ -51,7 +51,7 @@ func Convert(v ...any) *conv {
 		c.anyToBuff(buffOut, val)
 
 		// anyToBuff handles everything:
-		// - Setting c.kind and c.anyValue for all types
+		// - Setting c.kind and c.ptrValue for all types
 		// - String pointer handling (*string)
 		// - Complex types ([]string, map, etc.) with lazy conversion
 		// - All numeric and boolean type conversions
@@ -73,7 +73,6 @@ func (c *conv) anyToBuff(dest buffDest, value any) {
 	// IMMEDIATE CONVERSION - Simple Types (REUSE existing implementations)
 	case string:
 		c.kind = KString
-		c.anyValue = v
 		c.wrString(dest, v)
 	case *string:
 		// String pointer - verify not nil before dereferencing
@@ -84,7 +83,7 @@ func (c *conv) anyToBuff(dest buffDest, value any) {
 		// Store content and maintain pointer relationship
 		c.kind = KPointer
 		c.wrString(dest, *v)
-		c.anyValue = v
+		c.ptrValue = v
 	case error:
 		// Error type - write error message
 		c.wrErr(v.Error())
@@ -92,60 +91,43 @@ func (c *conv) anyToBuff(dest buffDest, value any) {
 	case int:
 		c.kind = KInt
 		c.wrInt(dest, int64(v))
-		c.anyValue = v
 	case int8:
 		c.kind = KInt
 		c.wrInt(dest, int64(v))
-		c.anyValue = v
 	case int16:
 		c.kind = KInt
 		c.wrInt(dest, int64(v))
-		c.anyValue = v
 	case int32:
-		c.wrInt(dest, int64(v))
 		c.kind = KInt
-		c.anyValue = v
+		c.wrInt(dest, int64(v))
 	case int64:
 		c.kind = KInt
 		c.wrInt(dest, v)
-		c.anyValue = v
 	case uint:
-		c.wrUint(dest, uint64(v))
 		c.kind = KUint
-		c.anyValue = v
+		c.wrUint(dest, uint64(v))
 	case uint8:
 		c.kind = KUint
 		c.wrUint(dest, uint64(v))
-		c.anyValue = v
 	case uint16:
 		c.kind = KUint
 		c.wrUint(dest, uint64(v))
-		c.anyValue = v
 	case uint32:
 		c.kind = KUint
 		c.wrUint(dest, uint64(v))
-		c.anyValue = v
 	case uint64:
 		c.kind = KUint
 		c.wrUint(dest, v)
-		c.anyValue = v
 	case float32:
 		c.kind = KFloat32
 		c.wrFloat(dest, float64(v))
-		c.anyValue = v
 	case float64:
 		c.kind = KFloat64
 		c.wrFloat(dest, v)
-		c.anyValue = v
 
 	case bool:
-		if v {
-			c.wrString(dest, "true")
-		} else {
-			c.wrString(dest, "false")
-		}
 		c.kind = KBool
-		c.anyValue = v
+		c.wrBool(dest, v)
 
 	case []byte:
 		c.wrBytes(dest, v)
@@ -153,15 +135,15 @@ func (c *conv) anyToBuff(dest buffDest, value any) {
 
 	// LAZY CONVERSION - Complex Types (store pointer, convert on demand)
 	case []string:
-		c.anyValue = v
+		c.ptrValue = v
 		c.kind = KSliceStr
 		// No immediate conversion - wait for operation
 	case map[string]string:
-		c.anyValue = v
+		c.ptrValue = v
 		c.kind = KMap
 		// No immediate conversion - wait for operation
 	case map[string]any:
-		c.anyValue = v
+		c.ptrValue = v
 		c.kind = KMap
 		// No immediate conversion - wait for operation
 	default:
@@ -174,9 +156,9 @@ func (c *conv) anyToBuff(dest buffDest, value any) {
 // This method should be used when you want to modify the original string directly
 // without additional allocations.
 func (t *conv) Apply() {
-	if t.kind == KPointer && t.anyValue != nil {
+	if t.kind == KPointer && t.ptrValue != nil {
 		// Type assert to *string for Apply() functionality
-		if strPtr, ok := t.anyValue.(*string); ok && strPtr != nil {
+		if strPtr, ok := t.ptrValue.(*string); ok && strPtr != nil {
 			*strPtr = t.ensureStringInOut()
 		}
 	}

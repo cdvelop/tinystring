@@ -31,7 +31,7 @@ type conv struct {
     err     []byte // Error buffer
     errLen  int    // Error tracking
     kind    kind   // Type indicator
-    anyValue any   // Universal storage
+    ptrValue any   // Universal storage
 }
 
 // Universal Conversion

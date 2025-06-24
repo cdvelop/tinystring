@@ -38,3 +38,12 @@ func (t *conv) ToBool() (bool, error) {
 	t.wrErr(D.Boolean, D.Value, D.Invalid, inp)
 	return false, t
 }
+
+// wrBool writes boolean value to specified buffer destination
+func (c *conv) wrBool(dest buffDest, val bool) {
+	if val {
+		c.wrString(dest, "true")
+	} else {
+		c.wrString(dest, "false")
+	}
+}

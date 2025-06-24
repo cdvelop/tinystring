@@ -12,15 +12,15 @@ func (t *conv) Join(sep ...string) *conv {
 	}
 
 	// Handle case when we have a string slice stored (LAZY CONVERSION)
-	if t.kind == KSliceStr && t.anyValue != nil {
-		if slice, ok := t.anyValue.([]string); ok {
+	if t.kind == KSliceStr && t.ptrValue != nil {
+		if slice, ok := t.ptrValue.([]string); ok {
 			// Direct join using anyToBuff to output buffer
 			t.rstBuffer(buffOut)
 			for i, s := range slice {
 				if i > 0 {
-					t.anyToBuff( buffOut, separator)
+					t.anyToBuff(buffOut, separator)
 				}
-				t.anyToBuff( buffOut, s)
+				t.anyToBuff(buffOut, s)
 			}
 		}
 		return t
@@ -51,9 +51,9 @@ func (t *conv) Join(sep ...string) *conv {
 			t.rstBuffer(buffOut) // Reset output buffer
 			for i, part := range parts {
 				if i > 0 {
-					t.anyToBuff( buffOut, separator)
+					t.anyToBuff(buffOut, separator)
 				}
-				t.anyToBuff( buffOut, part)
+				t.anyToBuff(buffOut, part)
 			}
 		}
 	}

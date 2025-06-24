@@ -14,7 +14,7 @@ func (c *conv) ToFloat() (float64, error) {
 
 	// Try parsing current content as float
 	if c.tryParseAs(KFloat64, 10) {
-		if val, ok := c.anyValue.(float64); ok {
+		if val, ok := c.ptrValue.(float64); ok {
 			return val, nil
 		}
 	}
@@ -96,7 +96,7 @@ func (c *conv) parseFloat(inp string) float64 {
 // Universal method with dest-first parameter order - follows buffer API architecture
 func (c *conv) wrFloat(dest buffDest, val float64) {
 	c.kind = KFloat64 // Set type
-	c.anyValue = val  // Store original value
+	c.ptrValue = val  // Store original value
 
 	// Handle special cases
 	if val != val { // NaN

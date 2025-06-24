@@ -13,7 +13,7 @@ func (t *conv) Replace(oldAny, newAny any, n ...int) *conv {
 	str := t.ensureStringInOut()
 
 	// Preserve original state before temporary conversions
-	originalAnyValue := t.anyValue
+	originalAnyValue := t.ptrValue
 	originalKind := t.kind
 
 	// Use internal work buffer instead of getConv() for zero-allocation
@@ -26,7 +26,7 @@ func (t *conv) Replace(oldAny, newAny any, n ...int) *conv {
 	newStr := t.getString(buffWork) // Get new string from work buffer
 
 	// Restore original state after temporary conversions
-	t.anyValue = originalAnyValue
+	t.ptrValue = originalAnyValue
 	t.kind = originalKind
 
 	// Check early return condition
@@ -137,8 +137,8 @@ func (t *conv) Trim() *conv {
 		// Clear buffer and write empty string
 		t.rstBuffer(buffOut)
 		t.wrString(buffOut, "")
-		// Also clear anyValue to prevent fallback
-		t.anyValue = ""
+		// Also clear ptrValue to prevent fallback
+		t.ptrValue = ""
 		t.kind = KString
 		return t
 	}
