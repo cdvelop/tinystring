@@ -55,7 +55,7 @@ floatStr := strconv.FormatFloat(3.14, 'f', 2, 64)
 
 // ✅ TinyString  
 numStr := tinystring.Convert(42).String()
-floatStr := tinystring.Convert(3.14).RoundDecimals(2).String()
+floatStr := tinystring.Convert(3.14).Round(2).String()
 ```
 
 ### 3. Replace `strings` Operations with TinyString Chaining

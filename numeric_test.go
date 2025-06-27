@@ -232,7 +232,7 @@ func TestNumericChaining(t *testing.T) {
 
 	// Test with formatting
 	c := Convert(123.456)
-	c.RoundDecimals(2)
+	c.Round(2)
 	out := c.String()
 	expected := "123.46"
 	if out != expected {
@@ -240,7 +240,7 @@ func TestNumericChaining(t *testing.T) {
 	}
 
 	// Test with formatting numbers
-	out = Convert(1234567).FormatNumber().String()
+	out = Convert(1234567).Thousands().String()
 	expected = "1,234,567"
 	if out != expected {
 		t.Errorf("Expected %q, got %q", expected, out)

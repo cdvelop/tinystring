@@ -33,8 +33,8 @@ func processNumbersWithTinyString(numbers []float64) []string {
 	for i, num := range numbers {
 		// EQUIVALENT OPERATIONS: Same formatting as standard library
 		formatted := tinystring.Convert(num).
-			RoundDecimals(2).
-			FormatNumber().
+			Round(2).
+			Thousands().
 			String()
 		results[i] = formatted
 	}

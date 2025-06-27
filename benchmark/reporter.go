@@ -211,8 +211,8 @@ func (r *ReportGenerator) generateMemorySection(comparisons []MemoryComparison) 
 			// Category with emoji
 			categoryIcon := getBenchmarkCategoryIcon(comparison.Category) // Standard library row with enhanced styling
 			// Format operation count with thousands separator
-			opCountStd := Convert(comparison.Standard.Iterations).FormatNumber().String()
-			opCountTiny := Convert(comparison.TinyString.Iterations).FormatNumber().String()
+			opCountStd := Convert(comparison.Standard.Iterations).Thousands().String()
+			opCountTiny := Convert(comparison.TinyString.Iterations).Thousands().String()
 
 			// Memory/op string with operation count
 			memStd := Fmt("%s / %s OP", FormatSize(comparison.Standard.BytesPerOp), opCountStd)

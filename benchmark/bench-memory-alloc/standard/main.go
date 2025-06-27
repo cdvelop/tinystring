@@ -39,7 +39,7 @@ func processNumbersWithStandardLib(numbers []float64) []string {
 		// EQUIVALENT OPERATIONS: Fmt with 2 decimals + add thousand separators
 		formatted := strconv.FormatFloat(num, 'f', 2, 64)
 
-		// Add thousand separators (equivalent to FormatNumber)
+		// Add thousand separators (equivalent to Thousands)
 		parts := strings.Split(formatted, ".")
 		integer := parts[0]
 		decimal := parts[1]

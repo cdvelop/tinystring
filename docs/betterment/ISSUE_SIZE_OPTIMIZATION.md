@@ -79,11 +79,11 @@ Debug WASM:   1.8 MB → 904.7 KB   (50.6% reduction)
 **Objective**: Eliminate the `roundDown` field from `conv` struct and handle rounding behavior locally.
 **Status**: **COMPLETED** (December 19, 2025)
 
-**Analysis**: The `roundDown` field was only used for controlling rounding behavior in `RoundDecimals()` and `Down()` methods.
+**Analysis**: The `roundDown` field was only used for controlling rounding behavior in `Round()` and `Down()` methods.
 
 **Optimization**:
 1. **Removed `roundDown` field** from conv struct definition
-2. **Refactored `RoundDecimals()`** to use `roundDecimalsInternal(decimals, false)` 
+2. **Refactored `Round()`** to use `roundDecimalsInternal(decimals, false)` 
 3. **Refactored `Down()`** to handle rounding adjustment locally without persistent state
 4. **Updated Reset() and putConv()** to remove roundDown field initialization
 

@@ -53,10 +53,10 @@ func TestRoundDecimals(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			c := Convert(tt.input)
-			c.RoundDecimals(tt.decimals)
+			c.Round(tt.decimals)
 			out := c.String()
 			if out != tt.want {
-				t.Errorf("RoundDecimals() got = %v, want %v", out, tt.want)
+				t.Errorf("Round() got = %v, want %v", out, tt.want)
 			}
 		})
 	}
@@ -112,9 +112,9 @@ func TestFormatNumber(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			out := Convert(tt.input).FormatNumber().String()
+			out := Convert(tt.input).Thousands().String()
 			if out != tt.want {
-				t.Errorf("FormatNumber() got = %v, want %v", out, tt.want)
+				t.Errorf("Thousands() got = %v, want %v", out, tt.want)
 			}
 		})
 	}
@@ -143,7 +143,7 @@ func TestFormat(t *testing.T) {
 			name:     "Float formatting",
 			format:   "Pi: %.2f",
 			args:     []any{3.14159},
-			expected: "Pi: 3.14", // Changed to match RoundDecimals default (ceiling)
+			expected: "Pi: 3.14", // Changed to match Round default (ceiling)
 		},
 		{
 			name:     "Multiple arguments",
@@ -355,9 +355,9 @@ func TestRoundDecimalsEnhanced(t *testing.T) {
 		t.Run(test.name, func(t *testing.T) {
 			c := Convert(test.input)
 			if test.down {
-				c.RoundDecimals(test.decimals, true)
+				c.Round(test.decimals, true)
 			} else {
-				c.RoundDecimals(test.decimals)
+				c.Round(test.decimals)
 			}
 			out := c.String()
 
@@ -372,7 +372,7 @@ func TestRoundDecimalsAPI(t *testing.T) {
 	// Test the corrected API as specified
 	t.Run("Default up rounding", func(t *testing.T) {
 		c := Convert(3.154)
-		c.RoundDecimals(2)
+		c.Round(2)
 		out := c.String()
 		expected := "3.15"
 		if out != expected {
@@ -382,7 +382,7 @@ func TestRoundDecimalsAPI(t *testing.T) {
 
 	t.Run("Explicit down rounding", func(t *testing.T) {
 		c := Convert(3.154)
-		c.RoundDecimals(2, true)
+		c.Round(2, true)
 		out := c.String()
 		expected := "3.15"
 		if out != expected {

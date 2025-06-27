@@ -4,10 +4,10 @@ package tinystring
 // FORMAT NUMBER OPERATIONS - Number formatting with separators and display
 // =============================================================================
 
-// FormatNumber intelligently formats the current value as a number with thousand separators.
+// Thousands intelligently formats the current value as a number with thousand separators.
 // Handles both integers and floats, preserving decimal places when appropriate.
-// Example: Convert("1234567.89").FormatNumber() returns "1.234.567,89"
-func (t *conv) FormatNumber() *conv {
+// Example: Convert("1234567.89").Thousands() returns "1.234.567,89"
+func (t *conv) Thousands() *conv {
 	if t.hasContent(buffErr) {
 		return t
 	}

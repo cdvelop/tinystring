@@ -25,7 +25,7 @@ memory-bench/
 
 ### Number Processing
 - **Standard**: Uses `fmt.Sprintf`, `strings.Split` for number formatting
-- **TinyString**: Uses `RoundDecimals()`, `FormatNumber()` chaining
+- **TinyString**: Uses `Round()`, `Thousands()` chaining
 
 ### Mixed Operations
 - **Standard**: Combines string and number operations using standard library

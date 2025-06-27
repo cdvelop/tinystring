@@ -304,28 +304,28 @@ func TestConcurrentNumericOperations(t *testing.T) {
 			expected: "true",
 		},
 		{
-			name: "RoundDecimals Operation",
+			name: "Round Operation",
 			function: func() (string, error) {
 				c := Convert(123.456789)
-				c.RoundDecimals(2)
+				c.Round(2)
 				out := c.String()
 				return out, nil
 			},
 			expected: "123.46",
 		},
 		{
-			name: "RoundDecimals Down Operation",
+			name: "Round Down Operation",
 			function: func() (string, error) {
 				c := Convert(123.456789)
-				c.RoundDecimals(2, true)
+				c.Round(2, true)
 				out := c.String()
 				return out, nil
 			},
 			expected: "123.45",
 		}, {
-			name: "FormatNumber Operation",
+			name: "Thousands Operation",
 			function: func() (string, error) {
-				out := Convert(1234567).FormatNumber().String()
+				out := Convert(1234567).Thousands().String()
 				return out, nil
 			},
 			expected: "1,234,567",
@@ -916,7 +916,7 @@ func TestConcurrentStringCacheStress(t *testing.T) {
 					// Mix of operations that trigger string interning
 					operations := []func() string{
 						func() string { return Fmt("ID_%d_ITER_%d", id, j) },
-						func() string { return Convert(id).FormatNumber().String() },
+						func() string { return Convert(id).Thousands().String() },
 						func() string { return Convert(Fmt("goroutine_%d", id)).ToUpper().String() },
 						func() string { return Fmt("%.2f", float64(j)/10.0) },
 						func() string { return Convert("cache_test").Repeat(2).String() },

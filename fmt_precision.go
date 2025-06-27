@@ -4,10 +4,19 @@ package tinystring
 // FORMAT PRECISION OPERATIONS - Decimal rounding and precision control
 // =============================================================================
 
-// RoundDecimals rounds or truncates the current numeric value to the specified number of decimal places.
-// Example: Convert("3.14159").RoundDecimals(2) returns "3.14" (round), Convert("3.14159").RoundDecimals(2, true) returns "3.14" (truncate/floor)
-// If down==true, truncates (floor); if down==false or omitted, rounds normally.
-func (t *conv) RoundDecimals(decimals int, down ...bool) *conv {
+// Round rounds or truncates the current numeric value to the specified number of decimal places.
+//
+// - If the optional 'down' parameter is omitted or false, it applies "round half to even" (bankers rounding, like Go: 2.5 → 2, 3.5 → 4).
+// - If 'down' is true, it truncates (floors) the value without rounding.
+//
+// Example:
+//   Convert("3.14159").Round(2)        // "3.14" (rounded)
+//   Convert("3.145").Round(2)          // "3.14" (rounded)
+//   Convert("3.155").Round(2)          // "3.16" (rounded)
+//   Convert("3.14159").Round(2, true)  // "3.14" (truncated)
+//
+// If the value is not numeric, returns "0" with the requested number of decimals.
+func (t *conv) Round(decimals int, down ...bool) *conv {
 	if t.hasContent(buffErr) {
 		return t
 	}

@@ -75,8 +75,8 @@ tinystring.Convert(&text).RemoveTilde().CamelCaseLower().Apply()
 **Advanced Features:**
 - `Truncate(maxWidth, reservedChars...)` - Smart truncation
 - `TruncateName(maxCharsPerWord, maxWidth)` - Name truncation for UI
-- `RoundDecimals(decimals)` - Numeric rounding with `Down()` modifier
-- `FormatNumber()` - Thousand separators
+- `Round(decimals)` - Numeric rounding with `Down()` modifier
+- `Thousands()` - Thousand separators
 - `Fmt(format, args...)` - sprintf-style formatting
 - `Quote()` - Add quotes with escaping
 

@@ -12,7 +12,7 @@ func main() {
 
 	// Test 2: Number formatting
 	num1 := 1234.567
-	result2 := tinystring.Convert(num1).RoundDecimals(2).String()
+	result2 := tinystring.Convert(num1).Round(2).String()
 
 	// Test 3: Multiple string operations
 	text2 := "Processing Multiple Strings"
