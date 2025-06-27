@@ -401,15 +401,13 @@ var MD = MyDict{
         "email",           // EN
         "correo",          // ES
         "email",           // PT.....
-        |// more translations
+        // more translations
     },
     // ... more custom words
 }
 
 // Combine system dictionary with custom words
 OutLang(ES) // Spanish
-err := Err(MD.User, D.Not, D.Found)
-// out: "usuario no encontrado"
 
 err := Err(D.Format,MD.Email, D.Invalid) 
 // out: "formato correo inválido"
@@ -559,92 +557,8 @@ originalText := "Él Múrcielago Rápido"
 tinystring.Convert(&originalText).RemoveTilde().ToLower().Apply()
 // originalText: "el murcielago rapido" (modified in-place)
 ```
-
-
-## Binary Size Comparison
-
-[Standard Library Example](benchmark/bench-binary-size/standard-lib/main.go) | [TinyString Example](benchmark/bench-binary-size/tinystring-lib/main.go)
-
-<!-- This table is automatically generated from build-and-measure.sh -->
-*Last updated: 2025-06-26 21:28:25*
-
-| Build Type | Parameters | Standard Library<br/>`go build` | TinyString<br/>`tinygo build` | Size Reduction | Performance |
-|------------|------------|------------------|------------|----------------|-------------|
-| 🖥️ **Default Native** | `-ldflags="-s -w"` | 1.3 MB | 1.1 MB | **-183.5 KB** | ➖ **14.0%** |
-| 🌐 **Default WASM** | `(default -opt=z)` | 580.8 KB | 226.8 KB | **-354.1 KB** | ✅ **61.0%** |
-| 🌐 **Ultra WASM** | `-no-debug -panic=trap -scheduler=none -gc=leaking -target wasm` | 141.3 KB | 25.7 KB | **-115.6 KB** | 🏆 **81.8%** |
-| 🌐 **Speed WASM** | `-opt=2 -target wasm` | 827.0 KB | 316.1 KB | **-510.9 KB** | ✅ **61.8%** |
-| 🌐 **Debug WASM** | `-opt=0 -target wasm` | 1.8 MB | 706.8 KB | **-1.1 MB** | ✅ **61.4%** |
-
-### 🎯 Performance Summary
-
-- 🏆 **Peak Reduction: 81.8%** (Best optimization)
-- ✅ **Average WebAssembly Reduction: 66.5%**
-- ✅ **Average Native Reduction: 14.0%**
-- 📦 **Total Size Savings: 2.2 MB across all builds**
-
-#### Performance Legend
-- ❌ Poor (<5% reduction)
-- ➖ Fair (5-15% reduction)
-- ✅ Good (15-70% reduction)
-- 🏆 Outstanding (>70% reduction)
-
-
-## Memory Usage Comparison
-
-[Standard Library Example](benchmark/bench-memory-alloc/standard) | [TinyString Example](benchmark/bench-memory-alloc/tinystring)
-
-<!-- This table is automatically generated from memory-benchmark.sh -->
-*Last updated: 2025-06-26 21:28:44*
-
-Performance benchmarks comparing memory allocation patterns between standard Go library and TinyString:
-
-| 🧪 **Benchmark Category** | 📚 **Library** | 💾 **Memory/Op** | 🔢 **Allocs/Op** | ⏱️ **Time/Op** | 📈 **Memory Trend** | 🎯 **Alloc Trend** | 🏆 **Performance** |
-|----------------------------|----------------|-------------------|-------------------|-----------------|---------------------|---------------------|--------------------|
-| 📝 **String Processing** | 📊 Standard | `1.2 KB` | `48` | `3.4μs` | - | - | - |
-| | 🚀 TinyString | `3.1 KB` | `135` | `14.5μs` | ❌ **165.5% more** | ❌ **181.3% more** | ❌ **Poor** |
-| 🔢 **Number Processing** | 📊 Standard | `912 B` | `42` | `2.5μs` | - | - | - |
-| | 🚀 TinyString | `320 B` | `17` | `1.9μs` | 🏆 **64.9% less** | 🏆 **59.5% less** | 🏆 **Excellent** |
-| 🔄 **Mixed Operations** | 📊 Standard | `512 B` | `26` | `1.7μs` | - | - | - |
-| | 🚀 TinyString | `816 B` | `40` | `4.2μs` | ❌ **59.4% more** | ❌ **53.8% more** | ❌ **Poor** |
-
-### 🎯 Performance Summary
-
-- 💾 **Memory Efficiency**: ❌ **Poor** (Significant overhead) (53.3% average change)
-- 🔢 **Allocation Efficiency**: ❌ **Poor** (Excessive allocations) (58.5% average change)
-- 📊 **Benchmarks Analyzed**: 3 categories
-- 🎯 **Optimization Focus**: Binary size reduction vs runtime efficiency
-
-### ⚖️ Trade-offs Analysis
-
-The benchmarks reveal important trade-offs between **binary size** and **runtime performance**:
-
-#### 📦 **Binary Size Benefits** ✅
-- 🏆 **16-84% smaller** compiled binaries
-- 🌐 **Superior WebAssembly** compression ratios
-- 🚀 **Faster deployment** and distribution
-- 💾 **Lower storage** requirements
-
-#### 🧠 **Runtime Memory Considerations** ⚠️
-- 📈 **Higher allocation overhead** during execution
-- 🗑️ **Increased GC pressure** due to allocation patterns
-- ⚡ **Trade-off optimizes** for distribution size over runtime efficiency
-- 🔄 **Different optimization strategy** than standard library
-
-#### 🎯 **Optimization Recommendations**
-| 🎯 **Use Case** | 💡 **Recommendation** | 🔧 **Best For** |
-|-----------------|------------------------|------------------|
-| 🌐 WebAssembly Apps | ✅ **TinyString** | Size-critical web deployment |
-| 📱 Embedded Systems | ✅ **TinyString** | Resource-constrained devices |
-| ☁️ Edge Computing | ✅ **TinyString** | Fast startup and deployment |
-| 🏢 Memory-Intensive Server | ⚠️ **Standard Library** | High-throughput applications |
-| 🔄 High-Frequency Processing | ⚠️ **Standard Library** | Performance-critical workloads |
-
-#### 📊 **Performance Legend**
-- 🏆 **Excellent** (Better performance)
-- ✅ **Good** (Acceptable trade-off)
-- ⚠️ **Caution** (Higher resource usage)
-- ❌ **Poor** (Significant overhead)
+## Benchmarking
+[Standard Library vs TinyString](benchmark/README.md)
 
 
 ## Contributing

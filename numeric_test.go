@@ -231,7 +231,9 @@ func TestNumericChaining(t *testing.T) {
 	}
 
 	// Test with formatting
-	out := Convert(123.456).RoundDecimals(2).String()
+	c := Convert(123.456)
+	c.RoundDecimals(2)
+	out := c.String()
 	expected := "123.46"
 	if out != expected {
 		t.Errorf("Expected %q, got %q", expected, out)

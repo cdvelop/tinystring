@@ -1,10 +1,10 @@
 package main
 
 import (
-	"fmt"
 	"os"
 	"path/filepath"
-	"strings"
+
+	. "github.com/cdvelop/tinystring"
 )
 
 // BinaryInfo represents information about a compiled binary file
@@ -29,14 +29,14 @@ type OptimizationConfig struct {
 func FormatSize(bytes int64) string {
 	const unit = 1024
 	if bytes < unit {
-		return fmt.Sprintf("%d B", bytes)
+		return Fmt("%d B", bytes)
 	}
 	div, exp := int64(unit), 0
 	for n := bytes / unit; n >= unit; n /= unit {
 		div *= unit
 		exp++
 	}
-	return fmt.Sprintf("%.1f %cB", float64(bytes)/float64(div), "KMGTPE"[exp])
+	return Fmt("%.1f %cB", float64(bytes)/float64(div), "KMGTPE"[exp])
 }
 
 // FileExists checks if a file exists
@@ -60,7 +60,7 @@ func FindBinaries(dir string, patterns []string) ([]BinaryInfo, error) {
 
 		filename := info.Name()
 		for _, pattern := range patterns {
-			if strings.Contains(filename, pattern) {
+			if Contains(filename, pattern) {
 				binary := BinaryInfo{
 					Name:     filename,
 					Size:     info.Size(),
@@ -69,15 +69,15 @@ func FindBinaries(dir string, patterns []string) ([]BinaryInfo, error) {
 				}
 
 				// Determine type and library from filename/path
-				if strings.Contains(filename, ".wasm") {
+				if Contains(filename, ".wasm") {
 					binary.Type = "wasm"
 				} else {
 					binary.Type = "native"
 				}
 
-				if strings.Contains(path, "standard") {
+				if Contains(path, "standard") {
 					binary.Library = "standard"
-				} else if strings.Contains(path, "tinystring") {
+				} else if Contains(path, "tinystring") {
 					binary.Library = "tinystring"
 				}
 
@@ -94,11 +94,11 @@ func FindBinaries(dir string, patterns []string) ([]BinaryInfo, error) {
 
 // extractOptLevel extracts optimization level from filename
 func extractOptLevel(filename string) string {
-	if strings.Contains(filename, "-ultra") {
+	if Contains(filename, "-ultra") {
 		return "ultra"
-	} else if strings.Contains(filename, "-speed") {
+	} else if Contains(filename, "-speed") {
 		return "speed"
-	} else if strings.Contains(filename, "-debug") {
+	} else if Contains(filename, "-debug") {
 		return "debug"
 	}
 	return "default"
@@ -106,20 +106,20 @@ func extractOptLevel(filename string) string {
 
 // LogStep prints a formatted step message
 func LogStep(message string) {
-	fmt.Printf("📋 %s\n", message)
+	os.Stdout.Write([]byte(Fmt("📋 %s\n", message)))
 }
 
 // LogSuccess prints a formatted success message
 func LogSuccess(message string) {
-	fmt.Printf("✅ %s\n", message)
+	os.Stdout.Write([]byte(Fmt("✅ %s\n", message)))
 }
 
 // LogError prints a formatted error message
 func LogError(message string) {
-	fmt.Printf("❌ %s\n", message)
+	os.Stdout.Write([]byte(Fmt("❌ %s\n", message)))
 }
 
 // LogInfo prints a formatted info message
 func LogInfo(message string) {
-	fmt.Printf("ℹ️  %s\n", message)
+	os.Stdout.Write([]byte(Fmt("ℹ️  %s\n", message)))
 }

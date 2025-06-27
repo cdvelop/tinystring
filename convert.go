@@ -10,7 +10,6 @@ const (
 )
 
 type conv struct {
-	// Phase 13.3: Optimized memory allocation - all buffers are dynamic []byte
 	// Buffers with initial capacity 64, grow as needed (no truncation)
 	out     []byte // Buffer principal - make([]byte, 0, 64)
 	outLen  int    // Longitud actual en out

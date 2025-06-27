@@ -306,7 +306,9 @@ func TestConcurrentNumericOperations(t *testing.T) {
 		{
 			name: "RoundDecimals Operation",
 			function: func() (string, error) {
-				out := Convert(123.456789).RoundDecimals(2).String()
+				c := Convert(123.456789)
+				c.RoundDecimals(2)
+				out := c.String()
 				return out, nil
 			},
 			expected: "123.46",
@@ -314,7 +316,9 @@ func TestConcurrentNumericOperations(t *testing.T) {
 		{
 			name: "RoundDecimals Down Operation",
 			function: func() (string, error) {
-				out := Convert(123.456789).RoundDecimals(2).Down().String()
+				c := Convert(123.456789)
+				c.RoundDecimals(2, true)
+				out := c.String()
 				return out, nil
 			},
 			expected: "123.45",

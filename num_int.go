@@ -135,7 +135,8 @@ func (c *conv) ToUint64(base ...int) (uint64, error) {
 	return uint64(val), nil
 }
 
-func (c *conv) wrIntBase(dest buffDest, val int64, base int, signed bool) {
+// wrIntBase writes an integer in the given base to the buffer, with optional uppercase digits
+func (c *conv) wrIntBase(dest buffDest, val int64, base int, signed bool, upper ...bool) {
 	if base < 2 || base > 36 {
 		c.wrErr(D.Base, D.Invalid)
 		return
@@ -149,7 +150,16 @@ func (c *conv) wrIntBase(dest buffDest, val int64, base int, signed bool) {
 	if negative {
 		uval = -val
 	}
-	digits := "0123456789abcdef"
+	useUpper := false
+	if len(upper) > 0 && upper[0] {
+		useUpper = true
+	}
+	var digits string
+	if useUpper {
+		digits = "0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZ"
+	} else {
+		digits = "0123456789abcdef"
+	}
 	var out [64]byte
 	idx := len(out)
 	for uval > 0 {

@@ -210,16 +210,24 @@ func (r *ReportGenerator) generateMemorySection(comparisons []MemoryComparison) 
 
 			// Category with emoji
 			categoryIcon := getBenchmarkCategoryIcon(comparison.Category) // Standard library row with enhanced styling
+			// Format operation count with thousands separator
+			opCountStd := Convert(comparison.Standard.Iterations).FormatNumber().String()
+			opCountTiny := Convert(comparison.TinyString.Iterations).FormatNumber().String()
+
+			// Memory/op string with operation count
+			memStd := Fmt("%s / %s OP", FormatSize(comparison.Standard.BytesPerOp), opCountStd)
+			memTiny := Fmt("%s / %s OP", FormatSize(comparison.TinyString.BytesPerOp), opCountTiny)
+
 			content.Write(Fmt("| %s **%s** | 📊 Standard | `%s` | `%d` | `%s` | - | - | - |\n",
 				categoryIcon,
 				comparison.Category,
-				FormatSize(comparison.Standard.BytesPerOp),
+				memStd,
 				comparison.Standard.AllocsPerOp,
 				formatNanoTime(comparison.Standard.NsPerOp)))
 
 			// TinyString row with improvements and visual indicators
 			content.Write(Fmt("| | 🚀 TinyString | `%s` | `%d` | `%s` | %s **%s** | %s **%s** | %s |\n",
-				FormatSize(comparison.TinyString.BytesPerOp),
+				memTiny,
 				comparison.TinyString.AllocsPerOp,
 				formatNanoTime(comparison.TinyString.NsPerOp),
 				memoryIndicator, memImprovement,

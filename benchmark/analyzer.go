@@ -395,7 +395,7 @@ func displayMemoryResults(comparisons []MemoryComparison) {
 
 // updateREADMEWithBinaryData updates README with binary size analysis
 func updateREADMEWithBinaryData(binaries []BinaryInfo) {
-	reporter := NewReportGenerator("../README.md")
+	reporter := NewReportGenerator("./README.md")
 	if err := reporter.UpdateBinaryData(binaries); err != nil {
 		LogError(tinystring.Fmt("Failed to update README with binary data: %v", err))
 	}
@@ -403,7 +403,7 @@ func updateREADMEWithBinaryData(binaries []BinaryInfo) {
 
 // updateREADMEWithMemoryData updates README with memory benchmark data
 func updateREADMEWithMemoryData(comparisons []MemoryComparison) {
-	reporter := NewReportGenerator("../README.md")
+	reporter := NewReportGenerator("./README.md")
 	if err := reporter.UpdateMemoryData(comparisons); err != nil {
 		LogError(tinystring.Fmt("Failed to update README with memory data: %v", err))
 	}

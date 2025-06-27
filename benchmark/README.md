@@ -2,6 +2,94 @@
 
 Automated benchmark tools to measure and compare performance between standard Go libraries and TinyString implementations.
 
+
+
+## Binary Size Comparison
+
+[Standard Library Example](benchmark/bench-binary-size/standard-lib/main.go) | [TinyString Example](benchmark/bench-binary-size/tinystring-lib/main.go)
+
+<!-- This table is automatically generated from build-and-measure.sh -->
+*Last updated: 2025-06-26 22:25:49*
+
+| Build Type | Parameters | Standard Library<br/>`go build` | TinyString<br/>`tinygo build` | Size Reduction | Performance |
+|------------|------------|------------------|------------|----------------|-------------|
+| 🖥️ **Default Native** | `-ldflags="-s -w"` |  |  | **-** | ➖ **14.0%** |
+| 🌐 **Default WASM** | `(default -opt=z)` |  |  | **-** | ✅ **61.0%** |
+| 🌐 **Ultra WASM** | `-no-debug -panic=trap -scheduler=none -gc=leaking -target wasm` |  |  | **-** | 🏆 **81.8%** |
+| 🌐 **Speed WASM** | `-opt=2 -target wasm` |  |  | **-** | ✅ **61.8%** |
+| 🌐 **Debug WASM** | `-opt=0 -target wasm` |  |  | **-** | ✅ **61.4%** |
+
+### 🎯 Performance Summary
+
+- 🏆 **Peak Reduction: 81.8%** (Best optimization)
+- ✅ **Average WebAssembly Reduction: 66.5%**
+- ✅ **Average Native Reduction: 14.0%**
+- 📦 **Total Size Savings:  across all builds**
+
+#### Performance Legend
+- ❌ Poor (<5% reduction)
+- ➖ Fair (5-15% reduction)
+- ✅ Good (15-70% reduction)
+- 🏆 Outstanding (>70% reduction)
+
+
+## Memory Usage Comparison
+
+[Standard Library Example](benchmark/bench-memory-alloc/standard) | [TinyString Example](benchmark/bench-memory-alloc/tinystring)
+
+<!-- This table is automatically generated from memory-benchmark.sh -->
+*Last updated: 2025-06-26 22:26:07*
+
+Performance benchmarks comparing memory allocation patterns between standard Go library and TinyString:
+
+| 🧪 **Benchmark Category** | 📚 **Library** | 💾 **Memory/Op** | 🔢 **Allocs/Op** | ⏱️ **Time/Op** | 📈 **Memory Trend** | 🎯 **Alloc Trend** | 🏆 **Performance** |
+|----------------------------|----------------|-------------------|-------------------|-----------------|---------------------|---------------------|--------------------|
+| 📝 **String Processing** | 📊 Standard | ` / 375,354 OP` | `48` | `3.0μs` | - | - | - |
+| | 🚀 TinyString | ` / 89,876 OP` | `135` | `13.8μs` | ❌ **165.5% more** | ❌ **181.3% more** | ❌ **Poor** |
+| 🔢 **Number Processing** | 📊 Standard | `912 B / 498,667 OP` | `42` | `2.5μs` | - | - | - |
+| | 🚀 TinyString | `320 B / 1,000,000 OP` | `17` | `2.0μs` | 🏆 **64.9% less** | 🏆 **59.5% less** | 🏆 **Excellent** |
+| 🔄 **Mixed Operations** | 📊 Standard | `512 B / 677,230 OP` | `26` | `1.7μs` | - | - | - |
+| | 🚀 TinyString | `816 B / 292,696 OP` | `40` | `4.1μs` | ❌ **59.4% more** | ❌ **53.8% more** | ❌ **Poor** |
+
+### 🎯 Performance Summary
+
+- 💾 **Memory Efficiency**: ❌ **Poor** (Significant overhead) (53.3% average change)
+- 🔢 **Allocation Efficiency**: ❌ **Poor** (Excessive allocations) (58.5% average change)
+- 📊 **Benchmarks Analyzed**: 3 categories
+- 🎯 **Optimization Focus**: Binary size reduction vs runtime efficiency
+
+### ⚖️ Trade-offs Analysis
+
+The benchmarks reveal important trade-offs between **binary size** and **runtime performance**:
+
+#### 📦 **Binary Size Benefits** ✅
+- 🏆 **16-84% smaller** compiled binaries
+- 🌐 **Superior WebAssembly** compression ratios
+- 🚀 **Faster deployment** and distribution
+- 💾 **Lower storage** requirements
+
+#### 🧠 **Runtime Memory Considerations** ⚠️
+- 📈 **Higher allocation overhead** during execution
+- 🗑️ **Increased GC pressure** due to allocation patterns
+- ⚡ **Trade-off optimizes** for distribution size over runtime efficiency
+- 🔄 **Different optimization strategy** than standard library
+
+#### 🎯 **Optimization Recommendations**
+| 🎯 **Use Case** | 💡 **Recommendation** | 🔧 **Best For** |
+|-----------------|------------------------|------------------|
+| 🌐 WebAssembly Apps | ✅ **TinyString** | Size-critical web deployment |
+| 📱 Embedded Systems | ✅ **TinyString** | Resource-constrained devices |
+| ☁️ Edge Computing | ✅ **TinyString** | Fast startup and deployment |
+| 🏢 Memory-Intensive Server | ⚠️ **Standard Library** | High-throughput applications |
+| 🔄 High-Frequency Processing | ⚠️ **Standard Library** | Performance-critical workloads |
+
+#### 📊 **Performance Legend**
+- 🏆 **Excellent** (Better performance)
+- ✅ **Good** (Acceptable trade-off)
+- ⚠️ **Caution** (Higher resource usage)
+- ❌ **Poor** (Significant overhead)
+
+
 ## Quick Usage 🚀
 
 ```bash
@@ -44,69 +132,6 @@ Automated benchmark tools to measure and compare performance between standard Go
 - **Go 1.21+**
 - **TinyGo** (optional, but recommended for full WebAssembly testing and to achieve smallest binary sizes).
 
-## Directory Structure
-
-```
-benchmark/
-├── analyzer.go               # Main analysis program that processes benchmark results and generates reports.
-├── common.go                 # Shared utilities used by benchmark scripts and analysis tools.
-├── reporter.go               # Logic for formatting and updating the README.md with benchmark results.
-├── MEMORY_REDUCTION.md       # Detailed guide for memory optimization techniques in TinyGo applications.
-├── build-and-measure.sh      # 🎯 MAIN SCRIPT: Comprehensive benchmark that builds binaries, measures sizes, 
-│                             #    runs memory tests, and updates README.md with latest results.
-├── memory-benchmark.sh       # Executes only memory allocation benchmarks without building binaries or 
-│                             #    updating documentation. Useful for focused memory optimization work.
-├── clean-all.sh              # Cleanup script that removes all generated binaries (.exe, .wasm) and 
-│                             #    temporary analysis files to free disk space.
-├── update-readme.sh          # Updates benchmark sections in README.md using existing data files without 
-│                             #    re-running benchmarks. Only reformats previously generated results.
-├── run-all-benchmarks.sh     # Executes all benchmark tests (binary size + memory allocation) and generates 
-│                             #    raw data files but does NOT update the README.md automatically.
-├── validate-shared-data.sh   # Validation script that ensures test data consistency across all benchmark suites.
-├── shared/                   # 🔄 SHARED TEST DATA: Centralized test data for consistent benchmarking.
-│   ├── go.mod               #    Module definition for shared data package used by all benchmarks.
-│   └── testdata.go          #    Common test data (TestTexts, TestNumbers, TestMixedData) ensuring 
-│                             #    identical inputs for fair TinyString vs standard library comparisons.
-├── bench-binary-size/        # Binary size comparison projects for measuring compiled output sizes.
-│   ├── standard-lib/         #    Example project using only standard Go library functions.
-│   │   ├── go.mod           #    Module with standard library dependencies.
-│   │   └── main.go          #    Implementation using fmt, strconv, strings packages.
-│   └── tinystring-lib/       #    Equivalent project using TinyString library instead.
-│       ├── go.mod           #    Module with TinyString dependency and local replace directive.
-│       └── main.go          #    Implementation using TinyString functions (same logic as standard-lib).
-└── bench-memory-alloc/       # Memory allocation benchmark suites for runtime performance comparison.
-    ├── standard/             #    Memory benchmarks using standard Go library (fmt, strconv, strings).
-    │   ├── go.mod           #    Module with shared data dependency and standard library imports.
-    │   ├── main.go          #    Processing functions using standard library implementations.
-    │   └── main_test.go     #    Benchmark tests measuring Bytes/op, Allocs/op, ns/op for standard lib.
-    └── tinystring/           #    Equivalent memory benchmarks using TinyString library functions.
-        ├── go.mod           #    Module with TinyString and shared data dependencies.
-        ├── main.go          #    Processing functions using TinyString implementations (same logic).        └── main_test.go     #    Benchmark tests measuring memory metrics for TinyString (identical to standard).
-```
-
-## Example Output
-
-```
-🚀 Starting binary size benchmark...
-✅ TinyGo found: tinygo version 0.37.0
-🧹 Cleaning previous files...
-📦 Building standard library example with multiple optimizations...
-📦 Building TinyString example with multiple optimizations...
-📊 Analyzing sizes and updating README...
-🧠 Running memory allocation benchmarks...
-✅ Binary size analysis completed and README updated
-✅ Memory benchmarks completed and README updated
-
-🎉 Benchmark completed successfully!
-
-📁 Generated files:
-  standard: 1.3MiB
-  tinystring: 1.1MiB  
-  standard.wasm: 581KiB
-  tinystring.wasm: 230KiB
-  standard-ultra.wasm: 142KiB
-  tinystring-ultra.wasm: 23KiB
-```
 
 ## Troubleshooting
 
@@ -125,4 +150,7 @@ chmod +x *.sh
 **Build Failures:**
 - Ensure you're in the `benchmark/` directory
 - Verify TinyString library is available in the parent directory
+
+
+
 

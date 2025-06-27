@@ -16,17 +16,13 @@ func Fmt(format string, args ...any) string {
 // wrFormat applies printf-style formatting to arguments and writes to specified buffer destination.
 // Universal method with dest-first parameter order - follows buffer API architecture
 func (c *conv) wrFormat(dest buffDest, format string, args ...any) {
-	// Reset buffer at start to avoid concatenation issues
-	c.rstBuffer(dest) // Use API instead of manual manipulation
-
-	// Pre-calculate buffer size to reduce reallocations
-	eSz := len(format)
+	eSz := 0
 	for _, arg := range args {
 		switch arg.(type) {
-		case string:
-			eSz += 32 // Estimate for strings
-		case int, int64, int32:
+		case int, int8, int16, int32, int64:
 			eSz += 16 // Estimate for integers
+		case uint, uint8, uint16, uint32, uint64:
+			eSz += 16 // Estimate for unsigned integers
 		case float64, float32:
 			eSz += 24 // Estimate for floats
 		default:
@@ -78,18 +74,44 @@ func (c *conv) wrFormat(dest buffDest, format string, args ...any) {
 			var param int
 			var formatSpec string
 			switch format[i] {
+			case 'c':
+				formatChar, param, formatSpec = 'c', 0, "%c"
+			case 'U':
+				formatChar, param, formatSpec = 'U', 0, "%U"
 			case 'd':
 				formatChar, param, formatSpec = 'd', 10, "%d"
+			case 'u':
+				formatChar, param, formatSpec = 'u', 10, "%u"
 			case 'f':
 				formatChar, param, formatSpec = 'f', precision, "%f"
+			case 'e':
+				formatChar, param, formatSpec = 'e', precision, "%e"
+			case 'E':
+				formatChar, param, formatSpec = 'E', precision, "%E"
+			case 'g':
+				formatChar, param, formatSpec = 'g', precision, "%g"
+			case 'G':
+				formatChar, param, formatSpec = 'G', precision, "%G"
 			case 'o':
 				formatChar, param, formatSpec = 'o', 8, "%o"
+			case 'O':
+				formatChar, param, formatSpec = 'O', 8, "%O"
 			case 'b':
 				formatChar, param, formatSpec = 'b', 2, "%b"
+			case 'B':
+				formatChar, param, formatSpec = 'B', 2, "%B"
 			case 'x':
 				formatChar, param, formatSpec = 'x', 16, "%x"
+			case 'X':
+				formatChar, param, formatSpec = 'X', 16, "%X"
+			case 'p':
+				formatChar, param, formatSpec = 'p', 0, "%p"
+			case 't':
+				formatChar, param, formatSpec = 't', 0, "%t"
 			case 'v':
 				formatChar, param, formatSpec = 'v', 0, "%v"
+			case 'q':
+				formatChar, param, formatSpec = 'q', 0, "%q"
 			case 's':
 				formatChar, param, formatSpec = 's', 0, "%s"
 			case '%':
@@ -107,7 +129,143 @@ func (c *conv) wrFormat(dest buffDest, format string, args ...any) {
 				arg := args[argIndex]
 				var str string
 				switch formatChar {
-				case 'd', 'o', 'b', 'x':
+				case 'c':
+					// Character formatting: accept rune, byte, int
+					var ch rune
+					var ok bool
+					switch v := arg.(type) {
+					case rune:
+						ch = v
+						ok = true
+					case byte:
+						ch = rune(v)
+						ok = true
+					case int:
+						ch = rune(v)
+						ok = true
+					}
+					if ok {
+						str = string(ch)
+					} else {
+						c.wrErr(D.Invalid, D.Type, D.Of, D.Argument, "%c")
+						c.kind = KErr
+						return
+					}
+				case 'U':
+					// Unicode code point formatting: U+XXXX (always uppercase hex, at least 4 digits)
+					var r rune
+					var ok bool
+					switch v := arg.(type) {
+					case rune:
+						r = v
+						ok = true
+					case int:
+						r = rune(v)
+						ok = true
+					}
+					if ok {
+						code := int(r)
+						hex := ""
+						c.rstBuffer(buffWork)
+						c.wrIntBase(buffWork, int64(code), 16, false, true)
+						hex = c.getString(buffWork)
+						// Pad to at least 4 digits
+						for len(hex) < 4 {
+							hex = "0" + hex
+						}
+						str = "U+" + hex
+					} else {
+						c.wrErr(D.Invalid, D.Type, D.Of, D.Argument, "%U")
+						c.kind = KErr
+						return
+					}
+				case 'p':
+					// Pointer formatting: always print '0x' for any pointer value
+					str = "0x"
+				case 'g', 'G':
+					// Compact float formatting (manual, no stdlib)
+					var floatVal float64
+					var ok bool
+					switch v := arg.(type) {
+					case float64:
+						floatVal = v
+						ok = true
+					case float32:
+						floatVal = float64(v)
+						ok = true
+					}
+					if ok {
+						c.rstBuffer(buffWork)
+						compact := formatCompactFloat(floatVal, param, formatChar == 'G')
+						c.wrString(buffWork, compact)
+						str = c.getString(buffWork)
+					} else {
+						c.wrErr(D.Invalid, D.Type, D.Of, D.Argument, formatSpec)
+						c.kind = KErr
+						return
+					}
+				case 'e', 'E':
+					// Scientific notation (manual, no stdlib)
+					var floatVal float64
+					var ok bool
+					switch v := arg.(type) {
+					case float64:
+						floatVal = v
+						ok = true
+					case float32:
+						floatVal = float64(v)
+						ok = true
+					}
+					if ok {
+						c.rstBuffer(buffWork)
+						sci := formatScientific(floatVal, param, formatChar == 'E')
+						c.wrString(buffWork, sci)
+						str = c.getString(buffWork)
+					} else {
+						c.wrErr(D.Invalid, D.Type, D.Of, D.Argument, formatSpec)
+						c.kind = KErr
+						return
+					}
+				case 'q':
+					// Quoted string or rune
+					var ok bool
+					switch v := arg.(type) {
+					case string:
+						str = "\"" + v + "\""
+						ok = true
+					case rune:
+						str = "'" + string(v) + "'"
+						ok = true
+					case byte:
+						str = "'" + string(rune(v)) + "'"
+						ok = true
+					}
+					if !ok {
+						c.wrErr(D.Invalid, D.Type, D.Of, D.Argument, formatSpec)
+						c.kind = KErr
+						return
+					}
+				case 't':
+					// Boolean formatting
+					var ok bool
+					var bval bool
+					switch v := arg.(type) {
+					case bool:
+						bval = v
+						ok = true
+					}
+					if ok {
+						if bval {
+							str = "true"
+						} else {
+							str = "false"
+						}
+					} else {
+						c.wrErr(D.Invalid, D.Type, D.Of, D.Argument, formatSpec)
+						c.kind = KErr
+						return
+					}
+				case 'd', 'o', 'b', 'x', 'O', 'B', 'X':
 					var intVal int64
 					var ok bool
 					switch v := arg.(type) {
@@ -126,31 +284,52 @@ func (c *conv) wrFormat(dest buffDest, format string, args ...any) {
 					case int64:
 						intVal = v
 						ok = true
-					case uint:
-						intVal = int64(v)
+					case uint, uint8, uint16, uint32, uint64:
+						intVal = int64(toUint64(v))
 						ok = true
-					case uint8:
-						intVal = int64(v)
-						ok = true
-					case uint16:
-						intVal = int64(v)
-						ok = true
-					case uint32:
-						intVal = int64(v)
-						ok = true
-					case uint64:
-						if v <= 9223372036854775807 {
-							intVal = int64(v)
-							ok = true
-						}
 					}
 					if ok {
 						c.rstBuffer(buffWork)
+						// Use uppercase for 'X', 'O', 'B'
+						upper := formatChar == 'X' || formatChar == 'O' || formatChar == 'B'
 						if param == 10 {
-							c.wrIntBase(buffWork, intVal, 10, true)
+							c.wrIntBase(buffWork, intVal, 10, true, upper)
 						} else {
-							c.wrIntBase(buffWork, intVal, param, true)
+							c.wrIntBase(buffWork, intVal, param, true, upper)
 						}
+						str = c.getString(buffWork)
+					} else {
+						c.wrErr(D.Invalid, D.Type, D.Of, D.Argument, formatSpec)
+						c.kind = KErr
+						return
+					}
+				case 'u':
+					var uintVal uint64
+					var ok bool
+					switch v := arg.(type) {
+					case uint:
+						uintVal = uint64(v)
+						ok = true
+					case uint8:
+						uintVal = uint64(v)
+						ok = true
+					case uint16:
+						uintVal = uint64(v)
+						ok = true
+					case uint32:
+						uintVal = uint64(v)
+						ok = true
+					case uint64:
+						uintVal = v
+						ok = true
+					case int, int8, int16, int32, int64:
+						// Accept signed as unsigned for %u
+						uintVal = uint64(toInt64(v))
+						ok = true
+					}
+					if ok {
+						c.rstBuffer(buffWork)
+						c.wrUintBase(buffWork, uintVal, 10)
 						str = c.getString(buffWork)
 					} else {
 						c.wrErr(D.Invalid, D.Type, D.Of, D.Argument, formatSpec)
