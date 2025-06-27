@@ -130,7 +130,7 @@ func TestTruncateChain(t *testing.T) {
 		{
 			name:  "Remove tilde and truncate",
 			input: "Ñandú está corriendo",
-			want:  "Nandu esta ...",
+			want:  "Ñandu esta...",
 			function: func(t *conv) *conv {
 				return t.Tilde().Truncate(14)
 			},

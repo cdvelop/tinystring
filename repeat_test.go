@@ -122,7 +122,7 @@ func TestRepeatChain(t *testing.T) {
 		{
 			name:  "Repeat with accents and remove tildes",
 			input: "ñandú",
-			want:  "nandunandunandu",
+			want:  "ñanduñanduñandu",
 			function: func(t *conv) *conv {
 				return t.Tilde().Repeat(3)
 			},

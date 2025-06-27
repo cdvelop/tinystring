@@ -12,6 +12,12 @@ func TestConversions(t *testing.T) {
 		function func(*conv) *conv
 	}{
 		{
+			name:     "Tilde does not remove Ñ/ñ",
+			input:    "Ñandú ñandú",
+			want:     "Ñandu ñandu",
+			function: (*conv).Tilde,
+		},
+		{
 			name:     "Remove tildes",
 			input:    "áéíóúÁÉÍÓÚ",
 			want:     "aeiouAEIOU",
@@ -50,7 +56,13 @@ func TestConversions(t *testing.T) {
 		{
 			name:     "Special characters",
 			input:    "ñÑàèìòùÀÈÌÒÙ",
-			want:     "nNaeiouAEIOU",
+			want:     "ñÑaeiouAEIOU",
+			function: (*conv).Tilde,
+		},
+		{
+			name:     "Tilde does not remove Ñ/ñ",
+			input:    "Ñandú ñandú",
+			want:     "Ñandu ñandu",
 			function: (*conv).Tilde,
 		},
 		{
