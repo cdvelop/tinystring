@@ -24,7 +24,7 @@ func ParseKeyValue(in string, delimiters ...string) (value string, err error) {
 	// Check for a custom delimiter
 	if len(delimiters) > 0 {
 		if len(delimiters) > 1 {
-			return "", Err(D.Format, D.Invalid, 1, D.Delimiter, D.Allowed)
+			return "", c.wrErr(D.Format, D.Invalid, 1, D.Delimiter, D.Allowed)
 		}
 		if delimiters[0] != "" {
 			d = delimiters[0]

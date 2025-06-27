@@ -6,11 +6,11 @@ package tinystring
 
 // Fmt formats a string using a printf-style format string and arguments.
 // Example: Fmt("Hello %s", "world") returns "Hello world"
-func Fmt(format string, args ...any) *conv {
+func Fmt(format string, args ...any) string {
 	// Inline unifiedFormat logic - eliminated wrapper function
 	out := getConv() // Always obtain from pool
 	out.wrFormat(buffOut, format, args...)
-	return out
+	return out.String()
 }
 
 // wrFormat applies printf-style formatting to arguments and writes to specified buffer destination.
@@ -40,169 +40,177 @@ func (c *conv) wrFormat(dest buffDest, format string, args ...any) {
 
 	for i := 0; i < len(format); i++ {
 		if format[i] == '%' {
-			if i+1 < len(format) {
-				i++ // Handle precision for floats (e.g., "%.2f")
-				precision := -1
-				if format[i] == '.' {
+			// start := i // Removed unused variable
+			i++
+			// Parse flags and width
+			leftAlign := false
+			width := 0
+			for i < len(format) && (format[i] == '-' || (format[i] >= '0' && format[i] <= '9')) {
+				if format[i] == '-' {
+					leftAlign = true
 					i++
-					start := i
-					for i < len(format) && format[i] >= '0' && format[i] <= '9' {
-						i++
-					}
-					if start < i {
-						// Parse precision directly without creating new conv
-						precisionStr := format[start:i]
-						precision = 0
-						for _, char := range precisionStr {
-							if char >= '0' && char <= '9' {
-								precision = precision*10 + int(char-'0')
-							}
+				}
+				// Parse width
+				w := 0
+				for i < len(format) && format[i] >= '0' && format[i] <= '9' {
+					w = w*10 + int(format[i]-'0')
+					i++
+				}
+				if w > 0 {
+					width = w
+				}
+			}
+			// Parse precision for floats
+			precision := -1
+			if i < len(format) && format[i] == '.' {
+				i++
+				p := 0
+				for i < len(format) && format[i] >= '0' && format[i] <= '9' {
+					p = p*10 + int(format[i]-'0')
+					i++
+				}
+				precision = p
+			}
+			if i >= len(format) {
+				break
+			}
+			var formatChar rune
+			var param int
+			var formatSpec string
+			switch format[i] {
+			case 'd':
+				formatChar, param, formatSpec = 'd', 10, "%d"
+			case 'f':
+				formatChar, param, formatSpec = 'f', precision, "%f"
+			case 'o':
+				formatChar, param, formatSpec = 'o', 8, "%o"
+			case 'b':
+				formatChar, param, formatSpec = 'b', 2, "%b"
+			case 'x':
+				formatChar, param, formatSpec = 'x', 16, "%x"
+			case 'v':
+				formatChar, param, formatSpec = 'v', 0, "%v"
+			case 's':
+				formatChar, param, formatSpec = 's', 0, "%s"
+			case '%':
+				c.wrByte(dest, '%')
+				continue
+			default:
+				c.wrErr(D.Format, D.Specifier, D.Not, D.Supported, format[i])
+				return
+			}
+			if format[i] != '%' {
+				if argIndex >= len(args) {
+					c.wrErr(D.Argument, D.Missing, formatSpec)
+					return
+				}
+				arg := args[argIndex]
+				var str string
+				switch formatChar {
+				case 'd', 'o', 'b', 'x':
+					var intVal int64
+					var ok bool
+					switch v := arg.(type) {
+					case int:
+						intVal = int64(v)
+						ok = true
+					case int8:
+						intVal = int64(v)
+						ok = true
+					case int16:
+						intVal = int64(v)
+						ok = true
+					case int32:
+						intVal = int64(v)
+						ok = true
+					case int64:
+						intVal = v
+						ok = true
+					case uint:
+						intVal = int64(v)
+						ok = true
+					case uint8:
+						intVal = int64(v)
+						ok = true
+					case uint16:
+						intVal = int64(v)
+						ok = true
+					case uint32:
+						intVal = int64(v)
+						ok = true
+					case uint64:
+						if v <= 9223372036854775807 {
+							intVal = int64(v)
+							ok = true
 						}
 					}
-				} // Handle format specifiers
-				var formatChar rune
-				var param int
-				var formatSpec string
-
-				switch format[i] {
-				case 'd':
-					formatChar, param, formatSpec = 'd', 10, "%d"
-				case 'f':
-					formatChar, param, formatSpec = 'f', precision, "%f"
-				case 'o':
-					formatChar, param, formatSpec = 'o', 8, "%o"
-				case 'b':
-					formatChar, param, formatSpec = 'b', 2, "%b"
-				case 'x':
-					formatChar, param, formatSpec = 'x', 16, "%x"
-				case 'v':
-					formatChar, param, formatSpec = 'v', 0, "%v"
-				case 's':
-					formatChar, param, formatSpec = 's', 0, "%s"
-				case '%':
-					c.wrByte(dest, '%')
-					continue
-				default:
-					c.wrErr(D.Format, D.Specifier, D.Not, D.Supported, format[i])
-					return
-				} // Common format handling logic for all specifiers except '%'
-				if format[i] != '%' {
-					// Inline handleFormat logic
-					if argIndex >= len(args) {
-						c.wrErr(D.Argument, D.Missing, formatSpec)
+					if ok {
+						c.rstBuffer(buffWork)
+						if param == 10 {
+							c.wrIntBase(buffWork, intVal, 10, true)
+						} else {
+							c.wrIntBase(buffWork, intVal, param, true)
+						}
+						str = c.getString(buffWork)
+					} else {
+						c.wrErr(D.Invalid, D.Type, D.Of, D.Argument, formatSpec)
+						c.kind = KErr
 						return
 					}
-					arg := args[argIndex]
-
-					var str string
-					switch formatChar {
-					case 'd', 'o', 'b', 'x':
-						var intVal int64
-						var ok bool
-
-						// Handle all integer types
-						switch v := arg.(type) {
-						case int:
-							intVal = int64(v)
-							ok = true
-						case int8:
-							intVal = int64(v)
-							ok = true
-						case int16:
-							intVal = int64(v)
-							ok = true
-						case int32:
-							intVal = int64(v)
-							ok = true
-						case int64:
-							intVal = v
-							ok = true
-						case uint:
-							intVal = int64(v)
-							ok = true
-						case uint8:
-							intVal = int64(v)
-							ok = true
-						case uint16:
-							intVal = int64(v)
-							ok = true
-						case uint32:
-							intVal = int64(v)
-							ok = true
-						case uint64:
-							if v <= 9223372036854775807 { // Max int64
-								intVal = int64(v)
-								ok = true
-							}
-						}
-
-						if ok {
-							// Clear work buffer before use to prevent contamination
-							c.rstBuffer(buffWork)
-
-							if param == 10 {
-								c.wrInt(buffWork, intVal)
-							} else {
-								c.wrInt64Base(buffWork, intVal, param)
-							}
-							str = c.getString(buffWork)
-						} else {
-							c.wrErr(D.Invalid, D.Type, D.Of, D.Argument, formatSpec)
-							c.kind = KErr
-							return
-						}
-					case 'f':
-						if floatVal, ok := arg.(float64); ok {
-							// Clear work buffer before use
-							c.rstBuffer(buffWork)
-
-							// Apply precision directly to float value if specified
-							if param >= 0 {
-								c.wrFloatWithPrecision(buffWork, floatVal, param)
-							} else {
-								// Convert float to string without precision limit
-								c.wrFloat(buffWork, floatVal)
-							}
-
-							str = c.getString(buffWork)
-						} else {
-							c.wrErr(D.Invalid, D.Type, D.Of, D.Argument, formatSpec)
-							c.kind = KErr
-							return
-						}
-					case 's':
-						if strVal, ok := arg.(string); ok {
-							str = strVal
-						} else {
-							c.wrErr(D.Invalid, D.Type, D.Of, D.Argument, formatSpec)
-							c.kind = KErr
-							return
-						}
-					case 'v':
-						// Clear work buffer before use
+				case 'f':
+					if floatVal, ok := arg.(float64); ok {
 						c.rstBuffer(buffWork)
-
-						// Special handling for error types in %v format
-						if errVal, ok := arg.(error); ok {
-							c.wrString(buffWork, errVal.Error())
-							str = c.getString(buffWork)
+						if param >= 0 {
+							c.wrFloatWithPrecision(buffWork, floatVal, param)
 						} else {
-							// Use anyToBuff for proper conversion following buffer API
-							c.anyToBuff(buffWork, arg)
-							if c.hasContent(buffErr) {
-								return
-							}
-							str = c.getString(buffWork)
+							c.wrFloat64(buffWork, floatVal)
 						}
-
+						str = c.getString(buffWork)
+					} else {
+						c.wrErr(D.Invalid, D.Type, D.Of, D.Argument, formatSpec)
+						c.kind = KErr
+						return
 					}
-
-					argIndex++
-					c.wrBytes(dest, []byte(str))
-					continue
+				case 's':
+					if strVal, ok := arg.(string); ok {
+						str = strVal
+					} else {
+						c.wrErr(D.Invalid, D.Type, D.Of, D.Argument, formatSpec)
+						c.kind = KErr
+						return
+					}
+				case 'v':
+					c.rstBuffer(buffWork)
+					if errVal, ok := arg.(error); ok {
+						c.wrString(buffWork, errVal.Error())
+						str = c.getString(buffWork)
+					} else {
+						c.anyToBuff(buffWork, arg)
+						if c.hasContent(buffErr) {
+							return
+						}
+						str = c.getString(buffWork)
+					}
 				}
-			} else {
-				c.wrByte(dest, format[i])
+				// Apply width and alignment if needed
+				if width > 0 {
+					strLen := len(str)
+					pad := width - strLen
+					if leftAlign {
+						// Para alineación a la izquierda, agregar padding solo si pad > 0
+						if pad > 0 {
+							str = str + spaces(pad)
+						}
+					} else if pad > 0 {
+						str = spaces(pad) + str
+					} else if strLen > width {
+						// Truncar si el string es más largo que el ancho
+						str = str[:width]
+					}
+				}
+				argIndex++
+				c.wrBytes(dest, []byte(str))
+				continue
 			}
 		} else {
 			c.wrByte(dest, format[i])
@@ -215,4 +223,16 @@ func (c *conv) wrFormat(dest buffDest, format string, args ...any) {
 	} else {
 		c.kind = KErr
 	}
+}
+
+// spaces returns a string with n spaces
+func spaces(n int) string {
+	if n <= 0 {
+		return ""
+	}
+	b := make([]byte, n)
+	for i := range b {
+		b[i] = ' '
+	}
+	return string(b)
 }

@@ -18,10 +18,15 @@ func (t *conv) ToBool() (bool, error) {
 	case "false", "False", "FALSE", "0", "f", "F":
 		t.kind = KBool
 		return false, nil
-	} // Try to parse as integer using internal parseSmallInt
-	if intVal, err := t.parseSmallInt(inp); err == nil {
+	}
+	// Try to parse as integer using parseIntString (base 10, signed)
+	intVal := t.parseIntString(inp, 10, true)
+	if !t.hasContent(buffErr) {
 		t.kind = KBool
 		return intVal != 0, nil
+	} else {
+		// Limpia el error generado por el intento fallido usando la API
+		t.rstBuffer(buffErr)
 	}
 
 	// Try basic float patterns (simple cases)

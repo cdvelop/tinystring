@@ -4,29 +4,100 @@ package tinystring
 // FLOAT OPERATIONS - All float parsing, conversion and formatting
 // =============================================================================
 
-// ToFloat converts the value to a float64.
+// ToFloat64 converts the value to a float64.
 // Returns the converted float64 and any error that occurred during conversion.
-func (c *conv) ToFloat() (float64, error) {
-	// Check for existing error
+func (c *conv) ToFloat64() (float64, error) {
+	val := c.parseFloatBase()
 	if c.hasContent(buffErr) {
 		return 0, c
 	}
+	return val, nil
+}
 
-	// Try parsing current content as float
-	if c.tryParseAs(KFloat64, 10) {
-		if val, ok := c.ptrValue.(float64); ok {
-			return val, nil
+// ToFloat32 converts the value to a float32.
+// Returns the converted float32 and any error that occurred during conversion.
+func (c *conv) ToFloat32() (float32, error) {
+	val := c.parseFloatBase()
+	if c.hasContent(buffErr) {
+		return 0, c
+	}
+	if val > 3.4028235e+38 {
+		return 0, c.wrErr(D.Number, D.Overflow)
+	}
+	return float32(val), nil
+}
+
+// parseFloatBase parses the buffer as a float64, similar to parseIntBase for ints.
+// It always uses the buffer output and handles errors internally.
+func (c *conv) parseFloatBase() float64 {
+	c.rstBuffer(buffErr)
+
+	s := c.getString(buffOut)
+	if len(s) == 0 {
+		c.wrErr(D.String, D.Empty)
+		return 0
+	}
+
+	var result float64
+	var negative bool
+	var hasDecimal bool
+	var decimalPlaces int
+	i := 0
+
+	// Handle sign
+	if s[0] == '-' {
+		negative = true
+		i = 1
+		if len(s) == 1 {
+			c.wrErr(D.Format, D.Invalid)
+			return 0
+		}
+	} else if s[0] == '+' {
+		i = 1
+		if len(s) == 1 {
+			c.wrErr(D.Format, D.Invalid)
+			return 0
 		}
 	}
 
-	// If parsing failed, return error
-	if c.hasContent(buffErr) {
-		return 0, c
+	// Parse integer part
+	for ; i < len(s) && s[i] != '.'; i++ {
+		if s[i] < '0' || s[i] > '9' {
+			c.wrErr(D.Character, D.Invalid)
+			return 0
+		}
+		result = result*10 + float64(s[i]-'0')
 	}
 
-	return 0, c.wrErr(D.Format, D.Invalid)
+	// Parse decimal part if present
+	if i < len(s) && s[i] == '.' {
+		hasDecimal = true
+		i++ // Skip decimal point
+		for ; i < len(s); i++ {
+			if s[i] < '0' || s[i] > '9' {
+				c.wrErr(D.Character, D.Invalid)
+				return 0
+			}
+			decimalPlaces++
+			result = result*10 + float64(s[i]-'0')
+		}
+	}
+
+	// Apply decimal places
+	if hasDecimal {
+		for j := 0; j < decimalPlaces; j++ {
+			result /= 10
+		}
+	}
+
+	if negative {
+		result = -result
+	}
+
+	return result
 }
 
+// DEPRECATED
 // parseFloat parses a string as a float64 and returns the result
 // Universal method that follows buffer API architecture
 func (c *conv) parseFloat(inp string) float64 {
@@ -92,12 +163,18 @@ func (c *conv) parseFloat(inp string) float64 {
 	return result
 }
 
-// wrFloat converts float64 to string and writes to specified buffer destination
-// Universal method with dest-first parameter order - follows buffer API architecture
-func (c *conv) wrFloat(dest buffDest, val float64) {
-	c.kind = KFloat64 // Set type
-	c.ptrValue = val  // Store original value
+// wrFloat32 writes a float32 to the buffer destination.
+func (c *conv) wrFloat32(dest buffDest, val float32) {
+	c.wrFloatBase(dest, float64(val), 3.4028235e+38)
+}
 
+// wrFloat64 writes a float64 to the buffer destination.
+func (c *conv) wrFloat64(dest buffDest, val float64) {
+	c.wrFloatBase(dest, float64(val), 1.7976931348623157e+308)
+}
+
+// wrFloatBase contains the shared logic for writing float values.
+func (c *conv) wrFloatBase(dest buffDest, val float64, maxInf float64) {
 	// Handle special cases
 	if val != val { // NaN
 		c.wrString(dest, "NaN")
@@ -109,11 +186,11 @@ func (c *conv) wrFloat(dest buffDest, val float64) {
 	}
 
 	// Handle infinity
-	if val > 1.7976931348623157e+308 {
+	if val > maxInf {
 		c.wrString(dest, "+Inf")
 		return
 	}
-	if val < -1.7976931348623157e+308 {
+	if val < -maxInf {
 		c.wrString(dest, "-Inf")
 		return
 	}
@@ -127,7 +204,7 @@ func (c *conv) wrFloat(dest buffDest, val float64) {
 
 	// Check if it's effectively an integer
 	if val < 1e15 && val == float64(int64(val)) {
-		c.fmtIntToDest(dest, int64(val), 10, false)
+		c.wrIntBase(dest, int64(val), 10, false)
 		return
 	}
 
@@ -140,7 +217,7 @@ func (c *conv) wrFloat(dest buffDest, val float64) {
 	fracPart := rounded % 1000000
 
 	// Write integer part
-	c.fmtIntToDest(dest, intPart, 10, false)
+	c.wrIntBase(dest, intPart, 10, false)
 
 	// Write fractional part if non-zero
 	if fracPart > 0 {
@@ -155,7 +232,6 @@ func (c *conv) wrFloat(dest buffDest, val float64) {
 		}
 
 		// Find the start position (skip leading zeros in the array)
-		// Since digits[0] corresponds to the rightmost digit, we need to skip zeros from the left
 		start := 0
 		for start < 6 && digits[start] == '0' {
 			start++

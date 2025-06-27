@@ -1,408 +1,187 @@
 package tinystring
 
-// =============================================================================
-// INTEGER OPERATIONS - All integer parsing, conversion and formatting
-// =============================================================================
+func (c *conv) parseIntString(s string, base int, signed bool) int64 {
+	// Handle decimal point for float-like input (e.g., "3.14")
+	for i := 0; i < len(s); i++ {
+		if s[i] == '.' {
+			// Try to parse as float, then truncate
+			f := c.parseFloat(s)
+			if c.hasContent(buffErr) {
+				return 0
+			}
+			return int64(f)
+		}
+	}
+	if base < 2 || base > 36 {
+		c.wrErr(D.Base, D.Invalid)
+		return 0
+	}
+	var neg bool
+	i := 0
+	if len(s) > 0 && s[0] == '-' {
+		if !signed {
+			c.wrErr(D.Number, D.Negative, D.Not, D.Allowed)
+			return 0
+		}
+		neg = true
+		i = 1
+		if len(s) == 1 {
+			c.wrErr(D.Format, D.Invalid)
+			return 0
+		}
+	} else if len(s) > 0 && s[0] == '+' {
+		i = 1
+		if len(s) == 1 {
+			c.wrErr(D.Format, D.Invalid)
+			return 0
+		}
+	}
+	var n int64
+	for ; i < len(s); i++ {
+		ch := s[i]
+		var v byte
+		switch {
+		case '0' <= ch && ch <= '9':
+			v = ch - '0'
+		case 'a' <= ch && ch <= 'z':
+			v = ch - 'a' + 10
+		case 'A' <= ch && ch <= 'Z':
+			v = ch - 'A' + 10
+		default:
+			c.wrErr(D.Format, D.Invalid)
+			return 0
+		}
+		if int(v) >= base {
+			c.wrErr(D.Format, D.Invalid)
+			return 0
+		}
+		n = n*int64(base) + int64(v)
+	}
+	if neg {
+		n = -n
+	}
+	return n
+}
 
 // ToInt converts the value to an integer with optional base specification.
 // If no base is provided, base 10 is used. Supports bases 2-36.
 // Returns the converted integer and any error that occurred during conversion.
 func (c *conv) ToInt(base ...int) (int, error) {
-	// Check for existing error
+	val := c.parseIntBase(base...)
+	if val < -2147483648 || val > 2147483647 {
+		return 0, c.wrErr(D.Number, D.Overflow)
+	}
 	if c.hasContent(buffErr) {
 		return 0, c
 	}
-
-	// Validate base parameter
-	baseVal := 10 // default base
-	if len(base) > 0 {
-		baseVal = base[0]
-		if baseVal < 2 || baseVal > 36 {
-			return 0, c.wrErr(D.Base, D.Invalid)
-		}
-	}
-
-	// If base is not 10, we MUST parse the string representation
-	// because the numeric value might have been parsed with base 10 initially
-	if baseVal != 10 {
-		// We need to parse the original string representation with the specified base
-		inp := c.getBuffString()
-		if stringToInt(c, inp, baseVal, buffWork) {
-			if val, ok := c.ptrValue.(int64); ok {
-				// Check if int64 fits in int
-				if val < -2147483648 || val > 2147483647 {
-					return 0, c.wrErr(D.Number, D.Overflow)
-				}
-				return int(val), nil
-			}
-		}
-
-		// If parsing failed, ensure we have an appropriate error
-		if !c.hasContent(buffErr) {
-			// Check for specific cases that should error
-			if len(inp) > 0 && inp[0] == '-' {
-				// Negative numbers are not valid in non-decimal bases
-				c.wrErr(D.Base, D.Decimal, D.Invalid)
-			} else {
-				c.wrErr(D.Format, D.Invalid)
-			}
-		}
-		return 0, c
-	}
-
-	// For base 10, direct conversion for numeric types already in memory is OK
-	if c.ptrValue != nil {
-		switch v := c.ptrValue.(type) {
-		case int:
-			return v, nil
-		case int8:
-			return int(v), nil
-		case int16:
-			return int(v), nil
-		case int32:
-			return int(v), nil
-		case int64:
-			// Check if int64 fits in int
-			if v < -2147483648 || v > 2147483647 {
-				return 0, c.wrErr(D.Number, D.Overflow)
-			}
-			return int(v), nil
-		case uint:
-			if v > 2147483647 {
-				return 0, c.wrErr(D.Number, D.Overflow)
-			}
-			return int(v), nil
-		case uint8:
-			return int(v), nil
-		case uint16:
-			return int(v), nil
-		case uint32:
-			if v > 2147483647 {
-				return 0, c.wrErr(D.Number, D.Overflow)
-			}
-			return int(v), nil
-		case uint64:
-			if v > 2147483647 {
-				return 0, c.wrErr(D.Number, D.Overflow)
-			}
-			return int(v), nil
-		case float32:
-			return int(v), nil // Truncate decimal part
-		case float64:
-			return int(v), nil // Truncate decimal part
-		}
-	}
-
-	// For string inputs, try parsing as float first if it contains decimal point
-	if c.kind == KString {
-		inp := c.getBuffString()
-
-		// If it contains a decimal point, try parsing as float first
-		if Contains(inp, ".") {
-			// Try to parse as float and truncate
-			floatVal := c.parseFloat(inp)
-			if !c.hasContent(buffErr) {
-				return int(floatVal), nil
-			}
-			// Clear any parsing errors and continue with integer parsing
-			c.rstBuffer(buffErr)
-		}
-	}
-
-	// Try parsing current content as integer with base 10
-	if c.tryParseAs(KInt, 10) {
-		if val, ok := c.ptrValue.(int64); ok {
-			// Check if int64 fits in int
-			if val < -2147483648 || val > 2147483647 {
-				return 0, c.wrErr(D.Number, D.Overflow)
-			}
-			return int(val), nil
-		}
-	}
-
-	// If parsing failed, return error
-	if c.hasContent(buffErr) {
-		return 0, c
-	}
-
-	return 0, c.wrErr(D.Format, D.Invalid)
-}
-
-// ToInt64 converts the value to a 64-bit integer with optional base specification.
-// If no base is provided, base 10 is used. Supports bases 2-36.
-// Returns the converted int64 and any error that occurred during conversion.
-func (c *conv) ToInt64(base ...int) (int64, error) {
-	// Validate base parameter
-	baseVal := 10 // default base
-	if len(base) > 0 {
-		baseVal = base[0]
-		if baseVal < 2 || baseVal > 36 {
-			return 0, c.wrErr(D.Base, D.Invalid)
-		}
-	}
-
-	// Check for existing error
-	if c.hasContent(buffErr) {
-		return 0, c.wrErr(c.getString(buffErr))
-	}
-
-	// Try parsing current content as integer
-	if c.tryParseAs(KInt, baseVal) {
-		if val, ok := c.ptrValue.(int64); ok {
-			return val, nil
-		}
-	}
-
-	// If parsing failed, return error
-	if c.hasContent(buffErr) {
-		return 0, c.wrErr(c.getString(buffErr))
-	}
-
-	return 0, c.wrErr(D.Format, D.Invalid)
+	return int(val), nil
 }
 
 // ToUint converts the value to an unsigned integer with optional base specification.
 // If no base is provided, base 10 is used. Supports bases 2-36.
 // Returns the converted uint and any error that occurred during conversion.
 func (c *conv) ToUint(base ...int) (uint, error) {
-	// Check for existing error
+	val := c.parseIntBase(base...)
+	if val < 0 || val > 4294967295 {
+		return 0, c.wrErr(D.Number, D.Overflow)
+	}
 	if c.hasContent(buffErr) {
 		return 0, c
 	}
+	return uint(val), nil
+}
 
-	// Direct conversion for numeric types already in memory
-	if c.ptrValue != nil {
-		switch v := c.ptrValue.(type) {
-		case int:
-			if v < 0 {
-				return 0, c.wrErr(D.Number, D.Negative, D.Not, D.Allowed)
-			}
-			return uint(v), nil
-		case int8:
-			if v < 0 {
-				return 0, c.wrErr(D.Number, D.Negative, D.Not, D.Allowed)
-			}
-			return uint(v), nil
-		case int16:
-			if v < 0 {
-				return 0, c.wrErr(D.Number, D.Negative, D.Not, D.Allowed)
-			}
-			return uint(v), nil
-		case int32:
-			if v < 0 {
-				return 0, c.wrErr(D.Number, D.Negative, D.Not, D.Allowed)
-			}
-			return uint(v), nil
-		case int64:
-			if v < 0 {
-				return 0, c.wrErr(D.Number, D.Negative, D.Not, D.Allowed)
-			}
-			if v > 4294967295 {
-				return 0, c.wrErr(D.Number, D.Overflow)
-			}
-			return uint(v), nil
-		case uint:
-			return v, nil
-		case uint8:
-			return uint(v), nil
-		case uint16:
-			return uint(v), nil
-		case uint32:
-			return uint(v), nil
-		case uint64:
-			if v > 4294967295 {
-				return 0, c.wrErr(D.Number, D.Overflow)
-			}
-			return uint(v), nil
-		case float32:
-			if v < 0 {
-				return 0, c.wrErr(D.Number, D.Negative, D.Not, D.Allowed)
-			}
-			return uint(v), nil // Truncate decimal part
-		case float64:
-			if v < 0 {
-				return 0, c.wrErr(D.Number, D.Negative, D.Not, D.Allowed)
-			}
-			return uint(v), nil // Truncate decimal part
-		}
+// getInt32 extrae el valor del buffer de salida y lo convierte a int32.
+// ToInt32 extrae el valor del buffer de salida y lo convierte a int32.
+func (c *conv) ToInt32(base ...int) (int32, error) {
+	val := c.parseIntBase(base...)
+	if val < -2147483648 || val > 2147483647 {
+		return 0, c.wrErr(D.Number, D.Overflow)
 	}
-
-	// Validate base parameter for string parsing
-	baseVal := 10 // default base
-	if len(base) > 0 {
-		baseVal = base[0]
-		if baseVal < 2 || baseVal > 36 {
-			return 0, c.wrErr(D.Base, D.Invalid)
-		}
-	}
-
-	// For string inputs, try parsing as float first if it contains decimal point
-	if c.kind == KString {
-		inp := c.getBuffString()
-
-		// If it contains a decimal point, try parsing as float first
-		if Contains(inp, ".") {
-			// Try to parse as float and truncate
-			floatVal := c.parseFloat(inp)
-			if !c.hasContent(buffErr) {
-				if floatVal < 0 {
-					return 0, c.wrErr(D.Number, D.Negative, D.Not, D.Allowed)
-				}
-				return uint(floatVal), nil
-			}
-			// Clear any parsing errors and continue with integer parsing
-			c.rstBuffer(buffErr)
-		}
-	}
-
-	// Try parsing current content as unsigned integer
-	if c.tryParseAs(KUint, baseVal) {
-		if val, ok := c.ptrValue.(uint64); ok {
-			// Check if uint64 fits in uint
-			if val > 4294967295 {
-				return 0, c.wrErr(D.Number, D.Overflow)
-			}
-			return uint(val), nil
-		}
-	}
-
-	// If parsing failed, return error
 	if c.hasContent(buffErr) {
 		return 0, c
 	}
-
-	return 0, c.wrErr(D.Format, D.Invalid)
+	return int32(val), nil
 }
 
-// wrInt converts int64 to string and writes to specified buffer destination
-// Universal method with dest-first parameter order - eliminates duplicate code
-func (c *conv) wrInt(dest buffDest, v int64) {
-	c.kind = KInt  // Set type
-	c.ptrValue = v // Store original value
-
-	// Use existing fmtIntToDest for conversion
-	c.fmtIntToDest(dest, v, 10, true)
+// getInt64 extrae el valor del buffer de salida y lo convierte a int64.
+// ToInt64 extrae el valor del buffer de salida y lo convierte a int64.
+func (c *conv) ToInt64(base ...int) (int64, error) {
+	val := c.parseIntBase(base...)
+	if c.hasContent(buffErr) {
+		return 0, c
+	}
+	return val, nil
 }
 
-// wrUint converts uint64 to string and writes to specified buffer destination
-// Universal method with dest-first parameter order - eliminates duplicate code
-func (c *conv) wrUint(dest buffDest, v uint64) {
-	c.kind = KUint // Set type
-	c.ptrValue = v // Store original value
-
-	// Use existing fmtIntToDest for conversion
-	c.fmtIntToDest(dest, int64(v), 10, false)
+// ToUint32 extrae el valor del buffer de salida y lo convierte a uint32.
+func (c *conv) ToUint32(base ...int) (uint32, error) {
+	val := c.parseIntBase(base...)
+	if val < 0 || val > 4294967295 {
+		return 0, c.wrErr(D.Number, D.Overflow)
+	}
+	if c.hasContent(buffErr) {
+		return 0, c
+	}
+	return uint32(val), nil
 }
 
-// wrInt64Base converts an int64 to a string with specified base and writes to destination buffer
-// Universal method that receives parameters instead of using temp fields
-func (c *conv) wrInt64Base(dest buffDest, number int64, base int) {
-	if number == 0 {
+// ToUint64 extrae el valor del buffer de salida y lo convierte a uint64.
+func (c *conv) ToUint64(base ...int) (uint64, error) {
+	val := c.parseIntBase(base...)
+	if c.hasContent(buffErr) {
+		return 0, c
+	}
+	return uint64(val), nil
+}
+
+func (c *conv) wrIntBase(dest buffDest, val int64, base int, signed bool) {
+	if base < 2 || base > 36 {
+		c.wrErr(D.Base, D.Invalid)
+		return
+	}
+	if val == 0 {
 		c.wrString(dest, "0")
 		return
 	}
-
-	// Use optimized wrInt() for decimal base
-	if base == 10 {
-		c.wrInt(dest, number)
-		return
+	negative := signed && val < 0
+	uval := val
+	if negative {
+		uval = -val
 	}
-
-	isNegative := number < 0
-	if isNegative {
-		number = -number
-	}
-
-	// Inline validateBase logic
-	if base < 2 || base > 36 {
-		c.wrString(buffErr, T(D.Base, " ", D.Invalid))
-		return
-	}
-
-	// Convert to string with base
 	digits := "0123456789abcdef"
-	var out [64]byte // Maximum digits for int64 in base 2
+	var out [64]byte
 	idx := len(out)
-
-	// Build string backwards
-	for number > 0 {
+	for uval > 0 {
 		idx--
-		out[idx] = digits[number%int64(base)]
-		number /= int64(base)
+		out[idx] = digits[uval%int64(base)]
+		uval /= int64(base)
 	}
-
-	if isNegative {
+	if negative {
 		idx--
 		out[idx] = '-'
 	}
-
 	c.wrBytes(dest, out[idx:])
 }
 
-// fmtIntToOut converts integer to string and writes to out buffer
-// Replaces fmtIntGeneric() with centralized buffer management
-func (c *conv) fmtIntToOut(val int64, base int, signed bool) {
-	if val == 0 {
-		c.wrString(buffOut, "0")
-		return
-	}
-	// Handle negative numbers for signed integers
-	if signed && val < 0 {
-		val = -val
-		c.wrString(buffOut, "-")
-	}
+// parseIntBase reutiliza la lógica de conversión de string a int64, soportando signo y base, y reporta error usando la API interna.
+// parseIntBase auto-detects signed/unsigned mode using c.kind and parses the string accordingly.
+// It does not take a signed parameter; instead, it checks c.kind (KInt = signed, KUint = unsigned).
+func (c *conv) parseIntBase(base ...int) int64 {
 
-	// Convert using existing manual implementation logic
-	// Use work buffer for intermediate operations
-	c.rstBuffer(buffWork)
-
-	// Build digits in reverse order in work buffer
-	for val > 0 {
-		digit := byte(val%int64(base)) + '0'
-		if digit > '9' {
-			digit += 'a' - '9' - 1
+	s := c.getString(buffOut)
+	baseVal := 10
+	if len(base) > 0 {
+		baseVal = base[0]
+	}
+	isSigned := c.kind == KInt
+	// Solo permitir negativos en base 10
+	if len(s) > 0 && s[0] == '-' {
+		if baseVal == 10 {
+			isSigned = true
+		} else {
+			isSigned = false
 		}
-		c.work = append(c.work, digit)
-		c.workLen++
-		val /= int64(base)
 	}
-
-	// Reverse and write to out buffer
-	for i := c.workLen - 1; i >= 0; i-- {
-		c.wrByte(buffOut, c.work[i])
-	}
-}
-
-// fmtIntToDest converts integer to string and writes to specified buffer destination
-// Universal method with dest-first parameter order - eliminates duplicate code
-func (c *conv) fmtIntToDest(dest buffDest, val int64, base int, signed bool) {
-	if val == 0 {
-		c.wrString(dest, "0")
-		return
-	}
-	// Handle negative numbers for signed integers
-	if signed && val < 0 {
-		val = -val
-		c.wrString(dest, "-")
-	}
-
-	// Convert using existing manual implementation logic
-	// Use a different approach to avoid conflicting with dest buffer
-
-	// Build digits directly without intermediate buffer when dest is buffWork
-	var digits []byte
-	tempVal := val
-	for tempVal > 0 {
-		digit := byte(tempVal%int64(base)) + '0'
-		if digit > '9' {
-			digit += 'a' - '9' - 1
-		}
-		digits = append(digits, digit)
-		tempVal /= int64(base)
-	}
-
-	// Write digits in reverse order directly to destination
-	for i := len(digits) - 1; i >= 0; i-- {
-		c.wrByte(dest, digits[i])
-	}
+	return c.parseIntString(s, baseVal, isSigned)
 }

@@ -23,9 +23,9 @@ func (t *conv) FormatNumber() *conv {
 				t.rstBuffer(buffOut)
 				// Check if it's effectively an integer (.00 case)
 				if floatVal == float64(int64(floatVal)) {
-					t.wrInt(buffOut, int64(floatVal))
+					t.wrIntBase(buffOut, int64(floatVal), 10, true)
 				} else {
-					t.wrFloat(buffOut, floatVal)
+					t.wrFloat64(buffOut, floatVal)
 					t.removeTrailingZeros(buffOut)
 				}
 			}

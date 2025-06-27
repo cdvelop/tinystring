@@ -171,9 +171,14 @@ tinystring.Convert("hello world").ToSnakeCaseUpper().String() // out: "HELLO_WOR
 #### String Search & Operations
 
 ```go
+
 // Search and count
 found := tinystring.Contains("hello world", "world")              // out: true
 count := tinystring.Count("abracadabra", "abra")       // out: 2
+
+// ⚠️ Note: Contains is a global function, not a method.
+// Do NOT use: tinystring.Convert(s).Contains(substr) // ❌ Incorrect, will not compile
+// Use:        tinystring.Contains(s, substr)         // ✅ Correct
 
 // Replace operations
 tinystring.Convert("hello world").Replace("world", "Go").String() // out: "hello Go"
@@ -215,7 +220,7 @@ Replace `strconv` package functions for type conversions:
 |-------------|----------------------|
 | `strconv.Itoa()` | `Convert(i).String()` |
 | `strconv.Atoi()` | `Convert(s).ToInt()` |
-| `strconv.ParseFloat()` | `Convert(s).ToFloat()` |
+| `strconv.ParseFloat()` | `Convert(s).ToFloat64()` |
 | `strconv.ParseBool()` | `Convert(s).ToBool()` |
 | `strconv.FormatFloat()` | `Convert(f).RoundDecimals(n).String()` |
 | `strconv.Quote()` | `Convert(s).Quote().String()` |
@@ -226,7 +231,7 @@ Replace `strconv` package functions for type conversions:
 // String to numbers
 result, err := tinystring.Convert("123").ToInt()        // out: 123, nil
 result, err := tinystring.Convert("456").ToUint()       // out: 456, nil  
-result, err := tinystring.Convert("3.14").ToFloat()     // out: 3.14, nil
+result, err := tinystring.Convert("3.14").ToFloat64()     // out: 3.14, nil
 
 // Numbers to string
 tinystring.Convert(42).String()      // out: "42"
@@ -353,23 +358,14 @@ The dictionary system supports 9 languages, prioritized by global reach to ensur
 #### 📖 Dictionary Words
 
 The dictionary contains essential words for error composition:
-
 ```go
 // Common error words (alphabetically sorted)
 D.Argument    // "argument", "argumento", "argumento", "argument"...
 D.Base        // "base", "base", "base", "base"...
 D.Cannot      // "cannot", "no puede", "não pode", "ne peut pas"...
-D.Empty       // "empty", "vacío", "vazio", "vide"...
-D.Format      // "format", "formato", "formato", "format"...
-D.Invalid     // "invalid", "inválido", "inválido", "invalide"...
-D.Missing     // "missing", "falta", "ausente", "manquant"...
-D.Number      // "number", "número", "número", "nombre"...
-D.String      // "string", "cadena", "string", "chaîne"...
-D.Supported   // "supported", "soportado", "suportado", "pris en charge"...
-D.Type        // "type", "tipo", "tipo", "type"...
-D.Value       // "value", "valor", "valor", "valeur"...
-// ... and more
+D.Empty       // "empty", "vacío", "vazio", "vide".......
 ```
+📄 **See all words and translations in [`dictionary.go`](dictionary.go)**
 
 #### 🎨 Custom Dictionary Extensions
 
@@ -404,17 +400,8 @@ var MD = MyDict{
     Email: LocStr{
         "email",           // EN
         "correo",          // ES
-        "email",           // PT
-        "courriel",        // FR
-        "электронная почта", // RU
-        "E-Mail",          // DE
-        "email",           // IT
-        "ईमेल",            // HI
-        "ইমেইল",           // BN
-        "email",           // ID
-        "بريد إلكتروني",   // AR
-        "ای میل",          // UR
-        "邮箱",            // ZH
+        "email",           // PT.....
+        |// more translations
     },
     // ... more custom words
 }
@@ -579,21 +566,21 @@ tinystring.Convert(&originalText).RemoveTilde().ToLower().Apply()
 [Standard Library Example](benchmark/bench-binary-size/standard-lib/main.go) | [TinyString Example](benchmark/bench-binary-size/tinystring-lib/main.go)
 
 <!-- This table is automatically generated from build-and-measure.sh -->
-*Last updated: 2025-06-24 14:51:41*
+*Last updated: 2025-06-26 21:28:25*
 
 | Build Type | Parameters | Standard Library<br/>`go build` | TinyString<br/>`tinygo build` | Size Reduction | Performance |
 |------------|------------|------------------|------------|----------------|-------------|
-| 🖥️ **Default Native** | `-ldflags="-s -w"` | 1.3 MB | 1.1 MB | **-174.0 KB** | ➖ **13.2%** |
-| 🌐 **Default WASM** | `(default -opt=z)` | 580.8 KB | 233.5 KB | **-347.3 KB** | ✅ **59.8%** |
-| 🌐 **Ultra WASM** | `-no-debug -panic=trap -scheduler=none -gc=leaking -target wasm` | 141.3 KB | 26.5 KB | **-114.7 KB** | 🏆 **81.2%** |
-| 🌐 **Speed WASM** | `-opt=2 -target wasm` | 827.0 KB | 326.2 KB | **-500.8 KB** | ✅ **60.6%** |
-| 🌐 **Debug WASM** | `-opt=0 -target wasm` | 1.8 MB | 725.2 KB | **-1.1 MB** | ✅ **60.4%** |
+| 🖥️ **Default Native** | `-ldflags="-s -w"` | 1.3 MB | 1.1 MB | **-183.5 KB** | ➖ **14.0%** |
+| 🌐 **Default WASM** | `(default -opt=z)` | 580.8 KB | 226.8 KB | **-354.1 KB** | ✅ **61.0%** |
+| 🌐 **Ultra WASM** | `-no-debug -panic=trap -scheduler=none -gc=leaking -target wasm` | 141.3 KB | 25.7 KB | **-115.6 KB** | 🏆 **81.8%** |
+| 🌐 **Speed WASM** | `-opt=2 -target wasm` | 827.0 KB | 316.1 KB | **-510.9 KB** | ✅ **61.8%** |
+| 🌐 **Debug WASM** | `-opt=0 -target wasm` | 1.8 MB | 706.8 KB | **-1.1 MB** | ✅ **61.4%** |
 
 ### 🎯 Performance Summary
 
-- 🏆 **Peak Reduction: 81.2%** (Best optimization)
-- ✅ **Average WebAssembly Reduction: 65.5%**
-- ✅ **Average Native Reduction: 13.2%**
+- 🏆 **Peak Reduction: 81.8%** (Best optimization)
+- ✅ **Average WebAssembly Reduction: 66.5%**
+- ✅ **Average Native Reduction: 14.0%**
 - 📦 **Total Size Savings: 2.2 MB across all builds**
 
 #### Performance Legend
@@ -608,23 +595,23 @@ tinystring.Convert(&originalText).RemoveTilde().ToLower().Apply()
 [Standard Library Example](benchmark/bench-memory-alloc/standard) | [TinyString Example](benchmark/bench-memory-alloc/tinystring)
 
 <!-- This table is automatically generated from memory-benchmark.sh -->
-*Last updated: 2025-06-24 17:18:44*
+*Last updated: 2025-06-26 21:28:44*
 
 Performance benchmarks comparing memory allocation patterns between standard Go library and TinyString:
 
 | 🧪 **Benchmark Category** | 📚 **Library** | 💾 **Memory/Op** | 🔢 **Allocs/Op** | ⏱️ **Time/Op** | 📈 **Memory Trend** | 🎯 **Alloc Trend** | 🏆 **Performance** |
 |----------------------------|----------------|-------------------|-------------------|-----------------|---------------------|---------------------|--------------------|
-| 📝 **String Processing** | 📊 Standard | `1.2 KB` | `48` | `3.1μs` | - | - | - |
-| | 🚀 TinyString | `3.1 KB` | `135` | `14.3μs` | ❌ **165.5% more** | ❌ **181.3% more** | ❌ **Poor** |
-| 🔢 **Number Processing** | 📊 Standard | `912 B` | `42` | `2.4μs` | - | - | - |
-| | 🚀 TinyString | `576 B` | `49` | `2.5μs` | 🏆 **36.8% less** | ⚠️ **16.7% more** | ✅ **Good** |
+| 📝 **String Processing** | 📊 Standard | `1.2 KB` | `48` | `3.4μs` | - | - | - |
+| | 🚀 TinyString | `3.1 KB` | `135` | `14.5μs` | ❌ **165.5% more** | ❌ **181.3% more** | ❌ **Poor** |
+| 🔢 **Number Processing** | 📊 Standard | `912 B` | `42` | `2.5μs` | - | - | - |
+| | 🚀 TinyString | `320 B` | `17` | `1.9μs` | 🏆 **64.9% less** | 🏆 **59.5% less** | 🏆 **Excellent** |
 | 🔄 **Mixed Operations** | 📊 Standard | `512 B` | `26` | `1.7μs` | - | - | - |
-| | 🚀 TinyString | `880 B` | `48` | `4.3μs` | ❌ **71.9% more** | ❌ **84.6% more** | ❌ **Poor** |
+| | 🚀 TinyString | `816 B` | `40` | `4.2μs` | ❌ **59.4% more** | ❌ **53.8% more** | ❌ **Poor** |
 
 ### 🎯 Performance Summary
 
-- 💾 **Memory Efficiency**: ❌ **Poor** (Significant overhead) (66.8% average change)
-- 🔢 **Allocation Efficiency**: ❌ **Poor** (Excessive allocations) (94.2% average change)
+- 💾 **Memory Efficiency**: ❌ **Poor** (Significant overhead) (53.3% average change)
+- 🔢 **Allocation Efficiency**: ❌ **Poor** (Excessive allocations) (58.5% average change)
 - 📊 **Benchmarks Analyzed**: 3 categories
 - 🎯 **Optimization Focus**: Binary size reduction vs runtime efficiency
 

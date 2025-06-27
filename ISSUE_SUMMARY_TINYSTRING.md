@@ -83,7 +83,7 @@ tinystring.Convert(&text).RemoveTilde().CamelCaseLower().Apply()
 **Type Conversions:**
 - `ToBool()` - Convert to boolean
 - `ToInt(base...)`, `ToUint(base...)` - Integer conversion
-- `ToFloat()` - Float conversion
+- `ToFloat64()` - Float conversion
 - `StringError()` - Get result with error handling
 
 ## Installation

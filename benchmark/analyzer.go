@@ -2,13 +2,13 @@ package main
 
 import (
 	"bufio"
-	"fmt"
 	"os"
 	"os/exec"
 	"path/filepath"
 	"regexp"
-	"strconv"
 	"strings"
+
+	"github.com/cdvelop/tinystring"
 )
 
 // BenchmarkResult stores benchmark results for memory analysis
@@ -31,10 +31,10 @@ type MemoryComparison struct {
 
 func main() {
 	if len(os.Args) < 2 {
-		fmt.Println("Usage: go run analyzer.go [binary|memory|all]")
-		fmt.Println("  binary  - Analyze binary sizes")
-		fmt.Println("  memory  - Analyze memory allocations")
-		fmt.Println("  all     - Run both analyses")
+		println(tinystring.Fmt("Usage: go run analyzer.go [binary|memory|all]"))
+		println(tinystring.Fmt("  binary  - Analyze binary sizes"))
+		println(tinystring.Fmt("  memory  - Analyze memory allocations"))
+		println(tinystring.Fmt("  all     - Run both analyses"))
 		return
 	}
 
@@ -47,10 +47,10 @@ func main() {
 		analyzeMemoryAllocations()
 	case "all":
 		analyzeBinarySizes()
-		fmt.Println()
+		println()
 		analyzeMemoryAllocations()
 	default:
-		LogError(fmt.Sprintf("Unknown mode: %s", mode))
+		LogError(tinystring.Fmt("Unknown mode: %s", mode))
 		return
 	}
 }
@@ -104,7 +104,7 @@ func measureBinarySizes() []BinaryInfo {
 
 	binaryDir := "bench-binary-size"
 	if !FileExists(binaryDir) {
-		LogError(fmt.Sprintf("Binary directory %s not found", binaryDir))
+		LogError(tinystring.Fmt("Binary directory %s not found", binaryDir))
 		return nil
 	}
 
@@ -115,7 +115,7 @@ func measureBinarySizes() []BinaryInfo {
 	for _, pattern := range patterns {
 		binaries, err := FindBinaries(binaryDir, []string{pattern})
 		if err != nil {
-			LogError(fmt.Sprintf("Error finding binaries: %v", err))
+			LogError(tinystring.Fmt("Error finding binaries: %v", err))
 			continue
 		}
 		allBinaries = append(allBinaries, binaries...)
@@ -126,29 +126,30 @@ func measureBinarySizes() []BinaryInfo {
 
 // displayBinaryResults shows binary size results in a table format
 func displayBinaryResults(binaries []BinaryInfo) {
-	fmt.Println("\n📊 Binary Size Results:")
-	fmt.Println("========================")
-	fmt.Printf("%-20s %-8s %-12s %-10s\n", "File", "Type", "Library", "Size")
-	fmt.Println(strings.Repeat("-", 55))
+	println("\n📊 Binary Size Results:")
+	println("========================")
+	println(tinystring.Fmt("%-20s %-8s %-12s %-10s", "File", "Type", "Library", "Size"))
+	println(tinystring.Convert("-").Repeat(55).String())
 
 	for _, binary := range binaries {
-		fmt.Printf("%-20s %-8s %-12s %-10s\n",
-			binary.Name, binary.Type, binary.Library, binary.SizeStr)
+		println(tinystring.Fmt("%-20s %-8s %-12s %-10s",
+			binary.Name, binary.Type, binary.Library, binary.SizeStr))
 	}
-	fmt.Println()
+	println("")
 }
 
 // displayOptimizationTable shows optimization comparison table
 func displayOptimizationTable(binaries []BinaryInfo) {
 	optimizations := getOptimizationConfigs()
 
-	fmt.Println("📊 Optimization Level Comparison:")
-	fmt.Println("==================================")
+	println("📊 Optimization Level Comparison:")
+	println("==================================")
 
 	for _, opt := range optimizations {
-		fmt.Printf("\n%s Optimization (%s):\n", opt.Name, opt.Description)
-		fmt.Printf("%-15s %-15s %-15s %-15s\n", "", "Standard", "TinyString", "Improvement")
-		fmt.Println(strings.Repeat("-", 65))
+		println("")
+		println(tinystring.Fmt("%s Optimization (%s):", opt.Name, opt.Description))
+		println(tinystring.Fmt("%-15s %-15s %-15s %-15s", "", "Standard", "TinyString", "Improvement"))
+		println(tinystring.Convert("-").Repeat(65).String())
 
 		// Find matching binaries for this optimization level
 		standardNative := findBinaryByPattern(binaries, "standard", "native", opt.Suffix)
@@ -158,14 +159,14 @@ func displayOptimizationTable(binaries []BinaryInfo) {
 
 		if standardNative.Name != "" && tinystringNative.Name != "" {
 			improvement := calculateImprovement(standardNative.Size, tinystringNative.Size)
-			fmt.Printf("%-15s %-15s %-15s %-15s\n", "Native",
-				standardNative.SizeStr, tinystringNative.SizeStr, improvement)
+			println(tinystring.Fmt("%-15s %-15s %-15s %-15s", "Native",
+				standardNative.SizeStr, tinystringNative.SizeStr, improvement))
 		}
 
 		if standardWasm.Name != "" && tinystringWasm.Name != "" {
 			improvement := calculateImprovement(standardWasm.Size, tinystringWasm.Size)
-			fmt.Printf("%-15s %-15s %-15s %-15s\n", "WebAssembly",
-				standardWasm.SizeStr, tinystringWasm.SizeStr, improvement)
+			println(tinystring.Fmt("%-15s %-15s %-15s %-15s", "WebAssembly",
+				standardWasm.SizeStr, tinystringWasm.SizeStr, improvement))
 		}
 	}
 }
@@ -177,7 +178,7 @@ func findBinaryByPattern(binaries []BinaryInfo, library, binaryType, optSuffix s
 			if optSuffix == "" && binary.OptLevel == "default" {
 				return binary
 			}
-			if optSuffix != "" && strings.Contains(binary.Name, optSuffix) {
+			if optSuffix != "" && tinystring.Contains(binary.Name, optSuffix) {
 				return binary
 			}
 		}
@@ -193,9 +194,9 @@ func calculateImprovement(original, improved int64) string {
 
 	improvement := float64(original-improved) / float64(original) * 100
 	if improvement > 0 {
-		return fmt.Sprintf("%.1f%% smaller", improvement)
+		return tinystring.Fmt("%.1f%% smaller", improvement)
 	} else if improvement < 0 {
-		return fmt.Sprintf("%.1f%% larger", -improvement)
+		return tinystring.Fmt("%.1f%% larger", -improvement)
 	}
 	return "Same size"
 }
@@ -287,7 +288,7 @@ func runBenchmarks(library string) []BenchmarkResult {
 
 	benchDir := filepath.Join("bench-memory-alloc", library)
 	if !FileExists(benchDir) {
-		LogError(fmt.Sprintf("Benchmark directory %s not found", benchDir))
+		LogError(tinystring.Fmt("Benchmark directory %s not found", benchDir))
 		return results
 	}
 	cmd := exec.Command("go", "test", "-bench=.", "-benchmem", "-run=^$")
@@ -295,7 +296,7 @@ func runBenchmarks(library string) []BenchmarkResult {
 
 	output, err := cmd.Output()
 	if err != nil {
-		LogError(fmt.Sprintf("Failed to run benchmarks in %s: %v", benchDir, err))
+		LogError(tinystring.Fmt("Failed to run benchmarks in %s: %v", benchDir, err))
 		return results
 	}
 
@@ -313,10 +314,10 @@ func parseBenchmarkOutput(output, library string) []BenchmarkResult {
 		matches := benchmarkRegex.FindStringSubmatch(line)
 
 		if len(matches) == 6 {
-			iterations, _ := strconv.ParseInt(matches[2], 10, 64)
-			nsPerOp, _ := strconv.ParseInt(matches[3], 10, 64)
-			bytesPerOp, _ := strconv.ParseInt(matches[4], 10, 64)
-			allocsPerOp, _ := strconv.ParseInt(matches[5], 10, 64)
+			iterations, _ := tinystring.Convert(matches[2]).ToInt64()
+			nsPerOp, _ := tinystring.Convert(matches[3]).ToInt64()
+			bytesPerOp, _ := tinystring.Convert(matches[4]).ToInt64()
+			allocsPerOp, _ := tinystring.Convert(matches[5]).ToInt64()
 
 			out := BenchmarkResult{
 				Name:        matches[1],
@@ -355,27 +356,27 @@ func findBenchmark(results []BenchmarkResult, name string) BenchmarkResult {
 
 // displayMemoryResults shows memory benchmark results in a table format
 func displayMemoryResults(comparisons []MemoryComparison) {
-	fmt.Println("\n🧠 Memory Allocation Results:")
-	fmt.Println("============================")
-	fmt.Printf("%-35s %-12s %-15s %-15s %-15s\n",
-		"Category", "Library", "Bytes/Op", "Allocs/Op", "Time/Op")
-	fmt.Println(strings.Repeat("-", 95))
+	println("\n🧠 Memory Allocation Results:")
+	println("============================")
+	println(tinystring.Fmt("%-35s %-12s %-15s %-15s %-15s",
+		"Category", "Library", "Bytes/Op", "Allocs/Op", "Time/Op"))
+	println(tinystring.Convert("-").Repeat(95).String())
 
 	for _, comparison := range comparisons {
 		if comparison.Standard.Name != "" {
-			fmt.Printf("%-35s %-12s %-15s %-15d %-15s\n",
+			println(tinystring.Fmt("%-35s %-12s %-15s %-15d %-15s",
 				comparison.Category, "standard",
 				FormatSize(comparison.Standard.BytesPerOp),
 				comparison.Standard.AllocsPerOp,
-				formatNanoTime(comparison.Standard.NsPerOp))
+				formatNanoTime(comparison.Standard.NsPerOp)))
 		}
 
 		if comparison.TinyString.Name != "" {
-			fmt.Printf("%-35s %-12s %-15s %-15d %-15s\n",
+			println(tinystring.Fmt("%-35s %-12s %-15s %-15d %-15s",
 				"", "tinystring",
 				FormatSize(comparison.TinyString.BytesPerOp),
 				comparison.TinyString.AllocsPerOp,
-				formatNanoTime(comparison.TinyString.NsPerOp))
+				formatNanoTime(comparison.TinyString.NsPerOp)))
 
 			// Show improvement
 			if comparison.Standard.Name != "" && comparison.TinyString.Name != "" {
@@ -384,11 +385,11 @@ func displayMemoryResults(comparisons []MemoryComparison) {
 				allocImprovement := calculateMemoryImprovement(
 					comparison.Standard.AllocsPerOp, comparison.TinyString.AllocsPerOp)
 
-				fmt.Printf("%-35s %-12s %-15s %-15s %-15s\n",
-					"  → Improvement", "", memImprovement, allocImprovement, "")
+				println(tinystring.Fmt("%-35s %-12s %-15s %-15s %-15s",
+					"  → Improvement", "", memImprovement, allocImprovement, ""))
 			}
 		}
-		fmt.Println()
+		println("")
 	}
 }
 
@@ -396,7 +397,7 @@ func displayMemoryResults(comparisons []MemoryComparison) {
 func updateREADMEWithBinaryData(binaries []BinaryInfo) {
 	reporter := NewReportGenerator("../README.md")
 	if err := reporter.UpdateBinaryData(binaries); err != nil {
-		LogError(fmt.Sprintf("Failed to update README with binary data: %v", err))
+		LogError(tinystring.Fmt("Failed to update README with binary data: %v", err))
 	}
 }
 
@@ -404,6 +405,6 @@ func updateREADMEWithBinaryData(binaries []BinaryInfo) {
 func updateREADMEWithMemoryData(comparisons []MemoryComparison) {
 	reporter := NewReportGenerator("../README.md")
 	if err := reporter.UpdateMemoryData(comparisons); err != nil {
-		LogError(fmt.Sprintf("Failed to update README with memory data: %v", err))
+		LogError(tinystring.Fmt("Failed to update README with memory data: %v", err))
 	}
 }

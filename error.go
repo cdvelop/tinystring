@@ -52,6 +52,7 @@ func (c *conv) wrErr(msgs ...any) *conv {
 			// Add space between words
 			c.wrString(buffErr, " ")
 		}
+		// fmt.Printf("wrErr: Processing message part: %v\n", msg) // Depuración
 
 		switch v := msg.(type) {
 		case LocStr:
@@ -88,7 +89,7 @@ func (c *conv) wrErr(msgs ...any) *conv {
 			c.wrString(buffErr, "<unsupported>")
 		}
 	}
-
+	// fmt.Printf("wrErr: Final error buffer content: %q, errLen: %d\n", c.getString(buffErr), c.errLen) // Depuración
 	return c
 }
 

@@ -30,6 +30,7 @@ type conv struct {
 // Phase 7: Uses object pool internally for memory optimization (transparent to user)
 func Convert(v ...any) *conv {
 	c := getConv()
+	c.resetAllBuffers() // Asegurar que el objeto conv esté completamente limpio
 	// Validation: Only accept 0 or 1 parameter
 	if len(v) > 1 {
 		return c.wrErr(D.Invalid, D.Number, D.Of, D.Argument)
@@ -66,9 +67,12 @@ func Convert(v ...any) *conv {
 // =============================================================================
 
 // anyToBuff converts any supported type to buffer using existing conversion logic
-// REUSES: fmtIntToOut, floatToOut, wrStringToOut, wrStringToErr
+// REUSES: floatToOut, wrStringToOut, wrStringToErr
 // Supports: string, int variants, uint variants, float variants, bool, []byte, LocStr
 func (c *conv) anyToBuff(dest buffDest, value any) {
+	// Limpiar buffer de error antes de cualquier conversión inmediata
+	c.rstBuffer(buffErr)
+
 	switch v := value.(type) {
 	// IMMEDIATE CONVERSION - Simple Types (REUSE existing implementations)
 	case string:
@@ -80,51 +84,49 @@ func (c *conv) anyToBuff(dest buffDest, value any) {
 			c.wrErr(D.String, D.Empty)
 			return
 		}
-		// Store content and maintain pointer relationship
-		c.kind = KPointer
+		// Store content relationship
+		c.kind = KPointer // Correctly set kind to KPointer for *string
+		c.ptrValue = v    // Store the pointer itself for Apply()
 		c.wrString(dest, *v)
-		c.ptrValue = v
 	case error:
-		// Error type - write error message
 		c.wrErr(v.Error())
 		return // Early return since this sets error state
 	case int:
 		c.kind = KInt
-		c.wrInt(dest, int64(v))
+		c.wrIntBase(dest, int64(v), 10, true)
 	case int8:
 		c.kind = KInt
-		c.wrInt(dest, int64(v))
+		c.wrIntBase(dest, int64(v), 10, true)
 	case int16:
 		c.kind = KInt
-		c.wrInt(dest, int64(v))
+		c.wrIntBase(dest, int64(v), 10, true)
 	case int32:
 		c.kind = KInt
-		c.wrInt(dest, int64(v))
+		c.wrIntBase(dest, int64(v), 10, true)
 	case int64:
 		c.kind = KInt
-		c.wrInt(dest, v)
+		c.wrIntBase(dest, v, 10, true)
 	case uint:
 		c.kind = KUint
-		c.wrUint(dest, uint64(v))
+		c.wrIntBase(dest, int64(v), 10, false)
 	case uint8:
 		c.kind = KUint
-		c.wrUint(dest, uint64(v))
+		c.wrIntBase(dest, int64(v), 10, false)
 	case uint16:
 		c.kind = KUint
-		c.wrUint(dest, uint64(v))
+		c.wrIntBase(dest, int64(v), 10, false)
 	case uint32:
 		c.kind = KUint
-		c.wrUint(dest, uint64(v))
+		c.wrIntBase(dest, int64(v), 10, false)
 	case uint64:
 		c.kind = KUint
-		c.wrUint(dest, v)
+		c.wrIntBase(dest, int64(v), 10, false)
 	case float32:
 		c.kind = KFloat32
-		c.wrFloat(dest, float64(v))
+		c.wrFloat32(dest, v)
 	case float64:
 		c.kind = KFloat64
-		c.wrFloat(dest, v)
-
+		c.wrFloat64(dest, v)
 	case bool:
 		c.kind = KBool
 		c.wrBool(dest, v)

@@ -215,7 +215,7 @@ func (t *conv) applyFloorRoundingToResult(dest buffDest, decimals int) *conv {
 			}
 
 			t.rstBuffer(dest)
-			t.wrInt(dest, parsed)
+			t.wrIntBase(dest, parsed, 10, true)
 		}
 		return t
 	}
@@ -291,7 +291,7 @@ func (c *conv) wrFloatWithPrecision(dest buffDest, value float64, precision int)
 	fracPart := rounded - intPart*int64(multiplier)
 
 	// Write integer part
-	c.wrInt(dest, intPart)
+	c.wrIntBase(dest, intPart, 10, true)
 
 	// Write fractional part if precision > 0
 	if precision > 0 {
