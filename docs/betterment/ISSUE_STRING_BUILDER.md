@@ -23,7 +23,7 @@
   - **[x] Replace() buffer consistency** - Updated to use buffer instead of setString
   - **[x] CamelCase operations** - Fixed toCaseTransformMinimal buffer consistency
   - **[x] Repeat() buffer consistency** - Updated to use buffer strategy
-  - **[x] RemoveTilde() buffer consistency** - Fixed buffer-first logic and string pointer handling
+  - **[x] Tilde() buffer consistency** - Fixed buffer-first logic and string pointer handling
 - **[x] Performance Benchmarking** - Builder pattern validation complete
 - **[x] Concurrency Safety Review** - Fixed race conditions in complex chaining
 - **[x] Memory Analysis** - Allocation reduction validated (44%+ reduction achieved)
@@ -48,7 +48,7 @@ This document outlines the integration of a high-performance string builder API 
 Current memory hotspots identified in TinyString:
 - **Error message construction** (`Err` function) with dictionary translations
 - **Format operations** (`Fmt` function) with multiple concatenations  
-- **String transformation chains** (ToLower, CamelCase, etc.)
+- **String transformation chains** (Low, CamelCase, etc.)
 - **Repeated string allocations** in complex operations
 
 ## Solution Architecture
@@ -73,7 +73,7 @@ func (c *conv) Reset() *conv          // Reset complete conv state ✅
 func (c *conv) String() string        // Already exists - auto-releases to pool ✅
 
 // CLEAN API: Convert() automatically uses builder internally ✅
-// Example: Convert("hello ").Write("tiny").Write(" string").ToUpper().String()
+// Example: Convert("hello ").Write("tiny").Write(" string").Up().String()
 // Output: "HELLO TINY STRING"
 
 // BUILDER PATTERN: Empty initialization for loops ✅
@@ -97,16 +97,16 @@ func T(values ...any) string
 // Convert automatically initializes buffer 
 c := Convert("hello ")                    // buf = "hello "
 c.Write("tiny").Write(" string")         // buf = "hello tiny string"  
-c.ToUpper()                              // buf = "HELLO TINY STRING"
+c.Up()                              // buf = "HELLO TINY STRING"
 result := c.String()                     // "HELLO TINY STRING" + auto-release
 
 // Chaining with mixed operations (should work seamlessly)
-result := Convert("hello").ToUpper().Write(" WORLD").ToLower().String()
+result := Convert("hello").Up().Write(" WORLD").Low().String()
 // Output: "hello world"
 
 // Error chain interruption - operations after error are omitted
 c := Convert("valid").Write("ok").Write(make(chan int)) // chan int = unsupported type
-c.ToUpper().Write(" MORE")  // ToUpper and Write(" MORE") are OMITTED internally
+c.Up().Write(" MORE")  // Up and Write(" MORE") are OMITTED internally
 result, err := c.StringError() // result = "validok", err = "unsupported type error"
 
 // Clean error handling
@@ -137,7 +137,7 @@ func complexOperation() string {
 }
 
 // Transparent builder usage in existing functions
-func (t *conv) ToUpper() *conv {
+func (t *conv) Up() *conv {
     // Always work with buf, eliminate stringVal conflicts
     if len(t.buf) == 0 {
         // Initialize buf from current value
@@ -239,7 +239,7 @@ BenchmarkHighDemandProcesses/FormatOperations-16                  446.4 ns/op  3
 ### Test Status
 - **✅ Core functionality**: All builder API tests pass
 - **✅ Basic operations**: Convert, Write, Reset, type handling
-- **✅ String transformations**: ToUpper, ToLower, Capitalize with buffer consistency
+- **✅ String transformations**: Up, Low, Capitalize with buffer consistency
 - **✅ Format operations**: Fmt() and unifiedFormat optimizations
 - **✅ Complex chaining**: Replace, CamelCase, Repeat operations with buffer-first strategy
 - **✅ Concurrency tests**: All race condition tests pass after buffer consistency fixes
@@ -272,7 +272,7 @@ func Convert(v ...any) *conv {
 **Usage Examples**:
 ```go
 // Traditional usage (backward compatible)
-result := Convert("hello").ToUpper().String() // "HELLO"
+result := Convert("hello").Up().String() // "HELLO"
 
 // Builder pattern for loops (NEW - eliminates multiple allocations)
 c := Convert() // Empty initialization
@@ -416,7 +416,7 @@ func BenchmarkBuilderOperations(b *testing.B) {
     })
     
     b.Run("ChainedOperations", func(b *testing.B) {
-        // Test: Convert().Write().ToUpper().Write().String()
+        // Test: Convert().Write().Up().Write().String()
     })
     
     b.Run("EmptyConvertLoop", func(b *testing.B) {
@@ -466,7 +466,7 @@ func TestConvertVariadicValidation(t *testing.T) {
     }
     
     // Chain should continue but operations should be omitted due to error
-    result := c3.Write(" more").ToUpper().String()
+    result := c3.Write(" more").Up().String()
     if result != "" {
         t.Errorf("Operations after error should be omitted, got: %s", result)
     }
@@ -474,7 +474,7 @@ func TestConvertVariadicValidation(t *testing.T) {
 
 func TestChainedOperationsOrder(t *testing.T) {
     // CRITICAL: Test mixed chaining behavior
-    result := Convert("hello").ToUpper().Write(" WORLD").ToLower().String()
+    result := Convert("hello").Up().Write(" WORLD").Low().String()
     expected := "hello world"
     if result != expected {
         t.Errorf("Chained operations failed: got %q, want %q", result, expected)
@@ -484,7 +484,7 @@ func TestChainedOperationsOrder(t *testing.T) {
 func TestErrorChainInterruption(t *testing.T) {
     // CRITICAL: Test error chain interruption behavior
     c := Convert("valid").Write("ok").Write(make(chan int)) // Unsupported type
-    c.ToUpper().Write(" MORE") // These should be omitted internally
+    c.Up().Write(" MORE") // These should be omitted internally
     
     result, err := c.StringError()
     expectedResult := "validok" // Only operations before error
@@ -552,7 +552,7 @@ The implementation maintains full backward compatibility while providing signifi
 
 **✅ COMPLETED (Phase 2)**:
 - High-demand process optimization (joinSlice, unifiedFormat, transformations)
-- Buffer consistency across all string operations (Replace, CamelCase, Repeat, RemoveTilde)
+- Buffer consistency across all string operations (Replace, CamelCase, Repeat, Tilde)
 - Performance validation with 44% allocation reduction
 - String pointer fixes (getString() and setString() consistency)
 - Thread-safety and concurrency validation

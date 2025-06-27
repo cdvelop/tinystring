@@ -19,8 +19,8 @@ memory-bench/
 ## Benchmarks Included
 
 ### String Processing
-- **Standard**: Uses `strings.ToLower`, `strings.ReplaceAll`, `strings.Fields`, etc.
-- **TinyString**: Uses `RemoveTilde()`, `CamelCaseLower()` chaining
+- **Standard**: Uses `strings.Low`, `strings.ReplaceAll`, `strings.Fields`, etc.
+- **TinyString**: Uses `Tilde()`, `CamelLow()` chaining
 - **TinyString (Pointers)**: Uses pointer optimization with `Apply()` method
 
 ### Number Processing

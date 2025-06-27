@@ -19,19 +19,19 @@ func BenchmarkStringOperations(b *testing.B) {
 		"long string with multiple words for processing",
 	}
 
-	b.Run("ToLower", func(b *testing.B) {
+	b.Run("Low", func(b *testing.B) {
 		for i := 0; i < b.N; i++ {
 			for _, str := range testData {
-				out := Convert(str).ToLower().String()
+				out := Convert(str).Low().String()
 				_ = out
 			}
 		}
 	})
 
-	b.Run("ToUpper", func(b *testing.B) {
+	b.Run("Up", func(b *testing.B) {
 		for i := 0; i < b.N; i++ {
 			for _, str := range testData {
-				out := Convert(str).ToUpper().String()
+				out := Convert(str).Up().String()
 				_ = out
 			}
 		}
@@ -46,19 +46,19 @@ func BenchmarkStringOperations(b *testing.B) {
 		}
 	})
 
-	b.Run("RemoveTilde", func(b *testing.B) {
+	b.Run("Tilde", func(b *testing.B) {
 		for i := 0; i < b.N; i++ {
 			for _, str := range testData {
-				out := Convert(str).RemoveTilde().String()
+				out := Convert(str).Tilde().String()
 				_ = out
 			}
 		}
 	})
 
-	b.Run("CamelCaseLower", func(b *testing.B) {
+	b.Run("CamelLow", func(b *testing.B) {
 		for i := 0; i < b.N; i++ {
 			for _, str := range testData {
-				out := Convert(str).CamelCaseLower().String()
+				out := Convert(str).CamelLow().String()
 				_ = out
 			}
 		}
@@ -104,7 +104,7 @@ func BenchmarkStringChains(b *testing.B) {
 	b.Run("ComplexChain1", func(b *testing.B) {
 		for i := 0; i < b.N; i++ {
 			for _, str := range testStrings {
-				out := Convert(str).RemoveTilde().ToLower().Capitalize().String()
+				out := Convert(str).Tilde().Low().Capitalize().String()
 				_ = out
 			}
 		}
@@ -113,7 +113,7 @@ func BenchmarkStringChains(b *testing.B) {
 	b.Run("ComplexChain2", func(b *testing.B) {
 		for i := 0; i < b.N; i++ {
 			for _, str := range testStrings {
-				out := Convert(str).Trim().Replace(" ", "_").ToLower().String()
+				out := Convert(str).Trim().Replace(" ", "_").Low().String()
 				_ = out
 			}
 		}
@@ -122,7 +122,7 @@ func BenchmarkStringChains(b *testing.B) {
 	b.Run("CamelCaseChain", func(b *testing.B) {
 		for i := 0; i < b.N; i++ {
 			for _, str := range testStrings {
-				out := Convert(str).RemoveTilde().CamelCaseLower().String()
+				out := Convert(str).Tilde().CamelLow().String()
 				_ = out
 			}
 		}
@@ -169,7 +169,7 @@ func BenchmarkBuilderOperations(b *testing.B) {
 
 	b.Run("ChainedOperations", func(b *testing.B) {
 		for i := 0; i < b.N; i++ {
-			out := Convert("hello").ToUpper().Write(" WORLD").ToLower().String()
+			out := Convert("hello").Up().Write(" WORLD").Low().String()
 			_ = out
 		}
 	})
@@ -190,7 +190,7 @@ func BenchmarkHighDemandProcesses(b *testing.B) {
 		testStr := "Hello World Testing String"
 
 		for i := 0; i < b.N; i++ {
-			out := Convert(testStr).ToLower().Capitalize().ToUpper().String()
+			out := Convert(testStr).Low().Capitalize().Up().String()
 			_ = out
 		}
 	})

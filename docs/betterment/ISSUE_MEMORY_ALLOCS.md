@@ -164,4 +164,4 @@ benchstat old.txt new.txt # Compare memory usage between versions
 - Dead code in `fmt_number.go` has been removed and tests have been run and passed.
 - Rounding logic in `fmt_precision.go` has been adjusted to align with test expectations.
 - Los intentos de optimización de capacidad de buffer no fueron efectivos y se revirtieron.
-- El enfoque actual se centra en la optimización de la manipulación de cadenas/bytes en métodos como `Capitalize`, `ToLower`, `ToUpper` para reducir las asignaciones.
+- El enfoque actual se centra en la optimización de la manipulación de cadenas/bytes en métodos como `Capitalize`, `Low`, `Up` para reducir las asignaciones.

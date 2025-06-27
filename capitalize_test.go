@@ -68,19 +68,19 @@ func TestCapitalizeChaining(t *testing.T) {
 		chain    func(*conv) *conv
 	}{
 		{
-			name:     "With RemoveTilde",
+			name:     "With Tilde",
 			input:    "hólá múndo",
 			expected: "Hola Mundo",
 			chain: func(conv *conv) *conv {
-				return conv.RemoveTilde().Capitalize()
+				return conv.Tilde().Capitalize()
 			},
 		},
 		{
-			name:     "After ToLower",
+			name:     "After Low",
 			input:    "HELLO WORLD",
 			expected: "Hello World",
 			chain: func(conv *conv) *conv {
-				return conv.ToLower().Capitalize()
+				return conv.Low().Capitalize()
 			},
 		},
 	}

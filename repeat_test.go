@@ -84,7 +84,7 @@ func TestRepeatChain(t *testing.T) {
 			input: "hello",
 			want:  "HELLOHELLOHELLO",
 			function: func(t *conv) *conv {
-				return t.Repeat(3).ToUpper()
+				return t.Repeat(3).Up()
 			},
 		},
 		{
@@ -92,7 +92,7 @@ func TestRepeatChain(t *testing.T) {
 			input: "WORLD",
 			want:  "worldworld",
 			function: func(t *conv) *conv {
-				return t.Repeat(2).ToLower()
+				return t.Repeat(2).Low()
 			},
 		},
 		{
@@ -100,7 +100,7 @@ func TestRepeatChain(t *testing.T) {
 			input: "Test",
 			want:  "testtesttest",
 			function: func(t *conv) *conv {
-				return t.ToLower().Repeat(3)
+				return t.Low().Repeat(3)
 			},
 		},
 		{
@@ -108,7 +108,7 @@ func TestRepeatChain(t *testing.T) {
 			input: "hello world",
 			want:  "helloWorldhelloWorld",
 			function: func(t *conv) *conv {
-				return t.CamelCaseLower().Repeat(2)
+				return t.CamelLow().Repeat(2)
 			},
 		},
 		{
@@ -116,7 +116,7 @@ func TestRepeatChain(t *testing.T) {
 			input: "conv",
 			want:  "",
 			function: func(t *conv) *conv {
-				return t.Repeat(0).ToUpper()
+				return t.Repeat(0).Up()
 			},
 		},
 		{
@@ -124,7 +124,7 @@ func TestRepeatChain(t *testing.T) {
 			input: "ñandú",
 			want:  "nandunandunandu",
 			function: func(t *conv) *conv {
-				return t.RemoveTilde().Repeat(3)
+				return t.Tilde().Repeat(3)
 			},
 		},
 		{
@@ -132,7 +132,7 @@ func TestRepeatChain(t *testing.T) {
 			input: "Hello World Example",
 			want:  "hello_world_examplehello_world_example",
 			function: func(t *conv) *conv {
-				return t.ToSnakeCaseLower().Repeat(2)
+				return t.SnakeLow().Repeat(2)
 			},
 		},
 		{
@@ -140,7 +140,7 @@ func TestRepeatChain(t *testing.T) {
 			input: "Él Múrcielago",
 			want:  "ELMURCIELAGOELMURCIELAGO",
 			function: func(t *conv) *conv {
-				return t.RemoveTilde().CamelCaseLower().ToUpper().Repeat(2)
+				return t.Tilde().CamelLow().Up().Repeat(2)
 			},
 		},
 	}

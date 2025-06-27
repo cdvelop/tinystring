@@ -30,23 +30,23 @@ Enable Go WebAssembly adoption by reducing binary size while providing essential
 import "github.com/cdvelop/tinystring"
 
 // Basic string processing
-result := tinystring.Convert("MÍ téxtO").RemoveTilde().String()
+result := tinystring.Convert("MÍ téxtO").Tilde().String()
 // Output: "MI textO"
 
 // Type conversion and chaining
-result := tinystring.Convert(42).ToUpper().String()
+result := tinystring.Convert(42).Up().String()
 // Output: "42"
 
 // Complex chaining
 result := tinystring.Convert("Él Múrcielago Rápido")
-    .RemoveTilde()
-    .CamelCaseLower()
+    .Tilde()
+    .CamelLow()
     .String()
 // Output: "elMurcielagoRapido"
 
 // Memory optimization with pointers
 text := "Él Múrcielago Rápido"
-tinystring.Convert(&text).RemoveTilde().CamelCaseLower().Apply()
+tinystring.Convert(&text).Tilde().CamelLow().Apply()
 // text is now: "elMurcielagoRapido"
 ```
 
@@ -58,11 +58,11 @@ tinystring.Convert(&text).RemoveTilde().CamelCaseLower().Apply()
 - `Apply()` - Modify original string pointer
 
 **Text Transformations:**
-- `RemoveTilde()` - Remove accents/diacritics
-- `ToLower()`, `ToUpper()` - Case conversion
+- `Tilde()` - Remove accents/diacritics
+- `Low()`, `Up()` - Case conversion
 - `Capitalize()` - First letter of each word
-- `CamelCaseLower()`, `CamelCaseUpper()` - camelCase conversion
-- `ToSnakeCaseLower()`, `ToSnakeCaseUpper()` - snake_case conversion
+- `CamelLow()`, `CamelUp()` - camelCase conversion
+- `SnakeLow()`, `SnakeUp()` - snake_case conversion
 
 **String Operations:**
 - `Split(data, separator)` - Split strings

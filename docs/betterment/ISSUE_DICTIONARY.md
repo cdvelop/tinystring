@@ -588,7 +588,7 @@ func getSystemLang() lang {
             code := strings.Split(envValue, ".")[0] // Remove encoding part
             code = strings.Split(code, "_")[0]      // Get language part
             code = strings.Split(code, "-")[0]      // Handle dash format
-            code = strings.ToLower(code)
+            code = strings.Low(code)
             
             // Map to lang enum
             switch code {
@@ -644,7 +644,7 @@ func getSystemLang() lang {
     
     // Parse language code (e.g., "es-ES" -> "es")
     code := strings.Split(langCode, "-")[0]
-    code = strings.ToLower(code)
+    code = strings.Low(code)
     
     // Map to lang enum
     switch code {

@@ -10,10 +10,10 @@ import (
 func processTextWithStandardLib(texts []string) []string {
 	results := make([]string, len(texts))
 	for i, text := range texts {
-		// EQUIVALENT OPERATIONS: ToLower + simple character replacement + basic word processing
-		lowered := strings.ToLower(text)
+		// EQUIVALENT OPERATIONS: Low + simple character replacement + basic word processing
+		lowered := strings.Low(text)
 
-		// Simple character replacements (equivalent to RemoveTilde)
+		// Simple character replacements (equivalent to Tilde)
 		replaced := strings.ReplaceAll(lowered, "á", "a")
 		replaced = strings.ReplaceAll(replaced, "é", "e")
 		replaced = strings.ReplaceAll(replaced, "í", "i")
@@ -24,7 +24,7 @@ func processTextWithStandardLib(texts []string) []string {
 		// Simple word processing - split, capitalize first word, join
 		words := strings.Fields(replaced)
 		if len(words) > 0 && len(words[0]) > 0 {
-			words[0] = strings.ToUpper(words[0][:1]) + words[0][1:]
+			words[0] = strings.Up(words[0][:1]) + words[0][1:]
 		}
 		out := strings.Join(words, "")
 		results[i] = out

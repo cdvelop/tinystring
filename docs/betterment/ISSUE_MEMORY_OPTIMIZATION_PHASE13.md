@@ -28,10 +28,10 @@
 
 | Benchmark | Time/op | Memory/op | Allocs/op | PRIMARY ISSUE |
 |-----------|---------|-----------|-----------|---------------|
-| **ToLower** | 3742 ns | 912 B | 34 allocs | String escape in `getString()` |
-| **ToUpper** | 3094 ns | 912 B | 34 allocs | String escape in `getString()` |
+| **Low** | 3742 ns | 912 B | 34 allocs | String escape in `getString()` |
+| **Up** | 3094 ns | 912 B | 34 allocs | String escape in `getString()` |
 | **Replace** | 2832 ns | 1112 B | **56 allocs** | **WORST allocations** |
-| **RemoveTilde** | 5885 ns | 1056 B | 40 allocs | Complex string operations |
+| **Tilde** | 5885 ns | 1056 B | 40 allocs | Complex string operations |
 | **Trim** | 1061 ns | 656 B | 32 allocs | Relatively good performance |
 | **Split** | 1714 ns | 432 B | **8 allocs** | **BEST allocations** |
 
@@ -413,7 +413,7 @@ cd benchmark/bench-binary-size/tinystring-lib
 |--------|-----------------|------------|-----------------|-------------|--------------|
 | **Memory** | 726 B/op | 1112 B/op (Replace) | **580 B/op** | **-20.1%** ✅ | **36.4% better** 🏆 |
 | **Allocations** | 31 allocs/op | 56 allocs/op (Replace) | **25 allocs/op** | **-19.4%** ✅ | **40.5% better** 🏆 |
-| **Speed** | 3280 ns/op | 5885 ns/op (RemoveTilde) | **2800 ns/op** | **-14.6%** ✅ | **15.6% slower** ⚠️ |
+| **Speed** | 3280 ns/op | 5885 ns/op (Tilde) | **2800 ns/op** | **-14.6%** ✅ | **15.6% slower** ⚠️ |
 | **Thread Safety** | ✅ Thread safe | ✅ Thread safe | ✅ **Thread safe** | **Maintained** 🏆 | Same ✅ |
 
 ### **Success Criteria (Data-Driven):**

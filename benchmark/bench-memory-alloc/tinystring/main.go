@@ -10,8 +10,8 @@ func processTextWithTinyString(texts []string) []string {
 	for i, text := range texts {
 		// EQUIVALENT OPERATIONS: Same logic as standard library but using TinyString
 		processed := tinystring.Convert(text).
-			ToLower().
-			RemoveTilde().
+			Low().
+			Tilde().
 			String()
 
 		// Split into words and capitalize first letter of first word, then join

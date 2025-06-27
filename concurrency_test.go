@@ -46,8 +46,8 @@ func TestConcurrentConvert(t *testing.T) {
 		go func(id int) {
 			defer wg.Done()
 			out := Convert(testString).
-				RemoveTilde().
-				CamelCaseLower().
+				Tilde().
+				CamelLow().
 				String()
 
 			if out != expectedResult {
@@ -189,10 +189,10 @@ func TestConcurrentStringManipulation(t *testing.T) {
 			process: func(s string) string {
 				return Convert(s).
 					Trim().
-					RemoveTilde().
+					Tilde().
 					Replace(" ", "_").
 					Replace("-", "_").
-					ToLower().
+					Low().
 					String()
 			},
 			expected: "user_name_with_accents",
@@ -201,12 +201,12 @@ func TestConcurrentStringManipulation(t *testing.T) {
 			name:  "Complex Transformation 2",
 			input: "this.is.a.file.name.txt",
 			process: func(s string) string {
-				// First replace periods with spaces, then apply CamelCaseUpper,
+				// First replace periods with spaces, then apply CamelUp,
 				// then remove the ".txt" suffix
 				return Convert(s).
 					TrimSuffix(".txt"). // Remove suffix first
 					Replace(".", " ").  // Then replace periods with spaces
-					CamelCaseUpper().   // Convert to CamelCase
+					CamelUp().          // Convert to CamelCase
 					String()
 			},
 			expected: "ThisIsAFileName",
@@ -397,8 +397,8 @@ func TestConcurrentStringPointerOperations(t *testing.T) {
 				testText := originalText
 
 				Convert(&testText).
-					RemoveTilde().
-					CamelCaseLower().
+					Tilde().
+					CamelLow().
 					Apply()
 
 				expected := "elMurcielagoRapido"
@@ -506,15 +506,15 @@ func TestConcurrentAdvancedCaseOperations(t *testing.T) {
 		expected string
 	}{
 		{
-			name: "ToSnakeCaseLower",
+			name: "SnakeLow",
 			function: func() string {
-				return Convert("HelloWorldTest").ToSnakeCaseLower().String()
+				return Convert("HelloWorldTest").SnakeLow().String()
 			},
 			expected: "hello_world_test",
 		}, {
-			name: "ToSnakeCaseUpper",
+			name: "SnakeUp",
 			function: func() string {
-				return Convert("HelloWorldTest").ToSnakeCaseLower().ToUpper().String()
+				return Convert("HelloWorldTest").SnakeLow().Up().String()
 			},
 			expected: "HELLO_WORLD_TEST",
 		},
@@ -526,16 +526,16 @@ func TestConcurrentAdvancedCaseOperations(t *testing.T) {
 			expected: "Hello World Test",
 		},
 		{
-			name: "ToLower",
+			name: "Low",
 			function: func() string {
-				return Convert("HELLO WORLD").ToLower().String()
+				return Convert("HELLO WORLD").Low().String()
 			},
 			expected: "hello world",
 		},
 		{
-			name: "ToUpper",
+			name: "Up",
 			function: func() string {
-				return Convert("hello world").ToUpper().String()
+				return Convert("hello world").Up().String()
 			},
 			expected: "HELLO WORLD",
 		},
@@ -774,13 +774,13 @@ func TestRaceConditionInComplexChaining(t *testing.T) {
 
 					// Complex chaining operation that exercises multiple code paths
 					out := Convert(input).
-						RemoveTilde().
+						Tilde().
 						Trim().
 						Replace("_", " ").
 						Replace("  ", " "). // Remove double spaces
 						Capitalize().
 						Replace(" ", "_").
-						ToLower().
+						Low().
 						String()
 
 					// Verify the out is consistent
@@ -917,7 +917,7 @@ func TestConcurrentStringCacheStress(t *testing.T) {
 					operations := []func() string{
 						func() string { return Fmt("ID_%d_ITER_%d", id, j) },
 						func() string { return Convert(id).Thousands().String() },
-						func() string { return Convert(Fmt("goroutine_%d", id)).ToUpper().String() },
+						func() string { return Convert(Fmt("goroutine_%d", id)).Up().String() },
 						func() string { return Fmt("%.2f", float64(j)/10.0) },
 						func() string { return Convert("cache_test").Repeat(2).String() },
 					}

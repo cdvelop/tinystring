@@ -19,24 +19,7 @@ TinyString is a lightweight Go library that provides comprehensive string manipu
 - 🔄 **Universal type support** - Works with strings, numbers, booleans, and slices
 - ⚡ **Performance focused** - Predictable allocations and custom optimizations
 
-## Why TinyString?
-
-**Go's WebAssembly potential is incredible**, but traditional applications face a critical challenge: **massive binary sizes** that make web deployment impractical.
-
-### The Problem
-Every Go project needs string manipulation, type conversion, and error handling - but importing standard library packages (`fmt`, `strings`, `strconv`, `errors`) creates significant binary bloat that hurts:
-
-- 🌐 **Web app performance** - Slow loading times and poor user experience
-- � **Edge deployment** - Resource constraints on small devices  
-- 🚀 **Distribution efficiency** - Large binaries for simple operations
-
-### The Solution
-TinyString replaces multiple standard library packages with **lightweight, manual implementations** that deliver:
-
-- 🏆 **Up to smaller binaries** - Dramatic size reduction for WebAssembly
-- ✅ **Full TinyGo compatibility** - No compilation issues or warnings
-- 🎯 **Predictable performance** - No hidden allocations or overhead
-- 🔧 **Familiar API** - Drop-in replacement for standard library functions
+## [Why TinyString?](docs/WHY.md)
 
 
 ## Installation
@@ -51,7 +34,7 @@ go get github.com/cdvelop/tinystring
 import "github.com/cdvelop/tinystring"
 
 // Quick start - Basic conversion and transformation
-text := tinystring.Convert("Hóla Múndo").RemoveTilde().ToLower().String()
+text := tinystring.Convert("Hóla Múndo").Tilde().Low().String()
 // out: "hola mundo"
 
 // Working with different data types
@@ -60,7 +43,7 @@ boolText := tinystring.Convert(true).String()  // out: "true"
 
 // Memory-efficient approach using string pointers
 original := "Él Múrcielago Rápido"
-tinystring.Convert(&original).RemoveTilde().CamelCaseLower().Apply()
+tinystring.Convert(&original).Tilde().CamelLow().Apply()
 // original is now: "elMurcielagoRapido"
 
 // Multilingual error messages (NEW!)
@@ -89,7 +72,7 @@ items := []string{"  APPLE  ", "  banana  ", "  Cherry  "}
 
 c := tinystring.Convert() // Empty initialization
 for i, item := range items {
-    c.Write(item).Trim().ToLower().Capitalize()
+    c.Write(item).Trim().Low().Capitalize()
     if i < len(items)-1 {
         c.Write(" - ")
     }
@@ -110,7 +93,7 @@ result1 := builder.Write("Hello").Write(" World").String()
 // Operation 2: Reset and transform
 builder.Reset()
 original := "test string"
-tinystring.Convert(&original).ToUpper().RemoveTilde().Apply()
+tinystring.Convert(&original).Up().Tilde().Apply()
 // original is now: "TEST STRING" - modified in-place
 ```
 
@@ -122,8 +105,8 @@ Replace common `strings` package functions with TinyString equivalents:
 
 | Go Standard | TinyString Equivalent |
 |-------------|----------------------|
-| `strings.ToLower()` | `Convert(s).ToLower().String()` |
-| `strings.ToUpper()` | `Convert(s).ToUpper().String()` |
+| `strings.Low()` | `Convert(s).Low().String()` |
+| `strings.Up()` | `Convert(s).Up().String()` |
 | `strings.Contains()` | `Contains(s, substr)` |
 | `strings.Replace()` | `Convert(s).Replace(old, new).String()` |
 | `strings.Split()` | `Split(s, sep)` |
@@ -140,33 +123,52 @@ The Builder API is especially efficient for complex operations:
 
 ```go
 // ❌ Standard approach - multiple allocations
-result := tinystring.Convert("Hello").ToUpper().String() + " " + 
-          tinystring.Convert("World").ToLower().String() + "!"
+result := tinystring.Convert("Hello").Up().String() + " " + 
+          tinystring.Convert("World").Low().String() + "!"
 // Multiple Convert() calls = multiple allocations
 
 // ✅ Builder approach - single allocation
 result := tinystring.Convert().
-    Write("Hello").ToUpper().
+    Write("Hello").Up().
     Write(" ").
-    Write("World").ToLower().
+    Write("World").Low().
     Write("!").
     String()
 // Single Convert() + reused buffer = optimal performance
+```
+### Chaining Operations
+
+```go
+// Combine multiple operations efficiently
+result := tinystring.Convert("  HÓLA MÚNDO  ")
+    .Trim()
+    .Tilde()
+    .Low()
+    .Replace(" ", "_")
+    .String()
+// out: "hola_mundo"
+```
+### 🌍 Unicode & Localization
+
+```go
+// Remove accents and diacritics (Ñ/ñ are preserved)
+tinystring.Convert("café naïve résumé Ñoño niño").Tilde().String()  
+// out: "cafe naive resume Ñono nino"
 ```
 
 #### String Transformations
 
 ```go
 // Case conversions
-tinystring.Convert("HELLO").ToLower().String()              // out: "hello"
-tinystring.Convert("world").ToUpper().String()              // out: "WORLD"
+tinystring.Convert("HELLO").Low().String()              // out: "hello"
+tinystring.Convert("world").Up().String()              // out: "WORLD"
 tinystring.Convert("hello world").Capitalize().String()     // out: "Hello World"
 
 // Advanced case styles
-tinystring.Convert("hello world").CamelCaseLower().String()   // out: "helloWorld"
-tinystring.Convert("hello world").CamelCaseUpper().String()   // out: "HelloWorld"
-tinystring.Convert("hello world").ToSnakeCaseLower().String() // out: "hello_world"
-tinystring.Convert("hello world").ToSnakeCaseUpper().String() // out: "HELLO_WORLD"
+tinystring.Convert("hello world").CamelLow().String()   // out: "helloWorld"
+tinystring.Convert("hello world").CamelUp().String()   // out: "HelloWorld"
+tinystring.Convert("hello world").SnakeLow().String() // out: "hello_world"
+tinystring.Convert("hello world").SnakeUp().String() // out: "HELLO_WORLD"
 ```
 
 #### String Search & Operations
@@ -244,8 +246,8 @@ result, err := tinystring.Convert(42).ToBool()      // out: true, nil (non-zero 
 result, err := tinystring.Convert(0).ToBool()       // out: false, nil
 
 // String quoting
-tinystring.Convert("hello").Quote().String()                    // out: "\"hello\""
-tinystring.Convert("say \"hello\"").Quote().String()           // out: "\"say \\\"hello\\\"\""
+tinystring.Convert("hello").Quote().String()           // out: "\"hello\""
+tinystring.Convert("say \"hello\"").Quote().String()  // out: "\"say \\\"hello\\\"\""
 ```
 
 #### Number Formatting
@@ -298,13 +300,9 @@ Replace `errors` package functions for error handling with multilingual support:
 #### Error Creation
 
 ```go
-// Simple error creation
-err := tinystring.Err("invalid input")
-// out: "invalid input"
-
-// Multiple error messages
-err := tinystring.Err("invalid format", "expected number")
-// out: "invalid format expected number"
+// Multiple error messages and types
+err := tinystring.Err("invalid format", "expected number", 404)
+// out: "invalid format expected number 404"
 
 // Formatted errors (like fmt.Errorf)
 err := tinystring.Errf("invalid value: %s at position %d", "abc", 5)
@@ -313,187 +311,34 @@ err := tinystring.Errf("invalid value: %s at position %d", "abc", 5)
 ```
 ## 🚀 TinyString Exclusive Features
 
-#### 🌍 Multilingual Error Messages
+### 🌍 TinyString: Multilingual & Translation Support
 
-TinyString includes a comprehensive dictionary system for creating multilingual error messages:
-
-```go
-import . "github.com/cdvelop/tinystring"
-
-// Configure default language
-OutLang(ES) // Spanish
-
-// Use dictionary words to create error messages
-err := Err(D.Invalid, D.Format)
-// out: "inválido formato" (Spanish)
-
-// Complex error message composition
-err := Err(D.Negative, D.Numbers, D.Not, D.Supported)
-// out: "negativo números no soportado" (Spanish)
-
-// Mix languages inline
-err := Err(FR, D.Empty, D.String)
-// out: "vide chaîne" (French)
-
-// Auto-detect system language
-OutLang() // Detects browser/OS language automatically
-err := Err(D.Cannot, D.Round, D.NonNumeric, D.Value)
-// Output in user's system language
-```
-
-#### 🗣️ Supported Languages
-
-The dictionary system supports 9 languages, prioritized by global reach to ensure optimal binary size.
-
-**Core Essential Languages:**
-- 🇺🇸 **EN** - English (default)
-- 🇪🇸 **ES** - Spanish
-- 🇨🇳 **ZH** - Chinese
-- 🇮🇳 **HI** - Hindi
-- 🇸🇦 **AR** - Arabic
-
-**Extended Reach Languages:**
-- 🇧🇷 **PT** - Portuguese
-- 🇫🇷 **FR** - French
-- 🇩🇪 **DE** - German
-- 🇷🇺 **RU** - Russian
-
-#### 📖 Dictionary Words
-
-The dictionary contains essential words for error composition:
-```go
-// Common error words (alphabetically sorted)
-D.Argument    // "argument", "argumento", "argumento", "argument"...
-D.Base        // "base", "base", "base", "base"...
-D.Cannot      // "cannot", "no puede", "não pode", "ne peut pas"...
-D.Empty       // "empty", "vacío", "vazio", "vide".......
-```
-📄 **See all words and translations in [`dictionary.go`](dictionary.go)**
-
-#### 🎨 Custom Dictionary Extensions
-
-Create your own dictionary words for domain-specific errors:
-
-```go
-// Define custom dictionary for your application
-type MyDict struct {
-    User     LocStr
-    Email    LocStr
-    Password LocStr
-    Login    LocStr
-}
-
-// Initialize with translations
-var MD = MyDict{
-    User: LocStr{
-        "user",            // EN
-        "usuario",         // ES
-        "usuário",         // PT
-        "utilisateur",     // FR
-        "пользователь",    // RU
-        "Benutzer",        // DE
-        "utente",          // IT
-        "उपयोगकर्ता",      // HI
-        "ব্যবহারকারী",     // BN
-        "pengguna",        // ID
-        "مستخدم",         // AR
-        "صارف",           // UR
-        "用户",            // ZH
-    },
-    Email: LocStr{
-        "email",           // EN
-        "correo",          // ES
-        "email",           // PT.....
-        // more translations
-    },
-    // ... more custom words
-}
-
-// Combine system dictionary with custom words
-OutLang(ES) // Spanish
-
-err := Err(D.Format,MD.Email, D.Invalid) 
-// out: "formato correo inválido"
-```
-
-#### 🔧 Language Configuration
-
-```go
-// Set specific language
-OutLang(ES)    // Spanish
-OutLang(FR)    // French
-OutLang(ZH)    // Chinese
-
-// Auto-detect system language
-OutLang()      // Detects from environment variables (backend) or browser (WASM)
-
-// Override language inline
-err := Err(DE, D.Invalid, D.Value)  // Force German
-// out: "ungültig Wert"
-```
-
-Features not available in Go's standard library:
-
-### 🌍 Multilingual Dictionary System
-
-TinyString includes a comprehensive multilingual error system with zero external dependencies:
+**TinyString** enables multilingual error messages using reusable dictionary terms. It supports 9 languages and allows global or inline language selection.
 
 ```go
 import . "github.com/cdvelop/tinystring"
 
-// Auto-detect system language or set explicitly
-OutLang()    // Auto-detect from environment/browser
-OutLang(ES)  // Set Spanish explicitly
+OutLang(ES) // Set global language to Spanish or OutLang() without parameters to Auto-detect system/browser language
 
-// Basic error creation with dictionary words
-err := Err(D.Invalid, D.Format)
-// out: "inválido formato" (Spanish)
+err := Err(D.Format, D.Invalid)
+// → "formato inválido"
 
-// Complex compositions
-err := Err(D.Cannot, D.Round, D.NonNumeric, D.Value)
-// out: "no puede redondear no numérico valor" (Spanish)
-
-// Dynamic language switching
-err := Err(FR, D.Empty, D.String, D.Not, D.Supported)
-// out: "vide chaîne pas pris en charge" (French)
-
-// Mixed with regular strings (backward compatible)
-err := Err(D.Invalid, "user input:", "abc123")
-// out: "inválido user input: abc123"
-
-// Practical validation example
-validateInput := func(input string) error {
-    if input == "" {
-        return Err(D.Empty, D.String, D.Not, D.Supported)
-    }
-    if _, err := Convert(input).ToInt(); err != nil {
-        return Err(D.Invalid, D.Number, D.Format)
-    }
-    return nil
-}
+// Force French
+err = Err(FR, D.Empty, D.String)
+// → "vide chaîne"
 ```
+See [`dictionary.go`](dictionary.go) for built-in words.
+Combine `D.` (default terms) and custom dictionaries for flexible messaging.
 
-#### 🎯 Dictionary Features
-- **9 Languages**: EN, ES, ZH, HI, AR, PT, FR, DE, RU
-- **35+ Essential Words**: Alphabetically sorted for maximum reusability
-- **Composable Messages**: Build complex errors from simple words
-- **Zero Dependencies**: No external translation libraries
-- **Auto-Detection**: Automatically detects system/browser language
-- **TinyGo Compatible**: Full WebAssembly support
+📘 Full documentation available in [`docs/TRANSLATE.md`](docs/TRANSLATE.md)
 
-### 🌍 Unicode & Localization
-
-```go
-// Remove accents and diacritics
-tinystring.Convert("café naïve résumé").RemoveTilde().String()  // out: "cafe naive resume"
-tinystring.Convert("Ñoño niño").RemoveTilde().String()          // out: "Nono nino"
-```
 
 ### ✂️ Smart Truncation
 
 ```go
 // Basic truncation with ellipsis
-tinystring.Convert("Hello, World!").Truncate(10).String()       // out: "Hello, ..."
+tinystring.Convert("Hello, World!").Truncate(10).String()       
+// out: "Hello, ..."
 
 // Name truncation for UI display
 tinystring.Convert("Jeronimo Dominguez").TruncateName(3, 15).String()
@@ -507,77 +352,36 @@ tinystring.Convert("Juan Carlos Rodriguez").TruncateName(3, 20).String()
 ### 🔧 Advanced Utilities
 
 ```go
-// Key-value parsing
+// Key-value parsing default use :
 value, err := tinystring.ParseKeyValue("user:admin")            // out: "admin", nil
 value, err := tinystring.ParseKeyValue("count=42", "=")         // out: "42", nil
 
 // Snake case with custom separators
-tinystring.Convert("hello world").ToSnakeCaseLower("-").String() // out: "hello-world"
-tinystring.Convert("hello world").ToSnakeCaseUpper("_").String() // out: "HELLO_WORLD"
+tinystring.Convert("hello world").SnakeLow("-").String() // out: "hello-world"
+tinystring.Convert("hello world").SnakeUp("_").String() // out: "HELLO_WORLD"
 ```
 
-## 💡 Performance Tips
-
-### Memory Optimization
+## 💡 Performance Tips String() vs Apply()
 
 ```go
-// ✅ Efficient: Modify original string directly
+// String() - Returns the result, original remains unchanged
 original := "Él Múrcielago Rápido"
-tinystring.Convert(&original).RemoveTilde().ToLower().Apply()
-// original is now modified in-place
-
-// ❌ Less efficient: Creates new string
-original := "Él Múrcielago Rápido"  
-result := tinystring.Convert(original).RemoveTilde().ToLower().String()
-```
-
-### Chaining Operations
-
-```go
-// Combine multiple operations efficiently
-result := tinystring.Convert("  HÓLA MÚNDO  ")
-    .Trim()
-    .RemoveTilde()
-    .ToLower()
-    .Replace(" ", "_")
-    .String()
-// out: "hola_mundo"
-```
-
-## 🔄 Output Methods: String() vs Apply()
-
-Choose between two approaches for finalizing operations:
-
-```go
-// ✅ String() - Returns result, keeps original unchanged
-originalText := "Él Múrcielago Rápido"
-result := tinystring.Convert(&originalText).RemoveTilde().ToLower().String()
+result := tinystring.Convert(original).Tilde().Low().String()
 // result: "el murcielago rapido"
-// originalText: "Él Múrcielago Rápido" (unchanged)
+// original: "Él Múrcielago Rápido"
 
-// ✅ Apply() - Modifies original string directly (memory efficient)
-originalText := "Él Múrcielago Rápido"
-tinystring.Convert(&originalText).RemoveTilde().ToLower().Apply()
-// originalText: "el murcielago rapido" (modified in-place)
+// Apply() - Modifies the original string directly (more memory efficient)
+// note: only support strings pointer
+tinystring.Convert(&original).Tilde().Low().Apply()
+// original: "el murcielago rapido"
+
+// There are only two ways to finalize operations: using String() or Apply().
 ```
-## Benchmarking
-[Standard Library vs TinyString](benchmark/README.md)
+
+---
+## [Benchmarking](benchmark/README.md)
+---
+## [Contributing](docs/CONTRIBUTING.md)
 
 
-## Contributing
 
-This project is currently being **self-financed** and developed independently. The development, testing, maintenance, and improvements are funded entirely out of my personal resources and time.
-
-If you find this project useful and would like to support its continued development, you can make a donation [here with PayPal](https://paypal.me/cdvelop?country.x=CL&locale.x=es_XC). Your support helps cover:
-
-- 💻 Development time and effort
-- 🧪 Testing and quality assurance
-- 📚 Documentation improvements
-- 🔧 Bug fixes and feature enhancements
-- 🌐 Community support and maintenance
-
-Any contribution, however small, is greatly appreciated and directly impacts the project's future development. 🙌
-
-## License
-
-MIT License

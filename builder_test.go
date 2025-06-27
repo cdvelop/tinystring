@@ -109,7 +109,7 @@ func TestBuilderPattern(t *testing.T) {
 	// Test builder pattern with transformations
 	c := Convert() // Empty initialization
 	for i, item := range items {
-		c.Write(item).Trim().ToLower().Capitalize()
+		c.Write(item).Trim().Low().Capitalize()
 		if i < len(items)-1 {
 			c.Write(" - ")
 		}

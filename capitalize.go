@@ -52,16 +52,16 @@ func (t *conv) Capitalize() *conv {
 }
 
 // convert to lower case eg: "HELLO WORLD" -> "hello world"
-func (t *conv) ToLower() *conv {
+func (t *conv) Low() *conv {
 	return t.changeCase(true)
 }
 
 // convert to upper case eg: "hello world" -> "HELLO WORLD"
-func (t *conv) ToUpper() *conv {
+func (t *conv) Up() *conv {
 	return t.changeCase(false)
 }
 
-// changeCase consolidates ToLower and ToUpper functionality - optimized with buffer-first strategy
+// changeCase consolidates Low and Up functionality - optimized with buffer-first strategy
 func (t *conv) changeCase(toLower bool) *conv {
 	if t.hasContent(buffErr) {
 		return t // Error chain interruption
@@ -92,12 +92,12 @@ func (t *conv) changeCase(toLower bool) *conv {
 }
 
 // converts conv to camelCase (first word lowercase) eg: "Hello world" -> "helloWorld"
-func (t *conv) CamelCaseLower() *conv {
+func (t *conv) CamelLow() *conv {
 	return t.toCaseTransformMinimal(true, "")
 }
 
 // converts conv to PascalCase (all words capitalized) eg: "hello world" -> "HelloWorld"
-func (t *conv) CamelCaseUpper() *conv {
+func (t *conv) CamelUp() *conv {
 	return t.toCaseTransformMinimal(false, "")
 }
 
@@ -110,8 +110,8 @@ func (t *conv) CamelCaseUpper() *conv {
 //	Input: "APIResponse" -> Output: "api_response"
 //	Input: "user123Name", "." -> Output: "user123.name"
 //
-// ToSnakeCaseLower converts conv to snake_case format
-func (t *conv) ToSnakeCaseLower(sep ...string) *conv {
+// SnakeLow converts conv to snake_case format
+func (t *conv) SnakeLow(sep ...string) *conv {
 	// Phase 4.3: Use local variable instead of struct field
 	separator := "_" // underscore default
 	if len(sep) > 0 {
@@ -120,8 +120,8 @@ func (t *conv) ToSnakeCaseLower(sep ...string) *conv {
 	return t.toCaseTransformMinimal(true, separator)
 }
 
-// ToSnakeCaseUpper converts conv to Snake_Case format
-func (t *conv) ToSnakeCaseUpper(sep ...string) *conv {
+// SnakeUp converts conv to Snake_Case format
+func (t *conv) SnakeUp(sep ...string) *conv {
 	// Phase 4.3: Use local variable instead of struct field
 	separator := "_" // underscore default
 	if len(sep) > 0 {
@@ -178,8 +178,8 @@ func (t *conv) toCaseTransformMinimal(firstWordLower bool, separator string) *co
 		} else if pWD && (cIU || cIL) {
 			// Digit to letter transition:
 			// - For snake_case: always start new word
-			// - For PascalCase (CamelCaseUpper): start new word
-			// - For camelCase (CamelCaseLower): don't start new word
+			// - For PascalCase (CamelUp): start new word
+			// - For camelCase (CamelLow): don't start new word
 			if separator != "" || !firstWordLower {
 				iWS = true
 			}

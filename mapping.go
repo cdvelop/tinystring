@@ -59,8 +59,8 @@ func toLowerRune(r rune) rune {
 	return r
 }
 
-// RemoveTilde removes accents and diacritics using index-based lookup
-func (t *conv) RemoveTilde() *conv {
+// Tilde removes accents and diacritics using index-based lookup
+func (t *conv) Tilde() *conv {
 	// Check for error chain interruption
 	if t.hasContent(buffErr) {
 		return t

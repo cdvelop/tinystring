@@ -16,7 +16,7 @@ func TestStringPointer(t *testing.T) {
 			name:         "Remove tildes from string pointer",
 			initialValue: "áéíóúÁÉÍÓÚ",
 			transform: func(t *conv) *conv {
-				return t.RemoveTilde()
+				return t.Tilde()
 			},
 			expectedValue: "aeiouAEIOU",
 		},
@@ -24,7 +24,7 @@ func TestStringPointer(t *testing.T) {
 			name:         "Convert to lowercase with string pointer",
 			initialValue: "HELLO WORLD",
 			transform: func(t *conv) *conv {
-				return t.ToLower()
+				return t.Low()
 			},
 			expectedValue: "hello world",
 		},
@@ -32,7 +32,7 @@ func TestStringPointer(t *testing.T) {
 			name:         "Convert to camelCase with string pointer",
 			initialValue: "hello world example",
 			transform: func(t *conv) *conv {
-				return t.CamelCaseLower()
+				return t.CamelLow()
 			},
 			expectedValue: "helloWorldExample",
 		},
@@ -40,7 +40,7 @@ func TestStringPointer(t *testing.T) {
 			name:         "Multiple transforms with string pointer",
 			initialValue: "Él Múrcielago Rápido",
 			transform: func(t *conv) *conv {
-				return t.RemoveTilde().CamelCaseLower()
+				return t.Tilde().CamelLow()
 			},
 			expectedValue: "elMurcielagoRapido",
 		},
@@ -68,7 +68,7 @@ func Example_stringPointerBasic() {
 
 	// En lugar de crear una nueva variable con el resultado,
 	// modificamos directamente la variable original usando Apply()
-	Convert(&myText).RemoveTilde().ToLower().Apply()
+	Convert(&myText).Tilde().Low().Apply()
 
 	// La variable original ha sido modificada
 	fmt.Println(myText)
@@ -81,7 +81,7 @@ func Example_stringPointerCamelCase() {
 
 	// Las transformaciones modifican la variable original directamente
 	// usando el método Apply() para actualizar el puntero
-	Convert(&originalText).RemoveTilde().CamelCaseLower().Apply()
+	Convert(&originalText).Tilde().CamelLow().Apply()
 
 	fmt.Println(originalText)
 	// Output: elMurcielagoRapido
@@ -92,12 +92,12 @@ func Example_stringPointerEfficiency() {
 	// puede ser importante para evitar la presión sobre el garbage collector
 	// Método tradicional (crea nuevas asignaciones de memoria)
 	traditionalText := "Texto con ACENTOS"
-	processedText := Convert(traditionalText).RemoveTilde().ToLower().String()
+	processedText := Convert(traditionalText).Tilde().Low().String()
 	fmt.Println(processedText)
 
 	// Método con punteros (modifica directamente la variable original)
 	directText := "Otro TEXTO con ACENTOS"
-	Convert(&directText).RemoveTilde().ToLower().Apply()
+	Convert(&directText).Tilde().Low().Apply()
 	fmt.Println(directText)
 
 	// Output:

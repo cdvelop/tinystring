@@ -86,7 +86,7 @@ func langParser(langStrings ...string) lang {
 			continue
 		}
 		// Convert to lowercase and map to the internal lang type.
-		code = Convert(code).ToLower().String()
+		code = Convert(code).Low().String()
 		// Inline mapLangCode logic
 		switch code {
 		// Group 1
