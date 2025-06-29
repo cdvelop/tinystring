@@ -278,20 +278,17 @@ func TestConcurrentNumericOperations(t *testing.T) {
 			expected: "12345",
 		},
 		{
-			name: "Float64 Conversion",
+			name: "Thousands Operation (EU)",
 			function: func() (string, error) {
-				val, err := Convert("123.45").Float64()
-				if err != nil {
-					return "", err
-				}
-				return Convert(val).String(), nil
+				out := Convert(1234567).Thousands().String()
+				return out, nil
 			},
-			expected: "123.45",
+			expected: "1.234.567",
 		},
 		{
-			name: "ToBool Conversion",
+			name: "Bool Conversion",
 			function: func() (string, error) {
-				val, err := Convert("true").ToBool()
+				val, err := Convert("true").Bool()
 				if err != nil {
 					return "", err
 				}
@@ -321,7 +318,7 @@ func TestConcurrentNumericOperations(t *testing.T) {
 		}, {
 			name: "Thousands Operation",
 			function: func() (string, error) {
-				out := Convert(1234567).Thousands().String()
+				out := Convert(1234567).Thousands(true).String()
 				return out, nil
 			},
 			expected: "1,234,567",

@@ -4,24 +4,25 @@ package tinystring
 // FORMAT NUMBER OPERATIONS - Number formatting with separators and display
 // =============================================================================
 
-// Thousands intelligently formats the current value as a number with thousand separators.
-// Handles both integers and floats, preserving decimal places when appropriate.
-// Example: Convert("1234567.89").Thousands() returns "1.234.567,89"
-func (t *conv) Thousands() *conv {
+// Thousands formats the number with thousand separators.
+// By default (no param), uses EU style: 1.234.567,89
+// If anglo is true, uses Anglo style: 1,234,567.89
+func (t *conv) Thousands(anglo ...bool) *conv {
 	if t.hasContent(buffErr) {
 		return t
 	}
 
-	// OPTIMIZED: Buffer-first approach - check if we already have content
+	useAnglo := false
+	if len(anglo) > 0 && anglo[0] {
+		useAnglo = true
+	}
+
 	if t.hasContent(buffOut) {
 		str := t.getString(buffOut)
-		// Only add thousand separators if it's actually a number
 		if t.isNumericString(str) {
-			// For numeric strings, try to parse as float first to handle .00 cases
 			floatVal := t.parseFloat(str)
 			if !t.hasContent(buffErr) {
 				t.rstBuffer(buffOut)
-				// Check if it's effectively an integer (.00 case)
 				if floatVal == float64(int64(floatVal)) {
 					t.wrIntBase(buffOut, int64(floatVal), 10, true)
 				} else {
@@ -29,20 +30,19 @@ func (t *conv) Thousands() *conv {
 					t.removeTrailingZeros(buffOut)
 				}
 			}
-			t.addThousandSeparators(buffOut)
+			t.addThousandSeparatorsCustom(buffOut, useAnglo)
 		}
 		return t
 	}
-
 	return t
 }
 
-// addThousandSeparators adds thousand separators to the numeric string in buffer.
-// Universal method with dest-first parameter order - follows buffer API architecture
-func (c *conv) addThousandSeparators(dest buffDest) {
+// addThousandSeparatorsCustom adds thousand separators to the numeric string in buffer.
+// If anglo is true: 1,234,567.89; if false: 1.234.567,89
+func (c *conv) addThousandSeparatorsCustom(dest buffDest, anglo bool) {
 	str := c.getString(dest)
 	if len(str) <= 3 {
-		return // No separators needed for numbers with 3 or fewer digits
+		return
 	}
 
 	// Find decimal point if it exists
@@ -54,52 +54,49 @@ func (c *conv) addThousandSeparators(dest buffDest) {
 		}
 	}
 
-	// Determine the integer part
 	intPart := str
 	decPart := ""
 	if dotIndex != -1 {
 		intPart = str[:dotIndex]
-		decPart = str[dotIndex:] // Include the decimal point
+		decPart = str[dotIndex+1:]
 	}
 
-	// Skip if integer part is too short or starts with negative sign and is too short
 	intLen := len(intPart)
 	if intPart[0] == '-' {
-		if intLen <= 4 { // -123 or shorter
+		if intLen <= 4 {
 			return
 		}
 	} else {
-		if intLen <= 3 { // 123 or shorter
+		if intLen <= 3 {
 			return
 		}
 	}
 
-	// Build result with separators
 	c.rstBuffer(dest)
-
-	// Handle negative sign
 	start := 0
 	if intPart[0] == '-' {
 		c.wrByte(dest, '-')
 		start = 1
 	}
 
-	// Calculate number of full groups of 3
 	remainingDigits := intLen - start
 	firstGroupSize := remainingDigits % 3
 	if firstGroupSize == 0 {
 		firstGroupSize = 3
 	}
 
-	// Write first group
 	for i := start; i < start+firstGroupSize; i++ {
 		c.wrByte(dest, intPart[i])
 	}
 
-	// Write remaining groups with separators
+	sep := byte('.')
+	if anglo {
+		sep = ','
+	}
+
 	pos := start + firstGroupSize
 	for pos < intLen {
-		c.wrByte(dest, ',')
+		c.wrByte(dest, sep)
 		for i := 0; i < 3 && pos < intLen; i++ {
 			c.wrByte(dest, intPart[pos])
 			pos++
@@ -108,7 +105,13 @@ func (c *conv) addThousandSeparators(dest buffDest) {
 
 	// Add decimal part if it exists
 	if decPart != "" {
-		c.wrString(dest, decPart)
+		if anglo {
+			c.wrByte(dest, '.')
+			c.wrString(dest, decPart)
+		} else {
+			c.wrByte(dest, ',')
+			c.wrString(dest, decPart)
+		}
 	}
 }
 

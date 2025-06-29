@@ -81,7 +81,7 @@ tinystring.Convert(&text).Tilde().CamelLow().Apply()
 - `Quote()` - Add quotes with escaping
 
 **Type Conversions:**
-- `ToBool()` - Convert to boolean
+- `Bool()` - Convert to boolean
 - `Int(base...)`, `Uint(base...)` - Integer conversion
 - `Float64()` - Float conversion
 - `StringErr()` - Get result with error handling

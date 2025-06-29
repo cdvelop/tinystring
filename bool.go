@@ -1,8 +1,8 @@
 package tinystring
 
-// ToBool converts the conv content to a boolean value using internal implementations
+// Bool converts the conv content to a boolean value using internal implementations
 // Returns the boolean value and any error that occurred
-func (t *conv) ToBool() (bool, error) {
+func (t *conv) Bool() (bool, error) {
 	if t.hasContent(buffErr) {
 		return false, t
 	}

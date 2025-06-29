@@ -12,7 +12,7 @@ func main() {
 
 	// Test 1: Basic string operations
 	text1 := "Hello World Example"
-	result1 := strings.Low(text1)
+	result1 := strings.ToLower(text1)
 	result1 = strings.ReplaceAll(result1, " ", "_")
 
 	// Test 2: Number formatting
@@ -21,7 +21,7 @@ func main() {
 
 	// Test 3: Multiple string operations
 	text2 := "Processing Multiple Strings"
-	result3 := strings.Up(text2)
+	result3 := strings.ToUpper(text2)
 	result3 = strings.ReplaceAll(result3, " ", "-")
 
 	// Test 4: Join operations

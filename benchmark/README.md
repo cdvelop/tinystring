@@ -9,22 +9,22 @@ Automated benchmark tools to measure and compare performance between standard Go
 [Standard Library Example](benchmark/bench-binary-size/standard-lib/main.go) | [TinyString Example](benchmark/bench-binary-size/tinystring-lib/main.go)
 
 <!-- This table is automatically generated from build-and-measure.sh -->
-*Last updated: 2025-06-26 22:25:49*
+*Last updated: 2025-06-29 18:59:50*
 
 | Build Type | Parameters | Standard Library<br/>`go build` | TinyString<br/>`tinygo build` | Size Reduction | Performance |
 |------------|------------|------------------|------------|----------------|-------------|
-| 🖥️ **Default Native** | `-ldflags="-s -w"` |  |  | **-** | ➖ **14.0%** |
-| 🌐 **Default WASM** | `(default -opt=z)` |  |  | **-** | ✅ **61.0%** |
-| 🌐 **Ultra WASM** | `-no-debug -panic=trap -scheduler=none -gc=leaking -target wasm` |  |  | **-** | 🏆 **81.8%** |
-| 🌐 **Speed WASM** | `-opt=2 -target wasm` |  |  | **-** | ✅ **61.8%** |
-| 🌐 **Debug WASM** | `-opt=0 -target wasm` |  |  | **-** | ✅ **61.4%** |
+| 🖥️ **Default Native** | `-ldflags="-s -w"` | 1.3 MB | 1.1 MB | **-164.0 KB** | ➖ **12.5%** |
+| 🌐 **Default WASM** | `(default -opt=z)` | 580.8 KB | 252.4 KB | **-328.4 KB** | ✅ **56.5%** |
+| 🌐 **Ultra WASM** | `-no-debug -panic=trap -scheduler=none -gc=leaking -target wasm` | 141.3 KB | 34.3 KB | **-107.0 KB** | 🏆 **75.8%** |
+| 🌐 **Speed WASM** | `-opt=2 -target wasm` | 827.0 KB | 362.5 KB | **-464.5 KB** | ✅ **56.2%** |
+| 🌐 **Debug WASM** | `-opt=0 -target wasm` | 1.8 MB | 800.8 KB | **-1.0 MB** | ✅ **56.3%** |
 
 ### 🎯 Performance Summary
 
-- 🏆 **Peak Reduction: 81.8%** (Best optimization)
-- ✅ **Average WebAssembly Reduction: 66.5%**
-- ✅ **Average Native Reduction: 14.0%**
-- 📦 **Total Size Savings:  across all builds**
+- 🏆 **Peak Reduction: 75.8%** (Best optimization)
+- ✅ **Average WebAssembly Reduction: 61.2%**
+- ✅ **Average Native Reduction: 12.5%**
+- 📦 **Total Size Savings: 2.0 MB across all builds**
 
 #### Performance Legend
 - ❌ Poor (<5% reduction)

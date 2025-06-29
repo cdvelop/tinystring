@@ -239,8 +239,15 @@ func TestNumericChaining(t *testing.T) {
 		t.Errorf("Expected %q, got %q", expected, out)
 	}
 
-	// Test with formatting numbers
+	// Test with formatting numbers (EU default)
 	out = Convert(1234567).Thousands().String()
+	expected = "1.234.567"
+	if out != expected {
+		t.Errorf("Expected %q, got %q", expected, out)
+	}
+
+	// Test with formatting numbers (Anglo)
+	out = Convert(1234567).Thousands(true).String()
 	expected = "1,234,567"
 	if out != expected {
 		t.Errorf("Expected %q, got %q", expected, out)

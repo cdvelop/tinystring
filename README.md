@@ -42,26 +42,27 @@ original := "Él Múrcielago Rápido"
 Convert(&original).Tilde().CamelLow().Apply()
 // original is now: "elMurcielagoRapido"
 
-// // Efficient, Unified builder and chaining example usage in loops and reuse, with accent normalization (Tilde)
+// Efficient, Unified builder and chaining example usage in loops and reuse, with accent normalization (Tilde)
 // Note: ñ and Ñ are preserved by Tilde eg:
 items := []string{"  ÁPPLE  ", "  banána  ", "  piñata  ","  ÑANDÚ  "}
-c := Convert() // without params reused buffer = optimal performance
+builder := Convert() // without params reused buffer = optimal performance
 for i, item := range items {
-    c.Write(item)
-    .Trim()      // Trim whitespace
-    .Tilde()     // Remove accents and diacritics
-    .Low()       // Convert to lowercase or .Up() for uppercase
-    .Capitalize()// Capitalize first letter
-
+    processed := Convert(item).
+        Trim(). // Trim whitespace
+        Tilde(). // Normalize accents
+        Low(). // Convert to lowercase
+        Capitalize(). // Capitalize first letter
+        String() // Finalize the string
+    builder.Write(processed)
     if i < len(items)-1 {
-        c.Write(" - ")
+        builder.Write(" - ")
     }
 }
 
 // Finalize the string hiding the error
-out := c.String() 
+out := builder.String()
 // OR finalize with error handling if any operation failed
-out, err := c.StringErr() 
+out, err := builder.StringErr()
 // out: "Apple - Banana - Piñata - Ñandu", err: nil
 
 
@@ -93,24 +94,6 @@ Replace common `strings` package functions with TinyString equivalents:
 | `strings.TrimSuffix()` | `Convert(s).TrimSuffix(suffix).String()` |
 | `strings.Repeat()` | `Convert(s).Repeat(n).String()` |
 | `strings.Builder` | `c:= Convert() c.Write(a) c.Write(b) c.String()` |
-
-#### Builder API Advantages
-
-The Builder API is especially efficient for complex operations:
-
-```go
-// ❌ Standard approach - multiple allocations
-result := tinystring.Convert("Hello").Up().String() + " " + 
-          tinystring.Convert("World").Low().String() + "!"
-// Multiple Convert() calls = multiple allocations
-
-// Unified builder and chaining example
-b := Convert()
-b.Write("  HÓLA MÚNDO  ").Trim().Tilde().Low().Replace(" ", "_")
-b.Write("!")
-result := b.String() // "hola_mundo!"
-// Single Convert() + reused buffer = optimal performance
-```
 
 #### Other String Transformations
 
@@ -173,7 +156,7 @@ Replace `strconv` package functions for type conversions:
 | `strconv.Itoa()` | `Convert(i).String()` |
 | `strconv.Atoi()` | `Convert(s).Int()` |
 | `strconv.ParseFloat()` | `Convert(s).Float64()` |
-| `strconv.ParseBool()` | `Convert(s).ToBool()` |
+| `strconv.ParseBool()` | `Convert(s).Bool()` |
 | `strconv.FormatFloat()` | `Convert(f).Round(n).String()` |
 | `strconv.Quote()` | `Convert(s).Quote().String()` |
 
@@ -181,22 +164,22 @@ Replace `strconv` package functions for type conversions:
 
 ```go
 // String to numbers => Int,Int32,Int64,Uint,Uint32,Uint64,Float32,Float64 eg:
-result, err := tinystring.Convert("123").Int()        // out: 123, nil
-result, err := tinystring.Convert("456").Uint()       // out: 456, nil  
-result, err := tinystring.Convert("3.14").Float64()     // out: 3.14, nil
+result, err := Convert("123").Int()        // out: 123, nil
+result, err := Convert("456").Uint()       // out: 456, nil  
+result, err := Convert("3.14").Float64()     // out: 3.14, nil
 
 // Numbers to string
-tinystring.Convert(42).String()      // out: "42"
-tinystring.Convert(3.14159).String() // out: "3.14159"
+Convert(42).String()      // out: "42"
+Convert(3.14159).String() // out: "3.14159"
 
 // Boolean conversions
-result, err := tinystring.Convert("true").ToBool()  // out: true, nil
-result, err := tinystring.Convert(42).ToBool()      // out: true, nil (non-zero = true)
-result, err := tinystring.Convert(0).ToBool()       // out: false, nil
+result, err := Convert("true").Bool()  // out: true, nil
+result, err := Convert(42).Bool()      // out: true, nil (non-zero = true)
+result, err := Convert(0).Bool()       // out: false, nil
 
 // String quoting
-tinystring.Convert("hello").Quote().String()           // out: "\"hello\""
-tinystring.Convert("say \"hello\"").Quote().String()  // out: "\"say \\\"hello\\\"\""
+Convert("hello").Quote().String()           // out: "\"hello\""
+Convert("say \"hello\"").Quote().String()  // out: "\"say \\\"hello\\\"\""
 ```
 
 #### Number Formatting
@@ -209,8 +192,10 @@ Convert("3.155").Round(2).String()          // "3.16" (rounded)
 Convert("3.14159").Round(2, true).String()  // "3.14" (truncated, NOT rounded)
 Convert("3.159").Round(2, true).String()    // "3.15" (truncated, NOT rounded)
 
-// Formatting with thousands separator
-tinystring.Convert(2189009.00).Thousands().String()        // out: "2.189.009"
+// Formatting with thousands separator (EU default)
+Convert(2189009.00).Thousands().String()        // out: "2.189.009"
+// Anglo/US style (comma, dot)
+Convert(2189009.00).Thousands(true).String()    // out: "2,189,009"
 ```
 
 ### 🖨️ fmt Package
@@ -328,3 +313,5 @@ tinystring.Convert(&original).Tilde().Low().Apply()
 ## [Benchmarking](benchmark/README.md)
 ---
 ## [Contributing](docs/CONTRIBUTING.md)
+---
+## [License](LICENSE)

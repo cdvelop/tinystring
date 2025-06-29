@@ -79,7 +79,7 @@ func TestToBool(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			out, err := Convert(tt.input).ToBool()
+			out, err := Convert(tt.input).Bool()
 
 			if tt.hasContent {
 				if err == nil {
@@ -134,7 +134,7 @@ func TestBoolChaining(t *testing.T) {
 	}
 
 	// Test converting back
-	boolVal, err := Convert("TRUE").Low().ToBool()
+	boolVal, err := Convert("TRUE").Low().Bool()
 	if err != nil {
 		t.Errorf("Unexpected error: %v", err)
 	}
