@@ -1,64 +1,20 @@
 package tinystring
 
-// ParseKeyValue extracts the value part from a "key:value" formatted string.
-// By default, it uses ":" as the delimiter but accepts an optional custom delimiter.
-// The function returns the value part and an error (nil if successful).
-//
-// Examples:
-//
-//	value, err := ParseKeyValue("name:John")
-//	// value = "John", err = nil
-//
-//	value, err := ParseKeyValue("data=123", "=")
-//	// value = "123", err = nil
-//
-//	value, err := ParseKeyValue("invalid-string")
-//	// value = "", err = error containing "delimiter ':' not found in string invalid-string"
-func ParseKeyValue(in string, delimiters ...string) (value string, err error) {
-	// Use unified buffer architecture to minimize allocations
-	c := getConv()
-	defer c.putConv()
-
-	// Default delimiter is ":"
+// KV extracts the value after the first delimiter. If not found, returns an error.
+// Usage: Convert("key:value").KV(":") => "value", nil
+// If no delimiter is provided, uses ":" by default.
+func (c *conv) KV(delimiters ...string) (string, error) {
+	src := c.String()
 	d := ":"
-	// Check for a custom delimiter
-	if len(delimiters) > 0 {
-		if len(delimiters) > 1 {
-			return "", c.wrErr(D.Format, D.Invalid, 1, D.Delimiter, D.Allowed)
-		}
-		if delimiters[0] != "" {
-			d = delimiters[0]
-		}
+	if len(delimiters) > 0 && delimiters[0] != "" {
+		d = delimiters[0]
 	}
-
-	// Special case: if the in is exactly the delimiter, return empty value without error
-	if in == d {
+	if src == d {
 		return "", nil
 	}
-
-	// Check if delimiter exists in the in
-	if !Contains(in, d) {
-		return "", Err(D.Format, D.Invalid, D.Delimiter, D.Not, D.Found)
+	_, after, found := c.splitByDelimiterWithBuffer(src, d)
+	if !found {
+		return "", c.wrErr(D.Format, D.Invalid, D.Delimiter, D.Not, D.Found)
 	}
-
-	// Extract value part (everything after the first occurrence of the delimiter)
-	// Find the position of the first delimiter
-	di := -1
-	for i := 0; i <= len(in)-len(d); i++ {
-		if in[i:i+len(d)] == d {
-			di = i
-			break
-		}
-	}
-
-	// Use buffer to build result (minimizes allocations)
-	if di >= 0 {
-		// Write result to buffer instead of creating substring allocation
-		result := in[di+len(d):]
-		c.wrString(buffOut, result)
-		return c.getString(buffOut), nil
-	}
-
-	// This should never happen if Contains returned true
-	return "", nil
+	return after, nil
 }

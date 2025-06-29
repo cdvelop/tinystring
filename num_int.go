@@ -63,10 +63,10 @@ func (c *conv) parseIntString(s string, base int, signed bool) int64 {
 	return n
 }
 
-// ToInt converts the value to an integer with optional base specification.
+// Int converts the value to an integer with optional base specification.
 // If no base is provided, base 10 is used. Supports bases 2-36.
 // Returns the converted integer and any error that occurred during conversion.
-func (c *conv) ToInt(base ...int) (int, error) {
+func (c *conv) Int(base ...int) (int, error) {
 	val := c.parseIntBase(base...)
 	if val < -2147483648 || val > 2147483647 {
 		return 0, c.wrErr(D.Number, D.Overflow)
@@ -77,10 +77,10 @@ func (c *conv) ToInt(base ...int) (int, error) {
 	return int(val), nil
 }
 
-// ToUint converts the value to an unsigned integer with optional base specification.
+// Uint converts the value to an unsigned integer with optional base specification.
 // If no base is provided, base 10 is used. Supports bases 2-36.
 // Returns the converted uint and any error that occurred during conversion.
-func (c *conv) ToUint(base ...int) (uint, error) {
+func (c *conv) Uint(base ...int) (uint, error) {
 	val := c.parseIntBase(base...)
 	if val < 0 || val > 4294967295 {
 		return 0, c.wrErr(D.Number, D.Overflow)
@@ -92,8 +92,8 @@ func (c *conv) ToUint(base ...int) (uint, error) {
 }
 
 // getInt32 extrae el valor del buffer de salida y lo convierte a int32.
-// ToInt32 extrae el valor del buffer de salida y lo convierte a int32.
-func (c *conv) ToInt32(base ...int) (int32, error) {
+// Int32 extrae el valor del buffer de salida y lo convierte a int32.
+func (c *conv) Int32(base ...int) (int32, error) {
 	val := c.parseIntBase(base...)
 	if val < -2147483648 || val > 2147483647 {
 		return 0, c.wrErr(D.Number, D.Overflow)
@@ -105,8 +105,8 @@ func (c *conv) ToInt32(base ...int) (int32, error) {
 }
 
 // getInt64 extrae el valor del buffer de salida y lo convierte a int64.
-// ToInt64 extrae el valor del buffer de salida y lo convierte a int64.
-func (c *conv) ToInt64(base ...int) (int64, error) {
+// Int64 extrae el valor del buffer de salida y lo convierte a int64.
+func (c *conv) Int64(base ...int) (int64, error) {
 	val := c.parseIntBase(base...)
 	if c.hasContent(buffErr) {
 		return 0, c
@@ -114,8 +114,8 @@ func (c *conv) ToInt64(base ...int) (int64, error) {
 	return val, nil
 }
 
-// ToUint32 extrae el valor del buffer de salida y lo convierte a uint32.
-func (c *conv) ToUint32(base ...int) (uint32, error) {
+// Uint32 extrae el valor del buffer de salida y lo convierte a uint32.
+func (c *conv) Uint32(base ...int) (uint32, error) {
 	val := c.parseIntBase(base...)
 	if val < 0 || val > 4294967295 {
 		return 0, c.wrErr(D.Number, D.Overflow)
@@ -126,8 +126,8 @@ func (c *conv) ToUint32(base ...int) (uint32, error) {
 	return uint32(val), nil
 }
 
-// ToUint64 extrae el valor del buffer de salida y lo convierte a uint64.
-func (c *conv) ToUint64(base ...int) (uint64, error) {
+// Uint64 extrae el valor del buffer de salida y lo convierte a uint64.
+func (c *conv) Uint64(base ...int) (uint64, error) {
 	val := c.parseIntBase(base...)
 	if c.hasContent(buffErr) {
 		return 0, c

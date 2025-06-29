@@ -1,130 +1,100 @@
 package tinystring
 
-// Split divides a string by a separator and returns a slice of substrings
-// Phase 11 Optimization: Reduced allocations through buffer pooling and optimized algorithms
-// If no separator is provided, splits by whitespace (similar to strings.Fields)
-// Note: When using a specific separator, strings shorter than 3 characters are returned as is
-// eg: Split("Hello World") => []string{"Hello", "World"}
-// with separator eg: Split("Hello;World", ";") => []string{"Hello", "World"}
+// Split divides a string by a separator and returns a slice of substrings.
+// Usage: Convert("Hello World").Split() => []string{"Hello", "World"}
+// Usage with separator: Convert("Hello;World").Split(";") => []string{"Hello", "World"}
+// If no separator is provided, splits by whitespace (similar to strings.Fields).
+// Uses the conv work buffer for memory efficiency. The global Split function is deprecated; always use Convert(...).Split(...).
 
-func Split(data string, separator ...string) (out []string) {
-	// If no separator provided, split by whitespace
+func (c *conv) Split(separator ...string) []string {
+	src := c.getString(buffOut)
+	return c.splitStr(src, separator...)
+}
+
+// splitStr is a reusable internal method for splitting a string by a separator (empty = by character, default whitespace).
+func (c *conv) splitStr(src string, separator ...string) []string {
+	var sep string
 	if len(separator) == 0 {
-		// Inline splitByWhitespace logic
-		if len(data) == 0 {
-			return []string{}
-		}
-
-		// Pre-scan to count words for exact capacity
-		wordCount := 0
-		inWord := false
-
-		for _, ch := range data {
-			isSpace := ch == ' ' || ch == '\t' || ch == '\n' || ch == '\r'
-			if !isSpace && !inWord {
-				wordCount++
-				inWord = true
-			} else if isSpace {
-				inWord = false
-			}
-		}
-
-		if wordCount == 0 {
-			return []string{}
-		}
-
-		// Allocate exact capacity to avoid reallocations
-		out := make([]string, 0, wordCount)
-		inWord = false
-		start := 0
-
-		// Second pass: extract words
-		for i, ch := range data {
-			isSpace := ch == ' ' || ch == '\t' || ch == '\n' || ch == '\r'
-
-			if !isSpace && !inWord {
-				// Start of a new word
-				inWord = true
-				start = i
-			} else if isSpace && inWord {
-				// End of a word
-				inWord = false
-				out = append(out, data[start:i])
-			}
-		}
-
-		// Handle the last word if the string doesn't end with whitespace
-		if inWord {
-			out = append(out, data[start:])
-		}
-
-		return out
-	}
-
-	// Using the provided separator
-	sep := separator[0]
-
-	// Don't split short strings when using a custom separator
-	if len(data) < 3 {
-		return []string{data}
-	}
-
-	// Handle empty separator
-	if len(sep) == 0 {
-		// Inline splitByCharacter logic
-		if len(data) == 0 {
-			return []string{}
-		}
-
-		// Pre-allocate exact capacity for character count
-		out := make([]string, 0, len(data))
-
-		// Use direct byte access for ASCII optimization
-		for i := 0; i < len(data); i++ {
-			if data[i] < 128 { // ASCII fast path
-				out = append(out, data[i:i+1])
+		// Whitespace split: mimic strings.Fields
+		out := make([]string, 0, len(src)/2+1)
+		fieldStart := -1
+		for i, r := range src {
+			isSpace := r == ' ' || r == '\t' || r == '\n' || r == '\r'
+			if !isSpace {
+				if fieldStart == -1 {
+					fieldStart = i
+				}
 			} else {
-				// UTF-8 handling (fallback)
-				for j, ch := range data[i:] {
-					out = append(out, string(ch))
-					i += j
-					break
+				if fieldStart != -1 {
+					out = append(out, src[fieldStart:i])
+					fieldStart = -1
 				}
 			}
 		}
-
+		if fieldStart != -1 {
+			out = append(out, src[fieldStart:])
+		}
+		return out
+	} else {
+		sep = separator[0]
+	}
+	// Special case: split by character (empty separator)
+	if len(sep) == 0 {
+		if len(src) == 0 {
+			return []string{}
+		}
+		out := make([]string, 0, len(src))
+		for _, ch := range src {
+			c.rstBuffer(buffWork)
+			c.wrString(buffWork, string(ch))
+			out = append(out, c.getString(buffWork))
+		}
 		return out
 	}
-
-	// Inline splitBySeparator logic
-	if len(data) == 0 {
+	// Handle string shorter than 3 chars (legacy behavior)
+	if len(src) < 3 {
+		return []string{src}
+	}
+	// If src is empty, return [""] (legacy behavior)
+	if len(src) == 0 {
 		return []string{""}
 	}
-
-	// Pre-scan to count parts for exact capacity
-	partCount := 1
-	sepLen := len(sep)
-
-	for i := 0; i <= len(data)-sepLen; i++ {
-		if data[i:i+sepLen] == sep {
-			partCount++
-			i += sepLen - 1 // Skip separator
+	// Use splitByDelimiterWithBuffer for all splits
+	var out []string
+	first := true
+	orig := src
+	for {
+		before, after, found := c.splitByDelimiterWithBuffer(src, sep)
+		out = append(out, before)
+		if !found {
+			// Legacy: if separator not found at all, return original string as single element
+			if first && len(out) == 1 && out[0] == orig {
+				return []string{orig}
+			}
+			break
 		}
+		src = after
+		first = false
 	}
-
-	// Allocate exact capacity
-	out = make([]string, 0, partCount)
-	start := 0
-
-	// Extract parts
-	for i := 0; i <= len(data)-sepLen; i++ {
-		if data[i:i+sepLen] == sep {
-			out = append(out, data[start:i])
-			start = i + sepLen
-			i += sepLen - 1 // Skip the characters we just checked
-		}
-	}
-	// Add the remaining substring
-	out = append(out, data[start:])
 	return out
+}
+
+// splitByDelimiterWithBuffer splits a string by the first occurrence of the delimiter using the conv work buffer.
+// Returns the parts (before and after the delimiter). If not found, found=false.
+func (c *conv) splitByDelimiterWithBuffer(s, delim string) (before, after string, found bool) {
+	c.rstBuffer(buffWork)
+	di := -1
+	for i := 0; i <= len(s)-len(delim); i++ {
+		if s[i:i+len(delim)] == delim {
+			di = i
+			break
+		}
+	}
+	if di < 0 {
+		return s, "", false
+	}
+	c.wrString(buffWork, s[:di])
+	before = c.getString(buffWork)
+	after = s[di+len(delim):]
+	return before, after, true
 }

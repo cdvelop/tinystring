@@ -170,7 +170,7 @@ func (t *conv) Apply() {
 // String method to return the content of the conv and automatically returns object to pool
 // Phase 7: Auto-release makes pool usage completely transparent to user
 func (c *conv) String() string {
-	// If there's an error, return empty string (error available via StringError())
+	// If there's an error, return empty string (error available via StringErr())
 	if c.hasContent(buffErr) {
 		c.putConv() // Auto-release back to pool for memory efficiency
 		return ""

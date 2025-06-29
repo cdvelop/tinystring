@@ -68,7 +68,7 @@ func TestToUint(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			out, err := Convert(tt.input).ToUint()
+			out, err := Convert(tt.input).Uint()
 
 			if tt.hasContent {
 				if err == nil {
@@ -126,7 +126,7 @@ func TestToFloat(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			out, err := Convert(tt.input).ToFloat64()
+			out, err := Convert(tt.input).Float64()
 
 			if tt.hasContent {
 				if err == nil {
@@ -175,18 +175,18 @@ func TestToIntConversion(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			out, err := Convert(tt.input).ToInt()
+			out, err := Convert(tt.input).Int()
 
 			if tt.hasContent {
 				if err == nil {
-					t.Errorf("Convert(%v).ToInt() expected error, but got none", tt.input)
+					t.Errorf("Convert(%v).Int() expected error, but got none", tt.input)
 				}
 			} else {
 				if err != nil {
-					t.Errorf("Convert(%v).ToInt() unexpected error: %v", tt.input, err)
+					t.Errorf("Convert(%v).Int() unexpected error: %v", tt.input, err)
 				}
 				if int64(out) != tt.expected { // Cast out to int64 for comparison
-					t.Errorf("Convert(%v).ToInt() = %v, want %v",
+					t.Errorf("Convert(%v).Int() = %v, want %v",
 						tt.input, out, tt.expected)
 				}
 			}
@@ -222,7 +222,7 @@ func TestFromNumeric(t *testing.T) {
 
 func TestNumericChaining(t *testing.T) {
 	original := 12345
-	converted, err := Convert(original).ToInt()
+	converted, err := Convert(original).Int()
 	if err != nil {
 		t.Errorf("Unexpected error: %v", err)
 	}
@@ -249,26 +249,26 @@ func TestNumericChaining(t *testing.T) {
 
 func TestFixedNegativeNumbers(t *testing.T) {
 	// Test negative numbers in s2Int
-	out, err := Convert("-123").ToInt()
+	out, err := Convert("-123").Int()
 	if err != nil {
-		t.Errorf("ToInt(-123) failed: %v", err)
+		t.Errorf("Int(-123) failed: %v", err)
 	}
 	if out != -123 {
-		t.Errorf("ToInt(-123) = %d, want -123", out)
+		t.Errorf("Int(-123) = %d, want -123", out)
 	}
 
 	// Test negative numbers in s2Int64
-	result64, err := Convert("-9223372036854775807").ToInt64()
+	result64, err := Convert("-9223372036854775807").Int64()
 	if err != nil {
-		t.Errorf("ToInt64(-9223372036854775807) failed: %v", err)
+		t.Errorf("Int64(-9223372036854775807) failed: %v", err)
 	}
 	if result64 != -9223372036854775807 {
-		t.Errorf("ToInt64(-9223372036854775807) = %d, want -9223372036854775807", result64)
+		t.Errorf("Int64(-9223372036854775807) = %d, want -9223372036854775807", result64)
 	}
 
 	// Test negative numbers should fail for non-decimal bases
-	_, err = Convert("-123").ToInt(16)
+	_, err = Convert("-123").Int(16)
 	if err == nil {
-		t.Error("ToInt(-123, base 16) should have failed but didn't")
+		t.Error("Int(-123, base 16) should have failed but didn't")
 	}
 }

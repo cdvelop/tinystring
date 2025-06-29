@@ -62,7 +62,8 @@ type LocStr [9]string
 // OutLang(ES) sets Spanish as default
 func OutLang(l ...lang) {
 	if len(l) == 0 {
-		defLang = getSystemLang() // from env.front.go or env.back.go
+		c := getConv()
+		defLang = c.getSystemLang() // from env.front.go or env.back.go
 	} else {
 		defLang = l[0]
 	}
@@ -71,16 +72,17 @@ func OutLang(l ...lang) {
 // langParser processes a list of language strings (e.g., from env vars or browser settings)
 // and returns the first valid language found. It centralizes the parsing logic for both
 // frontend and backend environments.
-func langParser(langStrings ...string) lang {
+func (c *conv) langParser(langStrings ...string) lang {
+
 	for _, langStr := range langStrings {
 		if langStr == "" {
 			continue
 		}
 
-		// Parse language code from the string, handling common formats.
-		code := Split(langStr, ".")[0] // Removes encoding, e.g., ".UTF-8"
-		code = Split(code, "_")[0]     // Handles locale format, e.g., "en_US"
-		code = Split(code, "-")[0]     // Handles standard format, e.g., "en-US"
+		// Parse language code from the string, handling common formats using internal splitStr.
+		code := c.splitStr(langStr, ".")[0] // Removes encoding, e.g., ".UTF-8"
+		code = c.splitStr(code, "_")[0]     // Handles locale format, e.g., "en_US"
+		code = c.splitStr(code, "-")[0]     // Handles standard format, e.g., "en-US"
 
 		if code == "" {
 			continue
@@ -111,6 +113,8 @@ func langParser(langStrings ...string) lang {
 			return EN
 		}
 	}
+
+	c.putConv()
 
 	return EN // Default fallback if no valid language string is found.
 }

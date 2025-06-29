@@ -60,8 +60,9 @@ func TestOLFallbackToEnglish(t *testing.T) {
 }
 
 func TestLanguageDetection(t *testing.T) {
+	c := &conv{}
 	// Test that getSystemLang returns a valid language
-	lang := getSystemLang()
+	lang := c.getSystemLang()
 	if lang > ZH {
 		t.Errorf("Invalid language detected: %d", lang)
 	}

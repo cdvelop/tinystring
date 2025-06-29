@@ -27,8 +27,8 @@ func Errf(format string, args ...any) *conv {
 	return c
 }
 
-// StringError returns the content of the conv along with any error and auto-releases to pool
-func (c *conv) StringError() (out string, err error) {
+// StringErr returns the content of the conv along with any error and auto-releases to pool
+func (c *conv) StringErr() (out string, err error) {
 	// If there's an error, return empty string and the error object (do NOT release to pool)
 	if c.hasContent(buffErr) {
 		return "", c

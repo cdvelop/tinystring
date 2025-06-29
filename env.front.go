@@ -7,7 +7,7 @@ import (
 )
 
 // getSystemLang detects browser language from navigator.language
-func getSystemLang() lang {
+func (c *conv) getSystemLang() lang {
 	// Get browser language
 	navigator := js.Global().Get("navigator")
 	if navigator.IsUndefined() {
@@ -20,5 +20,5 @@ func getSystemLang() lang {
 	}
 
 	// Use the centralized parser.
-	return langParser(language.String())
+	return c.langParser(language.String())
 }

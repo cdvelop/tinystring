@@ -54,7 +54,7 @@ func TestStringSplit(t *testing.T) {
 
 	// Test with explicit separator
 	for _, tc := range testCasesWithSeparator {
-		out := Split(tc.data, tc.separator)
+		out := Convert(tc.data).Split(tc.separator)
 
 		if !areStringSlicesEqual(out, tc.expected) {
 			t.Errorf("Split(%q, %q) = %v; expected %v", tc.data, tc.separator, out, tc.expected)
@@ -63,7 +63,7 @@ func TestStringSplit(t *testing.T) {
 
 	// Test with default whitespace separator
 	for _, tc := range testCasesWhitespace {
-		out := Split(tc.data)
+		out := Convert(tc.data).Split()
 
 		if !areStringSlicesEqual(out, tc.expected) {
 			t.Errorf("Split(%q) = %v; expected %v", tc.data, out, tc.expected)

@@ -86,7 +86,7 @@ func TestParseKeyValue(t *testing.T) {
 				delimiters = append(delimiters, tc.delimiter)
 			}
 
-			gotValue, gotErr := ParseKeyValue(tc.input, delimiters...)
+			gotValue, gotErr := Convert(tc.input).KV(delimiters...)
 
 			if gotValue != tc.wantValue {
 				t.Errorf("ParseKeyValue() value = %q, want %q", gotValue, tc.wantValue)

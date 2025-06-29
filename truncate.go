@@ -149,7 +149,7 @@ func (t *conv) TruncateName(maxCharsPerWord, maxWidth any) *conv {
 		return t
 	}
 
-	words := Split(t.getBuffString())
+	words := t.Split()
 	if len(words) == 0 {
 		return t
 	} // Step 1: Apply maxCharsPerWord rule to each word

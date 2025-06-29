@@ -314,10 +314,10 @@ func parseBenchmarkOutput(output, library string) []BenchmarkResult {
 		matches := benchmarkRegex.FindStringSubmatch(line)
 
 		if len(matches) == 6 {
-			iterations, _ := tinystring.Convert(matches[2]).ToInt64()
-			nsPerOp, _ := tinystring.Convert(matches[3]).ToInt64()
-			bytesPerOp, _ := tinystring.Convert(matches[4]).ToInt64()
-			allocsPerOp, _ := tinystring.Convert(matches[5]).ToInt64()
+			iterations, _ := tinystring.Convert(matches[2]).Int64()
+			nsPerOp, _ := tinystring.Convert(matches[3]).Int64()
+			bytesPerOp, _ := tinystring.Convert(matches[4]).Int64()
+			allocsPerOp, _ := tinystring.Convert(matches[5]).Int64()
 
 			out := BenchmarkResult{
 				Name:        matches[1],

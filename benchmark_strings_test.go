@@ -85,7 +85,7 @@ func BenchmarkStringOperations(b *testing.B) {
 	b.Run("Split", func(b *testing.B) {
 		for i := 0; i < b.N; i++ {
 			for _, str := range testData {
-				out := Split(str, " ")
+				out := Convert(str).Split()
 				_ = out
 			}
 		}

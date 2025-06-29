@@ -62,7 +62,7 @@ func TestQuote(t *testing.T) {
 
 func TestQuoteWithError(t *testing.T) {
 	// Test quote functionality with error handling
-	out, err := Convert("test").Quote().StringError()
+	out, err := Convert("test").Quote().StringErr()
 	if err != nil {
 		t.Errorf("Unexpected error: %v", err)
 	}

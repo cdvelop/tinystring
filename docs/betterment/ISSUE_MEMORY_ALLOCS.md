@@ -98,7 +98,7 @@ type conv struct {
 - **Limitation**: Only works with same type matching (kind validation)
 - ***string only**: Apply() limited to string pointers, not numeric pointers
 - **Buffer-to-pointer**: Apply buffer out content to original pointer if types match
-- **Error handling**: Silent no-op if kind != KPointer (dev can use StringError() if needed)
+- **Error handling**: Silent no-op if kind != KPointer (dev can use StringErr() if needed)
 
 ### 7. Memory Management
 - **ptrValue cleanup**: Continue setting `ptrValue = nil` in putConv() (most efficient)

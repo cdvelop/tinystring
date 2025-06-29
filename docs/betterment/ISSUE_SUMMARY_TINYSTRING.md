@@ -82,9 +82,9 @@ tinystring.Convert(&text).Tilde().CamelLow().Apply()
 
 **Type Conversions:**
 - `ToBool()` - Convert to boolean
-- `ToInt(base...)`, `ToUint(base...)` - Integer conversion
-- `ToFloat64()` - Float conversion
-- `StringError()` - Get result with error handling
+- `Int(base...)`, `Uint(base...)` - Integer conversion
+- `Float64()` - Float conversion
+- `StringErr()` - Get result with error handling
 
 ## Installation
 

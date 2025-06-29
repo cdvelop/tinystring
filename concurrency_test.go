@@ -88,19 +88,15 @@ func TestConcurrentUtilityFunctions(t *testing.T) {
 		{
 			name: "Split",
 			function: func() (string, error) {
-				out := Split("apple,banana,cherry", ",")
+				out := Convert("apple,banana,cherry").Split(",")
 				return out[1], nil
 			},
 			expected: "banana",
 		},
 		{
-			name: "ParseKeyValue",
+			name: "KV",
 			function: func() (string, error) {
-				val, err := ParseKeyValue("user:admin", ":")
-				if err != nil {
-					return "", err
-				}
-				return val, nil
+				return Convert("user:admin").KV(":")
 			},
 			expected: "admin",
 		},
@@ -271,9 +267,9 @@ func TestConcurrentNumericOperations(t *testing.T) {
 		expected string
 	}{
 		{
-			name: "ToInt Conversion",
+			name: "Int Conversion",
 			function: func() (string, error) {
-				val, err := Convert("12345").ToInt()
+				val, err := Convert("12345").Int()
 				if err != nil {
 					return "", err
 				}
@@ -282,9 +278,9 @@ func TestConcurrentNumericOperations(t *testing.T) {
 			expected: "12345",
 		},
 		{
-			name: "ToFloat64 Conversion",
+			name: "Float64 Conversion",
 			function: func() (string, error) {
-				val, err := Convert("123.45").ToFloat64()
+				val, err := Convert("123.45").Float64()
 				if err != nil {
 					return "", err
 				}

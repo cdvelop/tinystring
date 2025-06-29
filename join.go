@@ -14,12 +14,12 @@ func (t *conv) Join(sep ...string) *conv {
 	// Handle case when we have a string slice stored (LAZY CONVERSION)
 	if t.kind == KSliceStr && t.ptrValue != nil {
 		if slice, ok := t.ptrValue.([]string); ok {
-			// Direct join using anyToBuff to output buffer
 			t.rstBuffer(buffOut)
 			for i, s := range slice {
 				if i > 0 {
 					t.anyToBuff(buffOut, separator)
 				}
+				// Write the string as-is, directly to buffOut (no buffWork)
 				t.anyToBuff(buffOut, s)
 			}
 		}

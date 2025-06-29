@@ -88,7 +88,7 @@ validate := func(input string) error {
     if input == "" {
         return Err(D.Empty, D.String, D.Not, D.Supported)
     }
-    if _, err := Convert(input).ToInt(); err != nil {
+    if _, err := Convert(input).Int(); err != nil {
         return Err(D.Invalid, D.Number, D.Format)
     }
     return nil

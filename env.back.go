@@ -7,9 +7,9 @@ import (
 )
 
 // getSystemLang detects system language from environment variables
-func getSystemLang() lang {
+func (c *conv) getSystemLang() lang {
 	// Use the centralized parser with common environment variables.
-	return langParser(
+	return c.langParser(
 		os.Getenv("LANG"),
 		os.Getenv("LANGUAGE"),
 		os.Getenv("LC_ALL"),

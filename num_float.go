@@ -4,9 +4,9 @@ package tinystring
 // FLOAT OPERATIONS - All float parsing, conversion and formatting
 // =============================================================================
 
-// ToFloat64 converts the value to a float64.
+// Float64 converts the value to a float64.
 // Returns the converted float64 and any error that occurred during conversion.
-func (c *conv) ToFloat64() (float64, error) {
+func (c *conv) Float64() (float64, error) {
 	val := c.parseFloatBase()
 	if c.hasContent(buffErr) {
 		return 0, c
@@ -14,9 +14,9 @@ func (c *conv) ToFloat64() (float64, error) {
 	return val, nil
 }
 
-// ToFloat32 converts the value to a float32.
+// Float32 converts the value to a float32.
 // Returns the converted float32 and any error that occurred during conversion.
-func (c *conv) ToFloat32() (float32, error) {
+func (c *conv) Float32() (float32, error) {
 	val := c.parseFloatBase()
 	if c.hasContent(buffErr) {
 		return 0, c

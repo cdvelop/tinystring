@@ -107,7 +107,7 @@ result := Convert("hello").Up().Write(" WORLD").Low().String()
 // Error chain interruption - operations after error are omitted
 c := Convert("valid").Write("ok").Write(make(chan int)) // chan int = unsupported type
 c.Up().Write(" MORE")  // Up and Write(" MORE") are OMITTED internally
-result, err := c.StringError() // result = "validok", err = "unsupported type error"
+result, err := c.StringErr() // result = "validok", err = "unsupported type error"
 
 // Clean error handling
 if err != nil {
@@ -486,7 +486,7 @@ func TestErrorChainInterruption(t *testing.T) {
     c := Convert("valid").Write("ok").Write(make(chan int)) // Unsupported type
     c.Up().Write(" MORE") // These should be omitted internally
     
-    result, err := c.StringError()
+    result, err := c.StringErr()
     expectedResult := "validok" // Only operations before error
     if result != expectedResult {
         t.Errorf("Error chain result: got %q, want %q", result, expectedResult)

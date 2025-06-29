@@ -92,9 +92,9 @@ func TestErrorChainInterruption(t *testing.T) {
 
 	c2.Write(" more") // This should be omitted due to error
 
-	result2, err := c2.StringError()
+	result2, err := c2.StringErr()
 	if err == nil {
-		t.Error("Expected error from StringError(), got nil")
+		t.Error("Expected error from StringErr(), got nil")
 	}
 	// When there's an error, out should be empty string
 	if result2 != "" {
