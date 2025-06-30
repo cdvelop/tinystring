@@ -43,7 +43,6 @@ Convert(&original).Tilde().CamelLow().Apply()
 // original is now: "elMurcielagoRapido"
 
 // Efficient, Unified builder and chaining example usage in loops and reuse, with accent normalization (Tilde)
-// Note: ñ and Ñ are preserved by Tilde eg:
 items := []string{"  ÁPPLE  ", "  banána  ", "  piñata  ","  ÑANDÚ  "}
 builder := Convert() // without params reused buffer = optimal performance
 for i, item := range items {
@@ -59,10 +58,9 @@ for i, item := range items {
     }
 }
 
-// Finalize the string hiding the error
-out := builder.String()
-// OR finalize with error handling if any operation failed
-out, err := builder.StringErr()
+out := builder.String() // Finalize the string hiding the error
+out, err := builder.StringErr() // OR finalize with error handling
+
 // out: "Apple - Banana - Piñata - Ñandu", err: nil
 
 
@@ -292,22 +290,6 @@ value, err := Convert("count=42").KV("=")          // out: "42", nil
 // Snake case with custom separators
 Convert("hello world").SnakeLow("-").String() // out: "hello-world"
 Convert("hello world").SnakeUp("_").String() // out: "HELLO_WORLD"
-```
-
-## 💡 Performance Tips String() vs Apply()
-
-```go
-// String() - Returns the result, original remains unchanged
-original := "Él Múrcielago Rápido"
-result := tinystring.Convert(original).Tilde().Low().String()
-// result: "el murcielago rapido"
-
-// Apply() - Modifies the original string directly (more memory efficient)
-// note: only support strings pointer
-tinystring.Convert(&original).Tilde().Low().Apply()
-// original: "el murcielago rapido"
-
-// There are only two ways to finalize operations: using String() or Apply()
 ```
 ---
 ## [Benchmarking](benchmark/README.md)

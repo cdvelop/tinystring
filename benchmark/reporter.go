@@ -1,6 +1,7 @@
 package main
 
 import (
+	"fmt"
 	"os"
 	"strings" // Only for section finding in README
 	"time"
@@ -51,7 +52,7 @@ func (r *ReportGenerator) generateBinarySizeSection(binaries []BinaryInfo) (stri
 	content := Convert() // Using TinyString builder for better performance
 
 	content.Write("## Binary Size Comparison\n\n")
-	content.Write("[Standard Library Example](benchmark/bench-binary-size/standard-lib/main.go) | [TinyString Example](benchmark/bench-binary-size/tinystring-lib/main.go)\n\n")
+	content.Write("[Standard Library Example](bench-binary-size/standard-lib/main.go) | [TinyString Example](bench-binary-size/tinystring-lib/main.go)\n\n")
 	content.Write("<!-- This table is automatically generated from build-and-measure.sh -->\n")
 	content.Write("*Last updated: " + time.Now().Format("2006-01-02 15:04:05") + "*\n\n")
 
@@ -175,7 +176,7 @@ func (r *ReportGenerator) generateMemorySection(comparisons []MemoryComparison) 
 	content := Convert() // Using TinyString builder for better performance
 
 	content.Write("## Memory Usage Comparison\n\n")
-	content.Write("[Standard Library Example](benchmark/bench-memory-alloc/standard) | [TinyString Example](benchmark/bench-memory-alloc/tinystring)\n\n")
+	content.Write("[Standard Library Example](bench-memory-alloc/standard) | [TinyString Example](bench-memory-alloc/tinystring)\n\n")
 	content.Write("<!-- This table is automatically generated from memory-benchmark.sh -->\n")
 	content.Write("*Last updated: " + time.Now().Format("2006-01-02 15:04:05") + "*\n\n")
 	content.Write("Performance benchmarks comparing memory allocation patterns between standard Go library and TinyString:\n\n")
@@ -211,6 +212,8 @@ func (r *ReportGenerator) generateMemorySection(comparisons []MemoryComparison) 
 			// Category with emoji
 			categoryIcon := getBenchmarkCategoryIcon(comparison.Category) // Standard library row with enhanced styling
 			// Format operation count with thousands separator
+			fmt.Println("DEBUG: Standard Iterations:", comparison.Standard.Iterations)
+
 			opCountStd := Convert(comparison.Standard.Iterations).Thousands().String()
 			opCountTiny := Convert(comparison.TinyString.Iterations).Thousands().String()
 

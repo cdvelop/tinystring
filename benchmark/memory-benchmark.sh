@@ -21,12 +21,12 @@ echo "🧠 Running memory allocation benchmarks..."
 # Run standard library benchmarks
 echo "📊 Running standard library benchmarks..."
 cd "$MEMORY_BENCH_DIR/standard"
-STANDARD_RESULTS=$(go test -bench=. -benchmem 2>/dev/null | grep -E '^Benchmark')
+STANDARD_RESULTS=$(go test -bench=. -benchmem | grep -E '^Benchmark')
 
 # Run TinyString benchmarks
 echo "📊 Running TinyString benchmarks..."
 cd "$MEMORY_BENCH_DIR/tinystring"
-TINYSTRING_RESULTS=$(go test -bench=. -benchmem 2>/dev/null | grep -E '^Benchmark')
+TINYSTRING_RESULTS=$(go test -bench=. -benchmem | grep -E '^Benchmark')
 
 # Generate memory benchmark section for README
 echo "📝 Generating memory benchmark results..."

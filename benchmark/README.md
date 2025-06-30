@@ -6,10 +6,10 @@ Automated benchmark tools to measure and compare performance between standard Go
 
 ## Binary Size Comparison
 
-[Standard Library Example](benchmark/bench-binary-size/standard-lib/main.go) | [TinyString Example](benchmark/bench-binary-size/tinystring-lib/main.go)
+[Standard Library Example](bench-binary-size/standard-lib/main.go) | [TinyString Example](bench-binary-size/tinystring-lib/main.go)
 
 <!-- This table is automatically generated from build-and-measure.sh -->
-*Last updated: 2025-06-29 18:59:50*
+*Last updated: 2025-06-29 20:31:51*
 
 | Build Type | Parameters | Standard Library<br/>`go build` | TinyString<br/>`tinygo build` | Size Reduction | Performance |
 |------------|------------|------------------|------------|----------------|-------------|
@@ -35,26 +35,26 @@ Automated benchmark tools to measure and compare performance between standard Go
 
 ## Memory Usage Comparison
 
-[Standard Library Example](benchmark/bench-memory-alloc/standard) | [TinyString Example](benchmark/bench-memory-alloc/tinystring)
+[Standard Library Example](bench-memory-alloc/standard) | [TinyString Example](bench-memory-alloc/tinystring)
 
 <!-- This table is automatically generated from memory-benchmark.sh -->
-*Last updated: 2025-06-26 22:26:07*
+*Last updated: 2025-06-29 20:32:08*
 
 Performance benchmarks comparing memory allocation patterns between standard Go library and TinyString:
 
 | 🧪 **Benchmark Category** | 📚 **Library** | 💾 **Memory/Op** | 🔢 **Allocs/Op** | ⏱️ **Time/Op** | 📈 **Memory Trend** | 🎯 **Alloc Trend** | 🏆 **Performance** |
 |----------------------------|----------------|-------------------|-------------------|-----------------|---------------------|---------------------|--------------------|
-| 📝 **String Processing** | 📊 Standard | ` / 375,354 OP` | `48` | `3.0μs` | - | - | - |
-| | 🚀 TinyString | ` / 89,876 OP` | `135` | `13.8μs` | ❌ **165.5% more** | ❌ **181.3% more** | ❌ **Poor** |
-| 🔢 **Number Processing** | 📊 Standard | `912 B / 498,667 OP` | `42` | `2.5μs` | - | - | - |
-| | 🚀 TinyString | `320 B / 1,000,000 OP` | `17` | `2.0μs` | 🏆 **64.9% less** | 🏆 **59.5% less** | 🏆 **Excellent** |
-| 🔄 **Mixed Operations** | 📊 Standard | `512 B / 677,230 OP` | `26` | `1.7μs` | - | - | - |
-| | 🚀 TinyString | `816 B / 292,696 OP` | `40` | `4.1μs` | ❌ **59.4% more** | ❌ **53.8% more** | ❌ **Poor** |
+| 📝 **String Processing** | 📊 Standard | `752 B / 530.773 OP` | `32` | `2.1μs` | - | - | - |
+| | 🚀 TinyString | `1.5 KB / 110.544 OP` | `49` | `10.6μs` | ❌ **100.0% more** | ❌ **53.1% more** | ❌ **Poor** |
+| 🔢 **Number Processing** | 📊 Standard | `912 B / 481.078 OP` | `42` | `2.4μs` | - | - | - |
+| | 🚀 TinyString | `320 B / 596.006 OP` | `17` | `2.0μs` | 🏆 **64.9% less** | 🏆 **59.5% less** | 🏆 **Excellent** |
+| 🔄 **Mixed Operations** | 📊 Standard | `400 B / 758.782 OP` | `22` | `1.5μs` | - | - | - |
+| | 🚀 TinyString | `432 B / 341.202 OP` | `20` | `3.4μs` | ⚠️ **8.0% more** | ✅ **9.1% less** | ➖ **Fair** |
 
 ### 🎯 Performance Summary
 
-- 💾 **Memory Efficiency**: ❌ **Poor** (Significant overhead) (53.3% average change)
-- 🔢 **Allocation Efficiency**: ❌ **Poor** (Excessive allocations) (58.5% average change)
+- 💾 **Memory Efficiency**: ➖ **Fair** (Acceptable overhead) (14.4% average change)
+- 🔢 **Allocation Efficiency**: ✅ **Good** (Allocation efficient) (-5.2% average change)
 - 📊 **Benchmarks Analyzed**: 3 categories
 - 🎯 **Optimization Focus**: Binary size reduction vs runtime efficiency
 
