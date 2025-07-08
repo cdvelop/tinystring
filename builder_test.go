@@ -162,7 +162,7 @@ func TestErrFunction(t *testing.T) { // Test basic error creation
 	}
 
 	// Test that it uses pool
-	if err.kind != KErr {
+	if err.Kind != KErr {
 		t.Error("Err should set type to KErr")
 	}
 

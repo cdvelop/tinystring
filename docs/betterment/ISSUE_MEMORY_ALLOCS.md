@@ -26,13 +26,13 @@
 ```go
 // BEFORE (causes allocation)
 case string:
-    c.kind = KString
+    c.Kind = KString
     c.ptrValue = v      // ❌ Remove this boxing
     c.wrString(dest, v)
 
 // AFTER (buffer-only)
 case string:
-    c.kind = KString
+    c.Kind = KString
     c.wrString(dest, v) // ✅ Buffer only
     // No ptrValue assignment
 ```
@@ -55,7 +55,7 @@ if c.outLen > 0 {
 ```go
 type conv struct {
     // ...buffers...
-    kind kind
+    Kind Kind
     
     // RESTRICTED: Only for complex types and pointers
     ptrValue any // []string, map, *string ONLY
@@ -95,10 +95,10 @@ type conv struct {
 - **File organization**: Each file handles its responsibilities (bool.go, numeric, etc.)
 
 ### 6. Apply() Method Scope
-- **Limitation**: Only works with same type matching (kind validation)
+- **Limitation**: Only works with same type matching (Kind validation)
 - ***string only**: Apply() limited to string pointers, not numeric pointers
 - **Buffer-to-pointer**: Apply buffer out content to original pointer if types match
-- **Error handling**: Silent no-op if kind != KPointer (dev can use StringErr() if needed)
+- **Error handling**: Silent no-op if Kind != KPointer (dev can use StringErr() if needed)
 
 ### 7. Memory Management
 - **ptrValue cleanup**: Continue setting `ptrValue = nil` in putConv() (most efficient)
@@ -136,7 +136,7 @@ type conv struct {
     // Buffer storage (main approach)
     out, work, err []byte
     outLen, workLen, errLen int
-    kind kind
+    Kind Kind
     
     // ONLY for complex types and pointers needing Apply()
     ptrValue any // *string, []string, map ONLY

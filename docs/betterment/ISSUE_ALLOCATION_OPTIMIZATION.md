@@ -30,7 +30,7 @@ type conv struct {
     workLen int    // Work tracking
     err     []byte // Error buffer
     errLen  int    // Error tracking
-    kind    kind   // Type indicator
+    Kind    Kind   // Type indicator
     ptrValue any   // Universal storage
 }
 
