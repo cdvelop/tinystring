@@ -245,7 +245,7 @@ func (c *conv) NewErr(values ...any) *conv {
     }
     
     c.err = out
-    c.kind = KErr
+    c.Kind = KErr
     return c
 }
 ```
@@ -715,7 +715,7 @@ func (c *conv) NewErr(values ...any) *conv {
     }
     
     c.err = out
-    c.kind = KErr
+    c.Kind = KErr
     return c
 }
 ```

@@ -1,11 +1,11 @@
 package tinystring
 
-// kind represents the specific kind of type that a Type represents (private)
-// Unified with convert.go kind, using K prefix for TinyString naming convention
-type kind uint8
+// Kind represents the specific Kind of type that a Type represents (private)
+// Unified with convert.go Kind, using K prefix for TinyString naming convention
+type Kind uint8
 
 const (
-	KArray kind = iota
+	KArray Kind = iota
 	KBool
 	KChan
 	KComplex128
@@ -36,7 +36,7 @@ const (
 	KUnsafePtr
 )
 
-// kindNames provides string representations for each kind value
+// kindNames provides string representations for each Kind value
 var kindNames = []string{
 	"array",
 	"bool",
@@ -69,8 +69,8 @@ var kindNames = []string{
 	"unsafe.Pointer",
 }
 
-// String returns the name of the kind as a string
-func (k kind) String() string {
+// String returns the name of the Kind as a string
+func (k Kind) String() string {
 	if int(k) >= 0 && int(k) < len(kindNames) {
 		return kindNames[k]
 	}

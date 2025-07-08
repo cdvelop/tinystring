@@ -28,9 +28,9 @@ func (c *conv) putConv() {
 	c.work = c.work[:0]
 	c.err = c.err[:0]
 
-	// Reset other fields to default state - only keep ptrValue and kind
+	// Reset other fields to default state - only keep ptrValue and Kind
 	c.ptrValue = nil
-	c.kind = KString
+	c.Kind = KString
 
 	convPool.Put(c)
 }
@@ -47,7 +47,7 @@ func (c *conv) resetAllBuffers() {
 // CRITICAL: Cannot use anyToBuff to prevent infinite recursion
 // Uses direct primitive conversion methods only
 func (c *conv) getBuffString() string {
-	if c.kind == KErr {
+	if c.Kind == KErr {
 		return c.getString(buffErr)
 	}
 
@@ -60,8 +60,8 @@ func (c *conv) getBuffString() string {
 	// Only fallback to ptrValue for complex types that need lazy conversion
 	if c.ptrValue != nil {
 		c.rstBuffer(buffOut)
-		// Direct conversion based on kind to avoid anyToBuff recursion
-		switch c.kind {
+		// Direct conversion based on Kind to avoid anyToBuff recursion
+		switch c.Kind {
 		case KPointer:
 			// Only for *string pointers that need Apply() support
 			if strPtr, ok := c.ptrValue.(*string); ok && strPtr != nil {
