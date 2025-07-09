@@ -15,9 +15,10 @@ func (c *conv) Write(v any) *conv {
 
 	// BUILDER INTEGRATION: Only transfer initial value if buffer is empty
 	// and we have a stored value that hasn't been converted yet
-	if c.outLen == 0 && c.ptrValue != nil {
-		// Convert current value to buffer using anyToBuff()
-		c.anyToBuff(buffOut, c.ptrValue) // Use unified conversion
+	if c.outLen == 0 && c.dataPtr != nil {
+		// Convert current value to buffer using anyToBuff() - need to reconstruct interface{}
+		// For now, skip this optimization until we implement proper unsafe reconstruction
+		// TODO: Implement unsafe.Pointer to interface{} reconstruction
 	}
 
 	// Use unified anyToBuff() function to append new value
@@ -30,7 +31,7 @@ func (c *conv) Write(v any) *conv {
 func (c *conv) Reset() *conv {
 	// Reset all conv fields to default state using buffer API
 	c.resetAllBuffers()
-	c.ptrValue = nil
+	c.dataPtr = nil
 	c.Kind = KString
 	return c
 }

@@ -11,15 +11,16 @@ func (t *conv) Join(sep ...string) *conv {
 		separator = sep[0]
 	}
 
-	// Handle case when we have a string slice stored (LAZY CONVERSION)
-	if t.Kind == KSliceStr && t.ptrValue != nil {
-		if slice, ok := t.ptrValue.([]string); ok {
+	// Handle case when we have a string slice stored (DEFERRED CONVERSION)
+	if t.Kind == KSliceStr && t.dataPtr != nil {
+		// Use proper unsafe.Pointer to []string reconstruction
+		slice := *(*[]string)(t.dataPtr)
+		if len(slice) > 0 {
 			t.rstBuffer(buffOut)
 			for i, s := range slice {
 				if i > 0 {
 					t.anyToBuff(buffOut, separator)
 				}
-				// Write the string as-is, directly to buffOut (no buffWork)
 				t.anyToBuff(buffOut, s)
 			}
 		}
