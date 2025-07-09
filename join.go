@@ -5,30 +5,30 @@ package tinystring
 // Can be called with varargs to specify a custom separator.
 // eg: Convert([]string{"Hello", "World"}).Join() => "Hello World"
 // eg: Convert([]string{"Hello", "World"}).Join("-") => "Hello-World"
-func (t *conv) Join(sep ...string) *conv {
+func (c *conv) Join(sep ...string) *conv {
 	separator := " " // default separator is space
 	if len(sep) > 0 {
 		separator = sep[0]
 	}
 
 	// Handle case when we have a string slice stored (DEFERRED CONVERSION)
-	if t.Kind == KSliceStr && t.dataPtr != nil {
+	if c.kind == Kind.SliceStr && c.dataPtr != nil {
 		// Use proper unsafe.Pointer to []string reconstruction
-		slice := *(*[]string)(t.dataPtr)
+		slice := *(*[]string)(c.dataPtr)
 		if len(slice) > 0 {
-			t.rstBuffer(buffOut)
+			c.rstBuffer(buffOut)
 			for i, s := range slice {
 				if i > 0 {
-					t.anyToBuff(buffOut, separator)
+					c.anyToBuff(buffOut, separator)
 				}
-				t.anyToBuff(buffOut, s)
+				c.anyToBuff(buffOut, s)
 			}
 		}
-		return t
+		return c
 	}
 
 	// For other types, convert to string first using anyToBuff through getBuffString
-	str := t.getBuffString()
+	str := c.getBuffString()
 	if str != "" {
 		// Split content by whitespace and rejoin with new separator
 		var parts []string
@@ -49,15 +49,15 @@ func (t *conv) Join(sep ...string) *conv {
 
 		// Join parts with the separator using anyToBuff only
 		if len(parts) > 0 {
-			t.rstBuffer(buffOut) // Reset output buffer
+			c.rstBuffer(buffOut) // Reset output buffer
 			for i, part := range parts {
 				if i > 0 {
-					t.anyToBuff(buffOut, separator)
+					c.anyToBuff(buffOut, separator)
 				}
-				t.anyToBuff(buffOut, part)
+				c.anyToBuff(buffOut, part)
 			}
 		}
 	}
 
-	return t
+	return c
 }

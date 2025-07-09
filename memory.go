@@ -30,7 +30,7 @@ func (c *conv) putConv() {
 
 	// Reset other fields to default state - only keep dataPtr and Kind
 	c.dataPtr = nil
-	c.Kind = KString
+	c.kind = Kind.String
 
 	convPool.Put(c)
 }
@@ -47,7 +47,7 @@ func (c *conv) resetAllBuffers() {
 // CRITICAL: Cannot use anyToBuff to prevent infinite recursion
 // Uses direct primitive conversion methods only
 func (c *conv) getBuffString() string {
-	if c.Kind == KErr {
+	if c.kind == Kind.Err {
 		return c.getString(buffErr)
 	}
 

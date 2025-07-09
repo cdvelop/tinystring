@@ -216,12 +216,12 @@ func (c *conv) anyToBuff(dest buffDest, value any) {
 func (c *conv) anyToBuff(dest buffDest, value any) {
     // Fast path for 90% of cases - no interface storage
     if s, ok := value.(string); ok {
-        c.Kind = KString
+        c.kind = Kind.String
         c.wrString(dest, s)
         return
     }
     if i, ok := value.(int); ok {
-        c.Kind = KInt
+        c.kind = Kind.Int
         c.wrInt(dest, int64(i))
         return  
     }
