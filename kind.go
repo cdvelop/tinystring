@@ -7,6 +7,7 @@ type Kind uint8
 const (
 	KArray Kind = iota
 	KBool
+	KByte // []byte (alias for []uint8 but commonly used)
 	KChan
 	KComplex128
 	KComplex64
@@ -40,6 +41,7 @@ const (
 var kindNames = []string{
 	"array",
 	"bool",
+	"[]byte",
 	"chan",
 	"complex128",
 	"complex64",
