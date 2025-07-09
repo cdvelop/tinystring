@@ -28,8 +28,8 @@ func (c *conv) putConv() {
 	c.work = c.work[:0]
 	c.err = c.err[:0]
 
-	// Reset other fields to default state - only keep ptrValue and Kind
-	c.ptrValue = nil
+	// Reset other fields to default state - only keep dataPtr and Kind
+	c.dataPtr = nil
 	c.Kind = KString
 
 	convPool.Put(c)
@@ -57,57 +57,12 @@ func (c *conv) getBuffString() string {
 	}
 
 	// For simple types, buffer should already have content from anyToBuff
-	// Only fallback to ptrValue for complex types that need lazy conversion
-	if c.ptrValue != nil {
+	// Only fallback to dataPtr for complex types that need deferred conversion
+	if c.dataPtr != nil {
 		c.rstBuffer(buffOut)
-		// Direct conversion based on Kind to avoid anyToBuff recursion
-		switch c.Kind {
-		case KPointer:
-			// Only for *string pointers that need Apply() support
-			if strPtr, ok := c.ptrValue.(*string); ok && strPtr != nil {
-				c.wrString(buffOut, *strPtr)
-			}
-		case KSliceStr:
-			// Complex type handling - convert []string to comma-separated
-			if slice, ok := c.ptrValue.([]string); ok {
-				for i, s := range slice {
-					if i > 0 {
-						c.wrString(buffOut, ",")
-					}
-					c.wrString(buffOut, s)
-				}
-			}
-		case KMap:
-			// Complex type handling - convert map to key=value pairs
-			if m, ok := c.ptrValue.(map[string]string); ok {
-				first := true
-				for k, v := range m {
-					if !first {
-						c.wrString(buffOut, ",")
-					}
-					c.wrString(buffOut, k)
-					c.wrString(buffOut, "=")
-					c.wrString(buffOut, v)
-					first = false
-				}
-			} else if m, ok := c.ptrValue.(map[string]any); ok {
-				first := true
-				for k, _ := range m {
-					if !first {
-						c.wrString(buffOut, ",")
-					}
-					c.wrString(buffOut, k)
-					c.wrString(buffOut, "=")
-					// Convert any value to string representation
-					c.wrString(buffOut, "value")
-					first = false
-				}
-			}
-		default:
-			// For other types, buffer should already have content
-			// If not, return empty to avoid infinite recursion
-			c.wrString(buffOut, "")
-		}
+		// TODO: Implement proper unsafe.Pointer reconstruction for complex types
+		// For now, return empty string until we implement proper unsafe handling
+		return ""
 	}
 
 	return c.getString(buffOut)
