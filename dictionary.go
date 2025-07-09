@@ -56,6 +56,18 @@ var D = struct {
 	Unknown       LocStr // "unknown"
 	Unsigned      LocStr // "unsigned"
 	Value         LocStr // "value"
+	// TinyReflect terms
+	Assign     LocStr // "assign"
+	Call       LocStr // "call"
+	Element    LocStr // "element"
+	Field      LocStr // "field"
+	Index      LocStr // "index"
+	Method     LocStr // "method"
+	Reflect    LocStr // "reflect"
+	Slice      LocStr // "slice"
+	Unexported LocStr // "unexported"
+	Use        LocStr // "use"
+	Zero       LocStr // "zero"
 }{
 	LocStr{"allowed", "permitido", "允许", "अनुमति", "مسموح", "permitido", "autorisé", "erlaubt", "разрешено"},
 	LocStr{"argument", "argumento", "参数", "तर्क", "وسيط", "argumento", "argument", "Argument", "аргумент"},
@@ -106,4 +118,16 @@ var D = struct {
 	LocStr{"unknown", "desconocido", "未知", "अज्ञात", "غير معروف", "desconhecido", "inconnu", "unbekannt", "неизвестный"},
 	LocStr{"unsigned", "sin signo", "无符号", "अहस्ताक्षरित", "غير موقع", "sem sinal", "non signé", "vorzeichenlos", "безzнаковый"},
 	LocStr{"value", "valor", "值", "मूल्य", "قيمة", "valor", "valeur", "Wert", "значение"},
+	// TinyReflect terms
+	LocStr{"assign", "asignar", "分配", "असाइन", "تعيين", "atribuir", "assigner", "zuweisen", "присвоить"},
+	LocStr{"call", "llamar", "调用", "कॉल", "استدعاء", "chamar", "appeler", "aufrufen", "вызвать"},
+	LocStr{"element", "elemento", "元素", "एलिमेंट", "عنصر", "elemento", "élément", "Element", "элемент"},
+	LocStr{"field", "campo", "字段", "फील्ड", "حقل", "campo", "champ", "Feld", "поле"},
+	LocStr{"index", "índice", "索引", "इंडेक्स", "فهرس", "índice", "index", "Index", "индекс"},
+	LocStr{"method", "método", "方法", "विधि", "طريقة", "método", "méthode", "Methode", "метод"},
+	LocStr{"reflect", "reflejo", "反射", "प्रतिबिंब", "انعكاس", "reflexo", "reflet", "Reflektion", "отражение"},
+	LocStr{"slice", "segmento", "切片", "स्लाइस", "شريحة", "fatia", "tranche", "Scheibe", "срез"},
+	LocStr{"unexported", "no exportado", "未导出", "गैर-निर्यातित", "غير مصدر", "não exportado", "non exporté", "nicht exportiert", "неэкспортированный"},
+	LocStr{"use", "usar", "使用", "उपयोग", "استخدام", "usar", "utiliser", "verwenden", "использовать"},
+	LocStr{"zero", "cero", "零", "शून्य", "صفر", "zero", "zéro", "Null", "ноль"},
 }
