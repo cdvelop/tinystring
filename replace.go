@@ -4,34 +4,34 @@ package tinystring
 // If n < 0, there is no limit on the number of replacements
 // eg: "hello world" with old "world" and new "universe" will return "hello universe"
 // Old and new can be any type, they will be converted to string using Convert
-func (t *conv) Replace(oldAny, newAny any, n ...int) *conv {
-	if t.hasContent(buffErr) {
-		return t // Error chain interruption
+func (c *conv) Replace(oldAny, newAny any, n ...int) *conv {
+	if c.hasContent(buffErr) {
+		return c // Error chain interruption
 	}
 
 	// Get the original string before any conversions
-	str := t.getBuffString()
+	str := c.getBuffString()
 
 	// Preserve original state before temporary conversions
-	originalDataPtr := t.dataPtr
-	originalKind := t.Kind
+	originalDataPtr := c.dataPtr
+	originalKind := c.kind
 
 	// Use internal work buffer instead of getConv() for zero-allocation
-	t.rstBuffer(buffWork)         // Clear work buffer
-	t.anyToBuff(buffWork, oldAny) // Convert oldAny to work buffer
-	old := t.getString(buffWork)  // Get old string from work buffer
+	c.rstBuffer(buffWork)         // Clear work buffer
+	c.anyToBuff(buffWork, oldAny) // Convert oldAny to work buffer
+	old := c.getString(buffWork)  // Get old string from work buffer
 
-	t.rstBuffer(buffWork)           // Clear work buffer for next conversion
-	t.anyToBuff(buffWork, newAny)   // Convert newAny to work buffer
-	newStr := t.getString(buffWork) // Get new string from work buffer
+	c.rstBuffer(buffWork)           // Clear work buffer for next conversion
+	c.anyToBuff(buffWork, newAny)   // Convert newAny to work buffer
+	newStr := c.getString(buffWork) // Get new string from work buffer
 
 	// Restore original state after temporary conversions
-	t.dataPtr = originalDataPtr
-	t.Kind = originalKind
+	c.dataPtr = originalDataPtr
+	c.kind = originalKind
 
 	// Check early return condition
 	if len(old) == 0 || len(str) == 0 {
-		return t
+		return c
 	}
 
 	// Estimate buffer capacity based on replacement patterns
@@ -68,55 +68,55 @@ func (t *conv) Replace(oldAny, newAny any, n ...int) *conv {
 		}
 	}
 	// ✅ Update buffer using API instead of direct manipulation
-	t.rstBuffer(buffOut)    // Clear buffer using API
-	t.wrBytes(buffOut, out) // Write using API
-	return t
+	c.rstBuffer(buffOut)    // Clear buffer using API
+	c.wrBytes(buffOut, out) // Write using API
+	return c
 }
 
 // TrimSuffix removes the specified suffix from the conv content if it exists
 // eg: "hello.txt" with suffix ".txt" will return "hello"
-func (t *conv) TrimSuffix(suffix string) *conv {
-	if t.hasContent(buffErr) {
-		return t // Error chain interruption
+func (c *conv) TrimSuffix(suffix string) *conv {
+	if c.hasContent(buffErr) {
+		return c // Error chain interruption
 	}
 
-	str := t.getBuffString()
+	str := c.getBuffString()
 	if len(str) < len(suffix) || str[len(str)-len(suffix):] != suffix {
-		return t
+		return c
 	} // ✅ Update buffer using API instead of direct manipulation
 	out := str[:len(str)-len(suffix)]
-	t.rstBuffer(buffOut)     // Clear buffer using API
-	t.wrString(buffOut, out) // Write using API
-	return t
+	c.rstBuffer(buffOut)     // Clear buffer using API
+	c.wrString(buffOut, out) // Write using API
+	return c
 }
 
 // TrimPrefix removes the specified prefix from the conv content if it exists
 // eg: "prefix-hello" with prefix "prefix-" will return "hello"
-func (t *conv) TrimPrefix(prefix string) *conv {
-	if t.hasContent(buffErr) {
-		return t // Error chain interruption
+func (c *conv) TrimPrefix(prefix string) *conv {
+	if c.hasContent(buffErr) {
+		return c // Error chain interruption
 	}
 
-	str := t.getBuffString()
+	str := c.getBuffString()
 	if len(str) < len(prefix) || str[:len(prefix)] != prefix {
-		return t
+		return c
 	} // ✅ Update buffer using API instead of direct manipulation
 	out := str[len(prefix):]
-	t.rstBuffer(buffOut)     // Clear buffer using API
-	t.wrString(buffOut, out) // Write using API
-	return t
+	c.rstBuffer(buffOut)     // Clear buffer using API
+	c.wrString(buffOut, out) // Write using API
+	return c
 }
 
 // Trim removes spaces at the beginning and end of the conv content
 // eg: "  hello world  " will return "hello world"
-func (t *conv) Trim() *conv {
-	if t.hasContent(buffErr) {
-		return t // Error chain interruption
+func (c *conv) Trim() *conv {
+	if c.hasContent(buffErr) {
+		return c // Error chain interruption
 	}
 
-	str := t.getBuffString()
+	str := c.getBuffString()
 	if len(str) == 0 {
-		return t
+		return c
 	}
 
 	// Remove spaces at the beginning
@@ -135,17 +135,17 @@ func (t *conv) Trim() *conv {
 	// Special case: empty string (all whitespace)
 	if start > end {
 		// Clear buffer and write empty string
-		t.rstBuffer(buffOut)
-		t.wrString(buffOut, "")
+		c.rstBuffer(buffOut)
+		c.wrString(buffOut, "")
 		// Also clear dataPtr to prevent fallback
-		t.dataPtr = nil
-		t.Kind = KString
-		return t
+		c.dataPtr = nil
+		c.kind = Kind.String
+		return c
 	}
 
 	// Set the substring without spaces using API
 	out := str[start : end+1]
-	t.rstBuffer(buffOut)     // Clear buffer using API
-	t.wrString(buffOut, out) // Write using API
-	return t
+	c.rstBuffer(buffOut)     // Clear buffer using API
+	c.wrString(buffOut, out) // Write using API
+	return c
 }

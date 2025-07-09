@@ -315,11 +315,11 @@ func (c *conv) Reset() *conv {
     c.boolVal = false
     c.stringSliceVal = nil
     c.ptrValue = nil
-    c.Kind = KString
+    c.kind = Kind.String
     c.roundDown = false
     c.separator = "_"
     c.tmpStr = ""
-    c.lastConvType = KString
+    c.lastConvType = Kind.String
     c.err = ""
     c.buf = c.buf[:0] // Reset buffer length, keep capacity - SINGLE SOURCE OF TRUTH
     return c
@@ -390,7 +390,7 @@ func T(values ...any) string {
 func Err(values ...any) *conv {
     c := getConv() // Always obtain from pool
     c.err = T(values...)
-    c.Kind = KErr
+    c.kind = Kind.Err
     return c
 }
 ```

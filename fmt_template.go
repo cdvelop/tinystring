@@ -148,7 +148,7 @@ func (c *conv) wrFormat(dest buffDest, format string, args ...any) {
 						str = string(ch)
 					} else {
 						c.wrErr(D.Invalid, D.Type, D.Of, D.Argument, "%c")
-						c.Kind = KErr
+						c.kind = Kind.Err
 						return
 					}
 				case 'U':
@@ -176,7 +176,7 @@ func (c *conv) wrFormat(dest buffDest, format string, args ...any) {
 						str = "U+" + hex
 					} else {
 						c.wrErr(D.Invalid, D.Type, D.Of, D.Argument, "%U")
-						c.Kind = KErr
+						c.kind = Kind.Err
 						return
 					}
 				case 'p':
@@ -201,7 +201,7 @@ func (c *conv) wrFormat(dest buffDest, format string, args ...any) {
 						str = c.getString(buffWork)
 					} else {
 						c.wrErr(D.Invalid, D.Type, D.Of, D.Argument, formatSpec)
-						c.Kind = KErr
+						c.kind = Kind.Err
 						return
 					}
 				case 'e', 'E':
@@ -223,7 +223,7 @@ func (c *conv) wrFormat(dest buffDest, format string, args ...any) {
 						str = c.getString(buffWork)
 					} else {
 						c.wrErr(D.Invalid, D.Type, D.Of, D.Argument, formatSpec)
-						c.Kind = KErr
+						c.kind = Kind.Err
 						return
 					}
 				case 'q':
@@ -242,7 +242,7 @@ func (c *conv) wrFormat(dest buffDest, format string, args ...any) {
 					}
 					if !ok {
 						c.wrErr(D.Invalid, D.Type, D.Of, D.Argument, formatSpec)
-						c.Kind = KErr
+						c.kind = Kind.Err
 						return
 					}
 				case 't':
@@ -262,7 +262,7 @@ func (c *conv) wrFormat(dest buffDest, format string, args ...any) {
 						}
 					} else {
 						c.wrErr(D.Invalid, D.Type, D.Of, D.Argument, formatSpec)
-						c.Kind = KErr
+						c.kind = Kind.Err
 						return
 					}
 				case 'd', 'o', 'b', 'x', 'O', 'B', 'X':
@@ -300,7 +300,7 @@ func (c *conv) wrFormat(dest buffDest, format string, args ...any) {
 						str = c.getString(buffWork)
 					} else {
 						c.wrErr(D.Invalid, D.Type, D.Of, D.Argument, formatSpec)
-						c.Kind = KErr
+						c.kind = Kind.Err
 						return
 					}
 				case 'u':
@@ -333,7 +333,7 @@ func (c *conv) wrFormat(dest buffDest, format string, args ...any) {
 						str = c.getString(buffWork)
 					} else {
 						c.wrErr(D.Invalid, D.Type, D.Of, D.Argument, formatSpec)
-						c.Kind = KErr
+						c.kind = Kind.Err
 						return
 					}
 				case 'f':
@@ -347,7 +347,7 @@ func (c *conv) wrFormat(dest buffDest, format string, args ...any) {
 						str = c.getString(buffWork)
 					} else {
 						c.wrErr(D.Invalid, D.Type, D.Of, D.Argument, formatSpec)
-						c.Kind = KErr
+						c.kind = Kind.Err
 						return
 					}
 				case 's':
@@ -355,7 +355,7 @@ func (c *conv) wrFormat(dest buffDest, format string, args ...any) {
 						str = strVal
 					} else {
 						c.wrErr(D.Invalid, D.Type, D.Of, D.Argument, formatSpec)
-						c.Kind = KErr
+						c.kind = Kind.Err
 						return
 					}
 				case 'v':
@@ -398,9 +398,9 @@ func (c *conv) wrFormat(dest buffDest, format string, args ...any) {
 
 	if !c.hasContent(buffErr) {
 		// Final output is ready in dest buffer
-		c.Kind = KString
+		c.kind = Kind.String
 	} else {
-		c.Kind = KErr
+		c.kind = Kind.Err
 	}
 }
 
