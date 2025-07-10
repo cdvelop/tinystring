@@ -8,7 +8,7 @@ type kind uint8
 var Kind = struct {
 	Array      kind
 	Bool       kind
-	Byte       kind
+	Bytes      kind
 	Chan       kind
 	Complex128 kind
 	Complex64  kind
@@ -26,7 +26,6 @@ var Kind = struct {
 	Pointer    kind
 	Slice      kind
 	String     kind
-	SliceStr   kind
 	Struct     kind
 	Uint       kind
 	Uint16     kind
@@ -36,7 +35,7 @@ var Kind = struct {
 	Uintptr    kind
 	UnsafePtr  kind
 }{
-	0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23, 24, 25, 26, 27, 28,
+	0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23, 24, 25, 26, 27,
 }
 
 // kindNames provides string representations for each kind value
@@ -61,7 +60,6 @@ var kindNames = []string{
 	"ptr",
 	"slice",
 	"string",
-	"[]string",
 	"struct",
 	"uint",
 	"uint16",
