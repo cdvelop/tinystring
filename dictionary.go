@@ -25,6 +25,7 @@ var D = struct {
 	Empty         LocStr // "empty"
 	End           LocStr // "end"
 	Field         LocStr // "field"
+	Fields        LocStr // "fields"
 	Float         LocStr // "float"
 	For           LocStr // "for"
 	Format        LocStr // "format"
@@ -44,6 +45,7 @@ var D = struct {
 	Negative      LocStr // "negative"
 	NonNumeric    LocStr // "non-numeric"
 	Not           LocStr // "not"
+	NotOfType     LocStr // "not of type"
 	Number        LocStr // "number"
 	Numbers       LocStr // "numbers"
 	Of            LocStr // "of"
@@ -91,6 +93,7 @@ var D = struct {
 	LocStr{"empty", "vacío", "空", "खाली", "فارغ", "vazio", "vide", "leer", "пустой"},
 	LocStr{"end", "fin", "结束", "अंत", "نهاية", "fim", "fin", "Ende", "конец"},
 	LocStr{"field", "campo", "字段", "फील्ड", "حقل", "campo", "champ", "Feld", "поле"},
+	LocStr{"fields", "campos", "字段集", "फील्ड्स", "حقول", "campos", "champs", "Felder", "поля"},
 	LocStr{"float", "flotante", "浮点", "फ्लोट", "عائم", "flutuante", "flottant", "Gleitkomma", "число с плавающей точкой"},
 	LocStr{"for", "para", "为", "के लिए", "لـ", "para", "pour", "für", "для"},
 	LocStr{"format", "formato", "格式", "प्रारूप", "تنسيق", "formato", "format", "Fmt", "формат"},
@@ -110,6 +113,7 @@ var D = struct {
 	LocStr{"negative", "negativo", "负", "नकारात्मक", "سالب", "negativo", "négatif", "negativ", "отрицательный"},
 	LocStr{"non-numeric", "no numérico", "非数字", "गैर-संख्यात्मक", "غير رقمي", "não numérico", "non numérique", "nicht numerisch", "нечисловой"},
 	LocStr{"not", "no", "不", "नहीं", "ليس", "não", "pas", "nicht", "не"},
+	LocStr{"not of type", "no es del tipo", "不是类型", "प्रकार नहीं है", "ليس من النوع", "não é do tipo", "n'est pas du type", "ist nicht vom Typ", "не того типа"},
 	LocStr{"number", "número", "数字", "संख्या", "رقم", "número", "nombre", "Zahl", "число"},
 	LocStr{"numbers", "números", "数字", "संख्याएं", "أرقام", "números", "nombres", "Zahlen", "числа"},
 	LocStr{"of", "de", "的", "का", "من", "de", "de", "von", "из"},
