@@ -137,11 +137,16 @@ func (c *conv) anyToBuff(dest buffDest, value any) {
 	// Kind.SliceStr - Special case for []string
 	case []string:
 		c.dataPtr = unsafe.Pointer(&v)
-		c.kind = Kind.SliceStr
+		c.kind = Kind.Slice
 
 	// Kind.Uint
 	case uint:
 		c.kind = Kind.Uint
+		c.wrIntBase(dest, int64(v), 10, false)
+
+	// Kind.Uint8
+	case uint8:
+		c.kind = Kind.Uint8
 		c.wrIntBase(dest, int64(v), 10, false)
 
 	// Kind.Uint16
@@ -157,11 +162,6 @@ func (c *conv) anyToBuff(dest buffDest, value any) {
 	// Kind.Uint64
 	case uint64:
 		c.kind = Kind.Uint64
-		c.wrIntBase(dest, int64(v), 10, false)
-
-	// Kind.Uint8
-	case uint8:
-		c.kind = Kind.Uint8
 		c.wrIntBase(dest, int64(v), 10, false)
 
 	// Special cases
