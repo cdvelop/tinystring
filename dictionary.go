@@ -43,6 +43,7 @@ var D = struct {
 	Mutex         LocStr // "mutex"
 	Nano          LocStr // "nano"
 	Negative      LocStr // "negative"
+	Nil           LocStr // "null"
 	NonNumeric    LocStr // "non-numeric"
 	Not           LocStr // "not"
 	NotOfType     LocStr // "not of type"
@@ -111,6 +112,7 @@ var D = struct {
 	LocStr{"mutex", "mutex", "互斥锁", "म्यूटेक्स", "قفل", "mutex", "mutex", "Mutex", "мьютекс"},
 	LocStr{"nano", "nano", "纳秒", "नैनो", "نانو", "nano", "nano", "Nano", "нано"},
 	LocStr{"negative", "negativo", "负", "नकारात्मक", "سالب", "negativo", "négatif", "negativ", "отрицательный"},
+	LocStr{"nil", "nulo", "空值", "शून्य मान", "قيمة فارغة", "nulo", "nul", "Nullwert", "нуль"},
 	LocStr{"non-numeric", "no numérico", "非数字", "गैर-संख्यात्मक", "غير رقمي", "não numérico", "non numérique", "nicht numerisch", "нечисловой"},
 	LocStr{"not", "no", "不", "नहीं", "ليس", "não", "pas", "nicht", "не"},
 	LocStr{"not of type", "no es del tipo", "不是类型", "प्रकार नहीं है", "ليس من النوع", "não é do tipo", "n'est pas du type", "ist nicht vom Typ", "не того типа"},
