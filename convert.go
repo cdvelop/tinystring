@@ -97,6 +97,11 @@ func (c *conv) anyToBuff(dest buffDest, value any) {
 		c.kind = Kind.Int
 		c.wrIntBase(dest, int64(v), 10, true)
 
+	// Kind.Int8
+	case int8:
+		c.kind = Kind.Int8
+		c.wrIntBase(dest, int64(v), 10, true)
+
 	// Kind.Int16
 	case int16:
 		c.kind = Kind.Int16
@@ -112,26 +117,7 @@ func (c *conv) anyToBuff(dest buffDest, value any) {
 		c.kind = Kind.Int64
 		c.wrIntBase(dest, v, 10, true)
 
-	// Kind.Int8
-	case int8:
-		c.kind = Kind.Int8
-		c.wrIntBase(dest, int64(v), 10, true)
-
-	// Kind.Map - Maps with supported types
-	case map[string]string:
-		c.dataPtr = unsafe.Pointer(&v)
-		c.kind = Kind.Map
-	case map[string]any:
-		c.dataPtr = unsafe.Pointer(&v)
-		c.kind = Kind.Map
-	case map[string]int:
-		c.dataPtr = unsafe.Pointer(&v)
-		c.kind = Kind.Map
-	case map[int]string:
-		c.dataPtr = unsafe.Pointer(&v)
-		c.kind = Kind.Map
-
-	// Kind.Pointer - Pointers to supported types
+	// Kind.Pointer - Only *string pointer supported
 	case *string:
 		// String pointer - verify not nil before dereferencing
 		if v == nil {
@@ -142,72 +128,6 @@ func (c *conv) anyToBuff(dest buffDest, value any) {
 		c.kind = Kind.Pointer         // Correctly set Kind to Kind.Pointer for *string
 		c.dataPtr = unsafe.Pointer(v) // Store the pointer itself for Apply()
 		c.wrString(dest, *v)
-	case *int:
-		c.kind = Kind.Pointer
-		c.dataPtr = unsafe.Pointer(v)
-		if v != nil {
-			c.wrIntBase(dest, int64(*v), 10, true)
-		}
-	case *bool:
-		c.kind = Kind.Pointer
-		c.dataPtr = unsafe.Pointer(v)
-		if v != nil {
-			c.wrBool(dest, *v)
-		}
-	case *float64:
-		c.kind = Kind.Pointer
-		c.dataPtr = unsafe.Pointer(v)
-		if v != nil {
-			c.wrFloat64(dest, *v)
-		}
-	case **string:
-		// Double pointer to string - pointer to pointer
-		c.kind = Kind.Pointer
-		c.dataPtr = unsafe.Pointer(v)
-		if v != nil && *v != nil {
-			c.wrString(dest, **v)
-		}
-
-	// Kind.Slice - All basic slices as specified in README.md
-	case []bool:
-		c.dataPtr = unsafe.Pointer(&v)
-		c.kind = Kind.Slice
-	case []int:
-		c.dataPtr = unsafe.Pointer(&v)
-		c.kind = Kind.Slice
-	case []int8:
-		c.dataPtr = unsafe.Pointer(&v)
-		c.kind = Kind.Slice
-	case []int16:
-		c.dataPtr = unsafe.Pointer(&v)
-		c.kind = Kind.Slice
-	case []int32:
-		c.dataPtr = unsafe.Pointer(&v)
-		c.kind = Kind.Slice
-	case []int64:
-		c.dataPtr = unsafe.Pointer(&v)
-		c.kind = Kind.Slice
-	case []uint:
-		c.dataPtr = unsafe.Pointer(&v)
-		c.kind = Kind.Slice
-	case []byte: // []byte is same as []uint8 but commonly used
-		c.dataPtr = unsafe.Pointer(&v)
-		c.kind = Kind.Byte
-	case []uint16:
-		c.dataPtr = unsafe.Pointer(&v)
-		c.kind = Kind.Slice
-	case []uint32:
-		c.dataPtr = unsafe.Pointer(&v)
-		c.kind = Kind.Slice
-	case []uint64:
-		c.dataPtr = unsafe.Pointer(&v)
-		c.kind = Kind.Slice
-	case []float32:
-		c.dataPtr = unsafe.Pointer(&v)
-		c.kind = Kind.Slice
-	case []float64:
-		c.dataPtr = unsafe.Pointer(&v)
-		c.kind = Kind.Slice
 
 	// Kind.String
 	case string:
@@ -247,19 +167,8 @@ func (c *conv) anyToBuff(dest buffDest, value any) {
 	// Special cases
 	case error:
 		c.wrErr(v.Error())
-		return // Early return since this sets error state
 
 	default:
-		// For complex types, use a more sophisticated check
-		// Check if it's a struct by examining its characteristics
-		if c.looksLikeStruct(value) {
-			c.kind = Kind.Struct
-			c.dataPtr = unsafe.Pointer(&value)
-			// For structs, we don't convert to string immediately
-			// The actual field access is handled by reflection methods
-			return
-		}
-
 		// Unknown/unsupported type - write error using DICTIONARY (REUSE existing wrErr)
 		c.wrErr(D.Type, D.Not, D.Supported)
 	}

@@ -47,7 +47,7 @@ func (c *conv) resetAllBuffers() {
 // CRITICAL: Cannot use anyToBuff to prevent infinite recursion
 // Uses direct primitive conversion methods only
 func (c *conv) getBuffString() string {
-	if c.kind == Kind.Err {
+	if c.errLen > 0 {
 		return c.getString(buffErr)
 	}
 
