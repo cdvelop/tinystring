@@ -3,11 +3,10 @@ package tinystring
 import "testing"
 
 func TestKindString(t *testing.T) {
-	// Build a slice of all Kind values from the Kind struct
+	// Build a slice of all Kind values from the Kind struct, matching the new order
 	kindVals := []Kind{
-		K.Array, K.Bool, K.Bytes, K.Chan, K.Complex128, K.Complex64, K.Float32, K.Float64, K.Func,
-		K.Int, K.Int16, K.Int32, K.Int64, K.Int8, K.Interface, K.Invalid, K.Map, K.Pointer, K.Slice,
-		K.String, K.Struct, K.Uint, K.Uint16, K.Uint32, K.Uint64, K.Uint8, K.Uintptr, K.UnsafePtr,
+		K.Invalid, K.Bool, K.Int, K.Int8, K.Int16, K.Int32, K.Int64, K.Uint, K.Uint8, K.Uint16, K.Uint32, K.Uint64, K.Uintptr,
+		K.Float32, K.Float64, K.Complex64, K.Complex128, K.Array, K.Chan, K.Func, K.Interface, K.Map, K.Pointer, K.Slice, K.String, K.Struct, K.UnsafePointer,
 	}
 	for i, want := range kindNames {
 		k := kindVals[i]
