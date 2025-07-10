@@ -53,7 +53,6 @@ var D = struct {
 	Pointer       LocStr // "pointer"
 	Point         LocStr // "point"
 	Range         LocStr // "range"
-	Reflect       LocStr // "reflect"
 	Required      LocStr // "required"
 	Round         LocStr // "round"
 	Seconds       LocStr // "seconds"
@@ -120,7 +119,6 @@ var D = struct {
 	LocStr{"pointer", "puntero", "指针", "पॉइंटर", "مؤشر", "ponteiro", "pointeur", "Zeiger", "указатель"},
 	LocStr{"point", "punto", "点", "बिंदु", "نقطة", "ponto", "point", "Punkt", "точка"},
 	LocStr{"range", "rango", "范围", "रेंज", "نطاق", "intervalo", "plage", "Bereich", "диапазон"},
-	LocStr{"reflect", "reflejo", "反射", "प्रतिबिंब", "انعكас", "reflexo", "reflet", "Reflektion", "отражение"},
 	LocStr{"required", "requerido", "必需", "आवश्यक", "مطلوب", "necessário", "requis", "erforderlich", "обязательный"},
 	LocStr{"round", "redondear", "圆", "गोल", "جولة", "arredondar", "arrondir", "runden", "округлить"},
 	LocStr{"seconds", "segundos", "秒", "सेकंड", "ثواني", "segundos", "secondes", "Sekunden", "секунды"},
