@@ -12,7 +12,6 @@ package tinystring
 
 func Err(msgs ...any) *conv {
 	c := getConv() // Always obtain from pool
-	c.kind = Kind.Err
 	// UNIFIED PROCESSING: Use same intermediate function as T() but write to buffErr
 	processTranslatedMessage(c, buffErr, msgs...)
 	return c
@@ -23,7 +22,6 @@ func Err(msgs ...any) *conv {
 func Errf(format string, args ...any) *conv {
 	c := getConv() // Always obtain from pool
 	c.wrFormat(buffErr, format, args...)
-	c.kind = Kind.Err
 	return c
 }
 
@@ -44,8 +42,6 @@ func (c *conv) StringErr() (out string, err error) {
 // ENHANCED: Now supports int, string and LocStr parameters
 // Used internally by anyToBuff for type error messages
 func (c *conv) wrErr(msgs ...any) *conv {
-	c.kind = Kind.Err // Set error Kind first
-
 	// Write messages using default language (no detection needed)
 	for i, msg := range msgs {
 		if i > 0 {

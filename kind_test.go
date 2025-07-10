@@ -5,7 +5,7 @@ import "testing"
 func TestKindString(t *testing.T) {
 	// Build a slice of all kind values from the Kind struct
 	kindVals := []kind{
-		Kind.Array, Kind.Bool, Kind.Byte, Kind.Chan, Kind.Complex128, Kind.Complex64, Kind.Err, Kind.Float32, Kind.Float64, Kind.Func,
+		Kind.Array, Kind.Bool, Kind.Byte, Kind.Chan, Kind.Complex128, Kind.Complex64, Kind.Float32, Kind.Float64, Kind.Func,
 		Kind.Int, Kind.Int16, Kind.Int32, Kind.Int64, Kind.Int8, Kind.Interface, Kind.Invalid, Kind.Map, Kind.Pointer, Kind.Slice,
 		Kind.String, Kind.SliceStr, Kind.Struct, Kind.Uint, Kind.Uint16, Kind.Uint32, Kind.Uint64, Kind.Uint8, Kind.Uintptr, Kind.UnsafePtr,
 	}

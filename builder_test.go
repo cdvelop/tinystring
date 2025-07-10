@@ -161,11 +161,4 @@ func TestErrFunction(t *testing.T) { // Test basic error creation
 		t.Error("Err function should create error message")
 	}
 
-	// Test that it uses pool
-	if err.kind != Kind.Err {
-		t.Error("Err should set type to Kind.Err")
-	}
-
-	// Clean up
-	err.putConv()
 }
