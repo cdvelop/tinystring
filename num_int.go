@@ -175,8 +175,8 @@ func (c *conv) wrIntBase(dest buffDest, val int64, base int, signed bool, upper 
 }
 
 // parseIntBase reutiliza la lógica de conversión de string a int64, soportando signo y base, y reporta error usando la API interna.
-// parseIntBase auto-detects signed/unsigned mode using c.kind and parses the string accordingly.
-// It does not take a signed parameter; instead, it checks c.kind (Kind.Int = signed, Kind.Uint = unsigned).
+// parseIntBase auto-detects signed/unsigned mode using c.Kind and parses the string accordingly.
+// It does not take a signed parameter; instead, it checks c.Kind (K.Int = signed, K.Uint = unsigned).
 func (c *conv) parseIntBase(base ...int) int64 {
 
 	s := c.getString(buffOut)
@@ -184,7 +184,7 @@ func (c *conv) parseIntBase(base ...int) int64 {
 	if len(base) > 0 {
 		baseVal = base[0]
 	}
-	isSigned := c.kind == Kind.Int
+	isSigned := c.Kind == K.Int
 	// Solo permitir negativos en base 10
 	if len(s) > 0 && s[0] == '-' {
 		if baseVal == 10 {
