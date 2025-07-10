@@ -20,7 +20,7 @@ type conv struct {
 	err     []byte // Buffer de errores - make([]byte, 0, 64)
 	errLen  int    // Longitud actual en err
 	// Type indicator - most frequently accessed	// Type indicator - most frequently accessed
-	kind kind // Hot path: type checking
+	Kind Kind // Hot path: type checking
 
 	// ✅ OPTIMIZED MEMORY ARCHITECTURE - unsafe.Pointer for complex types
 	dataPtr unsafe.Pointer // Direct unsafe pointer to data (replaces ptrValue)
@@ -53,7 +53,7 @@ func Convert(v ...any) *conv {
 		c.anyToBuff(buffOut, val)
 
 		// anyToBuff handles everything:
-		// - Setting c.kind and c.dataPtr for all types
+		// - Setting c.Kind and c.dataPtr for all types
 		// - String pointer handling (*string)
 		// - Complex types ([]string, map, etc.) with deferred conversion
 		// - All numeric and boolean type conversions
@@ -75,49 +75,49 @@ func (c *conv) anyToBuff(dest buffDest, value any) {
 	c.rstBuffer(buffErr)
 
 	switch v := value.(type) {
-	// IMMEDIATE CONVERSION - Simple Types (ordered as in kind.go)
+	// IMMEDIATE CONVERSION - Simple Types (ordered as in Kind.go)
 
-	// Kind.Bool
+	// K.Bool
 	case bool:
-		c.kind = Kind.Bool
+		c.Kind = K.Bool
 		c.wrBool(dest, v)
 
-	// Kind.Float32
+	// K.Float32
 	case float32:
-		c.kind = Kind.Float32
+		c.Kind = K.Float32
 		c.wrFloat32(dest, v)
 
-	// Kind.Float64
+	// K.Float64
 	case float64:
-		c.kind = Kind.Float64
+		c.Kind = K.Float64
 		c.wrFloat64(dest, v)
 
-	// Kind.Int
+	// K.Int
 	case int:
-		c.kind = Kind.Int
+		c.Kind = K.Int
 		c.wrIntBase(dest, int64(v), 10, true)
 
-	// Kind.Int8
+	// K.Int8
 	case int8:
-		c.kind = Kind.Int8
+		c.Kind = K.Int8
 		c.wrIntBase(dest, int64(v), 10, true)
 
-	// Kind.Int16
+	// K.Int16
 	case int16:
-		c.kind = Kind.Int16
+		c.Kind = K.Int16
 		c.wrIntBase(dest, int64(v), 10, true)
 
-	// Kind.Int32
+	// K.Int32
 	case int32:
-		c.kind = Kind.Int32
+		c.Kind = K.Int32
 		c.wrIntBase(dest, int64(v), 10, true)
 
-	// Kind.Int64
+	// K.Int64
 	case int64:
-		c.kind = Kind.Int64
+		c.Kind = K.Int64
 		c.wrIntBase(dest, v, 10, true)
 
-	// Kind.Pointer - Only *string pointer supported
+	// K.Pointer - Only *string pointer supported
 	case *string:
 		// String pointer - verify not nil before dereferencing
 		if v == nil {
@@ -125,43 +125,43 @@ func (c *conv) anyToBuff(dest buffDest, value any) {
 			return
 		}
 		// Store content relationship
-		c.kind = Kind.Pointer         // Correctly set Kind to Kind.Pointer for *string
+		c.Kind = K.Pointer            // Correctly set Kind to K.Pointer for *string
 		c.dataPtr = unsafe.Pointer(v) // Store the pointer itself for Apply()
 		c.wrString(dest, *v)
 
-	// Kind.String
+	// K.String
 	case string:
-		c.kind = Kind.String
+		c.Kind = K.String
 		c.wrString(dest, v)
 
-	// Kind.SliceStr - Special case for []string
+	// K.SliceStr - Special case for []string
 	case []string:
 		c.dataPtr = unsafe.Pointer(&v)
-		c.kind = Kind.Slice
+		c.Kind = K.Slice
 
-	// Kind.Uint
+	// K.Uint
 	case uint:
-		c.kind = Kind.Uint
+		c.Kind = K.Uint
 		c.wrIntBase(dest, int64(v), 10, false)
 
-	// Kind.Uint8
+	// K.Uint8
 	case uint8:
-		c.kind = Kind.Uint8
+		c.Kind = K.Uint8
 		c.wrIntBase(dest, int64(v), 10, false)
 
-	// Kind.Uint16
+	// K.Uint16
 	case uint16:
-		c.kind = Kind.Uint16
+		c.Kind = K.Uint16
 		c.wrIntBase(dest, int64(v), 10, false)
 
-	// Kind.Uint32
+	// K.Uint32
 	case uint32:
-		c.kind = Kind.Uint32
+		c.Kind = K.Uint32
 		c.wrIntBase(dest, int64(v), 10, false)
 
-	// Kind.Uint64
+	// K.Uint64
 	case uint64:
-		c.kind = Kind.Uint64
+		c.Kind = K.Uint64
 		c.wrIntBase(dest, int64(v), 10, false)
 
 	// Special cases
@@ -176,15 +176,15 @@ func (c *conv) anyToBuff(dest buffDest, value any) {
 
 // GetKind returns the Kind of the value stored in the conv
 // This allows external packages to reuse tinystring's type detection logic
-func (c *conv) GetKind() kind {
-	return c.kind
+func (c *conv) GetKind() Kind {
+	return c.Kind
 }
 
 // Apply updates the original string pointer with the current content and auto-releases to pool.
 // This method should be used when you want to modify the original string directly
 // without additional allocations.
 func (t *conv) Apply() {
-	if t.kind == Kind.Pointer && t.dataPtr != nil {
+	if t.Kind == K.Pointer && t.dataPtr != nil {
 		// Type assert to *string for Apply() functionality using unsafe pointer
 		if strPtr := (*string)(t.dataPtr); strPtr != nil {
 			*strPtr = t.getBuffString()

@@ -30,7 +30,7 @@ func (c *conv) putConv() {
 
 	// Reset other fields to default state - only keep dataPtr and Kind
 	c.dataPtr = nil
-	c.kind = Kind.String
+	c.Kind = K.String
 
 	convPool.Put(c)
 }

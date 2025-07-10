@@ -14,7 +14,7 @@ func (c *conv) Replace(oldAny, newAny any, n ...int) *conv {
 
 	// Preserve original state before temporary conversions
 	originalDataPtr := c.dataPtr
-	originalKind := c.kind
+	originalKind := c.Kind
 
 	// Use internal work buffer instead of getConv() for zero-allocation
 	c.rstBuffer(buffWork)         // Clear work buffer
@@ -27,7 +27,7 @@ func (c *conv) Replace(oldAny, newAny any, n ...int) *conv {
 
 	// Restore original state after temporary conversions
 	c.dataPtr = originalDataPtr
-	c.kind = originalKind
+	c.Kind = originalKind
 
 	// Check early return condition
 	if len(old) == 0 || len(str) == 0 {
@@ -139,7 +139,7 @@ func (c *conv) Trim() *conv {
 		c.wrString(buffOut, "")
 		// Also clear dataPtr to prevent fallback
 		c.dataPtr = nil
-		c.kind = Kind.String
+		c.Kind = K.String
 		return c
 	}
 

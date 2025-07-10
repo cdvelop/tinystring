@@ -26,13 +26,13 @@
 ```go
 // BEFORE (causes allocation)
 case string:
-    c.kind = Kind.String
+    c.Kind = K.String
     c.ptrValue = v      // ❌ Remove this boxing
     c.wrString(dest, v)
 
 // AFTER (buffer-only)
 case string:
-    c.kind = Kind.String
+    c.Kind = K.String
     c.wrString(dest, v) // ✅ Buffer only
     // No ptrValue assignment
 ```
@@ -98,7 +98,7 @@ type conv struct {
 - **Limitation**: Only works with same type matching (Kind validation)
 - ***string only**: Apply() limited to string pointers, not numeric pointers
 - **Buffer-to-pointer**: Apply buffer out content to original pointer if types match
-- **Error handling**: Silent no-op if Kind != Kind.Pointer (dev can use StringErr() if needed)
+- **Error handling**: Silent no-op if Kind != K.Pointer (dev can use StringErr() if needed)
 
 ### 7. Memory Management
 - **ptrValue cleanup**: Continue setting `ptrValue = nil` in putConv() (most efficient)

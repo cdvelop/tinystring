@@ -388,7 +388,7 @@ func (c *conv) wrFormat(dest buffDest, format string, args ...any) {
 
 	if !c.hasContent(buffErr) {
 		// Final output is ready in dest buffer
-		c.kind = Kind.String
+		c.Kind = K.String
 	}
 }
 

@@ -13,16 +13,16 @@ func (c *conv) Bool() (bool, error) {
 	// Direct boolean string matches
 	switch inp {
 	case "true", "True", "TRUE", "1", "t", "T":
-		c.kind = Kind.Bool
+		c.Kind = K.Bool
 		return true, nil
 	case "false", "False", "FALSE", "0", "f", "F":
-		c.kind = Kind.Bool
+		c.Kind = K.Bool
 		return false, nil
 	}
 	// Try to parse as integer using parseIntString (base 10, signed)
 	intVal := c.parseIntString(inp, 10, true)
 	if !c.hasContent(buffErr) {
-		c.kind = Kind.Bool
+		c.Kind = K.Bool
 		return intVal != 0, nil
 	} else {
 		// Limpia el error generado por el intento fallido usando la API
@@ -31,12 +31,12 @@ func (c *conv) Bool() (bool, error) {
 
 	// Try basic float patterns (simple cases)
 	if inp == "0.0" || inp == "0.00" || inp == "+0" || inp == "-0" {
-		c.kind = Kind.Bool
+		c.Kind = K.Bool
 		return false, nil
 	}
 	if inp != "0" && (len(inp) > 0 && (inp[0] >= '1' && inp[0] <= '9')) {
 		// Non-zero number starting with digit 1-9, likely true
-		c.kind = Kind.Bool
+		c.Kind = K.Bool
 		return true, nil
 	}
 
