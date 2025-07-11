@@ -18,3 +18,29 @@ func (c *conv) KV(delimiters ...string) (string, error) {
 	}
 	return after, nil
 }
+
+// TagValue searches for the value of a key in a Go struct tag-like string.
+// Example: Convert(`json:"name" Label:"Nombre"`).TagValue("Label") => "Nombre", true
+func (c *conv) TagValue(key string) (string, bool) {
+	src := c.getString(buffOut)
+
+	// Reutilizar splitStr para dividir por espacios
+	parts := c.splitStr(src)
+
+	for _, part := range parts {
+		// Split by ':' using existing function
+		k, v, found := c.splitByDelimiterWithBuffer(part, ":")
+		if !found {
+			continue
+		}
+
+		if k == key {
+			// Remove quotes if present
+			if len(v) >= 2 && v[0] == '"' && v[len(v)-1] == '"' {
+				v = v[1 : len(v)-1]
+			}
+			return v, true
+		}
+	}
+	return "", false
+}

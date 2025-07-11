@@ -107,3 +107,112 @@ func TestParseKeyValue(t *testing.T) {
 		})
 	}
 }
+
+func TestTagValue(t *testing.T) {
+	testCases := []struct {
+		name      string
+		input     string
+		key       string
+		wantValue string
+		wantFound bool
+	}{
+		{
+			name:      "Basic tag value extraction",
+			input:     `json:"name"`,
+			key:       "json",
+			wantValue: "name",
+			wantFound: true,
+		},
+		{
+			name:      "Multiple tags with target in middle",
+			input:     `json:"name" Label:"Nombre" xml:"nm"`,
+			key:       "Label",
+			wantValue: "Nombre",
+			wantFound: true,
+		},
+		{
+			name:      "Multiple tags with target at end",
+			input:     `json:"name" Label:"Nombre" xml:"nm"`,
+			key:       "xml",
+			wantValue: "nm",
+			wantFound: true,
+		},
+		{
+			name:      "Multiple tags with target at start",
+			input:     `json:"name" Label:"Nombre" xml:"nm"`,
+			key:       "json",
+			wantValue: "name",
+			wantFound: true,
+		},
+		{
+			name:      "Key not found",
+			input:     `json:"name" Label:"Nombre"`,
+			key:       "xml",
+			wantValue: "",
+			wantFound: false,
+		},
+		{
+			name:      "Empty input",
+			input:     "",
+			key:       "json",
+			wantValue: "",
+			wantFound: false,
+		},
+		{
+			name:      "No quotes in value",
+			input:     `json:name`,
+			key:       "json",
+			wantValue: "name",
+			wantFound: true,
+		},
+		{
+			name:      "Extra spaces between tags",
+			input:     `json:"name"   Label:"Nombre"    xml:"nm"`,
+			key:       "Label",
+			wantValue: "Nombre",
+			wantFound: true,
+		},
+		{
+			name:      "Tag without colon",
+			input:     `json:"name" invalid Label:"Nombre"`,
+			key:       "Label",
+			wantValue: "Nombre",
+			wantFound: true,
+		},
+		{
+			name:      "Complex struct tag",
+			input:     `json:"user_name,omitempty" validate:"required,min=3" db:"username"`,
+			key:       "validate",
+			wantValue: "required,min=3",
+			wantFound: true,
+		},
+		{
+			name:      "Single tag",
+			input:     `json:"name"`,
+			key:       "json",
+			wantValue: "name",
+			wantFound: true,
+		},
+		{
+			name:      "Empty quotes",
+			input:     `json:""`,
+			key:       "json",
+			wantValue: "",
+			wantFound: true,
+		},
+	}
+
+	for _, tc := range testCases {
+		t.Run(tc.name, func(t *testing.T) {
+			gotValue, gotFound := Convert(tc.input).TagValue(tc.key)
+
+			if gotValue != tc.wantValue {
+				t.Errorf("TagValue() value = %q, want %q", gotValue, tc.wantValue)
+			}
+
+			if gotFound != tc.wantFound {
+				t.Errorf("TagValue() found = %v, want %v", gotFound, tc.wantFound)
+			}
+		})
+	}
+}
