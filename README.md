@@ -287,9 +287,9 @@ Convert("Juan Carlos Rodriguez").TruncateName(3, 20).String()
 value, err := Convert("user:admin").KV()            // out: "admin", nil
 value, err := Convert("count=42").KV("=")          // out: "42", nil
 
-// Snake case with custom separators
-Convert("hello world").SnakeLow("-").String() // out: "hello-world"
-Convert("hello world").SnakeUp("_").String() // out: "HELLO_WORLD"
+// Struct tag value extraction (TagValue):
+value, found := Convert(`json:"name" Label:"Nombre"`).TagValue("Label") // out: "Nombre", true
+value, found := Convert(`json:"name" Label:"Nombre"`).TagValue("xml")   // out: "", false
 ```
 ---
 ## [Benchmarking](benchmark/README.md)
