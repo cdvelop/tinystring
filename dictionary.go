@@ -24,6 +24,7 @@ var D = struct {
 	Element       LocStr // "element"
 	Empty         LocStr // "empty"
 	End           LocStr // "end"
+	Exceeds       LocStr // "exceeds"
 	Field         LocStr // "field"
 	Fields        LocStr // "fields"
 	Float         LocStr // "float"
@@ -35,6 +36,7 @@ var D = struct {
 	Index         LocStr // "index"
 	Integer       LocStr // "integer"
 	Invalid       LocStr // "invalid"
+	Maximum       LocStr // "maximum"
 	Method        LocStr // "method"
 	Missing       LocStr // "missing"
 	Mismatch      LocStr // "mismatch"
@@ -93,6 +95,7 @@ var D = struct {
 	LocStr{"element", "elemento", "元素", "एलिमेंट", "عنصر", "elemento", "élément", "Element", "элемент"},
 	LocStr{"empty", "vacío", "空", "खाली", "فارغ", "vazio", "vide", "leer", "пустой"},
 	LocStr{"end", "fin", "结束", "अंत", "نهاية", "fim", "fin", "Ende", "конец"},
+	LocStr{"exceeds", "excede", "超过", "अधिक", "يتجاوز", "excede", "dépasse", "überschreitet", "превышает"},
 	LocStr{"field", "campo", "字段", "फील्ड", "حقل", "campo", "champ", "Feld", "поле"},
 	LocStr{"fields", "campos", "字段集", "फील्ड्स", "حقول", "campos", "champs", "Felder", "поля"},
 	LocStr{"float", "flotante", "浮点", "फ्लोट", "عائم", "flutuante", "flottant", "Gleitkomma", "число с плавающей точкой"},
@@ -104,6 +107,7 @@ var D = struct {
 	LocStr{"index", "índice", "索引", "इंडेक्स", "فهرس", "índice", "index", "Index", "индекс"},
 	LocStr{"integer", "entero", "整数", "पूर्णांक", "عدد صحيح", "inteiro", "entier", "ganze Zahl", "целое число"},
 	LocStr{"invalid", "inválido", "无效", "अमान्य", "غير صالح", "inválido", "invalide", "ungültig", "недопустимый"},
+	LocStr{"maximum", "máximo", "最大", "अधिकतम", "الحد الأقصى", "máximo", "maximum", "Maximum", "максимум"},
 	LocStr{"method", "método", "方法", "विधि", "طريقة", "método", "méthode", "Methode", "метод"},
 	LocStr{"missing", "falta", "缺少", "गुम", "مفقود", "ausente", "manquant", "fehlend", "отсутствует"},
 	LocStr{"mismatch", "desajuste", "不匹配", "बेमेल", "عدم تطابق", "incompatibilidade", "incompatibilité", "Nichtübereinstimmung", "несоответствие"},
