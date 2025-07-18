@@ -10,6 +10,7 @@ var D = struct {
 	Allowed       LocStr // "allowed"
 	Argument      LocStr // "argument"
 	Assign        LocStr // "assign"
+	Assignable    LocStr // "assignable"
 	At            LocStr // "at"
 	Base          LocStr // "base"
 	Be            LocStr // "be"
@@ -53,6 +54,7 @@ var D = struct {
 	Number        LocStr // "number"
 	Numbers       LocStr // "numbers"
 	Of            LocStr // "of"
+	On            LocStr // "on"
 	Options       LocStr // "options"
 	Out           LocStr // "out"
 	Overflow      LocStr // "overflow"
@@ -82,6 +84,7 @@ var D = struct {
 	LocStr{"allowed", "permitido", "允许", "अनुमति", "مسموح", "permitido", "autorisé", "erlaubt", "разрешено"},
 	LocStr{"argument", "argumento", "参数", "तर्क", "وسيط", "argumento", "argument", "Argument", "аргумент"},
 	LocStr{"assign", "asignar", "分配", "असाइन", "تعيين", "atribuir", "assigner", "zuweisen", "присвоить"},
+	LocStr{"assignable", "asignable", "可分配", "असाइन करने योग्य", "قابل للتعيين", "atributável", "assignable", "zuweisbar", "присваиваемый"},
 	LocStr{"at", "en", "在", "पर", "في", "em", "à", "bei", "в"},
 	LocStr{"base", "base", "进制", "आधार", "قاعدة", "base", "base", "Basis", "основание"},
 	LocStr{"be", "ser", "是", "होना", "كون", "ser", "être", "sein", "быть"},
@@ -125,6 +128,7 @@ var D = struct {
 	LocStr{"number", "número", "数字", "संख्या", "رقم", "número", "nombre", "Zahl", "число"},
 	LocStr{"numbers", "números", "数字", "संख्याएं", "أرقام", "números", "nombres", "Zahlen", "числа"},
 	LocStr{"of", "de", "的", "का", "من", "de", "de", "von", "из"},
+	LocStr{"on", "en", "在", "पर", "على", "em", "sur", "auf", "на"},
 	LocStr{"options", "opciones", "选项", "विकल्प", "خيارات", "opções", "options", "Optionen", "опции"},
 	LocStr{"out", "fuera", "出", "बाहर", "خارج", "fora", "hors", "aus", "вне"},
 	LocStr{"overflow", "desbordamiento", "溢出", "ओवरफ्लो", "فيض", "estouro", "débordement", "Überlauf", "переполнение"},
