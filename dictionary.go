@@ -14,6 +14,7 @@ var D = struct {
 	Base          LocStr // "base"
 	Be            LocStr // "be"
 	Boolean       LocStr // "boolean"
+	Binary        LocStr // "binary"
 	Call          LocStr // "call"
 	Cannot        LocStr // "cannot"
 	Character     LocStr // "character"
@@ -85,6 +86,7 @@ var D = struct {
 	LocStr{"base", "base", "进制", "आधार", "قاعدة", "base", "base", "Basis", "основание"},
 	LocStr{"be", "ser", "是", "होना", "كون", "ser", "être", "sein", "быть"},
 	LocStr{"boolean", "booleano", "布尔", "बूलियन", "منطقي", "booleano", "booléen", "boolescher", "логический"},
+	LocStr{"binary", "binario", "二进制", "二进制", "ثنائي", "binário", "binaire", "binär", "двоичный"},
 	LocStr{"call", "llamar", "调用", "कॉल", "استدعاء", "chamar", "appeler", "aufrufen", "вызвать"},
 	LocStr{"cannot", "no puede", "不能", "नहीं कर सकते", "لا يمكن", "não pode", "ne peut pas", "kann nicht", "не может"},
 	LocStr{"character", "caracter", "字符", "वर्ण", "حرف", "caractere", "caractère", "Zeichen", "символ"},
