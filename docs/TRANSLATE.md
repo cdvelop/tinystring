@@ -34,6 +34,13 @@
 ```go
 OutLang(ES) // Set Spanish globally
 
+// Usage examples:
+
+// return strings
+msg := T(ES, D.Format, D.Invalid)
+// → "formato inválido"
+
+// return error
 err := Err(D.Format, D.Invalid)
 // → "formato inválido"
 
