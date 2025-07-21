@@ -40,7 +40,7 @@ func (c *conv) Bool() (bool, error) {
 		return true, nil
 	}
 
-	c.wrErr(D.Boolean, D.Value, D.Invalid, inp)
+	c.wrErr("Bool", D.Value, D.Invalid, inp)
 	return false, c
 }
 

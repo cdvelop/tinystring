@@ -126,10 +126,10 @@ Err(D.String, D.Empty)
 
 // errNegativeUnsigned = "negative numbers are not supported for unsigned integers"
 // "números negativos no soportados para enteros sin signo" (Spanish order)  
-Err(D.Numbers, D.Negative, D.Not, D.Supported, D.For, D.Integer, D.Unsigned)
+Err(D.Numbers, D.Negative, D.Not, D.Supported, D.To, D.Integer, D.Unsigned)
 
 // errInvalidBase = "invalid base" → "base inválida" (Spanish order: noun + adjective)
-Err(D.Base, D.Invalid)
+Err("Base", D.Invalid)
 
 // errOverflow = "number overflow" → "desbordamiento de número" (Spanish order)
 Err(D.Overflow, D.Of, D.Number)
@@ -381,8 +381,8 @@ Instead of direct mapping, errors are now composed from words with **Spanish-fir
 
 **Current Constants** → **Word Composition (Spanish Order)**
 1. `errEmptyString` → `D.String + D.Empty` ("cadena vacía")
-2. `errNegativeUnsigned` → `D.Numbers + D.Negative + D.Not + D.Supported + D.For + D.Integer + D.Unsigned` ("números negativos no soportados para enteros sin signo")
-3. `errInvalidBase` → `D.Base + D.Invalid` ("base inválida")
+2. `errNegativeUnsigned` → `D.Numbers + D.Negative + D.Not + D.Supported + D.To + D.Integer + D.Unsigned` ("números negativos no soportados para enteros sin signo")
+3. `errInvalidBase` → `"Base" + D.Invalid` ("base inválida")
 4. `errOverflow` → `D.Overflow + D.Of + D.Number` ("desbordamiento de número")
 5. `errInvalidFormat` → `D.Format + D.Invalid` ("formato inválido")
 6. `errFormatMissingArg` → `D.Argument + D.Missing` ("argumento faltante")
@@ -392,7 +392,7 @@ Instead of direct mapping, errors are now composed from words with **Spanish-fir
 10. `errCannotRound` → `D.Cannot + D.Round + D.Value + D.NonNumeric` ("no puede redondear valor no numérico")
 11. `errCannotFormat` → `D.Cannot + D.Format + D.Value + D.NonNumeric` ("no puede formatear valor no numérico")
 12. `errInvalidFloat` → `D.String + D.Of + D.Float + D.Invalid` ("cadena de flotante inválida")
-13. `errInvalidBool` → `D.Value + D.Boolean + D.Invalid` ("valor booleano inválido")
+13. `errInvalidBool` → `D.Value + "Bool" + D.Invalid` ("valor booleano inválido")
 
 ### Phase 3: Testing & Validation
 

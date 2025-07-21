@@ -118,7 +118,7 @@ func (c *conv) wrFormat(dest buffDest, format string, args ...any) {
 				c.wrByte(dest, '%')
 				continue
 			default:
-				c.wrErr(D.Format, D.Specifier, D.Not, D.Supported, format[i])
+				c.wrErr(D.Format, D.Provided, D.Not, D.Supported, format[i])
 				return
 			}
 			if format[i] != '%' {

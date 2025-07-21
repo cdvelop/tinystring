@@ -72,8 +72,8 @@ func TestComplexErrorComposition(t *testing.T) {
 	// Test complex error message composition as per design document
 	OutLang(ES)
 
-	// Test: errNegativeUnsigned → D.Negative + D.Numbers + D.Not + D.Supported + D.For + D.Unsigned + D.Integer
-	err := Err(D.Negative, D.Numbers, D.Not, D.Supported, D.For, D.Unsigned, D.Integer).Error()
+	// Test: errNegativeUnsigned → D.Negative + D.Numbers + D.Not + D.Supported + D.To + D.Unsigned + D.Integer
+	err := Err(D.Numbers, D.Negative, D.Not, D.Supported).Error()
 
 	if len(err) == 0 {
 		t.Error("Complex error composition should not be empty")
