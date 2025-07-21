@@ -62,6 +62,7 @@ var D = struct {
 	Pointer       LocStr // "pointer"
 	Point         LocStr // "point"
 	Production    LocStr // "production"
+	Provided      LocStr // "provided"
 	Range         LocStr // "range"
 	Required      LocStr // "required"
 	Round         LocStr // "round"
@@ -138,6 +139,7 @@ var D = struct {
 	LocStr{"pointer", "puntero", "指针", "पॉइंटर", "مؤشر", "ponteiro", "pointeur", "Zeiger", "указатель"},
 	LocStr{"point", "punto", "点", "बिंदु", "نقطة", "ponto", "point", "Punkt", "точка"},
 	LocStr{"production", "producción", "生产", "उत्पादन", "إنتاج", "produção", "production", "produktion", "производство"},
+	LocStr{"provided", "proporcionado", "提供", "प्रदान किया गया", "مقدم", "fornecido", "fourni", "bereitgestellt", "предоставлено"},
 	LocStr{"range", "rango", "范围", "रेंज", "نطاق", "intervalo", "plage", "Bereich", "диапазон"},
 	LocStr{"required", "requerido", "必需", "आवश्यक", "مطلوب", "necessário", "requis", "erforderlich", "обязательный"},
 	LocStr{"round", "redondear", "圆", "गोल", "جولة", "arredondar", "arrondir", "runden", "округлить"},
@@ -149,7 +151,7 @@ var D = struct {
 	LocStr{"switching", "cambiando", "切换", "स्विच", "تبديل", "mudando", "changement", "wechseln", "переключение"},
 	LocStr{"sync", "sincronización", "同步", "सिंक", "مزامنة", "sincronização", "synchronisation", "Synchronisierung", "синхронизация"},
 	LocStr{"time", "tiempo", "时间", "समय", "وقت", "tempo", "temps", "Zeit", "время"},
-	LocStr{"to", "a", "到", "को", "إلى", "para", "à", "zu", "к"},
+	LocStr{"to", "para", "到", "को", "إلى", "para", "à", "zu", "к"},
 	LocStr{"type", "tipo", "类型", "प्रकार", "نوع", "tipo", "type", "Typ", "тип"},
 	LocStr{"unexported", "no exportado", "未导出", "गैर-निर्यातित", "غير مصدر", "não exportado", "non exporté", "nicht exportiert", "неэкспортированный"},
 	LocStr{"unknown", "desconocido", "未知", "अज्ञात", "غير معروف", "desconhecido", "inconnu", "unbekannt", "неизвестный"},

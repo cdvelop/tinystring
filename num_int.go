@@ -13,7 +13,7 @@ func (c *conv) parseIntString(s string, base int, signed bool) int64 {
 		}
 	}
 	if base < 2 || base > 36 {
-		c.wrErr(D.Base, D.Invalid)
+		c.wrErr("Base", D.Invalid)
 		return 0
 	}
 	var neg bool
@@ -138,7 +138,7 @@ func (c *conv) Uint64(base ...int) (uint64, error) {
 // wrIntBase writes an integer in the given base to the buffer, with optional uppercase digits
 func (c *conv) wrIntBase(dest buffDest, val int64, base int, signed bool, upper ...bool) {
 	if base < 2 || base > 36 {
-		c.wrErr(D.Base, D.Invalid)
+		c.wrErr("Base", D.Invalid)
 		return
 	}
 	if val == 0 {
