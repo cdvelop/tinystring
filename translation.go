@@ -18,9 +18,8 @@ func T(values ...any) string {
 
 	// UNIFIED PROCESSING: Use shared intermediate function
 	processTranslatedMessage(c, buffOut, values...)
-	out := c.getString(buffOut)
 	// Return the constructed string
-	return out
+	return c.getString(buffOut)
 }
 
 // =============================================================================
@@ -36,7 +35,7 @@ func processTranslatedMessage(c *conv, dest buffDest, values ...any) {
 	}
 
 	// PASO 1: Detección unificada de idioma
-	currentLang, startIdx := detectLanguage(values)
+	currentLang, startIdx := detectLanguage(c, values)
 
 	// PASO 2: Procesamiento unificado de argumentos
 	processTranslatedArgs(c, dest, values, currentLang, startIdx)
@@ -49,7 +48,7 @@ func processTranslatedMessage(c *conv, dest buffDest, values ...any) {
 // detectLanguage determines the current language and start index from variadic arguments
 // UNIFIED FUNCTION: Handles language detection for both T() and wrErr()
 // Returns: (language, startIndex) where startIndex skips the language argument if present
-func detectLanguage(args []any) (lang, int) {
+func detectLanguage(c *conv, args []any) (lang, int) {
 	if len(args) == 0 {
 		return defLang, 0
 	}
@@ -57,6 +56,20 @@ func detectLanguage(args []any) (lang, int) {
 	// Check if first argument is a language specifier
 	if langVal, ok := args[0].(lang); ok {
 		return langVal, 1 // Skip the language argument in processing
+	}
+
+	// If first argument is a string of length 2, treat as language code
+	if strVal, ok := args[0].(string); ok && len(strVal) == 2 {
+
+		// Convert to lowercase and map to internal lang typec
+		c.rstBuffer(buffWork) // Clear work buffer before use
+		c.wrString(buffWork, strVal)
+		// use changeCase
+		c.changeCase(true, buffWork)
+
+		strVal = c.getString(buffWork) // Get lowercase string
+
+		return mapLangCode(strVal), 1 // Skip the language argument in processing
 	}
 
 	// No language specified, use default

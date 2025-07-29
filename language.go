@@ -54,18 +54,33 @@ const (
 //	}
 //
 // Usage in code:
+//
 //	err := Err(MyDictionary.File, D.Not, D.Found) // -> "file not found", "archivo no encontrado", etc.
 type LocStr [9]string
 
-// OutLang sets the default output language
-// OutLang() without parameters auto-detects system language
-// OutLang(ES) sets Spanish as default
-func OutLang(l ...lang) {
+// OutLang sets the default output language.
+//
+// OutLang()                // Auto-detects system/browser language
+// OutLang(ES)              // Set Spanish as default (using lang constant)
+// OutLang("ES")            // Set Spanish as default (using string code)
+// OutLang("fr")            // Set French as default (case-insensitive)
+// OutLang("en-US")         // Accepts locale strings, parses to EN
+//
+// If a string is passed, it is automatically parsed using supported codes.
+// If a lang value is passed, it is assigned directly.
+// If another type is passed, nothing happens.
+func OutLang(l ...any) {
+	c := getConv()
 	if len(l) == 0 {
-		c := getConv()
 		defLang = c.getSystemLang() // from env.front.go or env.back.go
-	} else {
-		defLang = l[0]
+		return
+	}
+
+	switch v := l[0].(type) {
+	case lang:
+		defLang = v
+	case string:
+		defLang = c.langParser(v)
 	}
 }
 
@@ -90,31 +105,36 @@ func (c *conv) langParser(langStrings ...string) lang {
 		// Convert to lowercase and map to the internal lang type.
 		code = Convert(code).Low().String()
 		// Inline mapLangCode logic
-		switch code {
-		// Group 1
-		case "es":
-			return ES
-		case "zh":
-			return ZH
-		case "hi":
-			return HI
-		case "ar":
-			return AR
-		// Group 2
-		case "pt":
-			return PT
-		case "fr":
-			return FR
-		case "de":
-			return DE
-		case "ru":
-			return RU
-		default:
-			return EN
-		}
+		return mapLangCode(code)
 	}
 
 	c.putConv()
 
 	return EN // Default fallback if no valid language string is found.
+}
+
+func mapLangCode(code string) lang {
+	switch code {
+	// Group 1
+	case "en":
+		return EN
+	case "es":
+		return ES
+	case "zh":
+		return ZH
+	case "hi":
+		return HI
+	case "ar":
+		return AR
+	// Group 2
+	case "pt":
+		return PT
+	case "fr":
+		return FR
+	case "de":
+		return DE
+	case "ru":
+		return RU
+	}
+	return EN // Default fallback
 }
