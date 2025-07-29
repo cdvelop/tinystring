@@ -8,6 +8,7 @@ package tinystring
 // The usage API (e.g., D.Argument) remains unchanged.
 var D = struct {
 	Allowed       LocStr // "allowed"
+	Changed       LocStr // "changed"
 	Argument      LocStr // "argument"
 	Assign        LocStr // "assign"
 	Assignable    LocStr // "assignable"
@@ -38,6 +39,7 @@ var D = struct {
 	Format        LocStr // "format"
 	Found         LocStr // "found"
 	Handler       LocStr // "handler"
+	Language      LocStr // "language"
 	Icons         LocStr // "icons"
 	Implemented   LocStr // "implemented"
 	In            LocStr // "in"
@@ -104,6 +106,7 @@ var D = struct {
 	Zero          LocStr // "zero"
 }{
 	LocStr{"allowed", "permitido", "允许", "अनुमति", "مسموح", "permitido", "autorisé", "erlaubt", "разрешено"},
+	LocStr{"changed", "cambiado", "更改", "परिवर्तित", "تم التغيير", "alterado", "changé", "geändert", "изменено"},
 	LocStr{"argument", "argumento", "参数", "तर्क", "وسيط", "argumento", "argument", "Argument", "аргумент"},
 	LocStr{"assign", "asignar", "分配", "असाइन", "تعيين", "atribuir", "assigner", "zuweisen", "присвоить"},
 	LocStr{"assignable", "asignable", "可分配", "असाइन करने योग्य", "قابل للتعيين", "atributável", "assignable", "zuweisbar", "присваиваемый"},
@@ -134,6 +137,7 @@ var D = struct {
 	LocStr{"format", "formato", "格式", "प्रारूप", "تنسيق", "formato", "format", "Fmt", "формат"},
 	LocStr{"found", "encontrado", "找到", "मिला", "موجود", "encontrado", "trouvé", "gefunden", "найден"},
 	LocStr{"handler", "manejador", "处理程序", "हैंडलर", "معالج", "manipulador", "gestionnaire", "Handler", "обработчик"},
+	LocStr{"language", "idioma", "语言", "भाषा", "لغة", "idioma", "langue", "Sprache", "язык"},
 	LocStr{"icons", "iconos", "图标", "आइकन", "أيقونات", "ícones", "icônes", "Symbole", "значки"},
 	LocStr{"implemented", "implementado", "已实现", "कार्यान्वित", "مُنفذ", "implementado", "implémenté", "implementiert", "реализовано"},
 	LocStr{"in", "en", "在", "में", "في", "em", "dans", "in", "в"},
