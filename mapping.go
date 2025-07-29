@@ -60,19 +60,50 @@ func toLowerRune(r rune) rune {
 }
 
 // Tilde removes accents and diacritics using index-based lookup
+// OPTIMIZED: Uses work buffer to eliminate temporary allocations
 func (t *conv) Tilde() *conv {
 	// Check for error chain interruption
 	if t.hasContent(buffErr) {
 		return t
 	}
 
-	str := t.getBuffString()
-	if len(str) == 0 {
+	if t.outLen == 0 {
 		return t
 	}
 
-	// Use buffer-first strategy
-	tempBuf := make([]byte, 0, len(str)*2)
+	// Use work buffer instead of temporary allocation
+	t.rstBuffer(buffWork)
+
+	// Fast path: ASCII-only optimization
+	if t.isASCIIOnlyOut() {
+		// For ASCII, just copy the buffer (no accent processing needed)
+		t.work = append(t.work[:0], t.out[:t.outLen]...)
+		t.workLen = t.outLen
+
+	} else {
+		// Unicode path: process accents using work buffer
+		t.tildeUnicodeOptimized()
+	}
+
+	// Swap work buffer to out buffer (zero-copy swap)
+	t.swapBuff(buffWork, buffOut)
+	return t
+}
+
+// isASCIIOnlyOut checks if out buffer contains only ASCII characters
+func (t *conv) isASCIIOnlyOut() bool {
+	for i := 0; i < t.outLen; i++ {
+		if t.out[i] > 127 {
+			return false
+		}
+	}
+	return true
+}
+
+// tildeUnicodeOptimized processes Unicode accents using work buffer
+func (t *conv) tildeUnicodeOptimized() {
+	// Convert from out buffer to work buffer with accent processing
+	str := t.getString(buffOut)
 
 	for _, r := range str {
 		// Find accent and replace with base character using index lookup
@@ -80,7 +111,7 @@ func (t *conv) Tilde() *conv {
 		// Check lowercase accents
 		for i, char := range aL {
 			if r == char {
-				tempBuf = addRne2Buf(tempBuf, bL[i])
+				t.addRuneToWork(bL[i])
 				found = true
 				break
 			}
@@ -89,34 +120,14 @@ func (t *conv) Tilde() *conv {
 		if !found {
 			for i, char := range aU {
 				if r == char {
-					tempBuf = addRne2Buf(tempBuf, bU[i])
+					t.addRuneToWork(bU[i])
 					found = true
 					break
 				}
 			}
 		}
 		if !found {
-			tempBuf = addRne2Buf(tempBuf, r)
+			t.addRuneToWork(r)
 		}
-	}
-	// ✅ Always update the buffer using API - consistency with buffer-first strategy
-	t.rstBuffer(buffOut)        // Clear buffer using API
-	t.wrBytes(buffOut, tempBuf) // Write using API
-	// Final output is ready in buffOut - no setString needed
-
-	return t
-}
-
-// addRne2Buf manually encodes a rune to UTF-8 and appends it to the byte slice.
-// This avoids importing the unicode/utf8 package for size optimization.
-func addRne2Buf(out []byte, r rune) []byte {
-	if r < 0x80 {
-		return append(out, byte(r))
-	} else if r < 0x800 {
-		return append(out, byte(0xC0|(r>>6)), byte(0x80|(r&0x3F)))
-	} else if r < 0x10000 {
-		return append(out, byte(0xE0|(r>>12)), byte(0x80|((r>>6)&0x3F)), byte(0x80|(r&0x3F)))
-	} else {
-		return append(out, byte(0xF0|(r>>18)), byte(0x80|((r>>12)&0x3F)), byte(0x80|((r>>6)&0x3F)), byte(0x80|(r&0x3F)))
 	}
 }

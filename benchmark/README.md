@@ -9,21 +9,21 @@ Automated benchmark tools to measure and compare performance between standard Go
 [Standard Library Example](bench-binary-size/standard-lib/main.go) | [TinyString Example](bench-binary-size/tinystring-lib/main.go)
 
 <!-- This table is automatically generated from build-and-measure.sh -->
-*Last updated: 2025-06-29 20:31:51*
+*Last updated: 2025-07-29 15:11:57*
 
 | Build Type | Parameters | Standard Library<br/>`go build` | TinyString<br/>`tinygo build` | Size Reduction | Performance |
 |------------|------------|------------------|------------|----------------|-------------|
-| 🖥️ **Default Native** | `-ldflags="-s -w"` | 1.3 MB | 1.1 MB | **-164.0 KB** | ➖ **12.5%** |
-| 🌐 **Default WASM** | `(default -opt=z)` | 580.8 KB | 252.4 KB | **-328.4 KB** | ✅ **56.5%** |
-| 🌐 **Ultra WASM** | `-no-debug -panic=trap -scheduler=none -gc=leaking -target wasm` | 141.3 KB | 34.3 KB | **-107.0 KB** | 🏆 **75.8%** |
-| 🌐 **Speed WASM** | `-opt=2 -target wasm` | 827.0 KB | 362.5 KB | **-464.5 KB** | ✅ **56.2%** |
-| 🌐 **Debug WASM** | `-opt=0 -target wasm` | 1.8 MB | 800.8 KB | **-1.0 MB** | ✅ **56.3%** |
+| 🖥️ **Default Native** | `-ldflags="-s -w"` | 1.4 MB | 1.2 MB | **-160.0 KB** | ➖ **11.2%** |
+| 🌐 **Default WASM** | `(default -opt=z)` | 590.2 KB | 244.6 KB | **-345.5 KB** | ✅ **58.5%** |
+| 🌐 **Ultra WASM** | `-no-debug -panic=trap -scheduler=none -gc=leaking -target wasm` | 141.2 KB | 31.8 KB | **-109.3 KB** | 🏆 **77.5%** |
+| 🌐 **Speed WASM** | `-opt=2 -target wasm` | 837.2 KB | 350.1 KB | **-487.1 KB** | ✅ **58.2%** |
+| 🌐 **Debug WASM** | `-opt=0 -target wasm` | 1.8 MB | 825.4 KB | **-994.4 KB** | ✅ **54.6%** |
 
 ### 🎯 Performance Summary
 
-- 🏆 **Peak Reduction: 75.8%** (Best optimization)
-- ✅ **Average WebAssembly Reduction: 61.2%**
-- ✅ **Average Native Reduction: 12.5%**
+- 🏆 **Peak Reduction: 77.5%** (Best optimization)
+- ✅ **Average WebAssembly Reduction: 62.2%**
+- ✅ **Average Native Reduction: 11.2%**
 - 📦 **Total Size Savings: 2.0 MB across all builds**
 
 #### Performance Legend
@@ -38,23 +38,23 @@ Automated benchmark tools to measure and compare performance between standard Go
 [Standard Library Example](bench-memory-alloc/standard) | [TinyString Example](bench-memory-alloc/tinystring)
 
 <!-- This table is automatically generated from memory-benchmark.sh -->
-*Last updated: 2025-06-29 20:32:08*
+*Last updated: 2025-07-29 15:12:12*
 
 Performance benchmarks comparing memory allocation patterns between standard Go library and TinyString:
 
 | 🧪 **Benchmark Category** | 📚 **Library** | 💾 **Memory/Op** | 🔢 **Allocs/Op** | ⏱️ **Time/Op** | 📈 **Memory Trend** | 🎯 **Alloc Trend** | 🏆 **Performance** |
 |----------------------------|----------------|-------------------|-------------------|-----------------|---------------------|---------------------|--------------------|
-| 📝 **String Processing** | 📊 Standard | `752 B / 530.773 OP` | `32` | `2.1μs` | - | - | - |
-| | 🚀 TinyString | `1.5 KB / 110.544 OP` | `49` | `10.6μs` | ❌ **100.0% more** | ❌ **53.1% more** | ❌ **Poor** |
-| 🔢 **Number Processing** | 📊 Standard | `912 B / 481.078 OP` | `42` | `2.4μs` | - | - | - |
-| | 🚀 TinyString | `320 B / 596.006 OP` | `17` | `2.0μs` | 🏆 **64.9% less** | 🏆 **59.5% less** | 🏆 **Excellent** |
-| 🔄 **Mixed Operations** | 📊 Standard | `400 B / 758.782 OP` | `22` | `1.5μs` | - | - | - |
-| | 🚀 TinyString | `432 B / 341.202 OP` | `20` | `3.4μs` | ⚠️ **8.0% more** | ✅ **9.1% less** | ➖ **Fair** |
+| 📝 **String Processing** | 📊 Standard | `808 B / 609.450 OP` | `32` | `2.3μs` | - | - | - |
+| | 🚀 TinyString | `464 B / 225.711 OP` | `17` | `5.2μs` | 🏆 **42.6% less** | 🏆 **46.9% less** | 🏆 **Excellent** |
+| 🔢 **Number Processing** | 📊 Standard | `912 B / 535.048 OP` | `42` | `2.4μs` | - | - | - |
+| | 🚀 TinyString | `320 B / 526.324 OP` | `17` | `1.9μs` | 🏆 **64.9% less** | 🏆 **59.5% less** | 🏆 **Excellent** |
+| 🔄 **Mixed Operations** | 📊 Standard | `416 B / 722.950 OP` | `22` | `1.4μs` | - | - | - |
+| | 🚀 TinyString | `192 B / 468.020 OP` | `12` | `2.5μs` | 🏆 **53.8% less** | 🏆 **45.5% less** | 🏆 **Excellent** |
 
 ### 🎯 Performance Summary
 
-- 💾 **Memory Efficiency**: ➖ **Fair** (Acceptable overhead) (14.4% average change)
-- 🔢 **Allocation Efficiency**: ✅ **Good** (Allocation efficient) (-5.2% average change)
+- 💾 **Memory Efficiency**: 🏆 **Excellent** (Lower memory usage) (-53.8% average change)
+- 🔢 **Allocation Efficiency**: 🏆 **Excellent** (Fewer allocations) (-50.6% average change)
 - 📊 **Benchmarks Analyzed**: 3 categories
 - 🎯 **Optimization Focus**: Binary size reduction vs runtime efficiency
 

@@ -62,15 +62,6 @@ out := builder.String() // Finalize the string hiding the error
 out, err := builder.StringErr() // OR finalize with error handling
 
 // out: "Apple - Banana - Piñata - Ñandu", err: nil
-
-
-// Multilingual error messages
-OutLang(ES) // Set Spanish
-err := Err(D.Invalid, D.Format) // out: "inválido formato"
-
-OutLang()   // Auto-detect system language
-err = Err(D.Cannot, D.Round, D.NonNumeric, D.Value).Error()
-// Output in user's detected language
 ```
 
 ## 📚 Standard Library Equivalents
@@ -253,6 +244,10 @@ OutLang(ES) // Set global language to Spanish or OutLang() without parameters to
 
 err := Err(D.Format, D.Invalid)
 // → "formato inválido"
+
+// return strings
+msg := T(FR, D.Format, D.Invalid)
+// → "format invalide"
 
 // Force French
 err = Err(FR, D.Empty, D.String)

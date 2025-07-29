@@ -32,7 +32,7 @@
 ## 🌍 Basic Usage
 
 ```go
-OutLang(ES) // Set Spanish globally
+OutLang(ES) // Set global language to Spanish (using lang constant)
 
 // Usage examples:
 
@@ -44,8 +44,8 @@ msg := T(ES, D.Format, D.Invalid)
 err := Err(D.Format, D.Invalid)
 // → "formato inválido"
 
-err = Err(D.Numbers, D.Negative, D.Not, D.Supported)
-// → "números negativo no soportado"
+err = Err(D.Number, D.Negative, D.Not, D.Supported)
+// → "número negativo no soportado"
 
 // Force French
 err = Err(FR, D.Empty, D.String)
@@ -56,6 +56,26 @@ err = Err(D.Cannot, D.Round, D.NonNumeric, D.Value)
 ```
 
 ---
+
+
+## 🌐 Minimal HTTP API Example
+
+```go
+import (
+    "encoding/json"
+    "net/http"
+    . "github.com/cdvelop/tinystring"
+)
+
+func handler(w http.ResponseWriter, r *http.Request) {
+    lang := r.URL.Query().Get("lang") // e.g. ?lang=ES
+    resp := map[string]string{
+        "error": T(lang, D.Format, D.Invalid),
+    }
+    w.Header().Set("Content-Type", "application/json")
+    json.NewEncoder(w).Encode(resp)
+}
+```
 
 ## 🧩 Custom Dictionary
 
@@ -74,16 +94,6 @@ var MD = MyDict{
 
 err := Err(D.Format, MD.Email, D.Invalid)
 // → "formato correo inválido"
-```
-
----
-
-## 🛠️ Language Configuration
-
-```go
-OutLang(ES)     // Set global language
-OutLang()       // Auto-detect (env or browser)
-err := Err(DE, D.Invalid, D.Value) // Force German in-line
 ```
 
 ---

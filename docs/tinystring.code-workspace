@@ -1,0 +1,14 @@
+{
+	"folders": [
+		{
+			"path": ".."
+		},
+		{
+			"path": "../../../Fork/fasthttp"
+		},
+		{
+			"path": "../../../Fork/bytebufferpool"
+		}
+	],
+	"settings": {}
+}
