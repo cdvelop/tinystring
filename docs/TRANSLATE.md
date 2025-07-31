@@ -32,14 +32,25 @@
 ## 🌍 Basic Usage
 
 ```go
-OutLang(ES) // Set global language to Spanish (using lang constant)
+// Set global language to Spanish (using lang constant), returns "ES"
+code := OutLang(ES) // returns "ES"
+code = OutLang()    // auto-detects and returns code (e.g. "EN")
+// If an error occurs or the language is not recognized, "EN" is always returned by default
 
 // Usage examples:
 
 // return strings
+// Force to Spanish (ES) only for this response, not globally.
+// Useful for personalized user replies.
 msg := T(ES, D.Format, D.Invalid)
 // → "formato inválido"
 
+// Force French
+err = Err(FR, D.Empty, D.String)
+// → "vide chaîne" (forced French)
+
+
+// Use global language (e.g. Spanish) for error messages
 // return error
 err := Err(D.Format, D.Invalid)
 // → "formato inválido"
@@ -47,12 +58,8 @@ err := Err(D.Format, D.Invalid)
 err = Err(D.Number, D.Negative, D.Not, D.Supported)
 // → "número negativo no soportado"
 
-// Force French
-err = Err(FR, D.Empty, D.String)
-// → "vide chaîne" (forced French)
-
-OutLang() // Auto-detect system/browser language
-err = Err(D.Cannot, D.Round, D.NonNumeric, D.Value)
+err = Err(D.Cannot, D.Round, D.Value, D.NonNumeric)
+// → "no se puede redondear valor no numérico"
 ```
 
 ---
@@ -92,8 +99,9 @@ var MD = MyDict{
     Email: LocStr{"email", "correo", "email", "email", "البريد الإلكتروني", "Courriel", "Эл. адрес", "电邮", "ईमेल"},
 }
 
-err := Err(D.Format, MD.Email, D.Invalid)
-// → "formato correo inválido"
+// Usage with custom dictionary
+err := Err("es",D.Format, MD.Email, MD.User, D.Invalid)
+// → "formato correo usuario inválido"
 ```
 
 ---

@@ -240,7 +240,9 @@ err := Errf("invalid value: %s at position %d", "abc", 5)
 **TinyString** enables multilingual error messages using reusable dictionary terms. It supports 9 languages and allows global or inline language selection.
 
 ```go
-OutLang(ES) // Set global language to Spanish or OutLang() without parameters to Auto-detect system/browser language
+// Set and get current language code
+code := OutLang(ES) // returns "ES"
+code = OutLang()    // auto-detects and returns code (e.g. "EN")
 
 err := Err(D.Format, D.Invalid)
 // → "formato inválido"
