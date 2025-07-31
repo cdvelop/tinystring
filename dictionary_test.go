@@ -8,7 +8,7 @@ import (
 func TestDictionaryBasicFunctionality(t *testing.T) {
 	// Test default English
 	err := Err(D.Format, D.Invalid).Error()
-	expected := T(D.Format, D.Invalid)
+	expected := T(D.Format, D.Invalid).String()
 	if err != expected {
 		t.Errorf("Expected '%s', got '%s'", expected, err)
 	}
@@ -19,7 +19,7 @@ func TestDictionarySpanishTranslation(t *testing.T) {
 	OutLang(ES)
 
 	err := Err(D.Format, D.Invalid).Error()
-	expected := T(ES, D.Format, D.Invalid)
+	expected := T(ES, D.Format, D.Invalid).String()
 	if err != expected {
 		t.Errorf("Expected '%s', got '%s'", expected, err)
 	}

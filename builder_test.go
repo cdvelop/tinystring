@@ -137,13 +137,13 @@ func TestBuilderPattern(t *testing.T) {
 // TestTFunction tests the T translation function
 func TestTFunction(t *testing.T) {
 	// Test basic translation
-	out := T(D.Invalid, D.Value)
+	out := T(D.Invalid, D.Value).String()
 	if out == "" {
 		t.Error("T function returned empty string")
 	}
 
 	// Test with language
-	result2 := T(ES, D.Invalid, D.Value)
+	result2 := T(ES, D.Invalid, D.Value).String()
 	if result2 == "" {
 		t.Error("T function with language returned empty string")
 	}

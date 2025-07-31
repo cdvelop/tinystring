@@ -248,7 +248,7 @@ err := Err(D.Format, D.Invalid)
 // → "formato inválido"
 
 // return strings
-msg := T(FR, D.Format, D.Invalid)
+msg := T(FR, D.Format, D.Invalid).String()
 // → "format invalide"
 
 // Force French

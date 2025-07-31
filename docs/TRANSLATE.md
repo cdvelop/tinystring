@@ -42,8 +42,12 @@ code = OutLang()    // auto-detects and returns code (e.g. "EN")
 // return strings
 // Force to Spanish (ES) only for this response, not globally.
 // Useful for personalized user replies.
-msg := T(ES, D.Format, D.Invalid)
+msg := T(ES, D.Format, D.Invalid).String()
 // → "formato inválido"
+
+// Capitalize translation (first letter of each word uppercase)
+msgCap := T(ES, D.Format, D.Invalid).Capitalize().String()
+// → "Formato Inválido"
 
 // Force French
 err = Err(FR, D.Empty, D.String)
@@ -77,7 +81,7 @@ import (
 func handler(w http.ResponseWriter, r *http.Request) {
     lang := r.URL.Query().Get("lang") // e.g. ?lang=ES
     resp := map[string]string{
-        "error": T(lang, D.Format, D.Invalid),
+        "error": T(lang, D.Format, D.Invalid).String(),
     }
     w.Header().Set("Content-Type", "application/json")
     json.NewEncoder(w).Encode(resp)

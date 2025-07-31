@@ -7,19 +7,18 @@ package tinystring
 // Usage examples:
 // T(D.Format, D.Invalid) returns "invalid format"
 // T(ES, D.Format, D.Invalid) returns "formato inválido"
-func T(values ...any) string {
-	if len(values) == 0 {
-		return ""
-	}
-
-	// Use builder pattern for efficient string construction
+// T creates a translated string with support for multilingual translations
+// Same functionality as Err but returns *conv for further formatting
+// This function is used internally by the builder API for efficient string construction
+//
+// Usage examples:
+// T(D.Format, D.Invalid) returns *conv with "invalid format"
+// T(ES, D.Format, D.Invalid) returns *conv with "formato inválido"
+func T(values ...any) *conv {
 	c := getConv()
-	defer c.putConv()
-
 	// UNIFIED PROCESSING: Use shared intermediate function
 	processTranslatedMessage(c, buffOut, values...)
-	// Return the constructed string
-	return c.getString(buffOut)
+	return c
 }
 
 // =============================================================================
