@@ -12,8 +12,6 @@ const (
 	// ASCII case conversion constant
 	asciiCaseDiff = 32
 	// Buffer capacity constants
-	smallBufCap   = 4  // small arrays/words
-	mediumBufCap  = 10 // medium text operations
 	defaultBufCap = 16 // default buffer size
 )
 

@@ -23,6 +23,7 @@ var D = struct {
 	Compilation   LocStr // "compilation"
 	Configuration LocStr // "configuration"
 	Connection    LocStr // "connection"
+	Create        LocStr // "create"
 	Debugging     LocStr // "debugging"
 	Decimal       LocStr // "decimal"
 	Delimiter     LocStr // "delimiter"
@@ -41,6 +42,8 @@ var D = struct {
 	Handler       LocStr // "handler"
 	Language      LocStr // "language"
 	Icons         LocStr // "icons"
+	Insert        LocStr // "insert"
+	Keyboard      LocStr // "keyboard"
 	Implemented   LocStr // "implemented"
 	In            LocStr // "in"
 	Index         LocStr // "index"
@@ -86,6 +89,7 @@ var D = struct {
 	Space         LocStr // "space"
 	Status        LocStr // "status"
 	String        LocStr // "string"
+	Shortcuts     LocStr // "shortcuts"
 	Supported     LocStr // "supported"
 	Switch        LocStr // "switch"
 	Switching     LocStr // "switching"
@@ -121,6 +125,7 @@ var D = struct {
 	LocStr{"compilation", "compilación", "编译", "संकलन", "تجميع", "compilação", "compilation", "kompilierung", "компиляция"},
 	LocStr{"configuration", "configuración", "配置", "कॉन्फ़िगरेशन", "تكوين", "configuração", "configuration", "Konfiguration", "конфигурация"},
 	LocStr{"connection", "conexión", "连接", "संपर्क", "اتصال", "conexão", "connexion", "Verbindung", "соединение"},
+	LocStr{"create", "crear", "创建", "बनाएँ", "إنشاء", "criar", "créer", "erstellen", "создать"},
 	LocStr{"debugging", "depuración", "调试", "डिबगिंग", "تصحيح", "depuração", "débogage", "debuggen", "отладка"},
 	LocStr{"decimal", "decimal", "十进制", "दशमलव", "عشري", "decimal", "décimal", "Dezimal", "десятичная"},
 	LocStr{"delimiter", "delimitador", "分隔符", "सीमांकक", "محدد", "delimitador", "délimiteur", "Trennzeichen", "разделитель"},
@@ -139,6 +144,8 @@ var D = struct {
 	LocStr{"handler", "manejador", "处理程序", "हैंडलर", "معالج", "manipulador", "gestionnaire", "Handler", "обработчик"},
 	LocStr{"language", "idioma", "语言", "भाषा", "لغة", "idioma", "langue", "Sprache", "язык"},
 	LocStr{"icons", "iconos", "图标", "आइकन", "أيقونات", "ícones", "icônes", "Symbole", "значки"},
+	LocStr{"insert", "insertar", "插入", "सम्मिलित करें", "إدراج", "inserir", "insérer", "einfügen", "вставить"},
+	LocStr{"keyboard", "teclado", "键盘", "कीबोर्ड", "لوحة المفاتيح", "teclado", "clavier", "Tastatur", "клавиатура"},
 	LocStr{"implemented", "implementado", "已实现", "कार्यान्वित", "مُنفذ", "implementado", "implémenté", "implementiert", "реализовано"},
 	LocStr{"in", "en", "在", "में", "في", "em", "dans", "in", "в"},
 	LocStr{"index", "índice", "索引", "इंडेक्स", "فهرس", "índice", "index", "Index", "индекс"},
@@ -154,8 +161,8 @@ var D = struct {
 	LocStr{"mode", "modo", "模式", "मोड", "وضع", "modo", "mode", "Modus", "режим"},
 	LocStr{"modes", "modos", "模式", "मोड", "أوضاع", "modos", "modes", "Modi", "режимы"},
 	LocStr{"more", "más", "更多", "अधिक", "أكثر", "mais", "plus", "mehr", "больше"},
-	LocStr{"must", "debe", "必须", "चाहिए", "يجب", "deve", "doit", "muss", "должен"},
 	LocStr{"move", "mover", "移动", "स्थानांतरित करें", "نقل", "mover", "déplacer", "verschieben", "переместить"},
+	LocStr{"must", "debe", "必须", "चाहिए", "يجب", "deve", "doit", "muss", "должен"},
 	LocStr{"negative", "negativo", "负", "नकारात्मक", "سالب", "negativo", "négatif", "negativ", "отрицательный"},
 	LocStr{"nil", "nulo", "空值", "शून्य मान", "قيمة فارغة", "nulo", "nul", "Nullwert", "нуль"},
 	LocStr{"non-numeric", "no numérico", "非数字", "गैर-संख्यात्मक", "غير رقمي", "não numérico", "non numérique", "nicht numerisch", "нечисловой"},
@@ -184,6 +191,7 @@ var D = struct {
 	LocStr{"space", "espacio", "空间", "जगह", "فضاء", "espaço", "espace", "Raum", "пространство"},
 	LocStr{"status", "estado", "状态", "स्थिति", "حالة", "status", "statut", "Status", "статус"},
 	LocStr{"string", "cadena", "字符串", "स्ट्रिंग", "سلسلة", "string", "chaîne", "Zeichenkette", "строка"},
+	LocStr{"shortcuts", "atajos", "快捷键", "शॉर्टकट्स", "اختصارات", "atalhos", "raccourcis", "Kurzbefehle", "ярлыки"},
 	LocStr{"supported", "soportado", "支持", "समर्थित", "مدعوم", "suportado", "pris en charge", "unterstützt", "поддерживается"},
 	LocStr{"switch", "cambiar", "切换", "स्विच", "تبديل", "mudar", "changer", "wechseln", "переключить"},
 	LocStr{"switching", "cambiando", "切换中", "स्विच कर रहा है", "تبديل", "mudando", "changement", "wechseln", "переключение"},

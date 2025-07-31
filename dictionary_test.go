@@ -1,6 +1,9 @@
 package tinystring
 
-import "testing"
+import (
+	"reflect"
+	"testing"
+)
 
 func TestDictionaryBasicFunctionality(t *testing.T) {
 	// Test default English
@@ -83,4 +86,28 @@ func TestComplexErrorComposition(t *testing.T) {
 
 	// Reset to English
 	OutLang(EN)
+}
+
+func TestDictionaryConsistency(t *testing.T) {
+	typeOfD := reflect.TypeOf(D)
+	valueOfD := reflect.ValueOf(D)
+	for i := 0; i < typeOfD.NumField(); i++ {
+		field := typeOfD.Field(i)
+		fieldName := field.Name
+		fieldValue := valueOfD.Field(i).Interface().(LocStr)
+		lowerFieldName := Convert(fieldName).Low().String()
+		eng := fieldValue[EN]
+		// Tomar los 2 primeros y 2 últimos caracteres
+		fnLen := len(lowerFieldName)
+		engLen := len(eng)
+		if fnLen >= 2 && engLen >= 2 {
+			fnFirst := lowerFieldName[:2]
+			fnLast := lowerFieldName[fnLen-2:]
+			engFirst := eng[:2]
+			engLast := eng[engLen-2:]
+			if fnFirst != engFirst || fnLast != engLast {
+				t.Errorf("Field '%s' value '%s' does not match first/last 2 chars of field name '%s'", fieldName, eng, lowerFieldName)
+			}
+		}
+	}
 }
