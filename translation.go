@@ -74,31 +74,62 @@ func detectLanguage(c *conv, args []any) (lang, int) {
 // REFACTORED: Uses wrString instead of direct buffer access
 func processTranslatedArgs(c *conv, dest buffDest, args []any, currentLang lang, startIndex int) {
 	for i := startIndex; i < len(args); i++ {
-		if i > startIndex {
-			// Add space between words for readability using wrString
-			c.wrString(dest, " ")
-		}
-
 		arg := args[i]
 		switch v := arg.(type) {
 		case LocStr:
-			// Translate LocStr using specified/detected language
 			c.wrTranslation(v, currentLang, dest)
-
 		case string:
-			// Direct string - write using wrString
 			c.wrString(dest, v)
-
 		default:
-			// Convert other types to string using anyToBuff
-			c.anyToBuff(buffWork, v) // Convert to work buffer first
+			c.anyToBuff(buffWork, v)
 			if c.hasContent(buffWork) {
 				workResult := c.getString(buffWork)
 				c.wrString(dest, workResult)
-				c.rstBuffer(buffWork) // Clear work buffer for next use
+				c.rstBuffer(buffWork)
 			}
 		}
+
+		// Agregar espacio después, excepto si es el último o el siguiente es separador
+		if shouldAddSpace(args, i) {
+			c.wrString(dest, " ")
+		}
 	}
+}
+
+// shouldAddSpace determina si se debe agregar espacio después del argumento actual
+func shouldAddSpace(args []any, currentIndex int) bool {
+	// No agregar espacio si es el último argumento
+	if currentIndex >= len(args)-1 {
+		return false
+	}
+
+	// Si el argumento actual termina en newline, no agregar espacio
+	if currentStr, ok := args[currentIndex].(string); ok {
+		if len(currentStr) > 0 && currentStr[len(currentStr)-1] == '\n' {
+			return false
+		}
+	}
+
+	// Si el siguiente argumento es un string separador, no agregar espacio
+	if nextStr, ok := args[currentIndex+1].(string); ok {
+		return !isSeparatorString(nextStr)
+	}
+
+	// Para otros tipos (LocStr, etc.) sí agregar espacio
+	return true
+}
+
+// isSeparatorString retorna true si el string es un separador que no debe tener espacio antes
+func isSeparatorString(s string) bool {
+	switch s {
+	case ":", ",", ".", " ", ")", "(", "-":
+		return true
+	}
+	// También considerar strings que terminan en newline como separadores
+	if len(s) > 0 && s[len(s)-1] == '\n' {
+		return true
+	}
+	return false
 }
 
 // wrTranslation extracts translation for specific language from LocStr and writes to destination buffer
