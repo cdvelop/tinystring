@@ -6,6 +6,32 @@ var defLang lang = EN
 // Language enumeration for supported languages
 type lang uint8
 
+// String devuelve el nombre del lenguaje como string (ej: EN => "EN")
+func (l lang) String() string {
+	switch l {
+	case EN:
+		return "EN"
+	case ES:
+		return "ES"
+	case ZH:
+		return "ZH"
+	case HI:
+		return "HI"
+	case AR:
+		return "AR"
+	case PT:
+		return "PT"
+	case FR:
+		return "FR"
+	case DE:
+		return "DE"
+	case RU:
+		return "RU"
+	default:
+		return "EN" // fallback
+	}
+}
+
 const (
 	// Group 1: Core Essential Languages (Maximum Global Reach)
 	EN lang = iota // 0 - English (default)
@@ -58,22 +84,23 @@ const (
 //	err := Err(MyDictionary.File, D.Not, D.Found) // -> "file not found", "archivo no encontrado", etc.
 type LocStr [9]string
 
-// OutLang sets the default output language.
+// OutLang sets and returns the current output language as a string.
 //
-// OutLang()                // Auto-detects system/browser language
-// OutLang(ES)              // Set Spanish as default (using lang constant)
-// OutLang("ES")            // Set Spanish as default (using string code)
-// OutLang("fr")            // Set French as default (case-insensitive)
-// OutLang("en-US")         // Accepts locale strings, parses to EN
+// OutLang()                // Auto-detects system/browser language, returns code (e.g. "EN")
+// OutLang(ES)              // Set Spanish as default (using lang constant), returns "ES"
+// OutLang("ES")            // Set Spanish as default (using string code), returns "ES"
+// OutLang("fr")            // Set French as default (case-insensitive), returns "FR"
+// OutLang("en-US")         // Accepts locale strings, parses to EN, returns "EN"
 //
 // If a string is passed, it is automatically parsed using supported codes.
 // If a lang value is passed, it is assigned directly.
 // If another type is passed, nothing happens.
-func OutLang(l ...any) {
+// Always returns the current language code as string (e.g. "EN", "ES", etc).
+func OutLang(l ...any) string {
 	c := getConv()
 	if len(l) == 0 {
 		defLang = c.getSystemLang() // from env.front.go or env.back.go
-		return
+		return defLang.String()
 	}
 
 	switch v := l[0].(type) {
@@ -82,6 +109,8 @@ func OutLang(l ...any) {
 	case string:
 		defLang = c.langParser(v)
 	}
+
+	return defLang.String()
 }
 
 // langParser processes a list of language strings (e.g., from env vars or browser settings)
@@ -102,18 +131,26 @@ func (c *conv) langParser(langStrings ...string) lang {
 		if code == "" {
 			continue
 		}
-		// Convert to lowercase and map to the internal lang type.
-		code = Convert(code).Low().String()
+
 		// Inline mapLangCode logic
-		return mapLangCode(code)
+		return c.mapLangCode(code)
 	}
 
-	c.putConv()
+	// c.putConv()
 
 	return EN // Default fallback if no valid language string is found.
 }
 
-func mapLangCode(code string) lang {
+func (c *conv) mapLangCode(strVal string) lang {
+
+	// Convert to lowercase and map to internal lang typec
+	c.rstBuffer(buffWork) // Clear work buffer before use
+	c.wrString(buffWork, strVal)
+	// use changeCase
+	c.changeCase(true, buffWork)
+
+	code := c.getString(buffWork) // Get lowercase string
+
 	switch code {
 	// Group 1
 	case "en":

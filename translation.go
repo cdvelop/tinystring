@@ -61,15 +61,7 @@ func detectLanguage(c *conv, args []any) (lang, int) {
 	// If first argument is a string of length 2, treat as language code
 	if strVal, ok := args[0].(string); ok && len(strVal) == 2 {
 
-		// Convert to lowercase and map to internal lang typec
-		c.rstBuffer(buffWork) // Clear work buffer before use
-		c.wrString(buffWork, strVal)
-		// use changeCase
-		c.changeCase(true, buffWork)
-
-		strVal = c.getString(buffWork) // Get lowercase string
-
-		return mapLangCode(strVal), 1 // Skip the language argument in processing
+		return c.mapLangCode(strVal), 1 // Skip the language argument in processing
 	}
 
 	// No language specified, use default
