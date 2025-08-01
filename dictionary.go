@@ -7,207 +7,307 @@ package tinystring
 // avoiding the need for a separate 'type dictionary struct' declaration.
 // The usage API (e.g., D.Argument) remains unchanged.
 var D = struct {
-	Allowed       LocStr // "allowed"
-	Changed       LocStr // "changed"
-	Argument      LocStr // "argument"
-	Assign        LocStr // "assign"
-	Assignable    LocStr // "assignable"
-	BackingUp     LocStr // "backing up"
-	Be            LocStr // "be"
-	Binary        LocStr // "binary"
+	// A
+	Allowed    LocStr // "allowed"
+	Arrow      LocStr // "arrow"
+	Argument   LocStr // "argument"
+	Assign     LocStr // "assign"
+	Assignable LocStr // "assignable"
+
+	// B
+	BackingUp LocStr // "backing up"
+	Be        LocStr // "be"
+	Binary    LocStr // "binary"
+
+	// C
 	Call          LocStr // "call"
 	Cannot        LocStr // "cannot"
 	Cancel        LocStr // "cancel"
+	Changed       LocStr // "changed"
 	Character     LocStr // "character"
 	Coding        LocStr // "coding"
 	Compilation   LocStr // "compilation"
 	Configuration LocStr // "configuration"
 	Connection    LocStr // "connection"
+	Content       LocStr // "content"
 	Create        LocStr // "create"
-	Debugging     LocStr // "debugging"
-	Decimal       LocStr // "decimal"
-	Delimiter     LocStr // "delimiter"
-	Digit         LocStr // "digit"
-	Element       LocStr // "element"
-	Empty         LocStr // "empty"
-	End           LocStr // "end"
-	Exceeds       LocStr // "exceeds"
-	Execute       LocStr // "execute"
-	Failed        LocStr // "failed"
-	Field         LocStr // "field"
-	Fields        LocStr // "fields"
-	Files         LocStr // "files"
-	Format        LocStr // "format"
-	Found         LocStr // "found"
-	Handler       LocStr // "handler"
-	Language      LocStr // "language"
-	Icons         LocStr // "icons"
-	Insert        LocStr // "insert"
-	Keyboard      LocStr // "keyboard"
-	Implemented   LocStr // "implemented"
-	In            LocStr // "in"
-	Index         LocStr // "index"
-	Information   LocStr // "information"
-	Input         LocStr // "input"
-	Install       LocStr // "install"
-	Installation  LocStr // "installation"
-	Invalid       LocStr // "invalid"
-	Maximum       LocStr // "maximum"
-	Method        LocStr // "method"
-	Missing       LocStr // "missing"
-	Mismatch      LocStr // "mismatch"
-	Mode          LocStr // "mode"
-	Modes         LocStr // "modes"
-	More          LocStr // "more"
-	Move          LocStr // "move"
-	Must          LocStr // "must"
-	Negative      LocStr // "negative"
-	Nil           LocStr // "null"
-	NonNumeric    LocStr // "non-numeric"
-	Not           LocStr // "not"
-	NotOfType     LocStr // "not of type"
-	Number        LocStr // "number"
-	Numbers       LocStr // "numbers"
-	Of            LocStr // "of"
-	Options       LocStr // "options"
-	Out           LocStr // "out"
-	Overflow      LocStr // "overflow"
-	Page          LocStr // "page"
-	Pointer       LocStr // "pointer"
-	Point         LocStr // "point"
-	Preparing     LocStr // "preparing"
-	Production    LocStr // "production"
-	Provided      LocStr // "provided"
-	Quit          LocStr // "quit"
-	Range         LocStr // "range"
-	Read          LocStr // "read"
-	Required      LocStr // "required"
-	Round         LocStr // "round"
-	Seconds       LocStr // "seconds"
-	Session       LocStr // "session"
-	Slice         LocStr // "slice"
-	Space         LocStr // "space"
-	Status        LocStr // "status"
-	String        LocStr // "string"
-	Shortcuts     LocStr // "shortcuts"
-	Supported     LocStr // "supported"
-	Switch        LocStr // "switch"
-	Switching     LocStr // "switching"
-	Sync          LocStr // "sync"
-	System        LocStr // "system"
-	Test          LocStr // "test"
-	Testing       LocStr // "testing"
-	Time          LocStr // "time"
-	To            LocStr // "to"
-	Type          LocStr // "type"
-	Unexported    LocStr // "unexported"
-	Unknown       LocStr // "unknown"
-	Unsigned      LocStr // "unsigned"
-	Use           LocStr // "use"
-	Valid         LocStr // "valid"
-	Validating    LocStr // "validating"
-	Value         LocStr // "value"
-	Zero          LocStr // "zero"
+
+	// D
+	Debugging LocStr // "debugging"
+	Decimal   LocStr // "decimal"
+	Delimiter LocStr // "delimiter"
+	Digit     LocStr // "digit"
+	Down      LocStr // "down"
+
+	// E
+	Edit    LocStr // "edit"
+	Element LocStr // "element"
+	Empty   LocStr // "empty"
+	End     LocStr // "end"
+	Exceeds LocStr // "exceeds"
+	Execute LocStr // "execute"
+
+	// F
+	Failed LocStr // "failed"
+	Field  LocStr // "field"
+	Fields LocStr // "fields"
+	Files  LocStr // "files"
+	Format LocStr // "format"
+	Found  LocStr // "found"
+
+	// H
+	Handler LocStr // "handler"
+
+	// I
+	Icons        LocStr // "icons"
+	Insert       LocStr // "insert"
+	Left         LocStr // "left"
+	Implemented  LocStr // "implemented"
+	In           LocStr // "in"
+	Index        LocStr // "index"
+	Information  LocStr // "information"
+	Input        LocStr // "input"
+	Install      LocStr // "install"
+	Installation LocStr // "installation"
+	Invalid      LocStr // "invalid"
+
+	// K
+	Keyboard LocStr // "keyboard"
+
+	// L
+	Language LocStr // "language"
+
+	// M
+	Maximum  LocStr // "maximum"
+	Method   LocStr // "method"
+	Missing  LocStr // "missing"
+	Mismatch LocStr // "mismatch"
+	Mode     LocStr // "mode"
+	Modes    LocStr // "modes"
+	More     LocStr // "more"
+	Move     LocStr // "move"
+	Must     LocStr // "must"
+
+	// N
+	Negative   LocStr // "negative"
+	Nil        LocStr // "null"
+	NonNumeric LocStr // "non-numeric"
+	Not        LocStr // "not"
+	NotOfType  LocStr // "not of type"
+	Number     LocStr // "number"
+	Numbers    LocStr // "numbers"
+
+	// O
+	Of       LocStr // "of"
+	Options  LocStr // "options"
+	Out      LocStr // "out"
+	Overflow LocStr // "overflow"
+
+	// P
+	Page       LocStr // "page"
+	Pointer    LocStr // "pointer"
+	Point      LocStr // "point"
+	Preparing  LocStr // "preparing"
+	Production LocStr // "production"
+	Provided   LocStr // "provided"
+
+	// Q
+	Quit LocStr // "quit"
+
+	// R
+	Range    LocStr // "range"
+	Read     LocStr // "read"
+	Required LocStr // "required"
+	Right    LocStr // "right"
+	Round    LocStr // "round"
+
+	// S
+	Seconds   LocStr // "seconds"
+	Session   LocStr // "session"
+	Slice     LocStr // "slice"
+	Space     LocStr // "space"
+	Status    LocStr // "status"
+	String    LocStr // "string"
+	Shortcuts LocStr // "shortcuts"
+	Supported LocStr // "supported"
+	Switch    LocStr // "switch"
+	Switching LocStr // "switching"
+	Sync      LocStr // "sync"
+	System    LocStr // "system"
+
+	// T
+	Tab     LocStr // "tab"
+	Test    LocStr // "test"
+	Testing LocStr // "testing"
+	Text    LocStr // "text"
+	Time    LocStr // "time"
+	To      LocStr // "to"
+	Type    LocStr // "type"
+
+	// U
+	Unexported LocStr // "unexported"
+	Unknown    LocStr // "unknown"
+	Unsigned   LocStr // "unsigned"
+	Up         LocStr // "up"
+	Use        LocStr // "use"
+
+	// V
+	Valid      LocStr // "valid"
+	Validating LocStr // "validating"
+	Value      LocStr // "value"
+
+	// Z
+	Zero LocStr // "zero"
 }{
-	LocStr{"allowed", "permitido", "允许", "अनुमति", "مسموح", "permitido", "autorisé", "erlaubt", "разрешено"},
-	LocStr{"changed", "cambiado", "更改", "परिवर्तित", "تم التغيير", "alterado", "changé", "geändert", "изменено"},
-	LocStr{"argument", "argumento", "参数", "तर्क", "وسيط", "argumento", "argument", "Argument", "аргумент"},
-	LocStr{"assign", "asignar", "分配", "असाइन", "تعيين", "atribuir", "assigner", "zuweisen", "присвоить"},
-	LocStr{"assignable", "asignable", "可分配", "असाइन करने योग्य", "قابل للتعيين", "atributável", "assignable", "zuweisbar", "присваиваемый"},
-	LocStr{"backing up", "respaldando", "备份", "बैकअप", "نسخ احتياطي", "fazendo backup", "sauvegarde", "Sicherung", "резервное копирование"},
+	// A
+	LocStr{"Allowed", "Permitido", "允许", "अनुमति", "مسموح", "Permitido", "Autorisé", "Erlaubt", "Разрешено"},
+	LocStr{"Arrow", "Flecha", "箭头", "तीर", "سهم", "Seta", "Flèche", "Pfeil", "Стрелка"},
+	LocStr{"Argument", "Argumento", "参数", "तर्क", "وسيط", "Argumento", "Argument", "Argument", "Аргумент"},
+	LocStr{"Assign", "Asignar", "分配", "असाइन", "تعيين", "Atribuir", "Assigner", "Zuweisen", "Присвоить"},
+	LocStr{"Assignable", "Asignable", "可分配", "असाइन करने योग्य", "قابل للتعيين", "Atributável", "Assignable", "Zuweisbar", "Присваиваемый"},
+
+	// B
+	LocStr{"Backing up", "Respaldando", "备份", "बैकअप", "نسخ احتياطي", "Fazendo backup", "Sauvegarde", "Sicherung", "Резервное копирование"},
 	LocStr{"be", "ser", "是", "होना", "كون", "ser", "être", "sein", "быть"},
-	LocStr{"binary", "binario", "二进制", "二进制", "ثنائي", "binário", "binaire", "binär", "двоичный"},
-	LocStr{"call", "llamar", "调用", "कॉल", "استدعاء", "chamar", "appeler", "aufrufen", "вызвать"},
-	LocStr{"cannot", "no puede", "不能", "नहीं कर सकते", "لا يمكن", "não pode", "ne peut pas", "kann nicht", "не может"},
-	LocStr{"cancel", "cancelar", "取消", "रद्द करें", "إلغاء", "cancelar", "annuler", "abbrechen", "отменить"},
-	LocStr{"character", "caracter", "字符", "वर्ण", "حرف", "caractere", "caractère", "Zeichen", "символ"},
-	LocStr{"coding", "codificación", "编码", "कोडिंग", "ترميز", "codificação", "codage", "kodierung", "кодирование"},
-	LocStr{"compilation", "compilación", "编译", "संकलन", "تجميع", "compilação", "compilation", "kompilierung", "компиляция"},
-	LocStr{"configuration", "configuración", "配置", "कॉन्फ़िगरेशन", "تكوين", "configuração", "configuration", "Konfiguration", "конфигурация"},
-	LocStr{"connection", "conexión", "连接", "संपर्क", "اتصال", "conexão", "connexion", "Verbindung", "соединение"},
-	LocStr{"create", "crear", "创建", "बनाएँ", "إنشاء", "criar", "créer", "erstellen", "создать"},
-	LocStr{"debugging", "depuración", "调试", "डिबगिंग", "تصحيح", "depuração", "débogage", "debuggen", "отладка"},
-	LocStr{"decimal", "decimal", "十进制", "दशमलव", "عشري", "decimal", "décimal", "Dezimal", "десятичная"},
-	LocStr{"delimiter", "delimitador", "分隔符", "सीमांकक", "محدد", "delimitador", "délimiteur", "Trennzeichen", "разделитель"},
-	LocStr{"digit", "dígito", "数字", "अंक", "رقم", "dígito", "chiffre", "Ziffer", "цифра"},
-	LocStr{"element", "elemento", "元素", "एलिमेंट", "عنصر", "elemento", "élément", "Element", "элемент"},
-	LocStr{"empty", "vacío", "空", "खाली", "فارغ", "vazio", "vide", "leer", "пустой"},
-	LocStr{"end", "fin", "结束", "अंत", "نهاية", "fim", "fin", "Ende", "конец"},
-	LocStr{"exceeds", "excede", "超过", "अधिक", "يتجاوز", "excede", "dépasse", "überschreitet", "превышает"},
-	LocStr{"execute", "ejecutar", "执行", "निष्पादित करें", "تنفيذ", "executar", "exécuter", "ausführen", "выполнить"},
-	LocStr{"failed", "falló", "失败", "असफल", "فشل", "falhou", "échoué", "fehlgeschlagen", "не удалось"},
-	LocStr{"field", "campo", "字段", "फील्ड", "حقل", "campo", "champ", "Feld", "поле"},
-	LocStr{"fields", "campos", "字段集", "फील्ड्स", "حقول", "campos", "champs", "Felder", "поля"},
-	LocStr{"files", "archivos", "文件", "फ़ाइलें", "ملفات", "arquivos", "fichiers", "Dateien", "файлы"},
-	LocStr{"format", "formato", "格式", "प्रारूप", "تنسيق", "formato", "format", "Fmt", "формат"},
-	LocStr{"found", "encontrado", "找到", "मिला", "موجود", "encontrado", "trouvé", "gefunden", "найден"},
-	LocStr{"handler", "manejador", "处理程序", "हैंडलर", "معالج", "manipulador", "gestionnaire", "Handler", "обработчик"},
-	LocStr{"language", "idioma", "语言", "भाषा", "لغة", "idioma", "langue", "Sprache", "язык"},
-	LocStr{"icons", "iconos", "图标", "आइकन", "أيقونات", "ícones", "icônes", "Symbole", "значки"},
-	LocStr{"insert", "insertar", "插入", "सम्मिलित करें", "إدراج", "inserir", "insérer", "einfügen", "вставить"},
-	LocStr{"keyboard", "teclado", "键盘", "कीबोर्ड", "لوحة المفاتيح", "teclado", "clavier", "Tastatur", "клавиатура"},
-	LocStr{"implemented", "implementado", "已实现", "कार्यान्वित", "مُنفذ", "implementado", "implémenté", "implementiert", "реализовано"},
-	LocStr{"in", "en", "在", "में", "في", "em", "dans", "in", "в"},
-	LocStr{"index", "índice", "索引", "इंडेक्स", "فهرس", "índice", "index", "Index", "индекс"},
-	LocStr{"information", "información", "信息", "सूचना", "معلومات", "informação", "information", "Information", "информация"},
-	LocStr{"input", "entrada", "输入", "इनपुट", "إدخال", "entrada", "entrée", "eingabe", "ввод"},
-	LocStr{"install", "instalar", "安装", "इंस्टॉल", "تثبيت", "instalar", "installer", "installieren", "установить"},
-	LocStr{"installation", "instalación", "安装", "स्थापना", "التثبيت", "instalação", "installation", "installation", "установка"},
-	LocStr{"invalid", "inválido", "无效", "अमान्य", "غير صالح", "inválido", "invalide", "ungültig", "недопустимый"},
-	LocStr{"maximum", "máximo", "最大", "अधिकतम", "الحد الأقصى", "máximo", "maximum", "Maximum", "максимум"},
-	LocStr{"method", "método", "方法", "विधि", "طريقة", "método", "méthode", "Methode", "метод"},
-	LocStr{"missing", "falta", "缺少", "गुम", "مفقود", "ausente", "manquant", "fehlend", "отсутствует"},
-	LocStr{"mismatch", "desajuste", "不匹配", "बेमेल", "عدم تطابق", "incompatibilidade", "incompatibilité", "Nichtübereinstimmung", "несоответствие"},
-	LocStr{"mode", "modo", "模式", "मोड", "وضع", "modo", "mode", "Modus", "режим"},
-	LocStr{"modes", "modos", "模式", "मोड", "أوضاع", "modos", "modes", "Modi", "режимы"},
-	LocStr{"more", "más", "更多", "अधिक", "أكثر", "mais", "plus", "mehr", "больше"},
-	LocStr{"move", "mover", "移动", "स्थानांतरित करें", "نقل", "mover", "déplacer", "verschieben", "переместить"},
-	LocStr{"must", "debe", "必须", "चाहिए", "يجب", "deve", "doit", "muss", "должен"},
-	LocStr{"negative", "negativo", "负", "नकारात्मक", "سالب", "negativo", "négatif", "negativ", "отрицательный"},
-	LocStr{"nil", "nulo", "空值", "शून्य मान", "قيمة فارغة", "nulo", "nul", "Nullwert", "нуль"},
-	LocStr{"non-numeric", "no numérico", "非数字", "गैर-संख्यात्मक", "غير رقمي", "não numérico", "non numérique", "nicht numerisch", "нечисловой"},
-	LocStr{"not", "no", "不", "नहीं", "ليس", "não", "pas", "nicht", "не"},
-	LocStr{"not of type", "no es del tipo", "不是类型", "प्रकार नहीं है", "ليس من النوع", "não é do tipo", "n'est pas du type", "ist nicht vom Typ", "не того типа"},
-	LocStr{"number", "número", "数字", "संख्या", "رقم", "número", "nombre", "Zahl", "число"},
-	LocStr{"numbers", "números", "数字", "संख्याएं", "أرقام", "números", "nombres", "Zahlen", "числа"},
+	LocStr{"Binary", "Binario", "二进制", "二进制", "ثنائي", "Binário", "Binaire", "Binär", "Двоичный"},
+
+	// C
+	LocStr{"Call", "Llamar", "调用", "कॉल", "استدعاء", "Chamar", "Appeler", "Aufrufen", "Вызвать"},
+	LocStr{"Cannot", "No puede", "不能", "नहीं कर सकते", "لا يمكن", "Não pode", "Ne peut pas", "Kann nicht", "Не может"},
+	LocStr{"Cancel", "Cancelar", "取消", "रद्द करें", "إلغاء", "Cancelar", "Annuler", "Abbrechen", "Отменить"},
+	LocStr{"Changed", "Cambiado", "更改", "परिवर्तित", "تم التغيير", "Alterado", "Changé", "Geändert", "Изменено"},
+	LocStr{"Character", "Caracter", "字符", "वर्ण", "حرف", "Caractere", "Caractère", "Zeichen", "Символ"},
+	LocStr{"Coding", "Codificación", "编码", "कोडिंग", "ترميز", "Codificação", "Codage", "Kodierung", "Кодирование"},
+	LocStr{"Compilation", "Compilación", "编译", "संकलन", "تجميع", "Compilação", "Compilation", "Kompilierung", "Компиляция"},
+	LocStr{"Configuration", "Configuración", "配置", "कॉन्फ़िगरेशन", "تكوين", "Configuração", "Configuration", "Konfiguration", "Конфигурация"},
+	LocStr{"Connection", "Conexión", "连接", "संपर्क", "اتصال", "Conexão", "Connexion", "Verbindung", "Соединение"},
+	LocStr{"Content", "Contenido", "内容", "सामग्री", "محتوى", "Conteúdo", "Contenu", "Inhalt", "Содержимое"},
+	LocStr{"Create", "Crear", "创建", "बनाएँ", "إنشاء", "Criar", "Créer", "Erstellen", "Создать"},
+
+	// D
+	LocStr{"Debugging", "Depuración", "调试", "डिबगिंग", "تصحيح", "Depuração", "Débogage", "Debuggen", "Отладка"},
+	LocStr{"Decimal", "Decimal", "十进制", "दशमलव", "عشري", "Decimal", "Décimal", "Dezimal", "Десятичная"},
+	LocStr{"Delimiter", "Delimitador", "分隔符", "सीमांकक", "محدد", "Delimitador", "Délimiteur", "Trennzeichen", "Разделитель"},
+	LocStr{"Digit", "Dígito", "数字", "अंक", "رقم", "Dígito", "Chiffre", "Ziffer", "Цифра"},
+	LocStr{"Down", "Abajo", "下", "नीचे", "أسفل", "Baixo", "Bas", "Unten", "Вниз"},
+
+	// E
+	LocStr{"Edit", "Editar", "编辑", "संपादित करें", "تحرير", "Editar", "Éditer", "Bearbeiten", "Редактировать"},
+	LocStr{"Element", "Elemento", "元素", "एलिमेंट", "عنصر", "Elemento", "Élément", "Element", "Элемент"},
+	LocStr{"Empty", "Vacío", "空", "खाली", "فارغ", "Vazio", "Vide", "Leer", "Пустой"},
+	LocStr{"End", "Fin", "结束", "अंत", "نهاية", "Fim", "Fin", "Ende", "Конец"},
+	LocStr{"Exceeds", "Excede", "超过", "अधिक", "يتجاوز", "Excede", "Dépasse", "Überschreitet", "Превышает"},
+	LocStr{"Execute", "Ejecutar", "执行", "निष्पादित करें", "تنفيذ", "Executar", "Exécuter", "Ausführen", "Выполнить"},
+
+	// F
+	LocStr{"Failed", "Falló", "失败", "असफल", "فشل", "Falhou", "Échoué", "Fehlgeschlagen", "Не удалось"},
+	LocStr{"Field", "Campo", "字段", "फील्ड", "حقل", "Campo", "Champ", "Feld", "Поле"},
+	LocStr{"Fields", "Campos", "字段集", "फील्ड्स", "حقول", "Campos", "Champs", "Felder", "Поля"},
+	LocStr{"Files", "Archivos", "文件", "फ़ाइलें", "ملفات", "Arquivos", "Fichiers", "Dateien", "Файлы"},
+	LocStr{"Format", "Formato", "格式", "प्रारूप", "تنسيق", "Formato", "Format", "Fmt", "Формат"},
+	LocStr{"Found", "Encontrado", "找到", "मिला", "موجود", "Encontrado", "Trouvé", "Gefunden", "Найден"},
+
+	// H
+	LocStr{"Handler", "Manejador", "处理程序", "हैंडलर", "معالج", "Manipulador", "Gestionnaire", "Handler", "Обработчик"},
+
+	// I
+	LocStr{"Icons", "Iconos", "图标", "आइकन", "أيقونات", "Ícones", "Icônes", "Symbole", "Значки"},
+	LocStr{"Insert", "Insertar", "插入", "सम्मिलित करें", "إدراج", "Inserir", "Insérer", "Einfügen", "Вставить"},
+	LocStr{"Left", "Izquierda", "左", "बाएं", "يسار", "Esquerda", "Gauche", "Links", "Слева"},
+	LocStr{"Implemented", "Implementado", "已实现", "कार्यान्वित", "مُنفذ", "Implementado", "Implémenté", "Implementiert", "Реализовано"},
+	LocStr{"In", "En", "在", "में", "في", "Em", "Dans", "In", "В"},
+	LocStr{"Index", "Índice", "索引", "इंडेक्स", "فهرس", "Índice", "Index", "Index", "Индекс"},
+	LocStr{"Information", "Información", "信息", "सूचना", "معلومات", "Informação", "Information", "Information", "Информация"},
+	LocStr{"Input", "Entrada", "输入", "इनपुट", "إدخال", "Entrada", "Entrée", "Eingabe", "Ввод"},
+	LocStr{"Install", "Instalar", "安装", "इंस्टॉल", "تثبيت", "Instalar", "Installer", "Installieren", "Установить"},
+	LocStr{"Installation", "Instalación", "安装", "स्थापना", "التثبيت", "Instalação", "Installation", "Installation", "Установка"},
+	LocStr{"Invalid", "Inválido", "无效", "अमान्य", "غير صالح", "Inválido", "Invalide", "Ungültig", "Недопустимый"},
+
+	// K
+	LocStr{"Keyboard", "Teclado", "键盘", "कीबोर्ड", "لوحة المفاتيح", "Teclado", "Clavier", "Tastatur", "Клавиатура"},
+
+	// L
+	LocStr{"Language", "Idioma", "语言", "भाषा", "لغة", "Idioma", "Langue", "Sprache", "Язык"},
+
+	// M
+	LocStr{"Maximum", "Máximo", "最大", "अधिकतम", "الحد الأقصى", "Máximo", "Maximum", "Maximum", "Максимум"},
+	LocStr{"Method", "Método", "方法", "विधि", "طريقة", "Método", "Méthode", "Methode", "Метод"},
+	LocStr{"Missing", "Falta", "缺少", "गुम", "مفقود", "Ausente", "Manquant", "Fehlend", "Отсутствует"},
+	LocStr{"Mismatch", "Desajuste", "不匹配", "बेमेल", "عدم تطابق", "Incompatibilidade", "Incompatibilité", "Nichtübereinstimmung", "Несоответствие"},
+	LocStr{"Mode", "Modo", "模式", "मोड", "وضع", "Modo", "Mode", "Modus", "Режим"},
+	LocStr{"Modes", "Modos", "模式", "मोड", "أوضاع", "Modos", "Modes", "Modi", "Режимы"},
+	LocStr{"More", "Más", "更多", "अधिक", "أكثر", "Mais", "Plus", "Mehr", "Больше"},
+	LocStr{"Move", "Mover", "移动", "स्थानांतरित करें", "نقل", "Mover", "Déplacer", "Verschieben", "Переместить"},
+	LocStr{"Must", "Debe", "必须", "चाहिए", "يجب", "Deve", "Doit", "Muss", "Должен"},
+
+	// N
+	LocStr{"Negative", "Negativo", "负", "नकारात्मक", "سالب", "Negativo", "Négatif", "Negativ", "Отрицательный"},
+	LocStr{"Nil", "Nulo", "空值", "शून्य मान", "قيمة فارغة", "Nulo", "Nul", "Nullwert", "Нуль"},
+	LocStr{"Non-numeric", "No numérico", "非数字", "गैर-संख्यात्मक", "غير رقمي", "Não numérico", "Non numérique", "Nicht numerisch", "Нечисловой"},
+	LocStr{"Not", "No", "不", "नहीं", "ليس", "Não", "Pas", "Nicht", "Не"},
+	LocStr{"Not of type", "No es del tipo", "不是类型", "प्रकार नहीं है", "ليس من النوع", "Não é do tipo", "N'est pas du type", "Ist nicht vom Typ", "Не того типа"},
+	LocStr{"Number", "Número", "数字", "संख्या", "رقم", "Número", "Nombre", "Zahl", "Число"},
+	LocStr{"Numbers", "Números", "数字", "संख्याएं", "أرقام", "Números", "Nombres", "Zahlen", "Числа"},
+
+	// O
 	LocStr{"of", "de", "的", "का", "من", "de", "de", "von", "из"},
-	LocStr{"options", "opciones", "选项", "विकल्प", "خيارات", "opções", "options", "Optionen", "опции"},
-	LocStr{"out", "fuera", "出", "बाहर", "خارج", "fora", "hors", "aus", "вне"},
-	LocStr{"overflow", "desbordamiento", "溢出", "ओवरफ्लो", "فيض", "estouro", "débordement", "Überlauf", "переполнение"},
-	LocStr{"page", "página", "页面", "पृष्ठ", "صفحة", "página", "page", "Seite", "страница"},
-	LocStr{"pointer", "puntero", "指针", "पॉइंटर", "مؤشر", "ponteiro", "pointeur", "Zeiger", "указатель"},
-	LocStr{"point", "punto", "点", "बिंदु", "نقطة", "ponto", "point", "Punkt", "точка"},
-	LocStr{"preparing", "preparando", "准备", "तैयारी", "تحضير", "preparando", "préparation", "Vorbereitung", "подготовка"},
-	LocStr{"production", "producción", "生产", "उत्पादन", "إنتاج", "produção", "production", "produktion", "производство"},
-	LocStr{"provided", "proporcionado", "提供", "प्रदान किया गया", "مقدم", "fornecido", "fourni", "bereitgestellt", "предоставлено"},
-	LocStr{"quit", "salir", "退出", "छोड़ें", "إنهاء", "sair", "quitter", "beenden", "выйти"},
-	LocStr{"range", "rango", "范围", "रेंज", "نطاق", "intervalo", "plage", "Bereich", "диапазон"},
-	LocStr{"read", "leer", "读取", "पढ़ें", "قراءة", "ler", "lire", "lesen", "читать"},
-	LocStr{"required", "requerido", "必需", "आवश्यक", "مطلوب", "necessário", "requis", "erforderlich", "обязательный"},
-	LocStr{"round", "redondear", "圆", "गोल", "جولة", "arredondar", "arrondir", "runden", "округлить"},
-	LocStr{"seconds", "segundos", "秒", "सेकंड", "ثواني", "segundos", "secondes", "Sekunden", "секунды"},
-	LocStr{"session", "sesión", "会话", "सत्र", "جلسة", "sessão", "session", "Sitzung", "сессия"},
-	LocStr{"slice", "segmento", "切片", "स्लाइस", "شريحة", "fatia", "tranche", "Scheibe", "срез"},
-	LocStr{"space", "espacio", "空间", "जगह", "فضاء", "espaço", "espace", "Raum", "пространство"},
-	LocStr{"status", "estado", "状态", "स्थिति", "حالة", "status", "statut", "Status", "статус"},
-	LocStr{"string", "cadena", "字符串", "स्ट्रिंग", "سلسلة", "string", "chaîne", "Zeichenkette", "строка"},
-	LocStr{"shortcuts", "atajos", "快捷键", "शॉर्टकट्स", "اختصارات", "atalhos", "raccourcis", "Kurzbefehle", "ярлыки"},
-	LocStr{"supported", "soportado", "支持", "समर्थित", "مدعوم", "suportado", "pris en charge", "unterstützt", "поддерживается"},
-	LocStr{"switch", "cambiar", "切换", "स्विच", "تبديل", "mudar", "changer", "wechseln", "переключить"},
-	LocStr{"switching", "cambiando", "切换中", "स्विच कर रहा है", "تبديل", "mudando", "changement", "wechseln", "переключение"},
-	LocStr{"sync", "sincronización", "同步", "सिंक", "مزامنة", "sincronização", "synchronisation", "Synchronisierung", "синхронизация"},
-	LocStr{"system", "sistema", "系统", "सिस्टम", "نظام", "sistema", "système", "System", "система"},
-	LocStr{"test", "prueba", "测试", "परीक्षण", "اختبار", "teste", "test", "Test", "тест"},
-	LocStr{"testing", "probando", "测试中", "परीक्षण", "اختبارات", "testando", "test", "testen", "тестирование"},
-	LocStr{"time", "tiempo", "时间", "समय", "وقت", "tempo", "temps", "Zeit", "время"},
+	LocStr{"Options", "Opciones", "选项", "विकल्प", "خيارات", "Opções", "Options", "Optionen", "Опции"},
+	LocStr{"Out", "Fuera", "出", "बाहर", "خارج", "Fora", "Hors", "Aus", "Вне"},
+	LocStr{"Overflow", "Desbordamiento", "溢出", "ओवरफ्लो", "فيض", "Estouro", "Débordement", "Überlauf", "Переполнение"},
+
+	// P
+	LocStr{"Page", "Página", "页面", "पृष्ठ", "صفحة", "Página", "Page", "Seite", "Страница"},
+	LocStr{"Pointer", "Puntero", "指针", "पॉइंटर", "مؤشر", "Ponteiro", "Pointeur", "Zeiger", "Указатель"},
+	LocStr{"Point", "Punto", "点", "बिंदु", "نقطة", "Ponto", "Point", "Punkt", "Точка"},
+	LocStr{"Preparing", "Preparando", "准备", "तैयारी", "تحضير", "Preparando", "Préparation", "Vorbereitung", "Подготовка"},
+	LocStr{"Production", "Producción", "生产", "उत्पादन", "إنتاج", "Produção", "Production", "Produktion", "Производство"},
+	LocStr{"Provided", "Proporcionado", "提供", "प्रदान किया गया", "مقدم", "Fornecido", "Fourni", "Bereitgestellt", "Предоставлено"},
+
+	// Q
+	LocStr{"Quit", "Salir", "退出", "छोड़ें", "إنهاء", "Sair", "Quitter", "Beenden", "Выйти"},
+
+	// R
+	LocStr{"Range", "Rango", "范围", "रेंज", "نطاق", "Intervalo", "Plage", "Bereich", "Диапазон"},
+	LocStr{"Read", "Leer", "读取", "पढ़ें", "قراءة", "Ler", "Lire", "Lesen", "Читать"},
+	LocStr{"Required", "Requerido", "必需", "आवश्यक", "مطلوب", "Necessário", "Requis", "Erforderlich", "Обязательный"},
+	LocStr{"Right", "Derecha", "右", "दाएं", "يمين", "Direita", "Droite", "Rechts", "Справа"},
+	LocStr{"Round", "Redondear", "圆", "गोल", "جولة", "Arredondar", "Arrondir", "Runden", "Округлить"},
+
+	// S
+	LocStr{"Seconds", "Segundos", "秒", "सेकंड", "ثواني", "Segundos", "Secondes", "Sekunden", "Секунды"},
+	LocStr{"Session", "Sesión", "会话", "सत्र", "جلسة", "Sessão", "Session", "Sitzung", "Сессия"},
+	LocStr{"Slice", "Segmento", "切片", "स्लाइस", "شريحة", "Fatia", "Tranche", "Scheibe", "Срез"},
+	LocStr{"Space", "Espacio", "空间", "जगह", "فضاء", "Espaço", "Espace", "Raum", "Пространство"},
+	LocStr{"Status", "Estado", "状态", "स्थिति", "حالة", "Status", "Statut", "Status", "Статус"},
+	LocStr{"String", "Cadena", "字符串", "स्ट्रिंग", "سلسلة", "String", "Chaîne", "Zeichenkette", "Строка"},
+	LocStr{"Shortcuts", "Atajos", "快捷键", "शॉर्टकट्स", "اختصارات", "Atalhos", "Raccourcis", "Kurzbefehle", "Ярлыки"},
+	LocStr{"Supported", "Soportado", "支持", "समर्थित", "مدعوم", "Suportado", "Pris en charge", "Unterstützt", "Поддерживается"},
+	LocStr{"Switch", "Cambiar", "切换", "स्विच", "تبديل", "Mudar", "Changer", "Wechseln", "Переключить"},
+	LocStr{"Switching", "Cambiando", "切换中", "स्विच कर रहा है", "تبديل", "Mudando", "Changement", "Wechseln", "Переключение"},
+	LocStr{"Sync", "Sincronización", "同步", "सिंक", "مزامنة", "Sincronização", "Synchronisation", "Synchronisierung", "Синхронизация"},
+	LocStr{"System", "Sistema", "系统", "सिस्टम", "نظام", "Sistema", "Système", "System", "Система"},
+
+	// T
+	LocStr{"Tab", "Pestaña", "标签页", "टैब", "علامة تبويب", "Aba", "Onglet", "Registerkarte", "Вкладка"},
+	LocStr{"Test", "Prueba", "测试", "परीक्षण", "اختبار", "Teste", "Test", "Test", "Тест"},
+	LocStr{"Testing", "Probando", "测试中", "परीक्षण", "اختبارات", "Testando", "Test", "Testen", "Тестирование"},
+	LocStr{"Text", "Texto", "文本", "पाठ", "نص", "Texto", "Texte", "Text", "Текст"},
+	LocStr{"Time", "Tiempo", "时间", "समय", "وقت", "Tempo", "Temps", "Zeit", "Время"},
 	LocStr{"to", "a", "到", "को", "إلى", "para", "à", "zu", "к"},
-	LocStr{"type", "tipo", "类型", "प्रकार", "نوع", "tipo", "type", "Typ", "тип"},
-	LocStr{"unexported", "no exportado", "未导出", "गैर-निर्यातित", "غير مصدر", "não exportado", "non exporté", "nicht exportiert", "неэкспортированный"},
-	LocStr{"unknown", "desconocido", "未知", "अज्ञात", "غير معروف", "desconhecido", "inconnu", "unbekannt", "неизвестный"},
-	LocStr{"unsigned", "sin signo", "无符号", "अहस्ताक्षरित", "غير موقع", "sem sinal", "non signé", "vorzeichenlos", "беззнаковый"},
-	LocStr{"use", "usar", "使用", "उपयोग", "استخدام", "usar", "utiliser", "verwenden", "использовать"},
-	LocStr{"valid", "válido", "有效", "वैध", "صحيح", "válido", "valide", "gültig", "действительный"},
-	LocStr{"validating", "validando", "验证中", "सत्यापन हो रहा है", "التحقق من", "validando", "validation", "validieren", "проверка"},
-	LocStr{"value", "valor", "值", "मूल्य", "قيمة", "valor", "valeur", "Wert", "значение"},
-	LocStr{"zero", "cero", "零", "शून्य", "صفر", "zero", "zéro", "Null", "ноль"},
+	LocStr{"Type", "Tipo", "类型", "प्रकार", "نوع", "Tipo", "Type", "Typ", "Тип"},
+
+	// U
+	LocStr{"Unexported", "No Exportado", "未导出", "गैर-निर्यातित", "غير مصدر", "Não Exportado", "Non Exporté", "Nicht Exportiert", "Неэкспортированный"},
+	LocStr{"Unknown", "Desconocido", "未知", "अज्ञात", "غير معروف", "Desconhecido", "Inconnu", "Unbekannt", "Неизвестный"},
+	LocStr{"Unsigned", "Sin Signo", "无符号", "अहस्ताक्षरित", "غير موقع", "Sem Sinal", "Non Signé", "Vorzeichenlos", "Беззнаковый"},
+	LocStr{"Up", "Arriba", "上", "ऊपर", "أعلى", "Cima", "Haut", "Oben", "Вверх"},
+	LocStr{"Use", "Usar", "使用", "उपयोग", "استخدام", "Usar", "Utiliser", "Verwenden", "Использовать"},
+
+	// V
+	LocStr{"Valid", "Válido", "有效", "वैध", "صحيح", "Válido", "Valide", "Gültig", "Действительный"},
+	LocStr{"Validating", "Validando", "验证中", "सत्यापन हो रहा है", "التحقق من", "Validando", "Validation", "Validieren", "Проверка"},
+	LocStr{"Value", "Valor", "值", "मूल्य", "قيمة", "Valor", "Valeur", "Wert", "Значение"},
+
+	// Z
+	LocStr{"Zero", "Cero", "零", "शून्य", "صفر", "Zero", "Zéro", "Null", "Ноль"},
 }

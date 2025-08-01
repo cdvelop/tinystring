@@ -37,5 +37,5 @@ func TestCapitalizeWithMultilineTranslation(t *testing.T) {
 // generateSimplifiedHelpContent simulates the PROBLEMATIC method WITH Capitalize
 func generateSimplifiedHelpContent(appName, lang string) string {
 	// Test the core issue: preserving spaces in mixed translated/non-translated content
-	return T(appName, D.Shortcuts, D.Keyboard, "(\""+lang+"\"):\n\nTabs:\n  • Tab/Shift+Tab  -", D.Switch, " tabs\n\n", D.Fields, ":\n  • Left/Right     - Navigate fields\n  • Enter          - Edit/Execute\n  • Esc            - ", D.Cancel, " \n\n", D.Language, D.Supported, ": EN, ES, ZH, HI, AR, PT, FR, DE, RU").Capitalize().String()
+	return T(appName, D.Shortcuts, D.Keyboard, "(\""+lang+"\"):\n\nTabs:\n  • Tab/Shift+Tab  -", D.Switch, " tabs\n\n", D.Fields, ":\n  • Left/Right     - Navigate fields\n  • Enter          - ", D.Edit, "/", D.Execute, "\n  • Esc            - ", D.Cancel, " \n\n", D.Language, D.Supported, ": EN, ES, ZH, HI, AR, PT, FR, DE, RU").Capitalize().String()
 }

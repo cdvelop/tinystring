@@ -31,7 +31,7 @@ func TestDictionarySpanishTranslation(t *testing.T) {
 func TestDictionaryInlineLanguage(t *testing.T) {
 	// Use French inline
 	err := Err(FR, D.Empty, D.String).Error()
-	expected := "vide chaîne"
+	expected := "Vide Chaîne"
 	if err != expected {
 		t.Errorf("Expected '%s', got '%s'", expected, err)
 	}
@@ -40,7 +40,7 @@ func TestDictionaryInlineLanguage(t *testing.T) {
 func TestDictionaryMixedWithRegularStrings(t *testing.T) {
 	// Mix dictionary words with regular strings
 	err := Err(D.Invalid, "custom", D.Value).Error()
-	expected := "invalid custom value"
+	expected := "Invalid custom Value"
 	if err != expected {
 		t.Errorf("Expected '%s', got '%s'", expected, err)
 	}
@@ -96,7 +96,7 @@ func TestDictionaryConsistency(t *testing.T) {
 		fieldName := field.Name
 		fieldValue := valueOfD.Field(i).Interface().(LocStr)
 		lowerFieldName := Convert(fieldName).Low().String()
-		eng := fieldValue[EN]
+		eng := Convert(fieldValue[EN]).Low().String()
 		// Tomar los 2 primeros y 2 últimos caracteres
 		fnLen := len(lowerFieldName)
 		engLen := len(eng)
@@ -106,7 +106,7 @@ func TestDictionaryConsistency(t *testing.T) {
 			engFirst := eng[:2]
 			engLast := eng[engLen-2:]
 			if fnFirst != engFirst || fnLast != engLast {
-				t.Errorf("Field '%s' value '%s' does not match first/last 2 chars of field name '%s'", fieldName, eng, lowerFieldName)
+				t.Fatalf("Field '%s' value '%s' does not match first/last 2 chars of field name '%s'", fieldName, eng, lowerFieldName)
 			}
 		}
 	}

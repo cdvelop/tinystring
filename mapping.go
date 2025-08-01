@@ -144,12 +144,20 @@ func isWordSeparator(input any) bool {
 	case rune:
 		return isWordSeparatorChar(v)
 	case string:
-		// Handle single character strings using the centralized logic
+		// Handle empty strings
+		if len(v) == 0 {
+			return false
+		}
+		// Multi-char strings: check if they start with space or newline (translation context)
+		if len(v) > 1 && (v[0] == ' ' || v[0] == '\t' || v[0] == '\n') {
+			return true
+		}
+		// Single character strings using the centralized logic
 		if len(v) == 1 {
 			return isWordSeparatorChar(rune(v[0]))
 		}
-		// Multi-char strings are not separators in word boundary context
-		return false
+		// Check if string ends with newline (separator behavior for translation)
+		return v[len(v)-1] == '\n'
 	}
 	return false
 }
