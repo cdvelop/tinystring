@@ -26,7 +26,7 @@ func TestCapitalize(t *testing.T) {
 		{
 			name:     "Extra spaces",
 			input:    "  hello   world  ",
-			expected: "Hello World",
+			expected: "  Hello   World  ",
 		},
 		{
 			name:     "With numbers",

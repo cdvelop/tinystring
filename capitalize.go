@@ -1,9 +1,9 @@
 package tinystring
 
 // Capitalize transforms the first letter of each word to uppercase and the rest to lowercase.
-// Also normalizes whitespace (collapses multiple spaces into single space and trims).
+// Preserves all whitespace formatting (spaces, tabs, newlines) without normalization.
 // OPTIMIZED: Uses work buffer efficiently to minimize allocations
-// For example: "  hello   world  " -> "Hello World"
+// For example: "  hello   world  " -> "  Hello   World  "
 func (t *conv) Capitalize() *conv {
 	if t.hasContent(buffErr) {
 		return t // Error chain interruption
@@ -23,46 +23,37 @@ func (t *conv) Capitalize() *conv {
 	return t.capitalizeUnicode()
 }
 
-// capitalizeASCIIOptimized processes ASCII text in-place with minimal allocations
+// capitalizeASCIIOptimized processes ASCII text preserving all formatting
 func (t *conv) capitalizeASCIIOptimized() {
 	// Use work buffer for processing
 	t.rstBuffer(buffWork)
 
 	inWord := false
-	addSpace := false
 
 	for i := 0; i < t.outLen; i++ {
 		ch := t.out[i]
 
-		if ch == ' ' || ch == '\t' || ch == '\n' || ch == '\r' {
-			if inWord {
-				addSpace = true
-				inWord = false
-			}
-			// Skip multiple whitespaces
+		// Use centralized word separator detection
+		if isWordSeparator(ch) {
+			// Preserve all separator characters as-is
+			t.work = append(t.work, ch)
+			t.workLen++
+			inWord = false
 		} else {
 			if !inWord {
-				// Start of new word
-				if addSpace && t.workLen > 0 {
-					t.work = append(t.work, ' ')
-					t.workLen++
-				}
-				// Capitalize first letter
+				// Start of new word - capitalize first letter
 				if ch >= 'a' && ch <= 'z' {
 					ch -= 32 // Convert to uppercase
 				}
-				t.work = append(t.work, ch)
-				t.workLen++
 				inWord = true
-				addSpace = false
 			} else {
-				// Lowercase other letters in word
+				// Rest of word - lowercase other letters
 				if ch >= 'A' && ch <= 'Z' {
 					ch += 32 // Convert to lowercase
 				}
-				t.work = append(t.work, ch)
-				t.workLen++
 			}
+			t.work = append(t.work, ch)
+			t.workLen++
 		}
 	}
 
@@ -70,7 +61,7 @@ func (t *conv) capitalizeASCIIOptimized() {
 	t.swapBuff(buffWork, buffOut)
 }
 
-// capitalizeUnicode handles full Unicode capitalization (legacy method)
+// capitalizeUnicode handles full Unicode capitalization preserving formatting
 func (t *conv) capitalizeUnicode() *conv {
 	str := t.getBuffString()
 
@@ -78,23 +69,20 @@ func (t *conv) capitalizeUnicode() *conv {
 	t.rstBuffer(buffWork)
 
 	inWord := false
-	addSpace := false
 
 	for _, r := range str {
-		if r == ' ' || r == '\t' || r == '\n' || r == '\r' {
-			if inWord {
-				addSpace = true
-				inWord = false
-			}
+		// Use centralized word separator detection
+		if isWordSeparator(r) {
+			// Preserve all separator characters as-is
+			t.wrString(buffWork, string(r))
+			inWord = false
 		} else {
 			if !inWord {
-				if addSpace && t.hasContent(buffWork) {
-					t.wrString(buffWork, " ")
-				}
+				// Start of new word - capitalize first letter
 				t.wrString(buffWork, string(toUpperRune(r)))
 				inWord = true
-				addSpace = false
 			} else {
+				// Rest of word - lowercase other letters
 				t.wrString(buffWork, string(toLowerRune(r)))
 			}
 		}

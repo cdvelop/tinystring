@@ -102,33 +102,46 @@ func shouldAddSpace(args []any, currentIndex int) bool {
 		return false
 	}
 
-	// Si el argumento actual termina en newline, no agregar espacio
+	// Si el argumento actual termina en newline o espacio, no agregar espacio
 	if currentStr, ok := args[currentIndex].(string); ok {
-		if len(currentStr) > 0 && currentStr[len(currentStr)-1] == '\n' {
-			return false
+		if len(currentStr) > 0 {
+			lastChar := currentStr[len(currentStr)-1]
+			if lastChar == '\n' || lastChar == ' ' {
+				return false
+			}
 		}
 	}
 
 	// Si el siguiente argumento es un string separador, no agregar espacio
 	if nextStr, ok := args[currentIndex+1].(string); ok {
-		return !isSeparatorString(nextStr)
+		return !isTranslationSeparator(nextStr)
 	}
 
 	// Para otros tipos (LocStr, etc.) sí agregar espacio
 	return true
 }
 
-// isSeparatorString retorna true si el string es un separador que no debe tener espacio antes
-func isSeparatorString(s string) bool {
-	switch s {
-	case ":", ",", ".", " ", ")", "(", "-":
+// isTranslationSeparator checks if a string should not have space before it in translation context
+// SPECIALIZED: Used specifically for translation spacing logic
+func isTranslationSeparator(s string) bool {
+	if len(s) == 0 {
+		return false
+	}
+
+	// Multi-char strings: only if they start with space (like " tabs", " :")
+	if len(s) > 1 && (s[0] == ' ' || s[0] == '\t') {
 		return true
 	}
-	// También considerar strings que terminan en newline como separadores
-	if len(s) > 0 && s[len(s)-1] == '\n' {
-		return true
+
+	// Single character punctuation that commonly doesn't need space before
+	if len(s) == 1 {
+		char := rune(s[0])
+		// Punctuation that should not have space before
+		return char == ',' || char == '.' || char == ';' || char == ':' || char == ')' || char == ']' || char == '}'
 	}
-	return false
+
+	// Check if string ends with newline (separator behavior)
+	return len(s) > 0 && s[len(s)-1] == '\n'
 }
 
 // wrTranslation extracts translation for specific language from LocStr and writes to destination buffer

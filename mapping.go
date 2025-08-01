@@ -129,3 +129,37 @@ func (t *conv) tildeUnicodeOptimized() {
 		}
 	}
 }
+
+// =============================================================================
+// CENTRALIZED WORD SEPARATOR DETECTION - SHARED BY CAPITALIZE AND TRANSLATION
+// =============================================================================
+
+// isWordSeparator checks if a character is a word separator
+// UNIFIED FUNCTION: Handles byte, rune, and string inputs in a single function
+// OPTIMIZED: Uses isWordSeparatorChar as single source of truth
+func isWordSeparator(input any) bool {
+	switch v := input.(type) {
+	case byte:
+		return isWordSeparatorChar(rune(v))
+	case rune:
+		return isWordSeparatorChar(v)
+	case string:
+		// Handle single character strings using the centralized logic
+		if len(v) == 1 {
+			return isWordSeparatorChar(rune(v[0]))
+		}
+		// Multi-char strings are not separators in word boundary context
+		return false
+	}
+	return false
+}
+
+// isWordSeparatorChar is the core separator detection logic
+// CENTRALIZED: Single source of truth for what constitutes a word separator
+// OPTIMIZED: Handles both ASCII and Unicode characters efficiently
+func isWordSeparatorChar(r rune) bool {
+	return r == ' ' || r == '\t' || r == '\n' || r == '\r' ||
+		r == '/' || r == '+' || r == '-' || r == '_' || r == '.' ||
+		r == ',' || r == ';' || r == ':' || r == '!' || r == '?' ||
+		r == '(' || r == ')' || r == '[' || r == ']' || r == '{' || r == '}'
+}

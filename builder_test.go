@@ -107,9 +107,12 @@ func TestBuilderPattern(t *testing.T) {
 	items := []string{"  APPLE  ", "  banana  ", "  Cherry  "}
 
 	// Test builder pattern with transformations
+	// Process each item individually, then combine
 	c := Convert() // Empty initialization
 	for i, item := range items {
-		c.Write(item).Trim().Low().Capitalize()
+		// Process each item individually and append to builder
+		processed := Convert(item).Trim().Low().Capitalize().String()
+		c.Write(processed)
 		if i < len(items)-1 {
 			c.Write(" - ")
 		}
