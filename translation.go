@@ -102,11 +102,12 @@ func shouldAddSpace(args []any, currentIndex int) bool {
 		return false
 	}
 
-	// Si el argumento actual termina en newline o espacio, no agregar espacio
+	// Si el argumento actual termina en newline, espacio, o ciertos separadores específicos, no agregar espacio
 	if currentStr, ok := args[currentIndex].(string); ok {
 		if len(currentStr) > 0 {
 			lastChar := currentStr[len(currentStr)-1]
-			if lastChar == '\n' || lastChar == ' ' {
+			// Solo ciertos separadores no necesitan espacio después (como '/')
+			if lastChar == '\n' || lastChar == ' ' || lastChar == '/' {
 				return false
 			}
 		}
@@ -114,34 +115,11 @@ func shouldAddSpace(args []any, currentIndex int) bool {
 
 	// Si el siguiente argumento es un string separador, no agregar espacio
 	if nextStr, ok := args[currentIndex+1].(string); ok {
-		return !isTranslationSeparator(nextStr)
+		return !isWordSeparator(nextStr)
 	}
 
 	// Para otros tipos (LocStr, etc.) sí agregar espacio
 	return true
-}
-
-// isTranslationSeparator checks if a string should not have space before it in translation context
-// SPECIALIZED: Used specifically for translation spacing logic
-func isTranslationSeparator(s string) bool {
-	if len(s) == 0 {
-		return false
-	}
-
-	// Multi-char strings: only if they start with space (like " tabs", " :")
-	if len(s) > 1 && (s[0] == ' ' || s[0] == '\t') {
-		return true
-	}
-
-	// Single character punctuation that commonly doesn't need space before
-	if len(s) == 1 {
-		char := rune(s[0])
-		// Punctuation that should not have space before
-		return char == ',' || char == '.' || char == ';' || char == ':' || char == ')' || char == ']' || char == '}'
-	}
-
-	// Check if string ends with newline (separator behavior)
-	return len(s) > 0 && s[len(s)-1] == '\n'
 }
 
 // wrTranslation extracts translation for specific language from LocStr and writes to destination buffer
