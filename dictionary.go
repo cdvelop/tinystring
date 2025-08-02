@@ -8,6 +8,7 @@ package tinystring
 // The usage API (e.g., D.Argument) remains unchanged.
 var D = struct {
 	// A
+	All        LocStr // "all"
 	Allowed    LocStr // "allowed"
 	Arrow      LocStr // "arrow"
 	Argument   LocStr // "argument"
@@ -21,6 +22,7 @@ var D = struct {
 
 	// C
 	Call          LocStr // "call"
+	Can           LocStr // "can"
 	Cannot        LocStr // "cannot"
 	Cancel        LocStr // "cancel"
 	Changed       LocStr // "changed"
@@ -76,6 +78,7 @@ var D = struct {
 
 	// L
 	Language LocStr // "language"
+	Line     LocStr // "line"
 
 	// M
 	Maximum  LocStr // "maximum"
@@ -155,11 +158,13 @@ var D = struct {
 	Valid      LocStr // "valid"
 	Validating LocStr // "validating"
 	Value      LocStr // "value"
+	Visible    LocStr // "visible"
 
 	// Z
 	Zero LocStr // "zero"
 }{
 	// A
+	LocStr{"All", "Todo", "所有", "सभी", "كل", "Todo", "Tout", "Alle", "Все"},
 	LocStr{"Allowed", "Permitido", "允许", "अनुमति", "مسموح", "Permitido", "Autorisé", "Erlaubt", "Разрешено"},
 	LocStr{"Arrow", "Flecha", "箭头", "तीर", "سهم", "Seta", "Flèche", "Pfeil", "Стрелка"},
 	LocStr{"Argument", "Argumento", "参数", "तर्क", "وسيط", "Argumento", "Argument", "Argument", "Аргумент"},
@@ -173,6 +178,7 @@ var D = struct {
 
 	// C
 	LocStr{"Call", "Llamar", "调用", "कॉल", "استدعاء", "Chamar", "Appeler", "Aufrufen", "Вызвать"},
+	LocStr{"Can", "Puede", "可以", "कर सकते हैं", "يمكن", "Pode", "Peut", "Kann", "Может"},
 	LocStr{"Cannot", "No puede", "不能", "नहीं कर सकते", "لا يمكن", "Não pode", "Ne peut pas", "Kann nicht", "Не может"},
 	LocStr{"Cancel", "Cancelar", "取消", "रद्द करें", "إلغاء", "Cancelar", "Annuler", "Abbrechen", "Отменить"},
 	LocStr{"Changed", "Cambiado", "更改", "परिवर्तित", "تم التغيير", "Alterado", "Changé", "Geändert", "Изменено"},
@@ -228,6 +234,7 @@ var D = struct {
 
 	// L
 	LocStr{"Language", "Idioma", "语言", "भाषा", "لغة", "Idioma", "Langue", "Sprache", "Язык"},
+	LocStr{"Line", "Línea", "行", "लाइन", "خط", "Linha", "Ligne", "Zeile", "Строка"},
 
 	// M
 	LocStr{"Maximum", "Máximo", "最大", "अधिकतम", "الحد الأقصى", "Máximo", "Maximum", "Maximum", "Максимум"},
@@ -307,6 +314,7 @@ var D = struct {
 	LocStr{"Valid", "Válido", "有效", "वैध", "صحيح", "Válido", "Valide", "Gültig", "Действительный"},
 	LocStr{"Validating", "Validando", "验证中", "सत्यापन हो रहा है", "التحقق من", "Validando", "Validation", "Validieren", "Проверка"},
 	LocStr{"Value", "Valor", "值", "मूल्य", "قيمة", "Valor", "Valeur", "Wert", "Значение"},
+	LocStr{"Visible", "Visible", "可见", "दृश्य", "مرئي", "Visível", "Visible", "Sichtbar", "Видимый"},
 
 	// Z
 	LocStr{"Zero", "Cero", "零", "शून्य", "صفر", "Zero", "Zéro", "Null", "Ноль"},

@@ -75,6 +75,7 @@ Replace common `strings` package functions with TinyString equivalents:
 | `strings.Low()` | `Convert(s).Low().String()` |
 | `strings.Up()` | `Convert(s).Up().String()` |
 | `strings.Contains()` | `Contains(s, substr)` |
+| `strings.LastIndex()` | `LastIndex(s, substr)` |
 | `strings.Replace()` | `Convert(s).Replace(old, new).String()` |
 | `strings.Split()` | `Convert(s).Split(sep).String()` |
 | `strings.Join()` | `Convert(slice).Join(sep).String()` |
@@ -100,9 +101,16 @@ Convert("hello world").SnakeUp().String()  // out: "HELLO_WORLD"
 found := Contains("hello world", "world")              // out: true
 count := Count("abracadabra", "abra")       // out: 2
 
-// ⚠️ Note: Contains is a global function, not a method.
+// Find last occurrence (useful for file extensions)
+pos := LastIndex("image.backup.jpg", ".")             // out: 12
+if pos >= 0 {
+    extension := "image.backup.jpg"[pos+1:]           // out: "jpg"
+}
+
+// ⚠️ Note: Contains and LastIndex are global functions, not methods.
 // Do NOT use: Convert(s).Contains(substr) // ❌ Incorrect, will not compile
 // Use:        Contains(s, substr)         // ✅ Correct
+//             LastIndex(s, substr)        // ✅ Correct
 
 // Replace operations
 Convert("hello world").Replace("world", "Go").String() // out: "hello Go"
