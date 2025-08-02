@@ -74,6 +74,7 @@ Replace common `strings` package functions with TinyString equivalents:
 |-------------|----------------------|
 | `strings.Low()` | `Convert(s).Low().String()` |
 | `strings.Up()` | `Convert(s).Up().String()` |
+| `strings.Index()` | `Index(s, substr)` |
 | `strings.Contains()` | `Contains(s, substr)` |
 | `strings.LastIndex()` | `LastIndex(s, substr)` |
 | `strings.Replace()` | `Convert(s).Replace(old, new).String()` |
@@ -98,6 +99,7 @@ Convert("hello world").SnakeUp().String()  // out: "HELLO_WORLD"
 
 ```go
 // Search and count
+pos := Index("hello world", "world")                  // out: 6 (first occurrence)
 found := Contains("hello world", "world")              // out: true
 count := Count("abracadabra", "abra")       // out: 2
 
@@ -107,9 +109,10 @@ if pos >= 0 {
     extension := "image.backup.jpg"[pos+1:]           // out: "jpg"
 }
 
-// ⚠️ Note: Contains and LastIndex are global functions, not methods.
+// ⚠️ Note: Index, Contains and LastIndex are global functions, not methods.
 // Do NOT use: Convert(s).Contains(substr) // ❌ Incorrect, will not compile
-// Use:        Contains(s, substr)         // ✅ Correct
+// Use:        Index(s, substr)            // ✅ Correct
+//             Contains(s, substr)         // ✅ Correct
 //             LastIndex(s, substr)        // ✅ Correct
 
 // Replace operations
