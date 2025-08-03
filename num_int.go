@@ -5,8 +5,22 @@ func (c *conv) parseIntString(s string, base int, signed bool) int64 {
 	for i := 0; i < len(s); i++ {
 		if s[i] == '.' {
 			// Try to parse as float, then truncate
-			f := c.parseFloat(s)
-			if c.hasContent(buffErr) {
+			// Use buffWork to avoid conflicts with buffOut
+			c.rstBuffer(buffWork)
+			c.wrString(buffWork, s)
+
+			// Swap buffers temporarily to use parseFloatBase
+			c.swapBuff(buffOut, buffErr)  // Save current buffOut to buffErr
+			c.swapBuff(buffWork, buffOut) // Move string to buffOut for parsing
+
+			f := c.parseFloatBase()
+			hasError := c.hasContent(buffErr)
+
+			// Restore original buffOut
+			c.swapBuff(buffOut, buffWork) // Move parsed content to buffWork
+			c.swapBuff(buffErr, buffOut)  // Restore original buffOut
+
+			if hasError {
 				return 0
 			}
 			return int64(f)
@@ -77,20 +91,6 @@ func (c *conv) Int(base ...int) (int, error) {
 	return int(val), nil
 }
 
-// Uint converts the value to an unsigned integer with optional base specification.
-// If no base is provided, base 10 is used. Supports bases 2-36.
-// Returns the converted uint and any error that occurred during conversion.
-func (c *conv) Uint(base ...int) (uint, error) {
-	val := c.parseIntBase(base...)
-	if val < 0 || val > 4294967295 {
-		return 0, c.wrErr(D.Number, D.Overflow)
-	}
-	if c.hasContent(buffErr) {
-		return 0, c
-	}
-	return uint(val), nil
-}
-
 // getInt32 extrae el valor del buffer de salida y lo convierte a int32.
 // Int32 extrae el valor del buffer de salida y lo convierte a int32.
 func (c *conv) Int32(base ...int) (int32, error) {
@@ -114,25 +114,32 @@ func (c *conv) Int64(base ...int) (int64, error) {
 	return val, nil
 }
 
-// Uint32 extrae el valor del buffer de salida y lo convierte a uint32.
-func (c *conv) Uint32(base ...int) (uint32, error) {
-	val := c.parseIntBase(base...)
-	if val < 0 || val > 4294967295 {
-		return 0, c.wrErr(D.Number, D.Overflow)
+// toInt64 converts various integer types to int64
+func (c *conv) toInt64(arg any) (int64, bool) {
+	switch v := arg.(type) {
+	case int:
+		return int64(v), true
+	case int8:
+		return int64(v), true
+	case int16:
+		return int64(v), true
+	case int32:
+		return int64(v), true
+	case int64:
+		return v, true
+	case uint:
+		return int64(v), true
+	case uint8:
+		return int64(v), true
+	case uint16:
+		return int64(v), true
+	case uint32:
+		return int64(v), true
+	case uint64:
+		return int64(v), true
+	default:
+		return 0, false
 	}
-	if c.hasContent(buffErr) {
-		return 0, c
-	}
-	return uint32(val), nil
-}
-
-// Uint64 extrae el valor del buffer de salida y lo convierte a uint64.
-func (c *conv) Uint64(base ...int) (uint64, error) {
-	val := c.parseIntBase(base...)
-	if c.hasContent(buffErr) {
-		return 0, c
-	}
-	return uint64(val), nil
 }
 
 // wrIntBase writes an integer in the given base to the buffer, with optional uppercase digits

@@ -20,7 +20,10 @@ func (t *conv) Thousands(anglo ...bool) *conv {
 	if t.hasContent(buffOut) {
 		str := t.getString(buffOut)
 		if t.isNumericString(str) {
-			floatVal := t.parseFloat(str)
+			// Store string in buffer and use parseFloatBase
+			t.rstBuffer(buffOut)
+			t.wrString(buffOut, str)
+			floatVal := t.parseFloatBase()
 			if !t.hasContent(buffErr) {
 				t.rstBuffer(buffOut)
 				if floatVal == float64(int64(floatVal)) {
