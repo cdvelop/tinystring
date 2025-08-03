@@ -1,7 +1,7 @@
 package tinystring
 
-// Repeat returns the string s repeated n times.
-// If n is less than or equal to zero, or if s is empty, it returns an empty string.
+// Repeat repeats the conv content n times
+// If n is 0 or negative, it clears the conv content
 // eg: Convert("abc").Repeat(3) => "abcabcabc"
 func (t *conv) Repeat(n int) *conv {
 	if t.hasContent(buffErr) {
@@ -10,11 +10,11 @@ func (t *conv) Repeat(n int) *conv {
 	if n <= 0 {
 		// Clear buffer for empty out and clear dataPtr to prevent reconstruction
 		t.rstBuffer(buffOut)
-		t.dataPtr = nil // Clear pointer to prevent getBuffString from reconstructing
+		t.dataPtr = nil // Clear pointer to prevent getString from reconstructing
 		return t
 	}
 	// Phase 4.2: Inline newBuf method to eliminate function call overhead
-	str := t.getBuffString()
+	str := t.getString(buffOut)
 	if len(str) == 0 {
 		// Clear buffer for empty out
 		t.rstBuffer(buffOut)

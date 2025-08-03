@@ -10,7 +10,7 @@ func (c *conv) Replace(oldAny, newAny any, n ...int) *conv {
 	}
 
 	// Get the original string before any conversions
-	str := c.getBuffString()
+	str := c.getString(buffOut)
 
 	// Preserve original state before temporary conversions
 	originalDataPtr := c.dataPtr
@@ -80,7 +80,7 @@ func (c *conv) TrimSuffix(suffix string) *conv {
 		return c // Error chain interruption
 	}
 
-	str := c.getBuffString()
+	str := c.getString(buffOut)
 	if len(str) < len(suffix) || str[len(str)-len(suffix):] != suffix {
 		return c
 	} // ✅ Update buffer using API instead of direct manipulation
@@ -97,7 +97,7 @@ func (c *conv) TrimPrefix(prefix string) *conv {
 		return c // Error chain interruption
 	}
 
-	str := c.getBuffString()
+	str := c.getString(buffOut)
 	if len(str) < len(prefix) || str[:len(prefix)] != prefix {
 		return c
 	} // ✅ Update buffer using API instead of direct manipulation
@@ -114,7 +114,7 @@ func (c *conv) Trim() *conv {
 		return c // Error chain interruption
 	}
 
-	str := c.getBuffString()
+	str := c.getString(buffOut)
 	if len(str) == 0 {
 		return c
 	}

@@ -8,7 +8,7 @@ func (c *conv) Bool() (bool, error) {
 	}
 
 	// Get string representation using buffer API
-	inp := c.getBuffString()
+	inp := c.getString(buffOut)
 
 	// Direct boolean string matches
 	switch inp {
