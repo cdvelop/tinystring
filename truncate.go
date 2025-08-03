@@ -81,7 +81,7 @@ func (t *conv) Truncate(maxWidth any, reservedChars ...any) *conv {
 		return t // Error chain interruption
 	}
 
-	conv := t.getBuffString()
+	conv := t.getString(buffOut)
 	oL := len(conv) // Validate maxWidth parameter
 	mWI, ok := t.validateIntParam(maxWidth, false)
 	if !ok {
@@ -136,7 +136,7 @@ func (t *conv) TruncateName(maxCharsPerWord, maxWidth any) *conv {
 		return t // Error chain interruption
 	}
 
-	if len(t.getBuffString()) == 0 {
+	if len(t.getString(buffOut)) == 0 {
 		return t
 	} // Validate parameters
 	mC, ok := t.validateIntParam(maxCharsPerWord, false)

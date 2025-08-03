@@ -69,32 +69,6 @@ func (c *conv) resetAllBuffers() {
 	c.errLen = 0
 }
 
-// getBuffString ensures string representation is available in out buffer
-// LEGACY: Maintains backward compatibility, will be deprecated
-// CRITICAL: Cannot use anyToBuff to prevent infinite recursion
-// Uses direct primitive conversion methods only
-func (c *conv) getBuffString() string {
-	if c.errLen > 0 {
-		return c.getString(buffErr)
-	}
-
-	// Only convert if out buffer is empty (avoid redundant conversions)
-	if c.outLen > 0 {
-		return c.getString(buffOut) // Already converted
-	}
-
-	// For simple types, buffer should already have content from anyToBuff
-	// Only fallback to dataPtr for complex types that need deferred conversion
-	if c.dataPtr != nil {
-		c.rstBuffer(buffOut)
-		// TODO: Implement proper unsafe.Pointer reconstruction for complex types
-		// For now, return empty string until we implement proper unsafe handling
-		return ""
-	}
-
-	return c.getString(buffOut)
-}
-
 // =============================================================================
 // UNIVERSAL BUFFER METHODS - DEST-FIRST PARAMETER ORDER
 // =============================================================================

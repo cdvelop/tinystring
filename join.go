@@ -27,8 +27,8 @@ func (c *conv) Join(sep ...string) *conv {
 		return c
 	}
 
-	// For other types, convert to string first using anyToBuff through getBuffString
-	str := c.getBuffString()
+	// For other types, convert to string first using anyToBuff through getString
+	str := c.getString(buffOut)
 	if str != "" {
 		// Split content by whitespace and rejoin with new separator
 		var parts []string

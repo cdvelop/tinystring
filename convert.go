@@ -187,7 +187,7 @@ func (t *conv) Apply() {
 	if t.Kind == K.Pointer && t.dataPtr != nil {
 		// Type assert to *string for Apply() functionality using unsafe pointer
 		if strPtr := (*string)(t.dataPtr); strPtr != nil {
-			*strPtr = t.getBuffString()
+			*strPtr = t.getString(buffOut)
 		}
 	}
 	// Auto-release back to pool for memory efficiency
@@ -203,7 +203,7 @@ func (c *conv) String() string {
 		return ""
 	}
 
-	out := c.getBuffString()
+	out := c.getString(buffOut)
 	// Auto-release back to pool for memory efficiency
 	c.putConv()
 	return out

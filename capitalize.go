@@ -63,7 +63,7 @@ func (t *conv) capitalizeASCIIOptimized() {
 
 // capitalizeUnicode handles full Unicode capitalization preserving formatting
 func (t *conv) capitalizeUnicode() *conv {
-	str := t.getBuffString()
+	str := t.getString(buffOut)
 
 	// Use internal work buffer for intermediate processing
 	t.rstBuffer(buffWork)
@@ -232,7 +232,7 @@ func (t *conv) toCaseTransformMinimal(firstWordLower bool, separator string) *co
 		return t // Error chain interruption
 	}
 
-	str := t.getBuffString()
+	str := t.getString(buffOut)
 	if len(str) == 0 {
 		return t
 	} // Pre-allocate buffer with estimated size
