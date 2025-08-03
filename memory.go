@@ -218,3 +218,34 @@ func (c *conv) addRuneToWork(r rune) {
 	}
 	c.workLen = len(c.work)
 }
+
+// bytesEqual compares buffer content with given bytes slice for optimization
+// This helper eliminates getString() allocations in boolean/comparison operations
+func (c *conv) bytesEqual(dest buffDest, target []byte) bool {
+	var bufData []byte
+	var bufLen int
+
+	switch dest {
+	case buffOut:
+		bufData, bufLen = c.out, c.outLen
+	case buffWork:
+		bufData, bufLen = c.work, c.workLen
+	case buffErr:
+		bufData, bufLen = c.err, c.errLen
+	default:
+		return false
+	}
+
+	// Quick length check
+	if bufLen != len(target) {
+		return false
+	}
+
+	// Byte-by-byte comparison
+	for i := 0; i < bufLen; i++ {
+		if bufData[i] != target[i] {
+			return false
+		}
+	}
+	return true
+}

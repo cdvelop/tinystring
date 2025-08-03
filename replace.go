@@ -9,33 +9,40 @@ func (c *conv) Replace(oldAny, newAny any, n ...int) *conv {
 		return c // Error chain interruption
 	}
 
-	// Get the original string before any conversions
-	str := c.getString(buffOut)
+	if c.outLen == 0 {
+		return c // OPTIMIZED: Direct length check instead of getString
+	}
 
 	// Preserve original state before temporary conversions
 	originalDataPtr := c.dataPtr
 	originalKind := c.Kind
 
 	// Use internal work buffer instead of getConv() for zero-allocation
-	c.rstBuffer(buffWork)         // Clear work buffer
-	c.anyToBuff(buffWork, oldAny) // Convert oldAny to work buffer
-	old := c.getString(buffWork)  // Get old string from work buffer
+	c.rstBuffer(buffWork)                       // Clear work buffer
+	c.anyToBuff(buffWork, oldAny)               // Convert oldAny to work buffer
+	oldBytesTemp := c.getBytes(buffWork)        // Get old bytes from work buffer
+	oldBytes := make([]byte, len(oldBytesTemp)) // Copy to prevent corruption
+	copy(oldBytes, oldBytesTemp)
+	old := string(oldBytes) // Only create string when needed for compatibility
 
-	c.rstBuffer(buffWork)           // Clear work buffer for next conversion
-	c.anyToBuff(buffWork, newAny)   // Convert newAny to work buffer
-	newStr := c.getString(buffWork) // Get new string from work buffer
+	c.rstBuffer(buffWork)                       // Clear work buffer for next conversion
+	c.anyToBuff(buffWork, newAny)               // Convert newAny to work buffer
+	newBytesTemp := c.getBytes(buffWork)        // Get new bytes from work buffer
+	newBytes := make([]byte, len(newBytesTemp)) // Copy to prevent corruption
+	copy(newBytes, newBytesTemp)
+	newStr := string(newBytes) // Only create string when needed for compatibility
 
 	// Restore original state after temporary conversions
 	c.dataPtr = originalDataPtr
 	c.Kind = originalKind
 
 	// Check early return condition
-	if len(old) == 0 || len(str) == 0 {
+	if len(old) == 0 {
 		return c
 	}
 
 	// Estimate buffer capacity based on replacement patterns
-	estimatedCap := len(str)
+	estimatedCap := c.outLen
 	if len(newStr) > len(old) {
 		// If new string is longer, estimate extra space needed
 		estimatedCap += (len(newStr) - len(old)) * 5 // Assume up to 5 replacements
@@ -53,20 +60,60 @@ func (c *conv) Replace(oldAny, newAny any, n ...int) *conv {
 	}
 
 	rep := 0
-	for i := 0; i < len(str); i++ {
-		// Check for occurrence of old in the string and if we haven't reached the maximum rep
-		if i+len(old) <= len(str) && str[i:i+len(old)] == old && (maxReps < 0 || rep < maxReps) {
-			// Add the new word to the out
-			out = append(out, newStr...)
-			// Skip the length of the old word in the original string
-			i += len(old) - 1
-			// Increment replacement counter
-			rep++
-		} else {
-			// Add the current character to the out
-			out = append(out, str[i])
+	// OPTIMIZED: Process buffer directly for ASCII content or use string fallback for Unicode
+	isASCII := true
+	for i := 0; i < c.outLen; i++ {
+		if c.out[i] > 127 {
+			isASCII = false
+			break
 		}
 	}
+
+	if isASCII && len(oldBytes) > 0 && oldBytes[0] <= 127 {
+		// Fast path: ASCII-only content using direct byte comparison
+
+		for i := 0; i < c.outLen; i++ {
+			// Check for occurrence of old in the buffer
+			if i+len(oldBytes) <= c.outLen && (maxReps < 0 || rep < maxReps) {
+				match := true
+				for j := 0; j < len(oldBytes); j++ {
+					if c.out[i+j] != oldBytes[j] {
+						match = false
+						break
+					}
+				}
+				if match {
+					// Add the new bytes to the out
+					out = append(out, newBytes...)
+					// Skip the length of the old bytes in the original buffer
+					i += len(oldBytes) - 1
+					// Increment replacement counter
+					rep++
+					continue
+				}
+			}
+			// Add the current byte to the out
+			out = append(out, c.out[i])
+		}
+	} else {
+		// Unicode fallback: use string processing
+		str := c.getString(buffOut)
+		for i := 0; i < len(str); i++ {
+			// Check for occurrence of old in the string and if we haven't reached the maximum rep
+			if i+len(old) <= len(str) && str[i:i+len(old)] == old && (maxReps < 0 || rep < maxReps) {
+				// Add the new word to the out
+				out = append(out, newStr...)
+				// Skip the length of the old word in the original string
+				i += len(old) - 1
+				// Increment replacement counter
+				rep++
+			} else {
+				// Add the current character to the out
+				out = append(out, str[i])
+			}
+		}
+	}
+
 	// ✅ Update buffer using API instead of direct manipulation
 	c.rstBuffer(buffOut)    // Clear buffer using API
 	c.wrBytes(buffOut, out) // Write using API
@@ -80,13 +127,30 @@ func (c *conv) TrimSuffix(suffix string) *conv {
 		return c // Error chain interruption
 	}
 
-	str := c.getString(buffOut)
-	if len(str) < len(suffix) || str[len(str)-len(suffix):] != suffix {
+	// OPTIMIZED: Direct length check and buffer processing
+	if c.outLen < len(suffix) {
 		return c
-	} // ✅ Update buffer using API instead of direct manipulation
-	out := str[:len(str)-len(suffix)]
-	c.rstBuffer(buffOut)     // Clear buffer using API
-	c.wrString(buffOut, out) // Write using API
+	}
+
+	// Check if suffix matches (ASCII optimization)
+	suffixBytes := []byte(suffix)
+	match := true
+	startPos := c.outLen - len(suffixBytes)
+	for i := 0; i < len(suffixBytes); i++ {
+		if c.out[startPos+i] != suffixBytes[i] {
+			match = false
+			break
+		}
+	}
+
+	if !match {
+		return c
+	}
+
+	// ✅ Update buffer using API instead of direct manipulation
+	newLen := c.outLen - len(suffix)
+	c.out = c.out[:newLen]
+	c.outLen = newLen
 	return c
 }
 
@@ -97,13 +161,30 @@ func (c *conv) TrimPrefix(prefix string) *conv {
 		return c // Error chain interruption
 	}
 
-	str := c.getString(buffOut)
-	if len(str) < len(prefix) || str[:len(prefix)] != prefix {
+	// OPTIMIZED: Direct length check and buffer processing
+	if c.outLen < len(prefix) {
 		return c
-	} // ✅ Update buffer using API instead of direct manipulation
-	out := str[len(prefix):]
-	c.rstBuffer(buffOut)     // Clear buffer using API
-	c.wrString(buffOut, out) // Write using API
+	}
+
+	// Check if prefix matches (ASCII optimization)
+	prefixBytes := []byte(prefix)
+	match := true
+	for i := 0; i < len(prefixBytes); i++ {
+		if c.out[i] != prefixBytes[i] {
+			match = false
+			break
+		}
+	}
+
+	if !match {
+		return c
+	}
+
+	// ✅ Update buffer using API - shift remaining content
+	prefixLen := len(prefix)
+	copy(c.out, c.out[prefixLen:c.outLen])
+	c.outLen -= prefixLen
+	c.out = c.out[:c.outLen]
 	return c
 }
 
@@ -114,38 +195,40 @@ func (c *conv) Trim() *conv {
 		return c // Error chain interruption
 	}
 
-	str := c.getString(buffOut)
-	if len(str) == 0 {
+	// OPTIMIZED: Direct buffer processing
+	if c.outLen == 0 {
 		return c
 	}
 
 	// Remove spaces at the beginning
 	start := 0
-	for start < len(str) && (str[start] == ' ' || str[start] == '\t' || str[start] == '\n' || str[start] == '\r') {
+	for start < c.outLen && (c.out[start] == ' ' || c.out[start] == '\t' || c.out[start] == '\n' || c.out[start] == '\r') {
 		start++
 	}
 
 	// Remove spaces at the end
-	end := len(str) - 1
-	for end >= 0 && (str[end] == ' ' || str[end] == '\t' || str[end] == '\n' || str[end] == '\r') {
+	end := c.outLen - 1
+	for end >= 0 && (c.out[end] == ' ' || c.out[end] == '\t' || c.out[end] == '\n' || c.out[end] == '\r') {
 		end--
 	}
 
-	// Debug: For "  " input, start should be 2, end should be -1, so start > end
 	// Special case: empty string (all whitespace)
 	if start > end {
-		// Clear buffer and write empty string
-		c.rstBuffer(buffOut)
-		c.wrString(buffOut, "")
+		// Clear buffer
+		c.outLen = 0
+		c.out = c.out[:0]
 		// Also clear dataPtr to prevent fallback
 		c.dataPtr = nil
 		c.Kind = K.String
 		return c
 	}
 
-	// Set the substring without spaces using API
-	out := str[start : end+1]
-	c.rstBuffer(buffOut)     // Clear buffer using API
-	c.wrString(buffOut, out) // Write using API
+	// ✅ Update buffer using direct manipulation for efficiency
+	newLen := end - start + 1
+	if start > 0 {
+		copy(c.out, c.out[start:end+1])
+	}
+	c.outLen = newLen
+	c.out = c.out[:newLen]
 	return c
 }

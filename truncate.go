@@ -81,14 +81,19 @@ func (t *conv) Truncate(maxWidth any, reservedChars ...any) *conv {
 		return t // Error chain interruption
 	}
 
-	conv := t.getString(buffOut)
-	oL := len(conv) // Validate maxWidth parameter
+	// OPTIMIZED: Direct buffer processing
+	if t.outLen == 0 {
+		return t
+	}
+
+	// Validate maxWidth parameter
 	mWI, ok := t.validateIntParam(maxWidth, false)
 	if !ok {
 		return t
 	}
 
-	if oL > mWI {
+	// OPTIMIZED: Use direct buffer length check
+	if t.outLen > mWI {
 		// Get reserved chars value
 		rCI := 0
 		if len(reservedChars) > 0 {
@@ -104,15 +109,20 @@ func (t *conv) Truncate(maxWidth any, reservedChars ...any) *conv {
 		ellipsisLen := len(ellipsisStr)
 		if rCI > 0 && mWI >= ellipsisLen && eW >= ellipsisLen {
 			// Case 1: Reserved chars specified, and ellipsis fits within the effective width
+			// Need string for ellipsis methods - fallback to getString
+			conv := t.getString(buffOut)
 			t.truncateWithEllipsis(conv, eW)
 		} else if rCI == 0 && mWI >= ellipsisLen {
 			// Case 2: No reserved chars, ellipsis fits within maxWidth
+			// Need string for ellipsis methods - fallback to getString
+			conv := t.getString(buffOut)
 			t.truncateWithEllipsis(conv, mWI)
 		} else {
 			// Case 3: Ellipsis doesn't fit or reserved chars prevent it, just truncate
-			cTK := min(mWI, oL)
-			t.rstBuffer(buffOut)            // Clear buffer using API
-			t.wrString(buffOut, conv[:cTK]) // Write using API
+			// OPTIMIZED: Direct buffer truncation
+			cTK := min(mWI, t.outLen)
+			t.outLen = cTK
+			t.out = t.out[:cTK]
 		}
 	}
 
@@ -136,7 +146,8 @@ func (t *conv) TruncateName(maxCharsPerWord, maxWidth any) *conv {
 		return t // Error chain interruption
 	}
 
-	if len(t.getString(buffOut)) == 0 {
+	// OPTIMIZED: Direct length check
+	if t.outLen == 0 {
 		return t
 	} // Validate parameters
 	mC, ok := t.validateIntParam(maxCharsPerWord, false)

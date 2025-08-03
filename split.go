@@ -45,9 +45,8 @@ func (c *conv) splitStr(src string, separator ...string) []string {
 		}
 		out := make([]string, 0, len(src))
 		for _, ch := range src {
-			c.rstBuffer(buffWork)
-			c.wrString(buffWork, string(ch))
-			out = append(out, c.getString(buffWork))
+			// OPTIMIZED: Direct string conversion without buffer operations
+			out = append(out, string(ch))
 		}
 		return out
 	}
@@ -79,10 +78,10 @@ func (c *conv) splitStr(src string, separator ...string) []string {
 	return out
 }
 
-// splitByDelimiterWithBuffer splits a string by the first occurrence of the delimiter using the conv work buffer.
+// splitByDelimiterWithBuffer splits a string by the first occurrence of the delimiter.
 // Returns the parts (before and after the delimiter). If not found, found=false.
+// OPTIMIZED: Direct substring operations without buffer usage
 func (c *conv) splitByDelimiterWithBuffer(s, delim string) (before, after string, found bool) {
-	c.rstBuffer(buffWork)
 	di := -1
 	for i := 0; i <= len(s)-len(delim); i++ {
 		if s[i:i+len(delim)] == delim {
@@ -93,8 +92,8 @@ func (c *conv) splitByDelimiterWithBuffer(s, delim string) (before, after string
 	if di < 0 {
 		return s, "", false
 	}
-	c.wrString(buffWork, s[:di])
-	before = c.getString(buffWork)
+	// OPTIMIZED: Direct substring without buffer operations
+	before = s[:di]
 	after = s[di+len(delim):]
 	return before, after, true
 }

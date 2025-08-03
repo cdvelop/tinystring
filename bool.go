@@ -7,19 +7,22 @@ func (c *conv) Bool() (bool, error) {
 		return false, c
 	}
 
-	// Get string representation using buffer API
-	inp := c.getString(buffOut)
-
-	// Direct boolean string matches
-	switch inp {
-	case "true", "True", "TRUE", "1", "t", "T":
+	// Optimized: Direct byte comparison without string allocation
+	if c.bytesEqual(buffOut, []byte("true")) || c.bytesEqual(buffOut, []byte("True")) ||
+		c.bytesEqual(buffOut, []byte("TRUE")) || c.bytesEqual(buffOut, []byte("1")) ||
+		c.bytesEqual(buffOut, []byte("t")) || c.bytesEqual(buffOut, []byte("T")) {
 		c.Kind = K.Bool
 		return true, nil
-	case "false", "False", "FALSE", "0", "f", "F":
+	}
+	if c.bytesEqual(buffOut, []byte("false")) || c.bytesEqual(buffOut, []byte("False")) ||
+		c.bytesEqual(buffOut, []byte("FALSE")) || c.bytesEqual(buffOut, []byte("0")) ||
+		c.bytesEqual(buffOut, []byte("f")) || c.bytesEqual(buffOut, []byte("F")) {
 		c.Kind = K.Bool
 		return false, nil
 	}
-	// Try to parse as integer using parseIntString (base 10, signed)
+
+	// Try to parse as integer using direct buffer access (eliminates getString allocation)
+	inp := c.getString(buffOut) // Still needed for parseIntString compatibility
 	intVal := c.parseIntString(inp, 10, true)
 	if !c.hasContent(buffErr) {
 		c.Kind = K.Bool
@@ -29,17 +32,23 @@ func (c *conv) Bool() (bool, error) {
 		c.rstBuffer(buffErr)
 	}
 
-	// Try basic float patterns (simple cases)
-	if inp == "0.0" || inp == "0.00" || inp == "+0" || inp == "-0" {
+	// Try basic float patterns (optimized byte comparison)
+	if c.bytesEqual(buffOut, []byte("0.0")) || c.bytesEqual(buffOut, []byte("0.00")) ||
+		c.bytesEqual(buffOut, []byte("+0")) || c.bytesEqual(buffOut, []byte("-0")) {
 		c.Kind = K.Bool
 		return false, nil
 	}
-	if inp != "0" && (len(inp) > 0 && (inp[0] >= '1' && inp[0] <= '9')) {
+
+	// Optimized: Check for non-zero starting digit without string allocation
+	if !c.bytesEqual(buffOut, []byte("0")) && c.outLen > 0 &&
+		(c.out[0] >= '1' && c.out[0] <= '9') {
 		// Non-zero number starting with digit 1-9, likely true
 		c.Kind = K.Bool
 		return true, nil
 	}
 
+	// Keep inp for error reporting (this is the final usage)
+	inp = c.getString(buffOut) // Only allocation for error case
 	c.wrErr("Bool", D.Value, D.Invalid, inp)
 	return false, c
 }
