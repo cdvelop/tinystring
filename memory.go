@@ -159,6 +159,21 @@ func (c *conv) getString(dest buffDest) string {
 	}
 }
 
+// getBytes returns []byte content from specified buffer destination
+// OPTIMIZED: Returns slice directly without string conversion for io.Writer compatibility
+func (c *conv) getBytes(dest buffDest) []byte {
+	switch dest {
+	case buffOut:
+		return c.out[:c.outLen]
+	case buffWork:
+		return c.work[:c.workLen]
+	case buffErr:
+		return c.err[:c.errLen]
+	default:
+		return nil // Invalid destination returns nil slice
+	}
+}
+
 // rstBuffer resets specified buffer destination
 // FIXED: Also resets slice length to prevent data contamination
 func (c *conv) rstBuffer(dest buffDest) {
