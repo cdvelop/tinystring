@@ -14,6 +14,18 @@ func (c *conv) Float64() (float64, error) {
 	return val, nil
 }
 
+// toFloat64 converts various float types to float64
+func (c *conv) toFloat64(arg any) (float64, bool) {
+	switch v := arg.(type) {
+	case float64:
+		return v, true
+	case float32:
+		return float64(v), true
+	default:
+		return 0, false
+	}
+}
+
 // Float32 converts the value to a float32.
 // Returns the converted float32 and any error that occurred during conversion.
 func (c *conv) Float32() (float32, error) {
@@ -45,14 +57,15 @@ func (c *conv) parseFloatBase() float64 {
 	i := 0
 
 	// Handle sign
-	if s[0] == '-' {
+	switch s[0] {
+	case '-':
 		negative = true
 		i = 1
 		if len(s) == 1 {
 			c.wrErr(D.Format, D.Invalid)
 			return 0
 		}
-	} else if s[0] == '+' {
+	case '+':
 		i = 1
 		if len(s) == 1 {
 			c.wrErr(D.Format, D.Invalid)
@@ -80,72 +93,6 @@ func (c *conv) parseFloatBase() float64 {
 			}
 			decimalPlaces++
 			result = result*10 + float64(s[i]-'0')
-		}
-	}
-
-	// Apply decimal places
-	if hasDecimal {
-		for j := 0; j < decimalPlaces; j++ {
-			result /= 10
-		}
-	}
-
-	if negative {
-		result = -result
-	}
-
-	return result
-}
-
-// DEPRECATED
-// parseFloat parses a string as a float64 and returns the result
-// Universal method that follows buffer API architecture
-func (c *conv) parseFloat(inp string) float64 {
-	if len(inp) == 0 {
-		c.wrErr(D.String, D.Empty)
-		return 0
-	}
-
-	var result float64
-	var negative bool
-	var hasDecimal bool
-	var decimalPlaces int
-	i := 0
-
-	// Handle sign
-	if inp[0] == '-' {
-		negative = true
-		i = 1
-	} else if inp[0] == '+' {
-		i = 1
-	}
-
-	if i >= len(inp) {
-		c.wrErr(D.Format, D.Invalid)
-		return 0
-	}
-
-	// Parse integer part
-	for ; i < len(inp) && inp[i] != '.'; i++ {
-		if inp[i] < '0' || inp[i] > '9' {
-			c.wrErr(D.Character, D.Invalid)
-			return 0
-		}
-		result = result*10 + float64(inp[i]-'0')
-	}
-
-	// Parse decimal part if present
-	if i < len(inp) && inp[i] == '.' {
-		hasDecimal = true
-		i++ // Skip decimal point
-
-		for ; i < len(inp); i++ {
-			if inp[i] < '0' || inp[i] > '9' {
-				c.wrErr(D.Character, D.Invalid)
-				return 0
-			}
-			decimalPlaces++
-			result = result*10 + float64(inp[i]-'0')
 		}
 	}
 
