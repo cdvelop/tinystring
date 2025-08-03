@@ -2,44 +2,45 @@ package tinystring
 
 // Quote wraps a string in double quotes and escapes any special characters
 // Example: Quote("hello \"world\"") returns "\"hello \\\"world\\\"\""
-func (t *conv) Quote() *conv {
-	inp := t.getString(buffOut)
-
-	// Reset output buffer before writing quoted result
-	t.rstBuffer(buffOut)
-
-	if len(inp) == 0 {
-		t.wrString(buffOut, quoteStr)
-		return t
+func (c *conv) Quote() *conv {
+	if c.hasContent(buffErr) {
+		return c // Error chain interruption
+	}
+	if c.outLen == 0 {
+		c.rstBuffer(buffOut)
+		c.wrString(buffOut, quoteStr)
+		return c
 	}
 
-	// Pre-allocate with estimated size (input length + 20% buffer for escapes + 2 for quotes)
-	eSz := len(inp) + (len(inp) / 5) + 2
-	// Inline makeBuf logic
-	estimatedSize := eSz
-	if estimatedSize < defaultBufCap {
-		estimatedSize = defaultBufCap
-	}
-	out := make([]byte, 0, estimatedSize)
+	// Use work buffer to build quoted string, then swap to output
+	c.rstBuffer(buffWork)
+	c.wrByte(buffWork, '"')
 
-	out = append(out, '"')
-	for _, char := range inp {
+	// Process buffer directly without string allocation (like capitalizeASCIIOptimized)
+	for i := 0; i < c.outLen; i++ {
+		char := c.out[i]
 		switch char {
 		case '"':
-			out = append(out, '\\', '"')
+			c.wrByte(buffWork, '\\')
+			c.wrByte(buffWork, '"')
 		case '\\':
-			out = append(out, '\\', '\\')
+			c.wrByte(buffWork, '\\')
+			c.wrByte(buffWork, '\\')
 		case '\n':
-			out = append(out, '\\', 'n')
+			c.wrByte(buffWork, '\\')
+			c.wrByte(buffWork, 'n')
 		case '\r':
-			out = append(out, '\\', 'r')
+			c.wrByte(buffWork, '\\')
+			c.wrByte(buffWork, 'r')
 		case '\t':
-			out = append(out, '\\', 't')
+			c.wrByte(buffWork, '\\')
+			c.wrByte(buffWork, 't')
 		default:
-			out = append(out, string(char)...)
+			c.wrByte(buffWork, char)
 		}
 	}
-	out = append(out, '"')
-	t.wrString(buffOut, string(out))
-	return t
+
+	c.wrByte(buffWork, '"')
+	c.swapBuff(buffWork, buffOut)
+	return c
 }
