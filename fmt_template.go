@@ -1,5 +1,7 @@
 package tinystring
 
+import "io"
+
 // =============================================================================
 // FORMAT TEMPLATE SYSTEM - Printf-style formatting operations
 // =============================================================================
@@ -11,6 +13,27 @@ func Fmt(format string, args ...any) string {
 	out := getConv() // Always obtain from pool
 	out.wrFormat(buffOut, format, args...)
 	return out.String()
+}
+
+// Fprintf formats according to a format specifier and writes to w.
+// It returns the number of bytes written and any write error encountered.
+// Example: Fprintf(os.Stdout, "Hello %s\n", "world")
+func Fprintf(w io.Writer, format string, args ...any) (n int, err error) {
+	// Obtain converter from pool
+	c := getConv()
+	defer c.putConv() // Ensure cleanup
+
+	// Use existing wrFormat to populate buffer
+	c.wrFormat(buffOut, format, args...)
+
+	// Check for formatting errors
+	if c.hasContent(buffErr) {
+		return 0, c
+	}
+
+	// Write to io.Writer
+	data := c.getBytes(buffOut)
+	return w.Write(data)
 }
 
 // wrFormat applies printf-style formatting to arguments and writes to specified buffer destination.

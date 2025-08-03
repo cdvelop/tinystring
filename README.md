@@ -206,6 +206,7 @@ Replace `fmt` package functions for formatting:
 |-------------|----------------------|
 | `fmt.Sprintf()` | `Fmt(format, args...)` |
 | `fmt.Sprint()` | `Convert(v).String()` |
+| `fmt.Fprintf()` | `Fprintf(w, format, args...)` |
 
 #### String Formatting
 
@@ -221,6 +222,14 @@ result := Fmt("Number: %d, Float: %.2f, Bool: %v", 42, 3.14159, true)
 // Advanced formatting (hex, binary, octal)
 result := Fmt("Hex: %x, Binary: %b, Octal: %o", 255, 10, 8)
 // out: "Hex: ff, Binary: 1010, Octal: 10"
+
+// Write formatted output to io.Writer
+var buf bytes.Buffer
+Fprintf(&buf, "Hello %s, count: %d\n", "world", 42)
+
+// Write to file
+file, _ := os.Create("output.txt")
+Fprintf(file, "Data: %v\n", someData)
 ```
 
 ### ❌ errors Package
