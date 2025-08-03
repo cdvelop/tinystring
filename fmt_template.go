@@ -187,15 +187,21 @@ func (c *conv) wrFormat(dest buffDest, format string, args ...any) {
 					}
 					if ok {
 						code := int(r)
-						hex := ""
 						c.rstBuffer(buffWork)
 						c.wrIntBase(buffWork, int64(code), 16, false, true)
-						hex = c.getString(buffWork)
-						// Pad to at least 4 digits
-						for len(hex) < 4 {
-							hex = "0" + hex
+						// Pad to at least 4 digits by checking buffer length directly
+						for c.workLen < 4 {
+							// Prepend '0' by shifting existing content
+							if c.workLen+1 > len(c.work) {
+								c.work = append(c.work, 0) // Expand capacity if needed
+							}
+							// Shift existing content right
+							copy(c.work[1:c.workLen+1], c.work[:c.workLen])
+							c.work[0] = '0'
+							c.workLen++
 						}
-						str = "U+" + hex
+						// Build "U+" prefix + hex directly in output
+						str = "U+" + c.getString(buffWork) // Only allocation when needed
 					} else {
 						c.wrErr(D.Invalid, D.Type, D.Of, D.Argument, "%U")
 						return
@@ -219,7 +225,7 @@ func (c *conv) wrFormat(dest buffDest, format string, args ...any) {
 						c.rstBuffer(buffWork)
 						compact := formatCompactFloat(floatVal, param, formatChar == 'G')
 						c.wrString(buffWork, compact)
-						str = c.getString(buffWork)
+						str = c.getString(buffWork) // Keep for compatibility with formatFloat usage
 					} else {
 						c.wrErr(D.Invalid, D.Type, D.Of, D.Argument, formatSpec)
 						return

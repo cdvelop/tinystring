@@ -13,20 +13,36 @@ func (t *conv) Repeat(n int) *conv {
 		t.dataPtr = nil // Clear pointer to prevent getString from reconstructing
 		return t
 	}
-	// Phase 4.2: Inline newBuf method to eliminate function call overhead
-	str := t.getString(buffOut)
-	if len(str) == 0 {
+
+	// OPTIMIZED: Direct length check
+	if t.outLen == 0 {
 		// Clear buffer for empty out
 		t.rstBuffer(buffOut)
 		return t
 	}
-	// Use buffer API ONLY - no direct buffer manipulation
-	t.rstBuffer(buffOut) // Clear output buffer using API
 
-	// Write string n times using buffer API
-	for range n {
-		t.wrString(buffOut, str) // Use API to write to output buffer
+	// OPTIMIZED: Use buffer copy for efficiency
+	originalLen := t.outLen
+	originalData := make([]byte, originalLen)
+	copy(originalData, t.out[:originalLen])
+
+	// Calculate total size needed
+	totalSize := originalLen * n
+	if cap(t.out) < totalSize {
+		// Expand buffer if needed
+		newBuf := make([]byte, 0, totalSize)
+		t.out = newBuf
 	}
+
+	// Reset and fill buffer efficiently
+	t.outLen = 0
+	t.out = t.out[:0]
+
+	// Write original data n times
+	for range n {
+		t.out = append(t.out, originalData...)
+	}
+	t.outLen = len(t.out)
 
 	return t
 }

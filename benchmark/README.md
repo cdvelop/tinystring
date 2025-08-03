@@ -9,21 +9,21 @@ Automated benchmark tools to measure and compare performance between standard Go
 [Standard Library Example](bench-binary-size/standard-lib/main.go) | [TinyString Example](bench-binary-size/tinystring-lib/main.go)
 
 <!-- This table is automatically generated from build-and-measure.sh -->
-*Last updated: 2025-07-29 15:11:57*
+*Last updated: 2025-08-02 22:39:11*
 
 | Build Type | Parameters | Standard Library<br/>`go build` | TinyString<br/>`tinygo build` | Size Reduction | Performance |
 |------------|------------|------------------|------------|----------------|-------------|
-| 🖥️ **Default Native** | `-ldflags="-s -w"` | 1.4 MB | 1.2 MB | **-160.0 KB** | ➖ **11.2%** |
-| 🌐 **Default WASM** | `(default -opt=z)` | 590.2 KB | 244.6 KB | **-345.5 KB** | ✅ **58.5%** |
-| 🌐 **Ultra WASM** | `-no-debug -panic=trap -scheduler=none -gc=leaking -target wasm` | 141.2 KB | 31.8 KB | **-109.3 KB** | 🏆 **77.5%** |
-| 🌐 **Speed WASM** | `-opt=2 -target wasm` | 837.2 KB | 350.1 KB | **-487.1 KB** | ✅ **58.2%** |
-| 🌐 **Debug WASM** | `-opt=0 -target wasm` | 1.8 MB | 825.4 KB | **-994.4 KB** | ✅ **54.6%** |
+| 🖥️ **Default Native** | `-ldflags="-s -w"` | 1.4 MB | 1.2 MB | **-152.0 KB** | ➖ **10.6%** |
+| 🌐 **Default WASM** | `(default -opt=z)` | 590.2 KB | 257.0 KB | **-333.2 KB** | ✅ **56.5%** |
+| 🌐 **Ultra WASM** | `-no-debug -panic=trap -scheduler=none -gc=leaking -target wasm` | 141.2 KB | 32.9 KB | **-108.2 KB** | 🏆 **76.7%** |
+| 🌐 **Speed WASM** | `-opt=2 -target wasm` | 837.2 KB | 366.7 KB | **-470.5 KB** | ✅ **56.2%** |
+| 🌐 **Debug WASM** | `-opt=0 -target wasm` | 1.8 MB | 868.0 KB | **-951.8 KB** | ✅ **52.3%** |
 
 ### 🎯 Performance Summary
 
-- 🏆 **Peak Reduction: 77.5%** (Best optimization)
-- ✅ **Average WebAssembly Reduction: 62.2%**
-- ✅ **Average Native Reduction: 11.2%**
+- 🏆 **Peak Reduction: 76.7%** (Best optimization)
+- ✅ **Average WebAssembly Reduction: 60.4%**
+- ✅ **Average Native Reduction: 10.6%**
 - 📦 **Total Size Savings: 2.0 MB across all builds**
 
 #### Performance Legend
@@ -38,18 +38,18 @@ Automated benchmark tools to measure and compare performance between standard Go
 [Standard Library Example](bench-memory-alloc/standard) | [TinyString Example](bench-memory-alloc/tinystring)
 
 <!-- This table is automatically generated from memory-benchmark.sh -->
-*Last updated: 2025-07-29 15:12:12*
+*Last updated: 2025-08-02 22:39:27*
 
 Performance benchmarks comparing memory allocation patterns between standard Go library and TinyString:
 
 | 🧪 **Benchmark Category** | 📚 **Library** | 💾 **Memory/Op** | 🔢 **Allocs/Op** | ⏱️ **Time/Op** | 📈 **Memory Trend** | 🎯 **Alloc Trend** | 🏆 **Performance** |
 |----------------------------|----------------|-------------------|-------------------|-----------------|---------------------|---------------------|--------------------|
-| 📝 **String Processing** | 📊 Standard | `808 B / 609.450 OP` | `32` | `2.3μs` | - | - | - |
-| | 🚀 TinyString | `464 B / 225.711 OP` | `17` | `5.2μs` | 🏆 **42.6% less** | 🏆 **46.9% less** | 🏆 **Excellent** |
-| 🔢 **Number Processing** | 📊 Standard | `912 B / 535.048 OP` | `42` | `2.4μs` | - | - | - |
-| | 🚀 TinyString | `320 B / 526.324 OP` | `17` | `1.9μs` | 🏆 **64.9% less** | 🏆 **59.5% less** | 🏆 **Excellent** |
-| 🔄 **Mixed Operations** | 📊 Standard | `416 B / 722.950 OP` | `22` | `1.4μs` | - | - | - |
-| | 🚀 TinyString | `192 B / 468.020 OP` | `12` | `2.5μs` | 🏆 **53.8% less** | 🏆 **45.5% less** | 🏆 **Excellent** |
+| 📝 **String Processing** | 📊 Standard | `808 B / 535.737 OP` | `32` | `2.0μs` | - | - | - |
+| | 🚀 TinyString | `464 B / 203.563 OP` | `17` | `5.9μs` | 🏆 **42.6% less** | 🏆 **46.9% less** | 🏆 **Excellent** |
+| 🔢 **Number Processing** | 📊 Standard | `912 B / 511.083 OP` | `42` | `2.3μs` | - | - | - |
+| | 🚀 TinyString | `320 B / 611.653 OP` | `17` | `1.9μs` | 🏆 **64.9% less** | 🏆 **59.5% less** | 🏆 **Excellent** |
+| 🔄 **Mixed Operations** | 📊 Standard | `416 B / 808.946 OP` | `22` | `1.4μs` | - | - | - |
+| | 🚀 TinyString | `192 B / 427.737 OP` | `12` | `2.7μs` | 🏆 **53.8% less** | 🏆 **45.5% less** | 🏆 **Excellent** |
 
 ### 🎯 Performance Summary
 

@@ -227,113 +227,112 @@ func (t *conv) SnakeUp(sep ...string) *conv {
 }
 
 // Minimal implementation without pools or builders - optimized for minimal allocations
+// Minimal implementation - optimized for minimal allocations using mapping.go functions
 func (t *conv) toCaseTransformMinimal(firstWordLower bool, separator string) *conv {
 	if t.hasContent(buffErr) {
 		return t // Error chain interruption
 	}
 
-	str := t.getString(buffOut)
-	if len(str) == 0 {
+	if t.outLen == 0 {
 		return t
-	} // Pre-allocate buffer with estimated size
-	eSz := len(str) + (len(separator) * 5) // Extra space for separators
-	// Inline makeBuf logic
-	resultCap := eSz
-	if resultCap < defaultBufCap {
-		resultCap = defaultBufCap
 	}
-	out := make([]byte, 0, resultCap)
-	// Advanced word boundary detection for camelCase and snake_case
+
+	// Use work buffer for processing
+	t.rstBuffer(buffWork)
+
+	// Process each character and determine word boundaries
 	wordIndex := 0
-	var pWU, pWL, pWD, pWS bool
-	for i, r := range str {
-		// Inline isLetter logic
-		isLetterR := (r >= 'a' && r <= 'z') || (r >= 'A' && r <= 'Z') ||
-			(r >= 'À' && r <= 'ÿ' && r != 'x' && r != '÷')
-		cIU := isLetterR && isUpper(r)
-		cIL := isLetterR && isLower(r)
-		// Inline isDigit logic
-		cID := r >= '0' && r <= '9'
-		cIS := r == ' ' || r == '\t' || r == '\n' || r == '\r'
+	prevWasSpace := false
+	prevWasLower := false
+	prevWasDigit := false
 
-		// Determine if we're starting a new word
-		iWS := false
+	for i := 0; i < t.outLen; i++ {
+		char := t.out[i]
+
+		// For CamelCase, only whitespace characters are true separators
+		isWhitespace := char == ' ' || char == '\t' || char == '\n' || char == '\r'
+
+		if isWhitespace {
+			prevWasSpace = true
+			continue // Skip whitespace separators
+		}
+
+		// Determine if starting new word
+		isNewWord := false
 		if i == 0 {
-			iWS = true
-		} else if cIS {
-			// Skip spaces but mark that we had a space
-			pWS = true
-			continue
-		} else if pWS {
-			// After space - new word
-			iWS = true
-			pWS = false
-		} else if pWL && cIU {
-			// camelCase transition: "camelCase" -> "camel" + "Case"
-			iWS = true
-		} else if pWD && (cIU || cIL) {
-			// Digit to letter transition:
-			// - For snake_case: always start new word
-			// - For PascalCase (CamelUp): start new word
-			// - For camelCase (CamelLow): don't start new word
-			if separator != "" || !firstWordLower {
-				iWS = true
+			isNewWord = true // First character is always start of first word
+		} else if prevWasSpace {
+			isNewWord = true // After whitespace
+		} else if separator != "" {
+			// For snake_case: more aggressive word splitting
+			if (prevWasLower && char >= 'A' && char <= 'Z') || // camelCase transition
+				(prevWasDigit && ((char >= 'a' && char <= 'z') || (char >= 'A' && char <= 'Z'))) { // digit to letter
+				isNewWord = true
 			}
-		} else if (pWU || pWL) && cID {
-			// Letter to digit: no new word - numbers continue the word
+		} else {
+			// For CamelCase/PascalCase: Split on common word boundaries
+			if prevWasLower && char >= 'A' && char <= 'Z' { // lowercase-to-uppercase (camelCase)
+				isNewWord = true
+			} else if prevWasDigit && char >= 'A' && char <= 'Z' { // digit-to-uppercase
+				// For CamelLow: digit-to-uppercase is NOT a word boundary ("User123Name" → "user123name")
+				// For CamelUp: digit-to-uppercase IS a word boundary ("User123Name" → "User123Name")
+				if !firstWordLower {
+					isNewWord = true // PascalCase (CamelUp) - treat as word boundary
+				}
+				// For camelCase (CamelLow) - don't treat as word boundary
+			}
 		}
 
-		// Add separator if starting new word (except first word)
-		if iWS && wordIndex > 0 && separator != "" {
-			out = append(out, separator...)
+		// Add separator if new word (except first) - only for snake_case
+		if isNewWord && wordIndex > 0 && separator != "" {
+			t.wrString(buffWork, separator)
 		}
 
-		// Determine case transformation
-		var transformedRune rune
-		if iWS {
-			// First letter of word
-			if wordIndex == 0 && firstWordLower {
-				// First word lowercase (camelCase)
-				transformedRune = toLowerRune(r)
-			} else if separator != "" && firstWordLower {
-				// snake_case_lower - all words lowercase
-				transformedRune = toLowerRune(r)
+		// Apply case transformation for letters only
+		var result byte
+		if (char >= 'a' && char <= 'z') || (char >= 'A' && char <= 'Z') {
+			if isNewWord {
+				// First letter of word
+				if wordIndex == 0 && firstWordLower {
+					result = t.toLowerByteHelper(char) // First word lowercase (camelCase)
+				} else if separator != "" && firstWordLower {
+					result = t.toLowerByteHelper(char) // snake_case - all lowercase
+				} else {
+					result = t.toUpperByteHelper(char) // PascalCase or subsequent camelCase words
+				}
+				wordIndex++
 			} else {
-				// PascalCase, camelCase subsequent words, or Snake_Case_Upper
-				transformedRune = toUpperRune(r)
+				result = t.toLowerByteHelper(char) // Rest of word always lowercase
 			}
-			wordIndex++
 		} else {
-			// Rest of letters in word - always lowercase
-			transformedRune = toLowerRune(r)
-		}
-		// Add the character - use bytes buffer for efficiency
-		// Convert rune to bytes directly instead of string(rune)
-		if transformedRune < 128 {
-			// ASCII optimization
-			out = append(out, byte(transformedRune))
-		} else {
-			// Use UTF-8 encoding for multi-byte runes
-			out = append(out, string(transformedRune)...)
+			// Non-letter characters: preserve as-is
+			result = char
 		}
 
-		// Update state for next iteration
-		pWU = cIU
-		pWL = cIL
-		pWD = cID
+		t.wrByte(buffWork, result)
+
+		// Update state
+		prevWasSpace = false
+		prevWasLower = (char >= 'a' && char <= 'z')
+		prevWasDigit = (char >= '0' && char <= '9')
 	}
 
-	// ✅ Update buffer using API instead of direct manipulation
-	t.rstBuffer(buffOut)    // Clear buffer using API
-	t.wrBytes(buffOut, out) // Write bytes using API
+	// Swap result to output
+	t.swapBuff(buffWork, buffOut)
 	return t
 }
 
-// Helper functions for simple case conversion
-func isUpper(r rune) bool {
-	return r >= 'A' && r <= 'Z'
+// Helper methods for case conversion (reuse mapping.go constants)
+func (t *conv) toUpperByteHelper(b byte) byte {
+	if b >= 'a' && b <= 'z' {
+		return b - asciiCaseDiff
+	}
+	return b
 }
 
-func isLower(r rune) bool {
-	return r >= 'a' && r <= 'z'
+func (t *conv) toLowerByteHelper(b byte) byte {
+	if b >= 'A' && b <= 'Z' {
+		return b + asciiCaseDiff
+	}
+	return b
 }
