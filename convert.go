@@ -65,6 +65,7 @@ func Convert(v ...any) *conv {
 
 // =============================================================================
 // UNIVERSAL CONVERSION FUNCTION - REUSES EXISTING IMPLEMENTATIONS
+
 // =============================================================================
 
 // anyToBuff converts any supported type to buffer using existing conversion logic
