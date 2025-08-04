@@ -315,17 +315,17 @@ progressCallback := func(msgs ...any) {
     }
 }
 
-// Message type constants available via M struct
+// Message type constants available via Msg struct
 if msgType.IsError() {
     // Handle error case
 }
 
 // Available message types:
-// M.Normal  - Default type for general content
-// M.Info    - Information messages  
-// M.Error   - Error messages and failures
-// M.Warning - Warning and caution messages
-// M.Success - Success and completion messages
+// Msg.Normal  - Default type for general content
+// Msg.Info    - Information messages  
+// Msg.Error   - Error messages and failures
+// Msg.Warning - Warning and caution messages
+// Msg.Success - Success and completion messages
 
 // Zero allocations - reuses existing conversion buffers
 // Perfect for logging, UI status messages, and error handling

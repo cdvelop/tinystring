@@ -80,7 +80,7 @@ var D = struct {
 	Language LocStr // "language"
 	Line     LocStr // "line"
 
-	// M
+	// Msg
 	Maximum  LocStr // "maximum"
 	Method   LocStr // "method"
 	Missing  LocStr // "missing"
@@ -236,7 +236,7 @@ var D = struct {
 	LocStr{"Language", "Idioma", "语言", "भाषा", "لغة", "Idioma", "Langue", "Sprache", "Язык"},
 	LocStr{"Line", "Línea", "行", "लाइन", "خط", "Linha", "Ligne", "Zeile", "Строка"},
 
-	// M
+	// Msg
 	LocStr{"Maximum", "Máximo", "最大", "अधिकतम", "الحد الأقصى", "Máximo", "Maximum", "Maximum", "Максимум"},
 	LocStr{"Method", "Método", "方法", "विधि", "طريقة", "Método", "Méthode", "Methode", "Метод"},
 	LocStr{"Missing", "Falta", "缺少", "गुम", "مفقود", "Ausente", "Manquant", "Fehlend", "Отсутствует"},
