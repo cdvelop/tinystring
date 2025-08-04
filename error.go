@@ -53,7 +53,7 @@ func (c *conv) wrErr(msgs ...any) *conv {
 		switch v := msg.(type) {
 		case LocStr:
 			// Translate LocStr using default language
-			c.wrTranslation(v, defLang, buffErr)
+			c.wrTranslation(v, getCurrentLang(), buffErr)
 		case string:
 			// Direct string write
 			c.wrString(buffErr, v)

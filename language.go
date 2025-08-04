@@ -1,7 +1,12 @@
 package tinystring
 
-// Private global configuration
-var defLang lang = EN
+import "sync"
+
+// Private global configuration with mutex protection
+var (
+	defLang   lang = EN
+	defLangMu sync.RWMutex
+)
 
 // Language enumeration for supported languages
 type lang uint8
@@ -99,18 +104,40 @@ type LocStr [9]string
 func OutLang(l ...any) string {
 	c := getConv()
 	if len(l) == 0 {
-		defLang = c.getSystemLang() // from env.front.go or env.back.go
-		return defLang.String()
+		systemLang := c.getSystemLang() // Get system lang without holding lock
+		defLangMu.Lock()
+		defLang = systemLang
+		result := defLang.String()
+		defLangMu.Unlock()
+		return result
 	}
 
+	var newLang lang
 	switch v := l[0].(type) {
 	case lang:
-		defLang = v
+		newLang = v
 	case string:
-		defLang = c.langParser(v)
+		newLang = c.langParser(v)
+	default:
+		// Return current language without changes
+		defLangMu.RLock()
+		result := defLang.String()
+		defLangMu.RUnlock()
+		return result
 	}
 
-	return defLang.String()
+	defLangMu.Lock()
+	defLang = newLang
+	result := defLang.String()
+	defLangMu.Unlock()
+	return result
+}
+
+// getCurrentLang returns the current default language safely
+func getCurrentLang() lang {
+	defLangMu.RLock()
+	defer defLangMu.RUnlock()
+	return defLang
 }
 
 // langParser processes a list of language strings (e.g., from env vars or browser settings)

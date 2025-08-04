@@ -49,7 +49,7 @@ func processTranslatedMessage(c *conv, dest buffDest, values ...any) {
 // Returns: (language, startIndex) where startIndex skips the language argument if present
 func detectLanguage(c *conv, args []any) (lang, int) {
 	if len(args) == 0 {
-		return defLang, 0
+		return getCurrentLang(), 0
 	}
 
 	// Check if first argument is a language specifier
@@ -64,7 +64,7 @@ func detectLanguage(c *conv, args []any) (lang, int) {
 	}
 
 	// No language specified, use default
-	return defLang, 0
+	return getCurrentLang(), 0
 }
 
 // processTranslatedArgs processes arguments with language-aware translation
