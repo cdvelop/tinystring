@@ -7,7 +7,7 @@ import (
 func TestStringTypeDetection(t *testing.T) {
 	t.Run("Empty string", func(t *testing.T) {
 		msg, msgType := Convert("").StringType()
-		if msgType != M.Normal {
+		if msgType != Msg.Normal {
 			t.Errorf("Expected Normal for empty string, got %v", msgType)
 		}
 		if msg != "" {
@@ -26,7 +26,7 @@ func TestStringTypeDetection(t *testing.T) {
 		}
 		for _, keyword := range errorKeywords {
 			msg, msgType := Convert(keyword).StringType()
-			if msgType != M.Error {
+			if msgType != Msg.Error {
 				t.Errorf("Expected Error for keyword %q, got %v", keyword, msgType)
 			}
 			if msg != keyword {
@@ -45,7 +45,7 @@ func TestStringTypeDetection(t *testing.T) {
 		}
 		for _, keyword := range successKeywords {
 			msg, msgType := Convert(keyword).StringType()
-			if msgType != M.Success {
+			if msgType != Msg.Success {
 				t.Errorf("Expected Success for keyword %q, got %v", keyword, msgType)
 			}
 			if msg != keyword {
@@ -63,7 +63,7 @@ func TestStringTypeDetection(t *testing.T) {
 		}
 		for _, keyword := range infoKeywords {
 			_, msgType := Convert(keyword).StringType()
-			if msgType != M.Info {
+			if msgType != Msg.Info {
 				t.Errorf("Expected Info for keyword %q, got %v", keyword, msgType)
 			}
 		}
@@ -76,7 +76,7 @@ func TestStringTypeDetection(t *testing.T) {
 		}
 		for _, keyword := range warningKeywords {
 			_, msgType := Convert(keyword).StringType()
-			if msgType != M.Warning {
+			if msgType != Msg.Warning {
 				t.Errorf("Expected Warning for keyword %q, got %v", keyword, msgType)
 			}
 		}
@@ -84,7 +84,7 @@ func TestStringTypeDetection(t *testing.T) {
 
 	t.Run("Normal message", func(t *testing.T) {
 		_, msgType := Convert("Hello world").StringType()
-		if msgType != M.Normal {
+		if msgType != Msg.Normal {
 			t.Errorf("Expected Normal for generic message, got %v", msgType)
 		}
 	})

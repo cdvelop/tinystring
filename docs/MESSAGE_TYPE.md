@@ -42,7 +42,7 @@ message, msgType := T(msgs...).StringType()
 **Option A: Direct Integration** ✅ RECOMMENDED
 ```go
 // Create new file: messagetype.go - separate from kind.go
-var M = struct {
+var Msg = struct {
     Normal  MessageType
     Info    MessageType  
     Error   MessageType
@@ -70,19 +70,19 @@ func (c *conv) detectMessageTypeFromBuffer(dest buffDest) MessageType {
     
     // 3. Direct buffer pattern matching - NO Contains() allocations
     if c.bufferContainsPattern(buffWork, errorPatterns) {
-        return M.Error
+        return Msg.Error
     }
     if c.bufferContainsPattern(buffWork, warningPatterns) {
-        return M.Warning  
+        return Msg.Warning  
     }
     if c.bufferContainsPattern(buffWork, successPatterns) {
-        return M.Success
+        return Msg.Success
     }
     if c.bufferContainsPattern(buffWork, infoPatterns) {
-        return M.Info
+        return Msg.Info
     }
     
-    return M.Normal
+    return Msg.Normal
 }
 ```
 
@@ -112,7 +112,7 @@ func (c *conv) StringType() (string, MessageType) {
 
 **Components**:
 - `MessageType uint8` type definition
-- Constants exported via `M` struct (following `K` pattern)
+- Constants exported via `Msg` struct (following `K` pattern)
 - Helper methods: `IsNormal()`, `IsInfo()`, `IsError()`, `IsWarning()`, `IsSuccess()`, `String()`
 
 #### 1.2 Pattern Definitions
@@ -195,7 +195,7 @@ func (c *conv) bufferContainsPattern(dest buffDest, patterns [][]byte) bool {
 **Validation**:
 - Compatibility with existing TinyString operations
 - Chain operation behavior: `Convert(x).Up().StringType()`
-- Error chain interruption: errors → `M.Error` type
+- Error chain interruption: errors → `Msg.Error` type
 
 ## TECHNICAL CONSIDERATIONS & QUESTIONS
 
@@ -224,7 +224,7 @@ func (c *conv) bufferContainsPattern(dest buffDest, patterns [][]byte) bool {
 ### 3. Error State Priority
 
 **QUESTION**: When `buffErr` has content, should we:
-- A) Return `M.Error` type immediately (no detection) ✅ RECOMMENDED
+- A) Return `Msg.Error` type immediately (no detection) ✅ RECOMMENDED
 - B) Still perform detection on output buffer content
 
 **RECOMMENDATION**: Option A
@@ -320,7 +320,7 @@ func (c *conv) bufferContainsPattern(dest buffDest, patterns [][]byte) bool {
 
 **AUTHOR QUESTIONS FOR FINAL APPROVAL**:
 
-1. Do you approve the `M.` export pattern following `K.` precedent?
+1. Do you approve the `Msg.` export pattern following `K.` precedent?
 2. Should we prioritize ASCII optimization or maintain full Unicode parity?
 3. Are there additional message types (Debug, Trace) you want included?
 4. Should pattern matching be exact or support regex/wildcards?

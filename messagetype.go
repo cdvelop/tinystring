@@ -3,8 +3,8 @@ package tinystring
 // MessageType represents the classification of message types in the system.
 type MessageType uint8
 
-// M exposes the MessageType constants for external use, following TinyString naming convention.
-var M = struct {
+// Msg exposes the MessageType constants for external use, following TinyString naming convention.
+var Msg = struct {
 	Normal  MessageType
 	Info    MessageType
 	Error   MessageType
@@ -13,21 +13,21 @@ var M = struct {
 }{0, 1, 2, 3, 4}
 
 // Helper methods for MessageType
-func (t MessageType) IsNormal() bool  { return t == M.Normal }
-func (t MessageType) IsInfo() bool    { return t == M.Info }
-func (t MessageType) IsError() bool   { return t == M.Error }
-func (t MessageType) IsWarning() bool { return t == M.Warning }
-func (t MessageType) IsSuccess() bool { return t == M.Success }
+func (t MessageType) IsNormal() bool  { return t == Msg.Normal }
+func (t MessageType) IsInfo() bool    { return t == Msg.Info }
+func (t MessageType) IsError() bool   { return t == Msg.Error }
+func (t MessageType) IsWarning() bool { return t == Msg.Warning }
+func (t MessageType) IsSuccess() bool { return t == Msg.Success }
 
 func (t MessageType) String() string {
 	switch t {
-	case M.Info:
+	case Msg.Info:
 		return "Info"
-	case M.Error:
+	case Msg.Error:
 		return "Error"
-	case M.Warning:
+	case Msg.Warning:
 		return "Warning"
-	case M.Success:
+	case Msg.Success:
 		return "Success"
 	default:
 		return "Normal"
@@ -70,16 +70,16 @@ func (c *conv) detectMessageTypeFromBuffer(dest buffDest) MessageType {
 	c.changeCase(true, buffWork)
 	// 3. Direct buffer pattern matching - NO Contains() allocations
 	if c.bufferContainsPattern(buffWork, errorPatterns) {
-		return M.Error
+		return Msg.Error
 	}
 	if c.bufferContainsPattern(buffWork, warningPatterns) {
-		return M.Warning
+		return Msg.Warning
 	}
 	if c.bufferContainsPattern(buffWork, successPatterns) {
-		return M.Success
+		return Msg.Success
 	}
 	if c.bufferContainsPattern(buffWork, infoPatterns) {
-		return M.Info
+		return Msg.Info
 	}
-	return M.Normal
+	return Msg.Normal
 }
