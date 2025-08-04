@@ -12,7 +12,7 @@ package tinystring
 
 func Err(msgs ...any) *conv {
 	c := getConv() // Always obtain from pool
-	// UNIFIED PROCESSING: Use same intermediate function as T() but write to buffErr
+	// UNIFIED PROCESSING: Use same intermediate function as Translate() but write to buffErr
 	processTranslatedMessage(c, buffErr, msgs...)
 	return c
 }

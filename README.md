@@ -281,7 +281,7 @@ err := Err(D.Format, D.Invalid)
 // → "formato inválido"
 
 // return strings
-msg := T(FR, D.Format, D.Invalid).String()
+msg := Translate(FR, D.Format, D.Invalid).String()
 // → "format invalide"
 
 // Force French
@@ -299,15 +299,15 @@ Combine `D.` (default terms) and custom dictionaries for flexible messaging.
 
 ```go
 // Before: messagetype library usage
-message := T(msgs...).String()
+message := Translate(msgs...).String()
 msgType := messagetype.DetectMessageType(message)
 
 // After: tinystring Single operation with StringType() (zero allocations)
-message, msgType := T(msgs...).StringType()
+message, msgType := Translate(msgs...).StringType()
 
 // Real example - Progress callback with message classification
 progressCallback := func(msgs ...any) {
-    message, msgType := T(msgs...).StringType()
+    message, msgType := Translate(msgs...).StringType()
     if msgType.IsError() {
         handleError(message)
     } else {

@@ -8,8 +8,8 @@
 - **[x] Reset() Method** - Complete conv state reset
 - **[x] Error Chain Interruption** - Operations check `c.err` before proceeding
 - **[x] Pool Integration** - All conv objects via `getConv()`, never `&conv{}`
-- **[x] T() Translation Function** - Efficient multilingual string construction
-- **[x] Err() Function Refactoring** - Uses T() and pool pattern
+- **[x] Translate() Translation Function** - Efficient multilingual string construction
+- **[x] Err() Function Refactoring** - Uses Translate() and pool pattern
 - **[x] Buffer-First Strategy** - `getString()` prioritizes buffer content
 - **[x] Unified Type Handling** - `setVal()` consolidates all type switches
 - **[x] Builder API Tests** - Complete test suite with validation
@@ -41,7 +41,7 @@ All core string builder features have been successfully implemented and integrat
 
 ## Overview
 
-This document outlines the integration of a high-performance string builder API into TinyString's existing `conv` structure, along with the creation of a new `T` (Translate) function to optimize memory usage in high-demand processes.
+This document outlines the integration of a high-performance string builder API into TinyString's existing `conv` structure, along with the creation of a new `Translate` (Translate) function to optimize memory usage in high-demand processes.
 
 ## Problem Statement
 
@@ -85,11 +85,11 @@ func (c *conv) String() string        // Already exists - auto-releases to pool 
 // result := c.String()
 ```
 
-### 2. Translation Function `T`
+### 2. Translation Function `Translate`
 
 #### New Function Signature
 ```go
-func T(values ...any) string
+func Translate(values ...any) string
 ```
 
 #### Usage Examples
@@ -157,7 +157,7 @@ func (t *conv) Up() *conv {
    - **CRITICAL**: Change `Convert(v any)` to `Convert(v ...any)` with validation
    - **Rule**: Only accepts 0 or 1 parameters: `Convert()` or `Convert(value)`
    - **Purpose**: Enable empty initialization for builder pattern in loops
-   - **Error handling**: Use `c.err = T(D.Only, D.One, D.Value, D.Supported)` for multiple parameters (consistent with library pattern)
+   - **Error handling**: Use `c.err = Translate(D.Only, D.One, D.Value, D.Supported)` for multiple parameters (consistent with library pattern)
 
 2. **Unified type handling method**:
    - `type cm uint8` - Convert mode constants (mi=inicial, mb=buffer, ma=any)
@@ -176,22 +176,22 @@ func (t *conv) Up() *conv {
    - Mark `setString()` as **@deprecated** during transition
    - Gradual replacement throughout library with `setBuf()`
 
-### Phase 2: Translation Function `T`
+### Phase 2: Translation Function `Translate`
 **File**: `translation.go` (new file)
 
-1. **Implement `T` function**:
+1. **Implement `Translate` function**:
    - Same signature as `Err` but returns `string`
    - Reuse translation logic from existing `Err`
    - Use builder API internally for efficiency
 
 2. **Refactor `Err` function**:
-   - Simplify to wrapper around `T`
+   - Simplify to wrapper around `Translate`
    - Maintain backward compatibility
 
 ### Phase 3: Integration & Optimization
 **Files**: Throughout library
 
-1. **Create translation.go**: New file containing `T` function
+1. **Create translation.go**: New file containing `Translate` function
 2. **Identify high-demand processes** using memory profiling tools
 3. **Replace string concatenation** with builder API
 4. **Optimize transformation chains** to use single buffer
@@ -255,7 +255,7 @@ func Convert(v ...any) *conv {
     
     // Validation: Only accept 0 or 1 parameter
     if len(v) > 1 {
-        c.err = T(D.Only, D.One, D.Value, D.Supported) // Consistent error handling pattern
+        c.err = Translate(D.Only, D.One, D.Value, D.Supported) // Consistent error handling pattern
         return c
     }
     
@@ -372,33 +372,33 @@ func (c *conv) Reset() *conv {
 ```go
 package tinystring
 
-// T creates a translated string with support for multilingual translations
+// Translate creates a translated string with support for multilingual translations
 // Same functionality as Err but returns string directly instead of *conv
 // eg:
-// T(D.Invalid, D.Format) returns "invalid format"
-// T(ES, D.Invalid, D.Format) returns "formato inválido"
-func T(values ...any) string {
+// Translate(D.Invalid, D.Format) returns "invalid format"
+// Translate(ES, D.Invalid, D.Format) returns "formato inválido"
+func Translate(values ...any) string {
     // Implementation using builder API for efficiency
     // Reuses logic from existing Err function
 }
 ```
 
 #### Updated `error.go`
-**Purpose**: Simplified error handling using T function
+**Purpose**: Simplified error handling using Translate function
 ```go
-// Err becomes a simple wrapper around T function
+// Err becomes a simple wrapper around Translate function
 func Err(values ...any) *conv {
     c := getConv() // Always obtain from pool
-    c.err = T(values...)
+    c.err = Translate(values...)
     c.Kind = K.Err
     return c
 }
 ```
 
 #### Builder Integration
-- **T function** uses builder API internally for zero-allocation string construction
+- **Translate function** uses builder API internally for zero-allocation string construction
 - **Separation of concerns**: Translation logic isolated from error handling
-- **Reusability**: T function can be used independently for any translation needs
+- **Reusability**: Translate function can be used independently for any translation needs
 
 ## Testing Strategy
 
@@ -531,13 +531,13 @@ func TestErrorChainInterruption(t *testing.T) {
 ### Validation Steps
 1. **Unit tests**: All builder methods with edge cases
 2. **Integration tests**: Builder + existing functionality  
-3. **Translation tests**: T function with all supported languages
+3. **Translation tests**: Translate function with all supported languages
 4. **Benchmark validation**: Performance meets targets
 5. **Memory analysis**: No regressions in allocations
 
 ## Conclusion
 
-This design leverages TinyString's existing memory optimization infrastructure while adding a high-performance string builder API. The `T` function provides efficient translation functionality, and the builder methods enable zero-allocation string construction for high-demand processes.
+This design leverages TinyString's existing memory optimization infrastructure while adding a high-performance string builder API. The `Translate` function provides efficient translation functionality, and the builder methods enable zero-allocation string construction for high-demand processes.
 
 The implementation maintains full backward compatibility while providing significant performance improvements for memory-intensive operations.
 
@@ -547,7 +547,7 @@ The implementation maintains full backward compatibility while providing signifi
 - Complete builder API implementation with Write(), Reset(), unified type handling
 - Error chain interruption pattern throughout all operations  
 - Pool-only instantiation rule enforcement
-- Translation function T() with multilingual support
+- Translation function Translate() with multilingual support
 - Buffer-first strategy for consistent operation chaining
 
 **✅ COMPLETED (Phase 2)**:

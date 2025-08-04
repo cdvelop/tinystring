@@ -10,7 +10,7 @@ func (c *conv) Bool() (bool, error) {
 	// Optimized: Direct byte comparison without string allocation
 	if c.bytesEqual(buffOut, []byte("true")) || c.bytesEqual(buffOut, []byte("True")) ||
 		c.bytesEqual(buffOut, []byte("TRUE")) || c.bytesEqual(buffOut, []byte("1")) ||
-		c.bytesEqual(buffOut, []byte("t")) || c.bytesEqual(buffOut, []byte("T")) {
+		c.bytesEqual(buffOut, []byte("t")) || c.bytesEqual(buffOut, []byte("Translate")) {
 		c.Kind = K.Bool
 		return true, nil
 	}
