@@ -293,6 +293,43 @@ Combine `D.` (default terms) and custom dictionaries for flexible messaging.
 
 📘 Full documentation available in [`docs/TRANSLATE.md`](docs/TRANSLATE.md)
 
+### 🏷️ Message Type Detection
+
+**TinyString** provides automatic message type classification to help identify the nature of text content. The system detects common message types like errors, warnings, success messages, and information using zero-allocation buffer-based pattern matching.
+
+```go
+// Before: messagetype library usage
+message := T(msgs...).String()
+msgType := messagetype.DetectMessageType(message)
+
+// After: tinystring Single operation with StringType() (zero allocations)
+message, msgType := T(msgs...).StringType()
+
+// Real example - Progress callback with message classification
+progressCallback := func(msgs ...any) {
+    message, msgType := T(msgs...).StringType()
+    if msgType.IsError() {
+        handleError(message)
+    } else {
+        logMessage(message, msgType)
+    }
+}
+
+// Message type constants available via M struct
+if msgType.IsError() {
+    // Handle error case
+}
+
+// Available message types:
+// M.Normal  - Default type for general content
+// M.Info    - Information messages  
+// M.Error   - Error messages and failures
+// M.Warning - Warning and caution messages
+// M.Success - Success and completion messages
+
+// Zero allocations - reuses existing conversion buffers
+// Perfect for logging, UI status messages, and error handling
+```
 
 ### ✂️ Smart Truncation
 

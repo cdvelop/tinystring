@@ -249,3 +249,36 @@ func (c *conv) bytesEqual(dest buffDest, target []byte) bool {
 	}
 	return true
 }
+
+// bufferContainsPattern checks if any pattern is present in the buffer (no allocations)
+func (c *conv) bufferContainsPattern(dest buffDest, patterns [][]byte) bool {
+	bufData := c.getBytes(dest)
+	for _, pattern := range patterns {
+		if bytesContain(bufData, pattern) {
+			return true
+		}
+	}
+	return false
+}
+
+// bytesContain checks if needle is present in haystack (simple byte search)
+func bytesContain(haystack, needle []byte) bool {
+	n := len(needle)
+	h := len(haystack)
+	if n == 0 || h < n {
+		return false
+	}
+	for i := 0; i <= h-n; i++ {
+		match := true
+		for j := 0; j < n; j++ {
+			if haystack[i+j] != needle[j] {
+				match = false
+				break
+			}
+		}
+		if match {
+			return true
+		}
+	}
+	return false
+}
