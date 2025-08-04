@@ -7,14 +7,14 @@ This document outlines the comprehensive plan to integrate the `messagetype` lib
 **Primary Goal**: Transform from:
 ```go
 // Current - Multiple allocations
-message := T(msgs...).String()
+message := Translate(msgs...).String()
 msgType := messagetype.DetectMessageType(message)
 ```
 
 To:
 ```go
 // Proposed - Single operation, buffer-based
-message, msgType := T(msgs...).StringType()
+message, msgType := Translate(msgs...).StringType()
 ```
 
 ## CURRENT STATE ANALYSIS

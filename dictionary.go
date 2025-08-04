@@ -138,7 +138,7 @@ var D = struct {
 	Sync      LocStr // "sync"
 	System    LocStr // "system"
 
-	// T
+	// Translate
 	Tab     LocStr // "tab"
 	Test    LocStr // "test"
 	Testing LocStr // "testing"
@@ -294,7 +294,7 @@ var D = struct {
 	LocStr{"Sync", "Sincronización", "同步", "सिंक", "مزامنة", "Sincronização", "Synchronisation", "Synchronisierung", "Синхронизация"},
 	LocStr{"System", "Sistema", "系统", "सिस्टम", "نظام", "Sistema", "Système", "System", "Система"},
 
-	// T
+	// Translate
 	LocStr{"Tab", "Pestaña", "标签页", "टैब", "علامة تبويب", "Aba", "Onglet", "Registerkarte", "Вкладка"},
 	LocStr{"Test", "Prueba", "测试", "परीक्षण", "اختبار", "Teste", "Test", "Test", "Тест"},
 	LocStr{"Testing", "Probando", "测试中", "परीक्षण", "اختبارات", "Testando", "Test", "Testen", "Тестирование"},
