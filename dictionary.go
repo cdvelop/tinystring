@@ -151,7 +151,7 @@ var D = struct {
 	Unexported LocStr // "unexported"
 	Unknown    LocStr // "unknown"
 	Unsigned   LocStr // "unsigned"
-	ToUpper    LocStr // "up"
+	Up         LocStr // "up"
 	Use        LocStr // "use"
 
 	// V
