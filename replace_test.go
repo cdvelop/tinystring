@@ -97,7 +97,7 @@ func TestStringOperations(t *testing.T) {
 		}
 	})
 
-	t.Run("Trim", func(t *testing.T) {
+	t.Run("TrimSpace", func(t *testing.T) {
 		tests := []struct {
 			input, expected string
 		}{
@@ -122,7 +122,7 @@ func TestStringOperations(t *testing.T) {
 		}
 
 		for _, test := range tests {
-			out := Convert(test.input).Trim().String()
+			out := Convert(test.input).TrimSpace().String()
 			if out != test.expected {
 				t.Errorf("Para input '%s', esperado '%s', pero obtenido '%s'", test.input, test.expected, out)
 			}
@@ -137,19 +137,19 @@ func TestStringOperations(t *testing.T) {
 			chain    func(input string) string
 		}{
 			{
-				name:     "Replace and Trim",
+				name:     "Replace and TrimSpace",
 				input:    "  hello world  ",
 				expected: "hello universe",
 				chain: func(input string) string {
-					return Convert(input).Trim().Replace("world", "universe").String()
+					return Convert(input).TrimSpace().Replace("world", "universe").String()
 				},
 			},
 			{
-				name:     "Replace, Trim, and TrimSuffix",
+				name:     "Replace, TrimSpace, and TrimSuffix",
 				input:    "  filename.txt  ",
 				expected: "file",
 				chain: func(input string) string {
-					return Convert(input).Trim().Replace("name", "").TrimSuffix(".txt").String()
+					return Convert(input).TrimSpace().Replace("name", "").TrimSuffix(".txt").String()
 				},
 			},
 			{

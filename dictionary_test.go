@@ -95,8 +95,8 @@ func TestDictionaryConsistency(t *testing.T) {
 		field := typeOfD.Field(i)
 		fieldName := field.Name
 		fieldValue := valueOfD.Field(i).Interface().(LocStr)
-		lowerFieldName := Convert(fieldName).Low().String()
-		eng := Convert(fieldValue[EN]).Low().String()
+		lowerFieldName := Convert(fieldName).ToLower().String()
+		eng := Convert(fieldValue[EN]).ToLower().String()
 		// Tomar los 2 primeros y 2 últimos caracteres
 		fnLen := len(lowerFieldName)
 		engLen := len(eng)

@@ -12,7 +12,7 @@ Every Go project needs string manipulation, type conversion, and error handling 
 ### The Solution
 TinyString replaces multiple standard library packages with **lightweight, manual implementations** that deliver:
 
-- 🏆 **Up to smaller binaries** - Dramatic size reduction for WebAssembly
+- 🏆 **ToUpper to smaller binaries** - Dramatic size reduction for WebAssembly
 - ✅ **Full TinyGo compatibility** - No compilation issues or warnings
 - 🎯 **Predictable performance** - No hidden allocations or overhead
 - 🔧 **Familiar API** - Drop-in replacement for standard library functions

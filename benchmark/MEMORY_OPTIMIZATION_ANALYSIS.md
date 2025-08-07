@@ -96,7 +96,7 @@ func (c *conv) wrString(dest buffDest, s string) {
 **Patrón Problemático Detectado:**
 ```go
 // PROBLEMA: Cada operación puede crear nuevo objeto conv
-Convert(text).Low().Tilde().Capitalize().String()
+Convert(text).ToLower().Tilde().Capitalize().String()
 //    ↓         ↓      ↓         ↓         ↓
 //  conv1    conv2  conv3    conv4     conv5  ← 5 objetos!
 ```
@@ -138,7 +138,7 @@ func (c *conv) getString(dest buffDest) string {
 ### 📊 Benchmarks Revelan el Problema Real
 
 **Asignaciones por Operación Individual:**
-- `Low/Up`: **19 allocs/op, 632 B/op** ❌ EXCESIVO
+- `ToLower/ToUpper`: **19 allocs/op, 632 B/op** ❌ EXCESIVO
 - `Capitalize`: **25 allocs/op, 576 B/op** ❌ EXCESIVO  
 - `Tilde`: **32 allocs/op, 928 B/op** ❌ EXTREMO
 - `CamelLow`: **32 allocs/op, 728 B/op** ❌ EXTREMO
@@ -159,7 +159,7 @@ out := string(runes)           // 🔥 Asignación 3: string(runes) MASIVA
 t.wrString(dest, out)          // 🔥 Asignación 4: wrString conversion
 ```
 
-**Impacto:** Cada `.Low()/.Up()` = **4 asignaciones masivas** + overhead
+**Impacto:** Cada `.ToLower()/.ToUpper()` = **4 asignaciones masivas** + overhead
 
 #### **Problema 2: Buffer Temporal Allocation** (Tilde)
 ```go
@@ -232,7 +232,7 @@ func (t *conv) processUTF8InPlace() *conv {
 
 | Operación | Actual | Objetivo | Mejora |
 |-----------|--------|----------|--------|
-| **Low/Up** | 19 allocs | **2-3 allocs** | **85%** ↓ |
+| **ToLower/ToUpper** | 19 allocs | **2-3 allocs** | **85%** ↓ |
 | **Tilde** | 32 allocs | **3-5 allocs** | **85%** ↓ |
 | **Capitalize** | 25 allocs | **4-6 allocs** | **80%** ↓ |
 | **Chaining** | 41 allocs | **8-12 allocs** | **70%** ↓ |
@@ -268,7 +268,7 @@ func (t *conv) processUTF8InPlace() *conv {
 
 ### **Fase 4: Chaining Optimization** (Impacto Máximo)
 - Implementar detector de operaciones ASCII-only
-- Fast path para chaining común: `.Low().Tilde().Capitalize()`
+- Fast path para chaining común: `.ToLower().Tilde().Capitalize()`
 
 ## 🏁 Conclusión de Investigación
 

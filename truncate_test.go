@@ -116,7 +116,7 @@ func TestTruncateChain(t *testing.T) {
 			input: "hello world",
 			want:  "HELLO W...",
 			function: func(t *conv) *conv {
-				return t.Up().Truncate(10)
+				return t.ToUpper().Truncate(10)
 			},
 		},
 		{
@@ -124,7 +124,7 @@ func TestTruncateChain(t *testing.T) {
 			input: "HELLO WORLD",
 			want:  "hello...",
 			function: func(t *conv) *conv {
-				return t.Low().Truncate(8)
+				return t.ToLower().Truncate(8)
 			},
 		},
 		{
@@ -172,7 +172,7 @@ func TestTruncateChain(t *testing.T) {
 			input: "Él Múrcielago Rápido",
 			want:  "ELMURC...",
 			function: func(t *conv) *conv {
-				return t.Tilde().CamelLow().Up().Truncate(9)
+				return t.Tilde().CamelLow().ToUpper().Truncate(9)
 			},
 		},
 		{
@@ -321,7 +321,7 @@ func TestTruncateNameChain(t *testing.T) {
 		input: "carlos mendez",
 		want:  "CAR. MENDEZ", // only truncation first word
 		function: func(t *conv) *conv {
-			return t.Up().TruncateName(3, 15)
+			return t.ToUpper().TruncateName(3, 15)
 		},
 	}, {
 		name:  "Remove tilde and truncate name",
@@ -335,7 +335,7 @@ func TestTruncateNameChain(t *testing.T) {
 		input: "MARÍA del carmen GARCÍA",
 		want:  "mar. del car. garcía", // truncation per word needed within maxWidth 25
 		function: func(t *conv) *conv {
-			return t.Low().TruncateName(3, 25)
+			return t.ToLower().TruncateName(3, 25)
 		},
 	}, {
 		name:  "With total length limit",

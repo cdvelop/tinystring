@@ -61,12 +61,12 @@ floatStr := tinystring.Convert(3.14).Round(2).String()
 ### 3. Replace `strings` Operations with TinyString Chaining
 ```go
 // ❌ Standard Library (multiple allocations)
-result := strings.Up(strings.TrimSpace(input))
+result := strings.ToUpper(strings.TrimSpace(input))
 parts := strings.Split(input, ",")
 joined := strings.Join(parts, "|")
 
 // ✅ TinyString (single chain, fewer allocations)
-result := tinystring.Convert(input).Trim().Up().String()
+result := tinystring.Convert(input).TrimSpace().ToUpper().String()
 joined := tinystring.Convert(input).Split(",").Join("|")
 ```
 
@@ -74,7 +74,7 @@ joined := tinystring.Convert(input).Split(",").Join("|")
 ```go
 // ✅ TinyString exclusive feature - modify original string
 text := "hello world"
-tinystring.Convert(&text).Up().Tilde().Apply()
+tinystring.Convert(&text).ToUpper().Tilde().Apply()
 // text is now modified directly: "HELLO WORLD"
 ```
 

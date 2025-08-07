@@ -588,7 +588,7 @@ func getSystemLang() lang {
             code := strings.Split(envValue, ".")[0] // Remove encoding part
             code = strings.Split(code, "_")[0]      // Get language part
             code = strings.Split(code, "-")[0]      // Handle dash format
-            code = strings.Low(code)
+            code = strings.ToLower(code)
             
             // Map to lang enum
             switch code {
@@ -644,7 +644,7 @@ func getSystemLang() lang {
     
     // Parse language code (e.g., "es-ES" -> "es")
     code := strings.Split(langCode, "-")[0]
-    code = strings.Low(code)
+    code = strings.ToLower(code)
     
     // Map to lang enum
     switch code {
@@ -749,7 +749,7 @@ type conv struct {
 
 ## Risk Assessment
 
-### Low Risk
+### ToLower Risk
 - Binary size increase (well within 15KB limit)
 - Performance impact (negligible with array access)
 - Backward compatibility (100% preserved)

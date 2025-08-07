@@ -8,7 +8,7 @@ func main() {
 
 	// Test 1: Basic string operations
 	text1 := "Hello World Example"
-	result1 := tinystring.Convert(text1).Low().Replace(" ", "_").String()
+	result1 := tinystring.Convert(text1).ToLower().Replace(" ", "_").String()
 
 	// Test 2: Number formatting
 	num1 := 1234.567
@@ -16,7 +16,7 @@ func main() {
 
 	// Test 3: Multiple string operations
 	text2 := "Processing Multiple Strings"
-	result3 := tinystring.Convert(text2).Up().Replace(" ", "-").String()
+	result3 := tinystring.Convert(text2).ToUpper().Replace(" ", "-").String()
 
 	// Test 4: Join operations
 	items := []string{"item1", "item2", "item3"}

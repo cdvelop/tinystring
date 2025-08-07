@@ -28,11 +28,11 @@
 
 | Benchmark | Time/op | Memory/op | Allocs/op | PRIMARY ISSUE |
 |-----------|---------|-----------|-----------|---------------|
-| **Low** | 3742 ns | 912 B | 34 allocs | String escape in `getString()` |
-| **Up** | 3094 ns | 912 B | 34 allocs | String escape in `getString()` |
+| **ToLower** | 3742 ns | 912 B | 34 allocs | String escape in `getString()` |
+| **ToUpper** | 3094 ns | 912 B | 34 allocs | String escape in `getString()` |
 | **Replace** | 2832 ns | 1112 B | **56 allocs** | **WORST allocations** |
 | **Tilde** | 5885 ns | 1056 B | 40 allocs | Complex string operations |
-| **Trim** | 1061 ns | 656 B | 32 allocs | Relatively good performance |
+| **TrimSpace** | 1061 ns | 656 B | 32 allocs | Relatively good performance |
 | **Split** | 1714 ns | 432 B | **8 allocs** | **BEST allocations** |
 
 **CRITICAL FINDING:** `string(buffer[:length])` calls in `getString()` are the **PRIMARY** allocation source

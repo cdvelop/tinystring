@@ -31,7 +31,7 @@ go get github.com/cdvelop/tinystring
 import . "github.com/cdvelop/tinystring"
 
 // Quick start - Basic conversion and transformation
-text := Convert("Hóla Múndo").Tilde().Low().String() // out: "hola mundo"
+text := Convert("Hóla Múndo").Tilde().ToLower().String() // out: "hola mundo"
 
 // Working with different data types
 numText := Convert(42).String()     // out: "42"
@@ -47,9 +47,9 @@ items := []string{"  ÁPPLE  ", "  banána  ", "  piñata  ","  ÑANDÚ  "}
 builder := Convert() // without params reused buffer = optimal performance
 for i, item := range items {
     processed := Convert(item).
-        Trim(). // Trim whitespace
+        TrimSpace(). // TrimSpace whitespace
         Tilde(). // Normalize accents
-        Low(). // Convert to lowercase
+        ToLower(). // Convert to lowercase
         Capitalize(). // Capitalize first letter
         String() // Finalize the string
     builder.Write(processed)
@@ -72,19 +72,19 @@ Replace common `strings` package functions with TinyString equivalents:
 
 | Go Standard | TinyString Equivalent |
 |-------------|----------------------|
-| `strings.Low()` | `Convert(s).Low().String()` |
-| `strings.Up()` | `Convert(s).Up().String()` |
-| `strings.Index()` | `Index(s, substr)` |
+| `strings.Builder` | `c:= Convert() c.Write(a) c.Write(b) c.String()` |
 | `strings.Contains()` | `Contains(s, substr)` |
+| `strings.Index()` | `Index(s, substr)` |
 | `strings.LastIndex()` | `LastIndex(s, substr)` |
+| `strings.Join()` | `Convert(slice).Join(sep).String()` |
+| `strings.Repeat()` | `Convert(s).Repeat(n).String()` |
 | `strings.Replace()` | `Convert(s).Replace(old, new).String()` |
 | `strings.Split()` | `Convert(s).Split(sep).String()` |
-| `strings.Join()` | `Convert(slice).Join(sep).String()` |
-| `strings.TrimSpace()` | `Convert(s).Trim().String()` |
+| `strings.ToLower()` | `Convert(s).ToLower().String()` |
+| `strings.ToUpper()` | `Convert(s).ToUpper().String()` |
+| `strings.TrimSpace()` | `Convert(s).TrimSpace().String()` |
 | `strings.TrimPrefix()` | `Convert(s).TrimPrefix(prefix).String()` |
 | `strings.TrimSuffix()` | `Convert(s).TrimSuffix(suffix).String()` |
-| `strings.Repeat()` | `Convert(s).Repeat(n).String()` |
-| `strings.Builder` | `c:= Convert() c.Write(a) c.Write(b) c.String()` |
 
 #### Other String Transformations
 
@@ -138,8 +138,8 @@ Convert([]string{"a", "b", "c"}).Join("-").String()    // out: "a-b-c"
 #### String Trimming & Cleaning
 
 ```go
-// Trim operations
-Convert("  hello  ").Trim().String()                    // out: "hello"
+// TrimSpace operations
+Convert("  hello  ").TrimSpace().String()                    // out: "hello"
 Convert("prefix-data").TrimPrefix("prefix-").String()   // out: "data"
 Convert("file.txt").TrimSuffix(".txt").String()         // out: "file"
 

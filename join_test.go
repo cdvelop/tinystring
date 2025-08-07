@@ -70,19 +70,19 @@ func TestJoinChainMethods(t *testing.T) {
 		expected string
 	}{
 		{
-			name:     "Join with Up",
+			name:     "Join with ToUpper",
 			input:    []string{"hello", "world"},
 			expected: "HELLO WORLD",
 			function: func(input []string) string {
-				return Convert(input).Join().Up().String()
+				return Convert(input).Join().ToUpper().String()
 			},
 		},
 		{
-			name:     "Join with custom separator and Low",
+			name:     "Join with custom separator and ToLower",
 			input:    []string{"HELLO", "WORLD"},
 			expected: "hello-world",
 			function: func(input []string) string {
-				return Convert(input).Join("-").Low().String()
+				return Convert(input).Join("-").ToLower().String()
 			},
 		},
 		{

@@ -23,7 +23,7 @@ message, msgType := Translate(msgs...).StringType()
 - **Package**: `github.com/cdvelop/messagetype`
 - **Core Type**: `Type uint8` with constants: `Normal(0)`, `Info(1)`, `Error(2)`, `Warning(3)`, `Success(4)`
 - **Main Function**: `DetectMessageType(args ...any) Type`
-- **Dependencies**: Uses `tinystring.Convert().Low().String()` and `tinystring.Contains()`
+- **Dependencies**: Uses `tinystring.Convert().ToLower().String()` and `tinystring.Contains()`
 - **Detection Logic**: Keyword-based classification with case-insensitive matching
 
 ### TinyString Buffer Architecture
@@ -194,7 +194,7 @@ func (c *conv) bufferContainsPattern(dest buffDest, patterns [][]byte) bool {
 #### 4.3 Integration Tests
 **Validation**:
 - Compatibility with existing TinyString operations
-- Chain operation behavior: `Convert(x).Up().StringType()`
+- Chain operation behavior: `Convert(x).ToUpper().StringType()`
 - Error chain interruption: errors → `Msg.Error` type
 
 ## TECHNICAL CONSIDERATIONS & QUESTIONS
@@ -235,7 +235,7 @@ func (c *conv) bufferContainsPattern(dest buffDest, patterns [][]byte) bool {
 
 **QUESTION**: Should message type detection handle Unicode normalization?
 
-**CURRENT**: messagetype uses `tinystring.Convert().Low().String()` which handles Unicode
+**CURRENT**: messagetype uses `tinystring.Convert().ToLower().String()` which handles Unicode
 **RECOMMENDATION**: Yes, maintain Unicode support
 - Use existing `changeCase()` method which already handles Unicode properly
 - **TRADE-OFF**: Slightly slower for Unicode content, but maintains compatibility

@@ -455,7 +455,7 @@ func getMemoryPerformanceIndicator(percentChange float64) string {
 		return "✅"
 	case percentChange < 5: // Similar usage
 		return "➖"
-	case percentChange < 50: // Up to 50% more
+	case percentChange < 50: // ToUpper to 50% more
 		return "⚠️"
 	default: // Over 50% more
 		return "❌"
@@ -471,7 +471,7 @@ func getAllocPerformanceIndicator(percentChange float64) string {
 		return "✅"
 	case percentChange < 5: // Similar allocations
 		return "➖"
-	case percentChange < 25: // Up to 25% more
+	case percentChange < 25: // ToUpper to 25% more
 		return "⚠️"
 	default: // Over 25% more
 		return "❌"

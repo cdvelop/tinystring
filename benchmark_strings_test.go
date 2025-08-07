@@ -19,19 +19,19 @@ func BenchmarkStringOperations(b *testing.B) {
 		"long string with multiple words for processing",
 	}
 
-	b.Run("Low", func(b *testing.B) {
+	b.Run("ToLower", func(b *testing.B) {
 		for i := 0; i < b.N; i++ {
 			for _, str := range testData {
-				out := Convert(str).Low().String()
+				out := Convert(str).ToLower().String()
 				_ = out
 			}
 		}
 	})
 
-	b.Run("Up", func(b *testing.B) {
+	b.Run("ToUpper", func(b *testing.B) {
 		for i := 0; i < b.N; i++ {
 			for _, str := range testData {
-				out := Convert(str).Up().String()
+				out := Convert(str).ToUpper().String()
 				_ = out
 			}
 		}
@@ -73,10 +73,10 @@ func BenchmarkStringOperations(b *testing.B) {
 		}
 	})
 
-	b.Run("Trim", func(b *testing.B) {
+	b.Run("TrimSpace", func(b *testing.B) {
 		for i := 0; i < b.N; i++ {
 			for _, str := range testData {
-				out := Convert(str).Trim().String()
+				out := Convert(str).TrimSpace().String()
 				_ = out
 			}
 		}
@@ -104,7 +104,7 @@ func BenchmarkStringChains(b *testing.B) {
 	b.Run("ComplexChain1", func(b *testing.B) {
 		for i := 0; i < b.N; i++ {
 			for _, str := range testStrings {
-				out := Convert(str).Tilde().Low().Capitalize().String()
+				out := Convert(str).Tilde().ToLower().Capitalize().String()
 				_ = out
 			}
 		}
@@ -113,7 +113,7 @@ func BenchmarkStringChains(b *testing.B) {
 	b.Run("ComplexChain2", func(b *testing.B) {
 		for i := 0; i < b.N; i++ {
 			for _, str := range testStrings {
-				out := Convert(str).Trim().Replace(" ", "_").Low().String()
+				out := Convert(str).TrimSpace().Replace(" ", "_").ToLower().String()
 				_ = out
 			}
 		}
@@ -169,7 +169,7 @@ func BenchmarkBuilderOperations(b *testing.B) {
 
 	b.Run("ChainedOperations", func(b *testing.B) {
 		for i := 0; i < b.N; i++ {
-			out := Convert("hello").Up().Write(" WORLD").Low().String()
+			out := Convert("hello").ToUpper().Write(" WORLD").ToLower().String()
 			_ = out
 		}
 	})
@@ -190,7 +190,7 @@ func BenchmarkHighDemandProcesses(b *testing.B) {
 		testStr := "Hello World Testing String"
 
 		for i := 0; i < b.N; i++ {
-			out := Convert(testStr).Low().Capitalize().Up().String()
+			out := Convert(testStr).ToLower().Capitalize().ToUpper().String()
 			_ = out
 		}
 	})

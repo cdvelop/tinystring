@@ -42,7 +42,7 @@ func TestConversions(t *testing.T) {
 			input: "HÓLA MÚNDO",
 			want:  "hola mundo",
 			function: func(t *conv) *conv {
-				return t.Tilde().Low()
+				return t.Tilde().ToLower()
 			},
 		},
 		{
@@ -50,7 +50,7 @@ func TestConversions(t *testing.T) {
 			input: "hóla múndo",
 			want:  "HOLA MUNDO",
 			function: func(t *conv) *conv {
-				return t.Tilde().Up()
+				return t.Tilde().ToUpper()
 			},
 		},
 		{
@@ -78,7 +78,7 @@ func TestConversions(t *testing.T) {
 			input: "",
 			want:  "",
 			function: func(t *conv) *conv {
-				return t.Tilde().Low().Up().CamelLow()
+				return t.Tilde().ToLower().ToUpper().CamelLow()
 			},
 		},
 		{
@@ -86,7 +86,7 @@ func TestConversions(t *testing.T) {
 			input: "A",
 			want:  "a",
 			function: func(t *conv) *conv {
-				return t.Low()
+				return t.ToLower()
 			},
 		},
 		{
@@ -110,7 +110,7 @@ func TestConversions(t *testing.T) {
 			input: "HÉLLÔ WórLD",
 			want:  "HELLO WORLD",
 			function: func(t *conv) *conv {
-				return t.Tilde().Up()
+				return t.Tilde().ToUpper()
 			},
 		},
 		{

@@ -151,7 +151,7 @@ var D = struct {
 	Unexported LocStr // "unexported"
 	Unknown    LocStr // "unknown"
 	Unsigned   LocStr // "unsigned"
-	Up         LocStr // "up"
+	ToUpper    LocStr // "up"
 	Use        LocStr // "use"
 
 	// V
@@ -307,7 +307,7 @@ var D = struct {
 	LocStr{"Unexported", "No Exportado", "未导出", "गैर-निर्यातित", "غير مصدر", "Não Exportado", "Non Exporté", "Nicht Exportiert", "Неэкспортированный"},
 	LocStr{"Unknown", "Desconocido", "未知", "अज्ञात", "غير معروف", "Desconhecido", "Inconnu", "Unbekannt", "Неизвестный"},
 	LocStr{"Unsigned", "Sin Signo", "无符号", "अहस्ताक्षरित", "غير موقع", "Sem Sinal", "Non Signé", "Vorzeichenlos", "Беззнаковый"},
-	LocStr{"Up", "Arriba", "上", "ऊपर", "أعلى", "Cima", "Haut", "Oben", "Вверх"},
+	LocStr{"ToUpper", "Arriba", "上", "ऊपर", "أعلى", "Cima", "Haut", "Oben", "Вверх"},
 	LocStr{"Use", "Usar", "使用", "उपयोग", "استخدام", "Usar", "Utiliser", "Verwenden", "Использовать"},
 
 	// V

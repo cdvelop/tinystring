@@ -24,7 +24,7 @@ func TestStringPointer(t *testing.T) {
 			name:         "Convert to lowercase with string pointer",
 			initialValue: "HELLO WORLD",
 			transform: func(t *conv) *conv {
-				return t.Low()
+				return t.ToLower()
 			},
 			expectedValue: "hello world",
 		},
@@ -68,7 +68,7 @@ func Example_stringPointerBasic() {
 
 	// En lugar de crear una nueva variable con el resultado,
 	// modificamos directamente la variable original usando Apply()
-	Convert(&myText).Tilde().Low().Apply()
+	Convert(&myText).Tilde().ToLower().Apply()
 
 	// La variable original ha sido modificada
 	fmt.Println(myText)
@@ -92,12 +92,12 @@ func Example_stringPointerEfficiency() {
 	// puede ser importante para evitar la presión sobre el garbage collector
 	// Método tradicional (crea nuevas asignaciones de memoria)
 	traditionalText := "Texto con ACENTOS"
-	processedText := Convert(traditionalText).Tilde().Low().String()
+	processedText := Convert(traditionalText).Tilde().ToLower().String()
 	fmt.Println(processedText)
 
 	// Método con punteros (modifica directamente la variable original)
 	directText := "Otro TEXTO con ACENTOS"
-	Convert(&directText).Tilde().Low().Apply()
+	Convert(&directText).Tilde().ToLower().Apply()
 	fmt.Println(directText)
 
 	// Output:

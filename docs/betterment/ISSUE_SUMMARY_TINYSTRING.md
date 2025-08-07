@@ -34,7 +34,7 @@ result := tinystring.Convert("MÍ téxtO").Tilde().String()
 // Output: "MI textO"
 
 // Type conversion and chaining
-result := tinystring.Convert(42).Up().String()
+result := tinystring.Convert(42).ToUpper().String()
 // Output: "42"
 
 // Complex chaining
@@ -59,7 +59,7 @@ tinystring.Convert(&text).Tilde().CamelLow().Apply()
 
 **Text Transformations:**
 - `Tilde()` - Remove accents/diacritics
-- `Low()`, `Up()` - Case conversion
+- `ToLower()`, `ToUpper()` - Case conversion
 - `Capitalize()` - First letter of each word
 - `CamelLow()`, `CamelUp()` - camelCase conversion
 - `SnakeLow()`, `SnakeUp()` - snake_case conversion
@@ -68,7 +68,7 @@ tinystring.Convert(&text).Tilde().CamelLow().Apply()
 - `Split(data, separator)` - Split strings
 - `Join(sep...)` - Join string slices
 - `Replace(old, new, n...)` - Replace substrings
-- `TrimPrefix()`, `TrimSuffix()`, `Trim()` - Trim operations
+- `TrimPrefix()`, `TrimSuffix()`, `TrimSpace()` - TrimSpace operations
 - `Contains()`, `Count()` - Search operations
 - `Repeat(n)` - Repeat strings
 

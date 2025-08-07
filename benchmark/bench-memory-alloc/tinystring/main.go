@@ -9,7 +9,7 @@ func processTextWithTinyString(texts []string) []string {
 	results := make([]string, len(texts))
 	for i, text := range texts {
 		out := Convert(text).
-			Low().
+			ToLower().
 			Tilde().
 			Capitalize().
 			String()

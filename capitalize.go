@@ -96,12 +96,12 @@ func (t *conv) capitalizeUnicode() *conv {
 }
 
 // convert to lower case eg: "HELLO WORLD" -> "hello world"
-func (t *conv) Low() *conv {
+func (t *conv) ToLower() *conv {
 	return t.changeCaseOptimized(true)
 }
 
 // convert to upper case eg: "hello world" -> "HELLO WORLD"
-func (t *conv) Up() *conv {
+func (t *conv) ToUpper() *conv {
 	return t.changeCaseOptimized(false)
 }
 
@@ -157,7 +157,7 @@ func (t *conv) changeCaseUnicode(toLower bool) *conv {
 	return t.changeCase(toLower, buffOut)
 }
 
-// changeCase consolidates Low and Up functionality - now accepts a destination buffer for internal reuse
+// changeCase consolidates ToLower and ToUpper functionality - now accepts a destination buffer for internal reuse
 func (t *conv) changeCase(toLower bool, dest buffDest) *conv {
 	if t.hasContent(buffErr) {
 		return t // Error chain interruption

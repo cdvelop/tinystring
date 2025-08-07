@@ -184,11 +184,11 @@ func TestConcurrentStringManipulation(t *testing.T) {
 			input: "  User-Name With Áccents  ",
 			process: func(s string) string {
 				return Convert(s).
-					Trim().
+					TrimSpace().
 					Tilde().
 					Replace(" ", "_").
 					Replace("-", "_").
-					Low().
+					ToLower().
 					String()
 			},
 			expected: "user_name_with_accents",
@@ -507,7 +507,7 @@ func TestConcurrentAdvancedCaseOperations(t *testing.T) {
 		}, {
 			name: "SnakeUp",
 			function: func() string {
-				return Convert("HelloWorldTest").SnakeLow().Up().String()
+				return Convert("HelloWorldTest").SnakeLow().ToUpper().String()
 			},
 			expected: "HELLO_WORLD_TEST",
 		},
@@ -519,16 +519,16 @@ func TestConcurrentAdvancedCaseOperations(t *testing.T) {
 			expected: "Hello World Test",
 		},
 		{
-			name: "Low",
+			name: "ToLower",
 			function: func() string {
-				return Convert("HELLO WORLD").Low().String()
+				return Convert("HELLO WORLD").ToLower().String()
 			},
 			expected: "hello world",
 		},
 		{
-			name: "Up",
+			name: "ToUpper",
 			function: func() string {
-				return Convert("hello world").Up().String()
+				return Convert("hello world").ToUpper().String()
 			},
 			expected: "HELLO WORLD",
 		},
@@ -639,7 +639,7 @@ func TestConcurrentTruncateOperations(t *testing.T) {
 }
 
 // TestConcurrentUtilityOperations tests less-covered utility operations
-// like Repeat, Join, and Trim operations.
+// like Repeat, Join, and TrimSpace operations.
 func TestConcurrentUtilityOperations(t *testing.T) {
 	const numGoroutines = 100
 
@@ -663,9 +663,9 @@ func TestConcurrentUtilityOperations(t *testing.T) {
 			expected: "apple,banana,cherry",
 		},
 		{
-			name: "Trim Operation",
+			name: "TrimSpace Operation",
 			function: func() string {
-				return Convert("   hello world   ").Trim().String()
+				return Convert("   hello world   ").TrimSpace().String()
 			},
 			expected: "hello world",
 		},
@@ -768,12 +768,12 @@ func TestRaceConditionInComplexChaining(t *testing.T) {
 					// Complex chaining operation that exercises multiple code paths
 					out := Convert(input).
 						Tilde().
-						Trim().
+						TrimSpace().
 						Replace("_", " ").
 						Replace("  ", " "). // Remove double spaces
 						Capitalize().
 						Replace(" ", "_").
-						Low().
+						ToLower().
 						String()
 
 					// Verify the out is consistent
@@ -910,7 +910,7 @@ func TestConcurrentStringCacheStress(t *testing.T) {
 					operations := []func() string{
 						func() string { return Fmt("ID_%d_ITER_%d", id, j) },
 						func() string { return Convert(id).Thousands().String() },
-						func() string { return Convert(Fmt("goroutine_%d", id)).Up().String() },
+						func() string { return Convert(Fmt("goroutine_%d", id)).ToUpper().String() },
 						func() string { return Fmt("%.2f", float64(j)/10.0) },
 						func() string { return Convert("cache_test").Repeat(2).String() },
 					}

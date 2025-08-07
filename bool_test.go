@@ -127,14 +127,14 @@ func TestFromBool(t *testing.T) {
 
 func TestBoolChaining(t *testing.T) {
 	// Test chaining with boolean operations
-	out := Convert(true).Up().String()
+	out := Convert(true).ToUpper().String()
 	expected := "TRUE"
 	if out != expected {
 		t.Errorf("Expected %q, got %q", expected, out)
 	}
 
 	// Test converting back
-	boolVal, err := Convert("TRUE").Low().Bool()
+	boolVal, err := Convert("TRUE").ToLower().Bool()
 	if err != nil {
 		t.Errorf("Unexpected error: %v", err)
 	}

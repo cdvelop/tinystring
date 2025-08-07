@@ -111,7 +111,7 @@ func TestBuilderPattern(t *testing.T) {
 	c := Convert() // Empty initialization
 	for i, item := range items {
 		// Process each item individually and append to builder
-		processed := Convert(item).Trim().Low().Capitalize().String()
+		processed := Convert(item).TrimSpace().ToLower().Capitalize().String()
 		c.Write(processed)
 		if i < len(items)-1 {
 			c.Write(" - ")

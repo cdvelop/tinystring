@@ -188,9 +188,9 @@ func (c *conv) TrimPrefix(prefix string) *conv {
 	return c
 }
 
-// Trim removes spaces at the beginning and end of the conv content
+// TrimSpace removes spaces at the beginning and end of the conv content
 // eg: "  hello world  " will return "hello world"
-func (c *conv) Trim() *conv {
+func (c *conv) TrimSpace() *conv {
 	if c.hasContent(buffErr) {
 		return c // Error chain interruption
 	}

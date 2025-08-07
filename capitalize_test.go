@@ -76,11 +76,11 @@ func TestCapitalizeChaining(t *testing.T) {
 			},
 		},
 		{
-			name:     "After Low",
+			name:     "After ToLower",
 			input:    "HELLO WORLD",
 			expected: "Hello World",
 			chain: func(conv *conv) *conv {
-				return conv.Low().Capitalize()
+				return conv.ToLower().Capitalize()
 			},
 		},
 	}

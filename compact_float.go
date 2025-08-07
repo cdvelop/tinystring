@@ -24,7 +24,7 @@ func formatCompactFloat(f float64, precision int, upper bool) string {
 	res := itoa(int(intPart))
 	if precision > 0 {
 		frac := itoaPad(int(fracPart), precision)
-		// Trim trailing zeros
+		// TrimSpace trailing zeros
 		end := len(frac)
 		for end > 0 && frac[end-1] == '0' {
 			end--
