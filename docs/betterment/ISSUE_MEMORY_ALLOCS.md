@@ -53,7 +53,7 @@ if c.outLen > 0 {
 
 ### Phase 4: Update struct definition
 ```go
-type conv struct {
+type Conv struct {
     // ...buffers...
     Kind Kind
     
@@ -132,7 +132,7 @@ type conv struct {
 
 ## Final Architecture
 ```go
-type conv struct {
+type Conv struct {
     // Buffer storage (main approach)
     out, work, err []byte
     outLen, workLen, errLen int

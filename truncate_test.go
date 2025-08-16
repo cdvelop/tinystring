@@ -12,21 +12,21 @@ func TestTruncate(t *testing.T) {
 		expected      string
 	}{
 		{
-			name:        "conv shorter than max width",
+			name:        "Conv shorter than max width",
 			input:       "Hello",
 			maxWidth:    10,
 			useReserved: false,
 			expected:    "Hello", // No padding expected
 		},
 		{
-			name:        "conv longer than max width with ellipsis",
+			name:        "Conv longer than max width with ellipsis",
 			input:       "Hello, World!",
 			maxWidth:    10,
 			useReserved: false,
 			expected:    "Hello, ...",
 		},
 		{
-			name:          "conv longer with reserved chars",
+			name:          "Conv longer with reserved chars",
 			input:         "Hello, World!",
 			maxWidth:      10,
 			reservedChars: 3,
@@ -109,13 +109,13 @@ func TestTruncateChain(t *testing.T) {
 		name     string
 		input    string
 		want     string
-		function func(*conv) *conv
+		function func(*Conv) *Conv
 	}{
 		{
 			name:  "Uppercase and truncate",
 			input: "hello world",
 			want:  "HELLO W...",
-			function: func(t *conv) *conv {
+			function: func(t *Conv) *Conv {
 				return t.ToUpper().Truncate(10)
 			},
 		},
@@ -123,7 +123,7 @@ func TestTruncateChain(t *testing.T) {
 			name:  "Lowercase and truncate",
 			input: "HELLO WORLD",
 			want:  "hello...",
-			function: func(t *conv) *conv {
+			function: func(t *Conv) *Conv {
 				return t.ToLower().Truncate(8)
 			},
 		},
@@ -131,7 +131,7 @@ func TestTruncateChain(t *testing.T) {
 			name:  "Remove tilde and truncate",
 			input: "Ñandú está corriendo",
 			want:  "Ñandu esta...",
-			function: func(t *conv) *conv {
+			function: func(t *Conv) *Conv {
 				return t.Tilde().Truncate(14)
 			},
 		},
@@ -139,7 +139,7 @@ func TestTruncateChain(t *testing.T) {
 			name:  "CamelCase and truncate",
 			input: "hello world example",
 			want:  "helloWorld...",
-			function: func(t *conv) *conv {
+			function: func(t *Conv) *Conv {
 				return t.CamelLow().Truncate(13)
 			},
 		},
@@ -147,7 +147,7 @@ func TestTruncateChain(t *testing.T) {
 			name:  "Truncate and repeat",
 			input: "hello",
 			want:  "hellohello", // No padding expected before repeat
-			function: func(t *conv) *conv {
+			function: func(t *Conv) *Conv {
 				return t.Truncate(6).Repeat(2)
 			},
 		},
@@ -155,7 +155,7 @@ func TestTruncateChain(t *testing.T) {
 			name:  "SnakeCase and truncate",
 			input: "Hello World Example",
 			want:  "hello_world_...",
-			function: func(t *conv) *conv {
+			function: func(t *Conv) *Conv {
 				return t.SnakeLow().Truncate(15)
 			},
 		},
@@ -163,7 +163,7 @@ func TestTruncateChain(t *testing.T) {
 			name:  "Truncate with custom separator",
 			input: "Hello World Example",
 			want:  "hello-world-ex...",
-			function: func(t *conv) *conv {
+			function: func(t *Conv) *Conv {
 				return t.SnakeLow("-").Truncate(17)
 			},
 		},
@@ -171,7 +171,7 @@ func TestTruncateChain(t *testing.T) {
 			name:  "Complex chaining with truncate",
 			input: "Él Múrcielago Rápido",
 			want:  "ELMURC...",
-			function: func(t *conv) *conv {
+			function: func(t *Conv) *Conv {
 				return t.Tilde().CamelLow().ToUpper().Truncate(9)
 			},
 		},
@@ -179,7 +179,7 @@ func TestTruncateChain(t *testing.T) {
 			name:  "Using explicit reserved chars",
 			input: "Hello, World!",
 			want:  "Hell...",
-			function: func(t *conv) *conv {
+			function: func(t *Conv) *Conv {
 				return t.Truncate(10, 3)
 			},
 		},
@@ -187,7 +187,7 @@ func TestTruncateChain(t *testing.T) {
 			name:  "Using different numeric types",
 			input: "Testing different types",
 			want:  "Testing...",
-			function: func(t *conv) *conv {
+			function: func(t *Conv) *Conv {
 				return t.Truncate(uint8(12), float64(2))
 			},
 		},
@@ -315,33 +315,33 @@ func TestTruncateNameChain(t *testing.T) {
 		name     string
 		input    string
 		want     string
-		function func(*conv) *conv
+		function func(*Conv) *Conv
 	}{{
 		name:  "Uppercase and truncate name",
 		input: "carlos mendez",
 		want:  "CAR. MENDEZ", // only truncation first word
-		function: func(t *conv) *conv {
+		function: func(t *Conv) *Conv {
 			return t.ToUpper().TruncateName(3, 15)
 		},
 	}, {
 		name:  "Remove tilde and truncate name",
 		input: "José Martínez",
 		want:  "Jose Martinez", // No truncation (4) needed within maxWidth 15
-		function: func(t *conv) *conv {
+		function: func(t *Conv) *Conv {
 			return t.Tilde().TruncateName(4, 15)
 		},
 	}, {
 		name:  "Complex chaining",
 		input: "MARÍA del carmen GARCÍA",
 		want:  "mar. del car. garcía", // truncation per word needed within maxWidth 25
-		function: func(t *conv) *conv {
+		function: func(t *Conv) *Conv {
 			return t.ToLower().TruncateName(3, 25)
 		},
 	}, {
 		name:  "With total length limit",
 		input: "Roberto Carlos Fernandez",
 		want:  "Rob. Car...", // Truncation needed at maxWidth 11
-		function: func(t *conv) *conv {
+		function: func(t *Conv) *Conv {
 			return t.TruncateName(3, 11)
 		},
 	},

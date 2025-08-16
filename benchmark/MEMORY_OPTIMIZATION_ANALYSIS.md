@@ -53,15 +53,15 @@ h.SetCookie(b2s(key), value)           // ✅ Uso inmediato
 
 **El error en nuestro análisis inicial:**
 - Intentamos usar `unsafeString()` en `getString()` 
-- Esto causa **corrupción de memoria** porque las strings retornadas **outliven el lifecycle del objeto conv**
-- Cuando el objeto `conv` regresa al pool y se reutiliza, **todas las strings unsafe previas se corrompen**
+- Esto causa **corrupción de memoria** porque las strings retornadas **outliven el lifecycle del objeto Conv**
+- Cuando el objeto `Conv` regresa al pool y se reutiliza, **todas las strings unsafe previas se corrompen**
 
 ## ✅ Solución Correcta Basada en FastHTTP Pattern
 
 ### 1. **getString() DEBE usar conversión estándar**
 ```go
 // CORRECTO - Basado en patrón FastHTTP
-func (c *conv) getString(dest buffDest) string {
+func (c *Conv) getString(dest buffDest) string {
     switch dest {
     case buffOut:
         return string(c.out[:c.outLen])  // ✅ Copia segura
@@ -78,7 +78,7 @@ func (c *conv) getString(dest buffDest) string {
 ### 2. **unsafeBytes() es SEGURO para wrString()**
 ```go
 // SEGURO - Conversión inmediata que se copia en append()
-func (c *conv) wrString(dest buffDest, s string) {
+func (c *Conv) wrString(dest buffDest, s string) {
     if len(s) == 0 {
         return
     }
@@ -91,11 +91,11 @@ func (c *conv) wrString(dest buffDest, s string) {
 
 ### Root Cause Analysis de Benchmarks Negativos
 
-**Problema Real**: No es `getString()`, es **chaining innecesario de objetos conv**
+**Problema Real**: No es `getString()`, es **chaining innecesario de objetos Conv**
 
 **Patrón Problemático Detectado:**
 ```go
-// PROBLEMA: Cada operación puede crear nuevo objeto conv
+// PROBLEMA: Cada operación puede crear nuevo objeto Conv
 Convert(text).ToLower().Tilde().Capitalize().String()
 //    ↓         ↓      ↓         ↓         ↓
 //  conv1    conv2  conv3    conv4     conv5  ← 5 objetos!
@@ -105,20 +105,20 @@ Convert(text).ToLower().Tilde().Capitalize().String()
 - String Processing: `1296 B/op, 41 allocs/op` (**60% MÁS** que stdlib)
 - Number Processing: `320 B/op, 17 allocs/op` (✅ Mejor que stdlib)
 
-**Esto indica:** String chaining tiene **overhead masivo** de objetos conv múltiples.
+**Esto indica:** String chaining tiene **overhead masivo** de objetos Conv múltiples.
 
 ## 🎯 Optimizaciones CORRECTAS a Implementar
 
 ### Prioridad 1: Eliminar Multiple Conv Objects en Chaining
 
-**Problema:** Cada operación string crea nuevo conv object
-**Solución:** Implementar **in-place operations** que reutilizan el mismo conv
+**Problema:** Cada operación string crea nuevo Conv object
+**Solución:** Implementar **in-place operations** que reutilizan el mismo Conv
 
 ### Prioridad 2: Mantener wrString() Optimization
 
 **Status:** ✅ **IMPLEMENTADO CORRECTAMENTE**
 ```go
-func (c *conv) wrString(dest buffDest, s string) {
+func (c *Conv) wrString(dest buffDest, s string) {
     data := unsafeBytes(s)  // ✅ Zero-allocation conversion
     c.wrBytes(dest, data)   // ✅ Immediate copy
 }
@@ -128,7 +128,7 @@ func (c *conv) wrString(dest buffDest, s string) {
 
 **Status:** ✅ **IMPLEMENTADO CORRECTAMENTE** 
 ```go
-func (c *conv) getString(dest buffDest) string {
+func (c *Conv) getString(dest buffDest) string {
     return string(c.out[:c.outLen])  // ✅ Safe copy (FastHTTP pattern)
 }
 ```
@@ -189,7 +189,7 @@ t.wrString(dest, result)     // 🔥 string → []byte
 ### **Estrategia 1: Operaciones In-Place sobre []byte**
 ```go
 // ✅ PROPUESTA: Operaciones directas sobre buffer
-func (t *conv) changeCaseInPlace(toLower bool) *conv {
+func (t *Conv) changeCaseInPlace(toLower bool) *Conv {
     // Trabajar directamente sobre t.out sin conversiones string/rune
     for i := 0; i < t.outLen; i++ {
         if t.out[i] >= 'A' && t.out[i] <= 'Z' && toLower {
@@ -206,8 +206,8 @@ func (t *conv) changeCaseInPlace(toLower bool) *conv {
 
 ### **Estrategia 2: Reutilización Inteligente de Work Buffer**
 ```go
-// ✅ PROPUESTA: Work buffer permanente en conv
-func (t *conv) tildeInPlace() *conv {
+// ✅ PROPUESTA: Work buffer permanente en Conv
+func (t *Conv) tildeInPlace() *Conv {
     // Usar t.work como buffer temporal, SIN nueva asignación
     t.work = t.work[:0]  // Reset, mantener capacidad
     // Process desde t.out hacia t.work
@@ -220,7 +220,7 @@ func (t *conv) tildeInPlace() *conv {
 ### **Estrategia 3: UTF-8 Processing Sin Conversión Rune**
 ```go
 // ✅ PROPUESTA: UTF-8 directo para operaciones complejas
-func (t *conv) processUTF8InPlace() *conv {
+func (t *Conv) processUTF8InPlace() *Conv {
     // Procesar UTF-8 directamente sobre []byte sin []rune conversion
     // Usar utf8.DecodeRune() cuando necesario
 }

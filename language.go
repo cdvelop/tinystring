@@ -143,7 +143,7 @@ func getCurrentLang() lang {
 // langParser processes a list of language strings (e.g., from env vars or browser settings)
 // and returns the first valid language found. It centralizes the parsing logic for both
 // frontend and backend environments.
-func (c *conv) langParser(langStrings ...string) lang {
+func (c *Conv) langParser(langStrings ...string) lang {
 
 	for _, langStr := range langStrings {
 		if langStr == "" {
@@ -168,7 +168,7 @@ func (c *conv) langParser(langStrings ...string) lang {
 	return EN // Default fallback if no valid language string is found.
 }
 
-func (c *conv) mapLangCode(strVal string) lang {
+func (c *Conv) mapLangCode(strVal string) lang {
 
 	// Convert to lowercase and map to internal lang typec
 	c.rstBuffer(buffWork) // Clear work buffer before use

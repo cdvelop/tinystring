@@ -199,16 +199,16 @@ func getSystemLang() lang {
 #### Existing API Preservation
 ```go
 // These functions remain unchanged - 100% backward compatibility
-func Err(args ...any) *conv
-func Errorf(format string, args ...any) *conv
-func (c *conv) NewErr(values ...any) *conv
+func Err(args ...any) *Conv
+func Errorf(format string, args ...any) *Conv
+func (c *Conv) NewErr(values ...any) *Conv
 ```
 
 #### Translation Detection
 The key innovation is automatic detection of LocStr types in existing functions:
 
 ```go
-func (c *conv) NewErr(values ...any) *conv {
+func (c *Conv) NewErr(values ...any) *Conv {
     var sep, out string
     c.tmpStr = ""
     c.err = ""
@@ -681,7 +681,7 @@ const (
 )
 
 // Modified NewErr to handle LocStr types
-func (c *conv) NewErr(values ...any) *conv {
+func (c *Conv) NewErr(values ...any) *Conv {
     var sep, out string
     c.tmpStr = ""
     c.err = ""
@@ -722,7 +722,7 @@ func (c *conv) NewErr(values ...any) *conv {
 
 ### Modified convert.go Structure
 ```go
-type conv struct {
+type Conv struct {
     // ...existing fields...
     err string // Changed from: err errorType
     // ...rest unchanged...

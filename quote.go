@@ -2,7 +2,7 @@ package tinystring
 
 // Quote wraps a string in double quotes and escapes any special characters
 // Example: Quote("hello \"world\"") returns "\"hello \\\"world\\\"\""
-func (c *conv) Quote() *conv {
+func (c *Conv) Quote() *Conv {
 	if c.hasContent(buffErr) {
 		return c // Error chain interruption
 	}

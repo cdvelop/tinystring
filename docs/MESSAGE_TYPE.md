@@ -59,7 +59,7 @@ type MessageType uint8
 
 **Implementation Strategy**:
 ```go
-func (c *conv) detectMessageTypeFromBuffer(dest buffDest) MessageType {
+func (c *Conv) detectMessageTypeFromBuffer(dest buffDest) MessageType {
     // Use internal buffer operations - NO string allocations
     
     // 1. Copy content directly to work buffer using swapBuff (zero allocations)
@@ -90,7 +90,7 @@ func (c *conv) detectMessageTypeFromBuffer(dest buffDest) MessageType {
 
 **Primary Method**: `StringType() (string, MessageType)`
 ```go
-func (c *conv) StringType() (string, MessageType) {
+func (c *Conv) StringType() (string, MessageType) {
     // Get string content FIRST (before detection modifies buffer)
     out := c.getString(buffOut)
     
@@ -151,7 +151,7 @@ var (
 
 **Logic**:
 ```go
-func (c *conv) bufferContainsPattern(dest buffDest, patterns [][]byte) bool {
+func (c *Conv) bufferContainsPattern(dest buffDest, patterns [][]byte) bool {
     bufData := c.getBytes(dest)
     
     for _, pattern := range patterns {
@@ -254,7 +254,7 @@ func (c *conv) bufferContainsPattern(dest buffDest, patterns [][]byte) bool {
 
 **CRITICAL**: Must ensure proper `putConv()` calls in ALL code paths
 - **SUCCESS**: Normal path calls `putConv()` after string extraction
-- **ERROR**: Error path calls `putConv()` but returns conv as error object
+- **ERROR**: Error path calls `putConv()` but returns Conv as error object
 - **VALIDATION**: Add tests to verify no pool leaks
 
 ## IMPLEMENTATION RISKS & MITIGATION

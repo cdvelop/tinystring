@@ -6,7 +6,7 @@ package tinystring
 
 // Float64 converts the value to a float64.
 // Returns the converted float64 and any error that occurred during conversion.
-func (c *conv) Float64() (float64, error) {
+func (c *Conv) Float64() (float64, error) {
 	val := c.parseFloatBase()
 	if c.hasContent(buffErr) {
 		return 0, c
@@ -15,7 +15,7 @@ func (c *conv) Float64() (float64, error) {
 }
 
 // toFloat64 converts various float types to float64
-func (c *conv) toFloat64(arg any) (float64, bool) {
+func (c *Conv) toFloat64(arg any) (float64, bool) {
 	switch v := arg.(type) {
 	case float64:
 		return v, true
@@ -28,7 +28,7 @@ func (c *conv) toFloat64(arg any) (float64, bool) {
 
 // Float32 converts the value to a float32.
 // Returns the converted float32 and any error that occurred during conversion.
-func (c *conv) Float32() (float32, error) {
+func (c *Conv) Float32() (float32, error) {
 	val := c.parseFloatBase()
 	if c.hasContent(buffErr) {
 		return 0, c
@@ -41,7 +41,7 @@ func (c *conv) Float32() (float32, error) {
 
 // parseFloatBase parses the buffer as a float64, similar to parseIntBase for ints.
 // It always uses the buffer output and handles errors internally.
-func (c *conv) parseFloatBase() float64 {
+func (c *Conv) parseFloatBase() float64 {
 	c.rstBuffer(buffErr)
 
 	s := c.getString(buffOut)
@@ -111,17 +111,17 @@ func (c *conv) parseFloatBase() float64 {
 }
 
 // wrFloat32 writes a float32 to the buffer destination.
-func (c *conv) wrFloat32(dest buffDest, val float32) {
+func (c *Conv) wrFloat32(dest buffDest, val float32) {
 	c.wrFloatBase(dest, float64(val), 3.4028235e+38)
 }
 
 // wrFloat64 writes a float64 to the buffer destination.
-func (c *conv) wrFloat64(dest buffDest, val float64) {
+func (c *Conv) wrFloat64(dest buffDest, val float64) {
 	c.wrFloatBase(dest, float64(val), 1.7976931348623157e+308)
 }
 
 // wrFloatBase contains the shared logic for writing float values.
-func (c *conv) wrFloatBase(dest buffDest, val float64, maxInf float64) {
+func (c *Conv) wrFloatBase(dest buffDest, val float64, maxInf float64) {
 	// Handle special cases
 	if val != val { // NaN
 		c.wrString(dest, "NaN")

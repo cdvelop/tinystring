@@ -9,13 +9,13 @@ func TestStringPointer(t *testing.T) {
 	tests := []struct {
 		name          string
 		initialValue  string
-		transform     func(*conv) *conv
+		transform     func(*Conv) *Conv
 		expectedValue string
 	}{
 		{
 			name:         "Remove tildes from string pointer",
 			initialValue: "áéíóúÁÉÍÓÚ",
-			transform: func(t *conv) *conv {
+			transform: func(t *Conv) *Conv {
 				return t.Tilde()
 			},
 			expectedValue: "aeiouAEIOU",
@@ -23,7 +23,7 @@ func TestStringPointer(t *testing.T) {
 		{
 			name:         "Convert to lowercase with string pointer",
 			initialValue: "HELLO WORLD",
-			transform: func(t *conv) *conv {
+			transform: func(t *Conv) *Conv {
 				return t.ToLower()
 			},
 			expectedValue: "hello world",
@@ -31,7 +31,7 @@ func TestStringPointer(t *testing.T) {
 		{
 			name:         "Convert to camelCase with string pointer",
 			initialValue: "hello world example",
-			transform: func(t *conv) *conv {
+			transform: func(t *Conv) *Conv {
 				return t.CamelLow()
 			},
 			expectedValue: "helloWorldExample",
@@ -39,7 +39,7 @@ func TestStringPointer(t *testing.T) {
 		{
 			name:         "Multiple transforms with string pointer",
 			initialValue: "Él Múrcielago Rápido",
-			transform: func(t *conv) *conv {
+			transform: func(t *Conv) *Conv {
 				return t.Tilde().CamelLow()
 			},
 			expectedValue: "elMurcielagoRapido",

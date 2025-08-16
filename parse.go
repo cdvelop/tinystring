@@ -3,7 +3,7 @@ package tinystring
 // KV extracts the value after the first delimiter. If not found, returns an error.
 // Usage: Convert("key:value").KV(":") => "value", nil
 // If no delimiter is provided, uses ":" by default.
-func (c *conv) KV(delimiters ...string) (string, error) {
+func (c *Conv) KV(delimiters ...string) (string, error) {
 	src := c.String()
 	d := ":"
 	if len(delimiters) > 0 && delimiters[0] != "" {
@@ -21,7 +21,7 @@ func (c *conv) KV(delimiters ...string) (string, error) {
 
 // TagValue searches for the value of a key in a Go struct tag-like string.
 // Example: Convert(`json:"name" Label:"Nombre"`).TagValue("Label") => "Nombre", true
-func (c *conv) TagValue(key string) (string, bool) {
+func (c *Conv) TagValue(key string) (string, bool) {
 	src := c.getString(buffOut)
 
 	// Reutilizar splitStr para dividir por espacios

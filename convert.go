@@ -11,7 +11,7 @@ const (
 	buffErr                  // Error message buffer
 )
 
-type conv struct {
+type Conv struct {
 	// Buffers with initial capacity 64, grow as needed (no truncation)
 	out     []byte // Buffer principal - make([]byte, 0, 64)
 	outLen  int    // Longitud actual en out
@@ -26,12 +26,12 @@ type conv struct {
 	dataPtr unsafe.Pointer // Direct unsafe pointer to data (replaces ptrValue)
 }
 
-// Convert initializes a new conv struct with optional value for string,bool and number manipulation.
+// Convert initializes a new Conv struct with optional value for string,bool and number manipulation.
 // REFACTORED: Now accepts variadic parameters - Convert() or Convert(value)
 // Phase 7: Uses object pool internally for memory optimization (transparent to user)
-func Convert(v ...any) *conv {
+func Convert(v ...any) *Conv {
 	c := getConv()
-	c.resetAllBuffers() // Asegurar que el objeto conv esté completamente limpio
+	c.resetAllBuffers() // Asegurar que el objeto Conv esté completamente limpio
 	// Validation: Only accept 0 or 1 parameter
 	if len(v) > 1 {
 		return c.wrErr(D.Invalid, D.Number, D.Of, D.Argument)
@@ -59,7 +59,7 @@ func Convert(v ...any) *conv {
 		// - All numeric and boolean type conversions
 		// - Error handling for unsupported types
 	}
-	// If no value provided, conv is ready for builder pattern
+	// If no value provided, Conv is ready for builder pattern
 	return c
 }
 
@@ -71,7 +71,7 @@ func Convert(v ...any) *conv {
 // anyToBuff converts any supported type to buffer using existing conversion logic
 // REUSES: floatToOut, wrStringToOut, wrStringToErr
 // Supports: string, int variants, uint variants, float variants, bool, []byte, LocStr
-func (c *conv) anyToBuff(dest buffDest, value any) {
+func (c *Conv) anyToBuff(dest buffDest, value any) {
 	// Limpiar buffer de error antes de cualquier conversión inmediata
 	c.rstBuffer(buffErr)
 
@@ -175,16 +175,16 @@ func (c *conv) anyToBuff(dest buffDest, value any) {
 	}
 }
 
-// GetKind returns the Kind of the value stored in the conv
+// GetKind returns the Kind of the value stored in the Conv
 // This allows external packages to reuse tinystring's type detection logic
-func (c *conv) GetKind() Kind {
+func (c *Conv) GetKind() Kind {
 	return c.Kind
 }
 
 // Apply updates the original string pointer with the current content and auto-releases to pool.
 // This method should be used when you want to modify the original string directly
 // without additional allocations.
-func (t *conv) Apply() {
+func (t *Conv) Apply() {
 	if t.Kind == K.Pointer && t.dataPtr != nil {
 		// Type assert to *string for Apply() functionality using unsafe pointer
 		if strPtr := (*string)(t.dataPtr); strPtr != nil {
@@ -195,9 +195,9 @@ func (t *conv) Apply() {
 	t.putConv()
 }
 
-// String method to return the content of the conv and automatically returns object to pool
+// String method to return the content of the Conv and automatically returns object to pool
 // Phase 7: Auto-release makes pool usage completely transparent to user
-func (c *conv) String() string {
+func (c *Conv) String() string {
 	// If there's an error, return empty string (error available via StringErr())
 	if c.hasContent(buffErr) {
 		c.putConv() // Auto-release back to pool for memory efficiency
@@ -210,7 +210,7 @@ func (c *conv) String() string {
 	return out
 }
 
-// Bytes returns the content of the conv as a byte slice
-func (c *conv) Bytes() []byte {
+// Bytes returns the content of the Conv as a byte slice
+func (c *Conv) Bytes() []byte {
 	return c.getBytes(buffOut)
 }

@@ -8,57 +8,57 @@ import (
 
 func TestCount(t *testing.T) {
 	var testCases = map[string]struct {
-		conv     string
+		Conv     string
 		search   string
 		expected int
 	}{
 		"Caso1": {
-			conv:     "Hola, mundo!",
+			Conv:     "Hola, mundo!",
 			search:   "mundo",
 			expected: 1,
 		},
 		"Caso2": {
-			conv:     "Hola, mundo!",
+			Conv:     "Hola, mundo!",
 			search:   "golang",
 			expected: 0,
 		},
 		"Caso3": {
-			conv:     "Hola, mundo!",
+			Conv:     "Hola, mundo!",
 			search:   "",
 			expected: 0,
 		},
 		"Caso4": {
-			conv:     "Hola",
+			Conv:     "Hola",
 			search:   "Hola, mundo!",
 			expected: 0,
 		},
 		"Caso5": {
-			conv:     "abracadabra",
+			Conv:     "abracadabra",
 			search:   "abra",
 			expected: 2,
 		},
 		"Caso6": {
-			conv:     "abracadabra",
+			Conv:     "abracadabra",
 			search:   "bra",
 			expected: 2,
 		},
 		"Caso7": {
-			conv:     "abra,cadabra",
+			Conv:     "abra,cadabra",
 			search:   ",",
 			expected: 1,
 		},
 		"Caso8": {
-			conv:     "(abraLol,*?¡¡",
+			Conv:     "(abraLol,*?¡¡",
 			search:   "Lol",
 			expected: 1,
 		},
 		"Caso9 ": {
-			conv:     "(abraLol,*?¡¡",
+			Conv:     "(abraLol,*?¡¡",
 			search:   "LoL",
 			expected: 0,
 		},
 		"Caso10 ": {
-			conv:     "(¡ab¡raLol,*?¡¡",
+			Conv:     "(¡ab¡raLol,*?¡¡",
 			search:   "¡",
 			expected: 4,
 		},
@@ -66,9 +66,9 @@ func TestCount(t *testing.T) {
 
 	for name, tc := range testCases {
 		t.Run(name, func(t *testing.T) {
-			out := Count(tc.conv, tc.search)
+			out := Count(tc.Conv, tc.search)
 			if out != tc.expected {
-				t.Errorf("Error: Se esperaba %v, pero se obtuvo %v. Texto: %s, Búsqueda: %s", tc.expected, out, tc.conv, tc.search)
+				t.Errorf("Error: Se esperaba %v, pero se obtuvo %v. Texto: %s, Búsqueda: %s", tc.expected, out, tc.Conv, tc.search)
 			}
 		})
 	}
@@ -76,42 +76,42 @@ func TestCount(t *testing.T) {
 
 func TestContains(t *testing.T) {
 	var testCases = map[string]struct {
-		conv     string
+		Conv     string
 		search   string
 		expected bool
 	}{
 		"Encontrado": {
-			conv:     "Hola, mundo!",
+			Conv:     "Hola, mundo!",
 			search:   "mundo",
 			expected: true,
 		},
 		"No encontrado": {
-			conv:     "Hola, mundo!",
+			Conv:     "Hola, mundo!",
 			search:   "golang",
 			expected: false,
 		},
 		"Búsqueda vacía": {
-			conv:     "Hola, mundo!",
+			Conv:     "Hola, mundo!",
 			search:   "",
 			expected: false,
 		},
 		"Texto más corto que búsqueda": {
-			conv:     "Hola",
+			Conv:     "Hola",
 			search:   "Hola, mundo!",
 			expected: false,
 		},
 		"Múltiples ocurrencias": {
-			conv:     "abracadabra",
+			Conv:     "abracadabra",
 			search:   "abra",
 			expected: true,
 		},
 		"Sensible a mayúsculas": {
-			conv:     "(abraLol,*?¡¡",
+			Conv:     "(abraLol,*?¡¡",
 			search:   "LoL",
 			expected: false,
 		},
 		"Búsqueda de caracteres especiales": {
-			conv:     "(¡ab¡raLol,*?¡¡",
+			Conv:     "(¡ab¡raLol,*?¡¡",
 			search:   "¡",
 			expected: true,
 		},
@@ -119,9 +119,9 @@ func TestContains(t *testing.T) {
 
 	for name, tc := range testCases {
 		t.Run(name, func(t *testing.T) {
-			out := Contains(tc.conv, tc.search)
+			out := Contains(tc.Conv, tc.search)
 			if out != tc.expected {
-				t.Errorf("Error: Se esperaba %v, pero se obtuvo %v. Texto: %s, Búsqueda: %s", tc.expected, out, tc.conv, tc.search)
+				t.Errorf("Error: Se esperaba %v, pero se obtuvo %v. Texto: %s, Búsqueda: %s", tc.expected, out, tc.Conv, tc.search)
 			}
 		})
 	}

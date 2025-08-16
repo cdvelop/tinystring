@@ -10,23 +10,23 @@ package tinystring
 // tinystring.Err(D.Format, D.Invalid) returns "invalid format"
 // tinystring.Err(ES,D.Format, D.Invalid) returns "formato inválido"
 
-func Err(msgs ...any) *conv {
+func Err(msgs ...any) *Conv {
 	c := getConv() // Always obtain from pool
 	// UNIFIED PROCESSING: Use same intermediate function as Translate() but write to buffErr
 	processTranslatedMessage(c, buffErr, msgs...)
 	return c
 }
 
-// Errf creates a new conv instance with error formatting similar to fmt.Errf
+// Errf creates a new Conv instance with error formatting similar to fmt.Errf
 // Example: tinystring.Errf("invalid value: %s", value).Error()
-func Errf(format string, args ...any) *conv {
+func Errf(format string, args ...any) *Conv {
 	c := getConv() // Always obtain from pool
 	c.wrFormat(buffErr, format, args...)
 	return c
 }
 
-// StringErr returns the content of the conv along with any error and auto-releases to pool
-func (c *conv) StringErr() (out string, err error) {
+// StringErr returns the content of the Conv along with any error and auto-releases to pool
+func (c *Conv) StringErr() (out string, err error) {
 	// If there's an error, return empty string and the error object (do NOT release to pool)
 	if c.hasContent(buffErr) {
 		return "", c
@@ -41,7 +41,7 @@ func (c *conv) StringErr() (out string, err error) {
 // wrErr writes error messages with support for int, string and LocStr
 // ENHANCED: Now supports int, string and LocStr parameters
 // Used internally by anyToBuff for type error messages
-func (c *conv) wrErr(msgs ...any) *conv {
+func (c *Conv) wrErr(msgs ...any) *Conv {
 	// Write messages using default language (no detection needed)
 	for i, msg := range msgs {
 		if i > 0 {
@@ -89,13 +89,13 @@ func (c *conv) wrErr(msgs ...any) *conv {
 	return c
 }
 
-func (c *conv) getError() string {
+func (c *Conv) getError() string {
 	if !c.hasContent(buffErr) { // ✅ Use API method instead of len(c.err)
 		return ""
 	}
 	return c.getString(buffErr) // ✅ Use API method instead of direct string(c.err)
 }
 
-func (c *conv) Error() string {
+func (c *Conv) Error() string {
 	return c.getError()
 }

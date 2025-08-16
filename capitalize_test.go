@@ -9,7 +9,7 @@ func TestCapitalize(t *testing.T) {
 		expected string
 	}{
 		{
-			name:     "Simple conv",
+			name:     "Simple Conv",
 			input:    "hello world",
 			expected: "Hello World",
 		},
@@ -65,22 +65,22 @@ func TestCapitalizeChaining(t *testing.T) {
 		name     string
 		input    string
 		expected string
-		chain    func(*conv) *conv
+		chain    func(*Conv) *Conv
 	}{
 		{
 			name:     "With Tilde",
 			input:    "hólá múndo",
 			expected: "Hola Mundo",
-			chain: func(conv *conv) *conv {
-				return conv.Tilde().Capitalize()
+			chain: func(Conv *Conv) *Conv {
+				return Conv.Tilde().Capitalize()
 			},
 		},
 		{
 			name:     "After ToLower",
 			input:    "HELLO WORLD",
 			expected: "Hello World",
-			chain: func(conv *conv) *conv {
-				return conv.ToLower().Capitalize()
+			chain: func(Conv *Conv) *Conv {
+				return Conv.ToLower().Capitalize()
 			},
 		},
 	}

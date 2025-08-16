@@ -43,7 +43,7 @@ The tinystring library has extensive usage of `getString()` across multiple file
 - Line 17: `str := t.getString(buffOut)` — HIGH PRIORITY: String iteration
 
 ### truncate.go (2 instances)
-- Line 84: `conv := t.getString(buffOut)` — HIGH PRIORITY: String iteration
+- Line 84: `Conv := t.getString(buffOut)` — HIGH PRIORITY: String iteration
 - Line 139: `if len(t.getString(buffOut)) == 0` — OPTIMIZE: Use `c.outLen == 0`
 
 ### capitalize.go (4 instances)

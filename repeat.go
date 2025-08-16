@@ -1,9 +1,9 @@
 package tinystring
 
-// Repeat repeats the conv content n times
-// If n is 0 or negative, it clears the conv content
+// Repeat repeats the Conv content n times
+// If n is 0 or negative, it clears the Conv content
 // eg: Convert("abc").Repeat(3) => "abcabcabc"
-func (t *conv) Repeat(n int) *conv {
+func (t *Conv) Repeat(n int) *Conv {
 	if t.hasContent(buffErr) {
 		return t // Error chain interruption
 	}

@@ -5,10 +5,10 @@ import (
 	"unsafe"
 )
 
-// Reuse conv objects to eliminate the 53.67% allocation hotspot from newConv()
+// Reuse Conv objects to eliminate the 53.67% allocation hotspot from newConv()
 var convPool = sync.Pool{
 	New: func() any {
-		return &conv{
+		return &Conv{
 			out:  make([]byte, 0, 64),
 			work: make([]byte, 0, 64),
 			err:  make([]byte, 0, 64),
@@ -32,10 +32,10 @@ func unsafeBytes(s string) []byte {
 	return unsafe.Slice(unsafe.StringData(s), len(s))
 }
 
-// getConv gets a reusable conv from the pool
+// getConv gets a reusable Conv from the pool
 // FIXED: Ensures object is completely clean to prevent race conditions
-func getConv() *conv {
-	c := convPool.Get().(*conv)
+func getConv() *Conv {
+	c := convPool.Get().(*Conv)
 	// Defensive cleanup: ensure object is completely clean
 	c.resetAllBuffers()
 	c.out = c.out[:0]
@@ -46,8 +46,8 @@ func getConv() *conv {
 	return c
 }
 
-// putConv returns a conv to the pool after resetting it
-func (c *conv) putConv() {
+// putConv returns a Conv to the pool after resetting it
+func (c *Conv) putConv() {
 	// Reset all buffer positions using centralized method
 	c.resetAllBuffers()
 	// Clear buffer contents (keep capacity for reuse)
@@ -63,7 +63,7 @@ func (c *conv) putConv() {
 }
 
 // resetAllBuffers resets all buffer positions (used in putConv)
-func (c *conv) resetAllBuffers() {
+func (c *Conv) resetAllBuffers() {
 	c.outLen = 0
 	c.workLen = 0
 	c.errLen = 0
@@ -75,7 +75,7 @@ func (c *conv) resetAllBuffers() {
 
 // wrString writes string to specified buffer destination (universal method)
 // OPTIMIZED: Uses zero-allocation unsafe conversion for performance
-func (c *conv) wrString(dest buffDest, s string) {
+func (c *Conv) wrString(dest buffDest, s string) {
 	if len(s) == 0 {
 		return // No-op for empty strings
 	}
@@ -86,7 +86,7 @@ func (c *conv) wrString(dest buffDest, s string) {
 }
 
 // wrBytes writes bytes to specified buffer destination (universal method)
-func (c *conv) wrBytes(dest buffDest, data []byte) {
+func (c *Conv) wrBytes(dest buffDest, data []byte) {
 	switch dest {
 	case buffOut:
 		c.out = append(c.out[:c.outLen], data...)
@@ -102,7 +102,7 @@ func (c *conv) wrBytes(dest buffDest, data []byte) {
 }
 
 // wrByte writes single byte to specified buffer destination
-func (c *conv) wrByte(dest buffDest, b byte) {
+func (c *Conv) wrByte(dest buffDest, b byte) {
 	switch dest {
 	case buffOut:
 		c.out = append(c.out[:c.outLen], b)
@@ -119,8 +119,8 @@ func (c *conv) wrByte(dest buffDest, b byte) {
 
 // getString returns string content from specified buffer destination
 // SAFE: Uses standard conversion to avoid memory corruption in concurrent access
-// NOTE: unsafeString() cannot be used here because returned strings outlive conv lifecycle
-func (c *conv) getString(dest buffDest) string {
+// NOTE: unsafeString() cannot be used here because returned strings outlive Conv lifecycle
+func (c *Conv) getString(dest buffDest) string {
 	switch dest {
 	case buffOut:
 		return string(c.out[:c.outLen])
@@ -135,7 +135,7 @@ func (c *conv) getString(dest buffDest) string {
 
 // getBytes returns []byte content from specified buffer destination
 // OPTIMIZED: Returns slice directly without string conversion for io.Writer compatibility
-func (c *conv) getBytes(dest buffDest) []byte {
+func (c *Conv) getBytes(dest buffDest) []byte {
 	switch dest {
 	case buffOut:
 		return c.out[:c.outLen]
@@ -150,7 +150,7 @@ func (c *conv) getBytes(dest buffDest) []byte {
 
 // rstBuffer resets specified buffer destination
 // FIXED: Also resets slice length to prevent data contamination
-func (c *conv) rstBuffer(dest buffDest) {
+func (c *Conv) rstBuffer(dest buffDest) {
 	switch dest {
 	case buffOut:
 		c.outLen = 0
@@ -166,7 +166,7 @@ func (c *conv) rstBuffer(dest buffDest) {
 }
 
 // hasContent checks if specified buffer destination has content
-func (c *conv) hasContent(dest buffDest) bool {
+func (c *Conv) hasContent(dest buffDest) bool {
 	switch dest {
 	case buffOut:
 		return c.outLen > 0
@@ -180,7 +180,7 @@ func (c *conv) hasContent(dest buffDest) bool {
 }
 
 // swapBuff safely copies content from source buffer to destination buffer
-func (c *conv) swapBuff(src, dest buffDest) {
+func (c *Conv) swapBuff(src, dest buffDest) {
 	// Get source slice directly (no string allocation)
 	var srcData []byte
 	var srcLen int
@@ -201,7 +201,7 @@ func (c *conv) swapBuff(src, dest buffDest) {
 }
 
 // addRuneToWork encodes rune to UTF-8 and appends to work buffer
-func (c *conv) addRuneToWork(r rune) {
+func (c *Conv) addRuneToWork(r rune) {
 	// Manually encode rune to UTF-8 in work buffer
 	if r < 0x80 {
 		// Single byte ASCII
@@ -221,7 +221,7 @@ func (c *conv) addRuneToWork(r rune) {
 
 // bytesEqual compares buffer content with given bytes slice for optimization
 // This helper eliminates getString() allocations in boolean/comparison operations
-func (c *conv) bytesEqual(dest buffDest, target []byte) bool {
+func (c *Conv) bytesEqual(dest buffDest, target []byte) bool {
 	var bufData []byte
 	var bufLen int
 
@@ -251,7 +251,7 @@ func (c *conv) bytesEqual(dest buffDest, target []byte) bool {
 }
 
 // bufferContainsPattern checks if any pattern is present in the buffer (no allocations)
-func (c *conv) bufferContainsPattern(dest buffDest, patterns [][]byte) bool {
+func (c *Conv) bufferContainsPattern(dest buffDest, patterns [][]byte) bool {
 	bufData := c.getBytes(dest)
 	for _, pattern := range patterns {
 		if bytesContain(bufData, pattern) {

@@ -51,8 +51,8 @@ var (
 	}
 )
 
-// StringType returns the string from buffOut and its detected MessageType, then auto-releases the conv
-func (c *conv) StringType() (string, MessageType) {
+// StringType returns the string from buffOut and its detected MessageType, then auto-releases the Conv
+func (c *Conv) StringType() (string, MessageType) {
 	// Get string content FIRST (before detection modifies buffer)
 	out := c.getString(buffOut)
 	// Detect type from buffOut content
@@ -63,7 +63,7 @@ func (c *conv) StringType() (string, MessageType) {
 }
 
 // detectMessageTypeFromBuffer analyzes the buffer content and returns the detected MessageType (zero allocations)
-func (c *conv) detectMessageTypeFromBuffer(dest buffDest) MessageType {
+func (c *Conv) detectMessageTypeFromBuffer(dest buffDest) MessageType {
 	// 1. Copy content directly to work buffer using swapBuff (zero allocations)
 	c.swapBuff(dest, buffWork)
 	// 2. Convert to lowercase in work buffer using existing method

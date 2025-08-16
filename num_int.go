@@ -1,6 +1,6 @@
 package tinystring
 
-func (c *conv) parseIntString(s string, base int, signed bool) int64 {
+func (c *Conv) parseIntString(s string, base int, signed bool) int64 {
 	// Handle decimal point for float-like input (e.g., "3.14")
 	for i := 0; i < len(s); i++ {
 		if s[i] == '.' {
@@ -80,7 +80,7 @@ func (c *conv) parseIntString(s string, base int, signed bool) int64 {
 // Int converts the value to an integer with optional base specification.
 // If no base is provided, base 10 is used. Supports bases 2-36.
 // Returns the converted integer and any error that occurred during conversion.
-func (c *conv) Int(base ...int) (int, error) {
+func (c *Conv) Int(base ...int) (int, error) {
 	val := c.parseIntBase(base...)
 	if val < -2147483648 || val > 2147483647 {
 		return 0, c.wrErr(D.Number, D.Overflow)
@@ -93,7 +93,7 @@ func (c *conv) Int(base ...int) (int, error) {
 
 // getInt32 extrae el valor del buffer de salida y lo convierte a int32.
 // Int32 extrae el valor del buffer de salida y lo convierte a int32.
-func (c *conv) Int32(base ...int) (int32, error) {
+func (c *Conv) Int32(base ...int) (int32, error) {
 	val := c.parseIntBase(base...)
 	if val < -2147483648 || val > 2147483647 {
 		return 0, c.wrErr(D.Number, D.Overflow)
@@ -106,7 +106,7 @@ func (c *conv) Int32(base ...int) (int32, error) {
 
 // getInt64 extrae el valor del buffer de salida y lo convierte a int64.
 // Int64 extrae el valor del buffer de salida y lo convierte a int64.
-func (c *conv) Int64(base ...int) (int64, error) {
+func (c *Conv) Int64(base ...int) (int64, error) {
 	val := c.parseIntBase(base...)
 	if c.hasContent(buffErr) {
 		return 0, c
@@ -115,7 +115,7 @@ func (c *conv) Int64(base ...int) (int64, error) {
 }
 
 // toInt64 converts various integer types to int64
-func (c *conv) toInt64(arg any) (int64, bool) {
+func (c *Conv) toInt64(arg any) (int64, bool) {
 	switch v := arg.(type) {
 	case int:
 		return int64(v), true
@@ -143,7 +143,7 @@ func (c *conv) toInt64(arg any) (int64, bool) {
 }
 
 // wrIntBase writes an integer in the given base to the buffer, with optional uppercase digits
-func (c *conv) wrIntBase(dest buffDest, val int64, base int, signed bool, upper ...bool) {
+func (c *Conv) wrIntBase(dest buffDest, val int64, base int, signed bool, upper ...bool) {
 	if base < 2 || base > 36 {
 		c.wrErr("Base", D.Invalid)
 		return
@@ -184,7 +184,7 @@ func (c *conv) wrIntBase(dest buffDest, val int64, base int, signed bool, upper 
 // parseIntBase reutiliza la lógica de conversión de string a int64, soportando signo y base, y reporta error usando la API interna.
 // parseIntBase auto-detects signed/unsigned mode using c.Kind and parses the string accordingly.
 // It does not take a signed parameter; instead, it checks c.Kind (K.Int = signed, K.Uint = unsigned).
-func (c *conv) parseIntBase(base ...int) int64 {
+func (c *Conv) parseIntBase(base ...int) int64 {
 
 	s := c.getString(buffOut)
 	baseVal := 10

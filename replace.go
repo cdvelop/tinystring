@@ -1,10 +1,10 @@
 package tinystring
 
-// Replace replaces up to n occurrences of old with new in the conv content
+// Replace replaces up to n occurrences of old with new in the Conv content
 // If n < 0, there is no limit on the number of replacements
 // eg: "hello world" with old "world" and new "universe" will return "hello universe"
 // Old and new can be any type, they will be converted to string using Convert
-func (c *conv) Replace(oldAny, newAny any, n ...int) *conv {
+func (c *Conv) Replace(oldAny, newAny any, n ...int) *Conv {
 	if c.hasContent(buffErr) {
 		return c // Error chain interruption
 	}
@@ -120,9 +120,9 @@ func (c *conv) Replace(oldAny, newAny any, n ...int) *conv {
 	return c
 }
 
-// TrimSuffix removes the specified suffix from the conv content if it exists
+// TrimSuffix removes the specified suffix from the Conv content if it exists
 // eg: "hello.txt" with suffix ".txt" will return "hello"
-func (c *conv) TrimSuffix(suffix string) *conv {
+func (c *Conv) TrimSuffix(suffix string) *Conv {
 	if c.hasContent(buffErr) {
 		return c // Error chain interruption
 	}
@@ -154,9 +154,9 @@ func (c *conv) TrimSuffix(suffix string) *conv {
 	return c
 }
 
-// TrimPrefix removes the specified prefix from the conv content if it exists
+// TrimPrefix removes the specified prefix from the Conv content if it exists
 // eg: "prefix-hello" with prefix "prefix-" will return "hello"
-func (c *conv) TrimPrefix(prefix string) *conv {
+func (c *Conv) TrimPrefix(prefix string) *Conv {
 	if c.hasContent(buffErr) {
 		return c // Error chain interruption
 	}
@@ -188,9 +188,9 @@ func (c *conv) TrimPrefix(prefix string) *conv {
 	return c
 }
 
-// TrimSpace removes spaces at the beginning and end of the conv content
+// TrimSpace removes spaces at the beginning and end of the Conv content
 // eg: "  hello world  " will return "hello world"
-func (c *conv) TrimSpace() *conv {
+func (c *Conv) TrimSpace() *Conv {
 	if c.hasContent(buffErr) {
 		return c // Error chain interruption
 	}

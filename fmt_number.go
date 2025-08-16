@@ -7,7 +7,7 @@ package tinystring
 // Thousands formats the number with thousand separators.
 // By default (no param), uses EU style: 1.234.567,89
 // If anglo is true, uses Anglo style: 1,234,567.89
-func (t *conv) Thousands(anglo ...bool) *conv {
+func (t *Conv) Thousands(anglo ...bool) *Conv {
 	if t.hasContent(buffErr) {
 		return t
 	}
@@ -42,7 +42,7 @@ func (t *conv) Thousands(anglo ...bool) *conv {
 
 // addThousandSeparatorsCustom adds thousand separators to the numeric string in buffer.
 // If anglo is true: 1,234,567.89; if false: 1.234.567,89
-func (c *conv) addThousandSeparatorsCustom(dest buffDest, anglo bool) {
+func (c *Conv) addThousandSeparatorsCustom(dest buffDest, anglo bool) {
 	str := c.getString(dest)
 	if len(str) <= 3 {
 		return
@@ -120,7 +120,7 @@ func (c *conv) addThousandSeparatorsCustom(dest buffDest, anglo bool) {
 
 // removeTrailingZeros removes trailing zeros from decimal numbers in buffer
 // Universal method with dest-first parameter order - follows buffer API architecture
-func (c *conv) removeTrailingZeros(dest buffDest) {
+func (c *Conv) removeTrailingZeros(dest buffDest) {
 	str := c.getString(dest)
 	if len(str) == 0 {
 		return
@@ -162,7 +162,7 @@ func (c *conv) removeTrailingZeros(dest buffDest) {
 
 // isNumericString checks if a string represents a valid number
 // Universal helper method - follows buffer API architecture
-func (c *conv) isNumericString(str string) bool {
+func (c *Conv) isNumericString(str string) bool {
 	if len(str) == 0 {
 		return false
 	}

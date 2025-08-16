@@ -4,15 +4,15 @@ package tinystring
 // Usage: Convert("Hello World").Split() => []string{"Hello", "World"}
 // Usage with separator: Convert("Hello;World").Split(";") => []string{"Hello", "World"}
 // If no separator is provided, splits by whitespace (similar to strings.Fields).
-// Uses the conv work buffer for memory efficiency. The global Split function is deprecated; always use Convert(...).Split(...).
+// Uses the Conv work buffer for memory efficiency. The global Split function is deprecated; always use Convert(...).Split(...).
 
-func (c *conv) Split(separator ...string) []string {
+func (c *Conv) Split(separator ...string) []string {
 	src := c.getString(buffOut)
 	return c.splitStr(src, separator...)
 }
 
 // splitStr is a reusable internal method for splitting a string by a separator (empty = by character, default whitespace).
-func (c *conv) splitStr(src string, separator ...string) []string {
+func (c *Conv) splitStr(src string, separator ...string) []string {
 	var sep string
 	if len(separator) == 0 {
 		// Whitespace split: mimic strings.Fields
@@ -81,7 +81,7 @@ func (c *conv) splitStr(src string, separator ...string) []string {
 // splitByDelimiterWithBuffer splits a string by the first occurrence of the delimiter.
 // Returns the parts (before and after the delimiter). If not found, found=false.
 // OPTIMIZED: Direct substring operations without buffer usage
-func (c *conv) splitByDelimiterWithBuffer(s, delim string) (before, after string, found bool) {
+func (c *Conv) splitByDelimiterWithBuffer(s, delim string) (before, after string, found bool) {
 	di := -1
 	for i := 0; i <= len(s)-len(delim); i++ {
 		if s[i:i+len(delim)] == delim {

@@ -56,7 +56,7 @@ func Sscanf(src string, format string, args ...any) (n int, err error) {
 }
 
 // applyWidthAndAlignment applies width formatting and alignment to a string
-func (c *conv) applyWidthAndAlignment(str string, width int, leftAlign bool) string {
+func (c *Conv) applyWidthAndAlignment(str string, width int, leftAlign bool) string {
 	if width <= 0 {
 		return str
 	}
@@ -81,7 +81,7 @@ func (c *conv) applyWidthAndAlignment(str string, width int, leftAlign bool) str
 
 // wrFormat applies printf-style formatting to arguments and writes to specified buffer destination.
 // Universal method with dest-first parameter order - follows buffer API architecture
-func (c *conv) wrFormat(dest buffDest, format string, args ...any) {
+func (c *Conv) wrFormat(dest buffDest, format string, args ...any) {
 	eSz := 0
 	for _, arg := range args {
 		switch arg.(type) {
@@ -149,7 +149,7 @@ func (c *conv) wrFormat(dest buffDest, format string, args ...any) {
 
 // parseFormatSpecifier extracts format specifier and parameters from format string
 // Returns formatChar, param, formatSpec, width, leftAlign, and new index position
-func (c *conv) parseFormatSpecifier(format string, i int) (formatChar rune, param int, formatSpec string, width int, leftAlign bool, newI int) {
+func (c *Conv) parseFormatSpecifier(format string, i int) (formatChar rune, param int, formatSpec string, width int, leftAlign bool, newI int) {
 	// Parse flags and width
 	for i < len(format) && (format[i] == '-' || (format[i] >= '0' && format[i] <= '9')) {
 		if format[i] == '-' {
@@ -233,7 +233,7 @@ func (c *conv) parseFormatSpecifier(format string, i int) (formatChar rune, para
 }
 
 // isValidFormatChar validates format characters for both read and write operations
-func (c *conv) isValidFormatChar(ch rune) bool {
+func (c *Conv) isValidFormatChar(ch rune) bool {
 	switch ch {
 	case 'c', 'U', 'd', 'u', 'f', 'e', 'E', 'g', 'G', 'o', 'O', 'b', 'B', 'x', 'X', 'p', 't', 'v', 'q', 's', '%':
 		return true
@@ -243,7 +243,7 @@ func (c *conv) isValidFormatChar(ch rune) bool {
 }
 
 // isValidWriteFormatChar validates format characters for write operations (reuses isValidFormatChar)
-func (c *conv) isValidWriteFormatChar(ch rune) bool {
+func (c *Conv) isValidWriteFormatChar(ch rune) bool {
 	return c.isValidFormatChar(ch)
 }
 
@@ -260,12 +260,12 @@ func spaces(n int) string {
 }
 
 // wrInvalidTypeErr writes an invalid type error for the given format spec
-func (c *conv) wrInvalidTypeErr(formatSpec string) {
+func (c *Conv) wrInvalidTypeErr(formatSpec string) {
 	c.wrErr(D.Invalid, D.Type, D.Of, D.Argument, formatSpec)
 }
 
 // formatValue formats a single value according to format character
-func (c *conv) formatValue(arg interface{}, formatChar rune, param int, formatSpec string) string {
+func (c *Conv) formatValue(arg interface{}, formatChar rune, param int, formatSpec string) string {
 	switch formatChar {
 	case 'c':
 		// Character formatting: accept rune, byte, int
@@ -432,7 +432,7 @@ func (c *conv) formatValue(arg interface{}, formatChar rune, param int, formatSp
 
 // scanWithFormat parses formatted text from a string, reusing wrFormat logic
 // Returns the number of items successfully parsed
-func (c *conv) scanWithFormat(src string, format string, args ...any) int {
+func (c *Conv) scanWithFormat(src string, format string, args ...any) int {
 	srcPos := 0
 	fmtPos := 0
 	parsed := 0
@@ -509,7 +509,7 @@ func (c *conv) scanWithFormat(src string, format string, args ...any) int {
 }
 
 // parseNumber extracts a number from string starting at pos
-func (c *conv) parseNumber(src string, pos int, allowSign bool) int {
+func (c *Conv) parseNumber(src string, pos int, allowSign bool) int {
 	if allowSign && pos < len(src) && (src[pos] == '-' || src[pos] == '+') {
 		pos++
 	}
@@ -520,7 +520,7 @@ func (c *conv) parseNumber(src string, pos int, allowSign bool) int {
 }
 
 // parseHexNumber extracts a hexadecimal number from string starting at pos
-func (c *conv) parseHexNumber(src string, pos int) int {
+func (c *Conv) parseHexNumber(src string, pos int) int {
 	for pos < len(src) && ((src[pos] >= '0' && src[pos] <= '9') ||
 		(src[pos] >= 'a' && src[pos] <= 'f') ||
 		(src[pos] >= 'A' && src[pos] <= 'F')) {
@@ -530,7 +530,7 @@ func (c *conv) parseHexNumber(src string, pos int) int {
 }
 
 // extractValue extracts a value from source string based on format character
-func (c *conv) extractValue(src string, pos int, formatChar rune) (string, int) {
+func (c *Conv) extractValue(src string, pos int, formatChar rune) (string, int) {
 	start := pos
 
 	switch formatChar {
@@ -582,10 +582,10 @@ func (c *conv) extractValue(src string, pos int, formatChar rune) (string, int) 
 }
 
 // assignParsedValue converts and assigns a parsed value using existing conversion logic
-func (c *conv) assignParsedValue(valueStr string, formatChar rune, arg any) bool {
+func (c *Conv) assignParsedValue(valueStr string, formatChar rune, arg any) bool {
 	switch formatChar {
 	case 'd':
-		// Use buffer-based integer conversion instead of creating new conv
+		// Use buffer-based integer conversion instead of creating new Conv
 		c.rstBuffer(buffWork)
 		c.wrString(buffWork, valueStr)
 		c.swapBuff(buffOut, buffErr)  // Save current buffOut
@@ -642,7 +642,7 @@ func (c *conv) assignParsedValue(valueStr string, formatChar rune, arg any) bool
 		}
 
 	case 'f', 'g', 'e':
-		// Use buffer-based float conversion instead of creating new conv
+		// Use buffer-based float conversion instead of creating new Conv
 		c.rstBuffer(buffWork)
 		c.wrString(buffWork, valueStr)
 		c.swapBuff(buffOut, buffErr)  // Save current buffOut
@@ -693,7 +693,7 @@ func (c *conv) assignParsedValue(valueStr string, formatChar rune, arg any) bool
 }
 
 // parseHexString converts hex string to int64 (extracted and optimized from parseScanf)
-func (c *conv) parseHexString(hexStr string) int64 {
+func (c *Conv) parseHexString(hexStr string) int64 {
 	val := int64(0)
 	for _, ch := range hexStr {
 		val *= 16

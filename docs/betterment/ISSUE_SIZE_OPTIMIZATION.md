@@ -56,7 +56,7 @@ Debug WASM:   1.8 MB → 904.7 KB   (50.6% reduction)
 
 **Strategic Options**:
 1. **Dead Code Elimination**: Remove unused code paths for TinyGo builds
-2. **Struct Field Optimization**: Analyze conv struct layout and usage
+2. **Struct Field Optimization**: Analyze Conv struct layout and usage
 3. **Method Signature Optimization**: Reduce method parameter overhead
 4. **Build Tags**: Conditional compilation for non-essential features
 5. **Advanced Inlining**: Target remaining large functions and methods
@@ -76,13 +76,13 @@ Debug WASM:   1.8 MB → 904.7 KB   (50.6% reduction)
 
 ## Phase 4.4: Struct Field Optimization - roundDown Field Elimination ✅
 
-**Objective**: Eliminate the `roundDown` field from `conv` struct and handle rounding behavior locally.
+**Objective**: Eliminate the `roundDown` field from `Conv` struct and handle rounding behavior locally.
 **Status**: **COMPLETED** (December 19, 2025)
 
 **Analysis**: The `roundDown` field was only used for controlling rounding behavior in `Round()` and `Down()` methods.
 
 **Optimization**:
-1. **Removed `roundDown` field** from conv struct definition
+1. **Removed `roundDown` field** from Conv struct definition
 2. **Refactored `Round()`** to use `roundDecimalsInternal(decimals, false)` 
 3. **Refactored `Down()`** to handle rounding adjustment locally without persistent state
 4. **Updated Reset() and putConv()** to remove roundDown field initialization
@@ -107,7 +107,7 @@ Debug WASM:   1.8 MB → 904.7 KB   (50.6% reduction)
 
 ## Phase 4.5: Struct Field Layout Optimization ✅
 
-**Objective**: Reorganize `conv` struct fields for improved cache locality and memory access patterns.
+**Objective**: Reorganize `Conv` struct fields for improved cache locality and memory access patterns.
 **Status**: **COMPLETED** (December 19, 2025)
 
 **Analysis**: Optimized field order to place the most frequently accessed fields at the beginning of the struct for better CPU cache locality.

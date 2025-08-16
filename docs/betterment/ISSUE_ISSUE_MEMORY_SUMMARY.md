@@ -22,7 +22,7 @@ Basado en el análisis completo realizado el 23 de junio de 2025, se ha identifi
 - **Impacto:** Peor performance en biblioteca, 700% más allocaciones que mejor caso
 
 ### **3. Pool de Objetos (MODERADO)**
-- **Problema:** Inicialización de 3×64B slices al heap en cada conv  
+- **Problema:** Inicialización de 3×64B slices al heap en cada Conv  
 - **Evidencia:** Escape analysis líneas 9-11 confirma heap escape
 - **Impacto:** Overhead constante en todas las operaciones
 
@@ -41,7 +41,7 @@ Basado en el análisis completo realizado el 23 de junio de 2025, se ha identifi
 - **Target:** -50% allocaciones en Replace
 
 **⚡ PRIORIDAD 3: Pool Optimization**
-- Lazy initialization de buffers en conv pool
+- Lazy initialization de buffers en Conv pool
 - Reducir overhead de inicialización
 - **Target:** -25% overhead de pool
 

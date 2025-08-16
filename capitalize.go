@@ -4,7 +4,7 @@ package tinystring
 // Preserves all whitespace formatting (spaces, tabs, newlines) without normalization.
 // OPTIMIZED: Uses work buffer efficiently to minimize allocations
 // For example: "  hello   world  " -> "  Hello   World  "
-func (t *conv) Capitalize() *conv {
+func (t *Conv) Capitalize() *Conv {
 	if t.hasContent(buffErr) {
 		return t // Error chain interruption
 	}
@@ -24,7 +24,7 @@ func (t *conv) Capitalize() *conv {
 }
 
 // capitalizeASCIIOptimized processes ASCII text preserving all formatting
-func (t *conv) capitalizeASCIIOptimized() {
+func (t *Conv) capitalizeASCIIOptimized() {
 	// Use work buffer for processing
 	t.rstBuffer(buffWork)
 
@@ -62,7 +62,7 @@ func (t *conv) capitalizeASCIIOptimized() {
 }
 
 // capitalizeUnicode handles full Unicode capitalization preserving formatting
-func (t *conv) capitalizeUnicode() *conv {
+func (t *Conv) capitalizeUnicode() *Conv {
 	str := t.getString(buffOut)
 
 	// Use internal work buffer for intermediate processing
@@ -96,17 +96,17 @@ func (t *conv) capitalizeUnicode() *conv {
 }
 
 // convert to lower case eg: "HELLO WORLD" -> "hello world"
-func (t *conv) ToLower() *conv {
+func (t *Conv) ToLower() *Conv {
 	return t.changeCaseOptimized(true)
 }
 
 // convert to upper case eg: "hello world" -> "HELLO WORLD"
-func (t *conv) ToUpper() *conv {
+func (t *Conv) ToUpper() *Conv {
 	return t.changeCaseOptimized(false)
 }
 
 // changeCaseOptimized implements fast ASCII path with fallback to full Unicode
-func (t *conv) changeCaseOptimized(toLower bool) *conv {
+func (t *Conv) changeCaseOptimized(toLower bool) *Conv {
 	if t.hasContent(buffErr) {
 		return t // Error chain interruption
 	}
@@ -126,7 +126,7 @@ func (t *conv) changeCaseOptimized(toLower bool) *conv {
 }
 
 // changeCaseASCIIInPlace processes ASCII characters directly in buffer (zero allocations)
-func (t *conv) changeCaseASCIIInPlace(toLower bool) {
+func (t *Conv) changeCaseASCIIInPlace(toLower bool) {
 	for i := 0; i < t.outLen; i++ {
 		if toLower {
 			// A-Z (65-90) → a-z (97-122): add 32
@@ -143,7 +143,7 @@ func (t *conv) changeCaseASCIIInPlace(toLower bool) {
 }
 
 // isASCIIOnly checks if buffer contains only ASCII characters (fast check)
-func (t *conv) isASCIIOnly() bool {
+func (t *Conv) isASCIIOnly() bool {
 	for i := 0; i < t.outLen; i++ {
 		if t.out[i] > 127 {
 			return false
@@ -153,12 +153,12 @@ func (t *conv) isASCIIOnly() bool {
 }
 
 // changeCaseUnicode handles full Unicode case conversion (legacy method)
-func (t *conv) changeCaseUnicode(toLower bool) *conv {
+func (t *Conv) changeCaseUnicode(toLower bool) *Conv {
 	return t.changeCase(toLower, buffOut)
 }
 
 // changeCase consolidates ToLower and ToUpper functionality - now accepts a destination buffer for internal reuse
-func (t *conv) changeCase(toLower bool, dest buffDest) *conv {
+func (t *Conv) changeCase(toLower bool, dest buffDest) *Conv {
 	if t.hasContent(buffErr) {
 		return t // Error chain interruption
 	}
@@ -187,13 +187,13 @@ func (t *conv) changeCase(toLower bool, dest buffDest) *conv {
 	return t
 }
 
-// converts conv to camelCase (first word lowercase) eg: "Hello world" -> "helloWorld"
-func (t *conv) CamelLow() *conv {
+// converts Conv to camelCase (first word lowercase) eg: "Hello world" -> "helloWorld"
+func (t *Conv) CamelLow() *Conv {
 	return t.toCaseTransformMinimal(true, "")
 }
 
-// converts conv to PascalCase (all words capitalized) eg: "hello world" -> "HelloWorld"
-func (t *conv) CamelUp() *conv {
+// converts Conv to PascalCase (all words capitalized) eg: "hello world" -> "HelloWorld"
+func (t *Conv) CamelUp() *Conv {
 	return t.toCaseTransformMinimal(false, "")
 }
 
@@ -206,8 +206,8 @@ func (t *conv) CamelUp() *conv {
 //	Input: "APIResponse" -> Output: "api_response"
 //	Input: "user123Name", "." -> Output: "user123.name"
 //
-// SnakeLow converts conv to snake_case format
-func (t *conv) SnakeLow(sep ...string) *conv {
+// SnakeLow converts Conv to snake_case format
+func (t *Conv) SnakeLow(sep ...string) *Conv {
 	// Phase 4.3: Use local variable instead of struct field
 	separator := "_" // underscore default
 	if len(sep) > 0 {
@@ -216,8 +216,8 @@ func (t *conv) SnakeLow(sep ...string) *conv {
 	return t.toCaseTransformMinimal(true, separator)
 }
 
-// SnakeUp converts conv to Snake_Case format
-func (t *conv) SnakeUp(sep ...string) *conv {
+// SnakeUp converts Conv to Snake_Case format
+func (t *Conv) SnakeUp(sep ...string) *Conv {
 	// Phase 4.3: Use local variable instead of struct field
 	separator := "_" // underscore default
 	if len(sep) > 0 {
@@ -228,7 +228,7 @@ func (t *conv) SnakeUp(sep ...string) *conv {
 
 // Minimal implementation without pools or builders - optimized for minimal allocations
 // Minimal implementation - optimized for minimal allocations using mapping.go functions
-func (t *conv) toCaseTransformMinimal(firstWordLower bool, separator string) *conv {
+func (t *Conv) toCaseTransformMinimal(firstWordLower bool, separator string) *Conv {
 	if t.hasContent(buffErr) {
 		return t // Error chain interruption
 	}
@@ -323,14 +323,14 @@ func (t *conv) toCaseTransformMinimal(firstWordLower bool, separator string) *co
 }
 
 // Helper methods for case conversion (reuse mapping.go constants)
-func (t *conv) toUpperByteHelper(b byte) byte {
+func (t *Conv) toUpperByteHelper(b byte) byte {
 	if b >= 'a' && b <= 'z' {
 		return b - asciiCaseDiff
 	}
 	return b
 }
 
-func (t *conv) toLowerByteHelper(b byte) byte {
+func (t *Conv) toLowerByteHelper(b byte) byte {
 	if b >= 'A' && b <= 'Z' {
 		return b + asciiCaseDiff
 	}

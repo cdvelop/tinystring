@@ -1,8 +1,8 @@
 package tinystring
 
-// Bool converts the conv content to a boolean value using internal implementations
+// Bool converts the Conv content to a boolean value using internal implementations
 // Returns the boolean value and any error that occurred
-func (c *conv) Bool() (bool, error) {
+func (c *Conv) Bool() (bool, error) {
 	if c.hasContent(buffErr) {
 		return false, c
 	}
@@ -54,7 +54,7 @@ func (c *conv) Bool() (bool, error) {
 }
 
 // wrBool writes boolean value to specified buffer destination
-func (c *conv) wrBool(dest buffDest, val bool) {
+func (c *Conv) wrBool(dest buffDest, val bool) {
 	if val {
 		c.wrString(dest, "true")
 	} else {

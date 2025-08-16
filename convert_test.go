@@ -9,31 +9,31 @@ func TestConversions(t *testing.T) {
 		name     string
 		input    string
 		want     string
-		function func(*conv) *conv
+		function func(*Conv) *Conv
 	}{
 		{
 			name:     "Tilde does not remove Ñ/ñ",
 			input:    "Ñandú ñandú",
 			want:     "Ñandu ñandu",
-			function: (*conv).Tilde,
+			function: (*Conv).Tilde,
 		},
 		{
 			name:     "Remove tildes",
 			input:    "áéíóúÁÉÍÓÚ",
 			want:     "aeiouAEIOU",
-			function: (*conv).Tilde,
+			function: (*Conv).Tilde,
 		},
 		{
-			name:     "Remove tildes with mixed conv",
+			name:     "Remove tildes with mixed Conv",
 			input:    "Hôlà Mündó",
 			want:     "Hola Mundo",
-			function: (*conv).Tilde,
+			function: (*Conv).Tilde,
 		},
 		{
 			name:  "CamelLow",
 			input: "hello world example",
 			want:  "helloWorldExample",
-			function: func(t *conv) *conv {
+			function: func(t *Conv) *Conv {
 				return t.CamelLow()
 			},
 		},
@@ -41,7 +41,7 @@ func TestConversions(t *testing.T) {
 			name:  "Convert to lower with tildes",
 			input: "HÓLA MÚNDO",
 			want:  "hola mundo",
-			function: func(t *conv) *conv {
+			function: func(t *Conv) *Conv {
 				return t.Tilde().ToLower()
 			},
 		},
@@ -49,7 +49,7 @@ func TestConversions(t *testing.T) {
 			name:  "Convert to upper with tildes",
 			input: "hóla múndo",
 			want:  "HOLA MUNDO",
-			function: func(t *conv) *conv {
+			function: func(t *Conv) *Conv {
 				return t.Tilde().ToUpper()
 			},
 		},
@@ -57,19 +57,19 @@ func TestConversions(t *testing.T) {
 			name:     "Special characters",
 			input:    "ñÑàèìòùÀÈÌÒÙ",
 			want:     "ñÑaeiouAEIOU",
-			function: (*conv).Tilde,
+			function: (*Conv).Tilde,
 		},
 		{
 			name:     "Tilde does not remove Ñ/ñ",
 			input:    "Ñandú ñandú",
 			want:     "Ñandu ñandu",
-			function: (*conv).Tilde,
+			function: (*Conv).Tilde,
 		},
 		{
 			name:  "Complete transformation",
 			input: "Él Múrcielago Rápido",
 			want:  "elMurcielagoRapido",
-			function: func(t *conv) *conv {
+			function: func(t *Conv) *Conv {
 				return t.Tilde().CamelLow()
 			},
 		},
@@ -77,7 +77,7 @@ func TestConversions(t *testing.T) {
 			name:  "Empty string",
 			input: "",
 			want:  "",
-			function: func(t *conv) *conv {
+			function: func(t *Conv) *Conv {
 				return t.Tilde().ToLower().ToUpper().CamelLow()
 			},
 		},
@@ -85,7 +85,7 @@ func TestConversions(t *testing.T) {
 			name:  "Single character",
 			input: "A",
 			want:  "a",
-			function: func(t *conv) *conv {
+			function: func(t *Conv) *Conv {
 				return t.ToLower()
 			},
 		},
@@ -93,7 +93,7 @@ func TestConversions(t *testing.T) {
 			name:  "Multiple spaces in camelCase",
 			input: "hello    world    example",
 			want:  "helloWorldExample",
-			function: func(t *conv) *conv {
+			function: func(t *Conv) *Conv {
 				return t.CamelLow()
 			},
 		},
@@ -101,7 +101,7 @@ func TestConversions(t *testing.T) {
 			name:  "Non-mappable characters",
 			input: "Hello! @#$%^ World 123",
 			want:  "hello!@#$%^World123",
-			function: func(t *conv) *conv {
+			function: func(t *Conv) *Conv {
 				return t.CamelLow()
 			},
 		},
@@ -109,7 +109,7 @@ func TestConversions(t *testing.T) {
 			name:  "Mixed transformations",
 			input: "HÉLLÔ WórLD",
 			want:  "HELLO WORLD",
-			function: func(t *conv) *conv {
+			function: func(t *Conv) *Conv {
 				return t.Tilde().ToUpper()
 			},
 		},
@@ -117,7 +117,7 @@ func TestConversions(t *testing.T) {
 			name:  "CamelCase with accents",
 			input: "él múrcielago RÁPIDO vuela",
 			want:  "elMurcielagoRapidoVuela",
-			function: func(t *conv) *conv {
+			function: func(t *Conv) *Conv {
 				return t.Tilde().CamelLow()
 			},
 		},
@@ -125,7 +125,7 @@ func TestConversions(t *testing.T) {
 			name:  "CamelLow",
 			input: "hello world example",
 			want:  "helloWorldExample",
-			function: func(t *conv) *conv {
+			function: func(t *Conv) *Conv {
 				return t.CamelLow()
 			},
 		},
@@ -133,7 +133,7 @@ func TestConversions(t *testing.T) {
 			name:  "CamelUp",
 			input: "hello world example",
 			want:  "HelloWorldExample",
-			function: func(t *conv) *conv {
+			function: func(t *Conv) *Conv {
 				return t.CamelUp()
 			},
 		},
@@ -141,7 +141,7 @@ func TestConversions(t *testing.T) {
 			name:  "SnakeLow",
 			input: "hello world example",
 			want:  "hello_world_example",
-			function: func(t *conv) *conv {
+			function: func(t *Conv) *Conv {
 				return t.SnakeLow()
 			},
 		},
@@ -149,7 +149,7 @@ func TestConversions(t *testing.T) {
 			name:  "Mixed case with numbers to CamelLow",
 			input: "User123Name",
 			want:  "user123name",
-			function: func(t *conv) *conv {
+			function: func(t *Conv) *Conv {
 				return t.CamelLow()
 			},
 		},
@@ -157,7 +157,7 @@ func TestConversions(t *testing.T) {
 			name:  "Mixed case with numbers to CamelUp",
 			input: "User123Name",
 			want:  "User123Name",
-			function: func(t *conv) *conv {
+			function: func(t *Conv) *Conv {
 				return t.CamelUp()
 			},
 		},
@@ -165,39 +165,39 @@ func TestConversions(t *testing.T) {
 			name:  "Mixed case with numbers to SnakeLow",
 			input: "User123Name",
 			want:  "user123_name",
-			function: func(t *conv) *conv {
+			function: func(t *Conv) *Conv {
 				return t.SnakeLow()
 			},
 		},
 		{
-			name:  "Accented conv to camelCase",
+			name:  "Accented Conv to camelCase",
 			input: "Él Múrcielago Rápido",
 			want:  "elMurcielagoRapido",
-			function: func(t *conv) *conv {
+			function: func(t *Conv) *Conv {
 				return t.Tilde().CamelLow()
 			},
 		},
 		{
-			name:  "Accented conv to PascalCase",
+			name:  "Accented Conv to PascalCase",
 			input: "Él Múrcielago Rápido",
 			want:  "ElMurcielagoRapido",
-			function: func(t *conv) *conv {
+			function: func(t *Conv) *Conv {
 				return t.Tilde().CamelUp()
 			},
 		},
 		{
-			name:  "Accented conv to snake_case",
+			name:  "Accented Conv to snake_case",
 			input: "Él Múrcielago Rápido",
 			want:  "el_murcielago_rapido",
-			function: func(t *conv) *conv {
+			function: func(t *Conv) *Conv {
 				return t.Tilde().SnakeLow()
 			},
 		},
 		{
-			name:  "Accented conv to snake-case",
+			name:  "Accented Conv to snake-case",
 			input: "Él Múrcielago Rápido",
 			want:  "el-murcielago-rapido",
-			function: func(t *conv) *conv {
+			function: func(t *Conv) *Conv {
 				return t.Tilde().SnakeLow("-")
 			},
 		},

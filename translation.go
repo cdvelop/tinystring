@@ -1,20 +1,20 @@
 package tinystring
 
 // Translate creates a translated string with support for multilingual translations
-// Same functionality as Err but returns string directly instead of *conv
+// Same functionality as Err but returns string directly instead of *Conv
 // This function is used internally by the builder API for efficient string construction
 //
 // Usage examples:
 // Translate(D.Format, D.Invalid) returns "invalid format"
 // Translate(ES, D.Format, D.Invalid) returns "formato inválido"
 // Translate creates a translated string with support for multilingual translations
-// Same functionality as Err but returns *conv for further formatting
+// Same functionality as Err but returns *Conv for further formatting
 // This function is used internally by the builder API for efficient string construction
 //
 // Usage examples:
-// Translate(D.Format, D.Invalid) returns *conv with "invalid format"
-// Translate(ES, D.Format, D.Invalid) returns *conv with "formato inválido"
-func Translate(values ...any) *conv {
+// Translate(D.Format, D.Invalid) returns *Conv with "invalid format"
+// Translate(ES, D.Format, D.Invalid) returns *Conv with "formato inválido"
+func Translate(values ...any) *Conv {
 	c := getConv()
 	// UNIFIED PROCESSING: Use shared intermediate function
 	processTranslatedMessage(c, buffOut, values...)
@@ -28,7 +28,7 @@ func Translate(values ...any) *conv {
 // processTranslatedMessage procesa argumentos variádicos con traducción y escribe al buffer especificado
 // FUNCIÓN UNIFICADA: Reduce duplicación de código entre Translate() y Err()
 // Maneja detección de idioma, traducción de LocStr, y escritura al buffer destino
-func processTranslatedMessage(c *conv, dest buffDest, values ...any) {
+func processTranslatedMessage(c *Conv, dest buffDest, values ...any) {
 	if len(values) == 0 {
 		return
 	}
@@ -47,7 +47,7 @@ func processTranslatedMessage(c *conv, dest buffDest, values ...any) {
 // detectLanguage determines the current language and start index from variadic arguments
 // UNIFIED FUNCTION: Handles language detection for both Translate() and wrErr()
 // Returns: (language, startIndex) where startIndex skips the language argument if present
-func detectLanguage(c *conv, args []any) (lang, int) {
+func detectLanguage(c *Conv, args []any) (lang, int) {
 	if len(args) == 0 {
 		return getCurrentLang(), 0
 	}
@@ -71,7 +71,7 @@ func detectLanguage(c *conv, args []any) (lang, int) {
 // UNIFIED FUNCTION: Handles argument processing for both Translate() and wrErr()
 // Eliminates code duplication between Translate() and wrErr()
 // REFACTORED: Uses wrString instead of direct buffer access
-func processTranslatedArgs(c *conv, dest buffDest, args []any, currentLang lang, startIndex int) {
+func processTranslatedArgs(c *Conv, dest buffDest, args []any, currentLang lang, startIndex int) {
 	for i := startIndex; i < len(args); i++ {
 		arg := args[i]
 		switch v := arg.(type) {
@@ -124,8 +124,8 @@ func shouldAddSpace(args []any, currentIndex int) bool {
 
 // wrTranslation extracts translation for specific language from LocStr and writes to destination buffer
 // REUSES: existing LocStr array indexing logic
-// METHOD: Now a conv method that writes directly to buffer without returning anything
-func (c *conv) wrTranslation(locStr LocStr, currentLang lang, dest buffDest) {
+// METHOD: Now a Conv method that writes directly to buffer without returning anything
+func (c *Conv) wrTranslation(locStr LocStr, currentLang lang, dest buffDest) {
 	// Get translation for current language with fallback
 	var translation string
 	if int(currentLang) < len(locStr) && locStr[currentLang] != "" {

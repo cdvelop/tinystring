@@ -4,7 +4,7 @@ package tinystring
 
 // validateIntParam validates and converts any numeric type to int
 // Universal method that follows buffer API architecture - eliminates code duplication
-func (c *conv) validateIntParam(param any, allowZero bool) (int, bool) {
+func (c *Conv) validateIntParam(param any, allowZero bool) (int, bool) {
 	var val int
 	var ok bool
 	switch v := param.(type) {
@@ -53,7 +53,7 @@ func (c *conv) validateIntParam(param any, allowZero bool) (int, bool) {
 
 // truncateWithEllipsis helper method to reduce code duplication
 // Handles the common pattern of truncating content and adding ellipsis
-func (c *conv) truncateWithEllipsis(content string, maxWidth int) {
+func (c *Conv) truncateWithEllipsis(content string, maxWidth int) {
 	ellipsisLen := len(ellipsisStr)
 	if maxWidth >= ellipsisLen {
 		contentToKeep := min(max(maxWidth-ellipsisLen, 0), len(content))
@@ -68,15 +68,15 @@ func (c *conv) truncateWithEllipsis(content string, maxWidth int) {
 	}
 }
 
-// Truncate truncates a conv so that it does not exceed the specified width.
-// If the conv is longer, it truncates it and adds "..." if there is space.
-// If the conv is shorter or equal to the width, it remains unchanged.
+// Truncate truncates a Conv so that it does not exceed the specified width.
+// If the Conv is longer, it truncates it and adds "..." if there is space.
+// If the Conv is shorter or equal to the width, it remains unchanged.
 // The reservedChars parameter indicates how many characters should be reserved for suffixes.
 // This parameter is optional - if not provided, no characters are reserved (equivalent to passing 0).
 // eg: Convert("Hello, World!").Truncate(10) => "Hello, ..."
 // eg: Convert("Hello, World!").Truncate(10, 3) => "Hell..."
 // eg: Convert("Hello").Truncate(10) => "Hello"
-func (t *conv) Truncate(maxWidth any, reservedChars ...any) *conv {
+func (t *Conv) Truncate(maxWidth any, reservedChars ...any) *Conv {
 	if t.hasContent(buffErr) {
 		return t // Error chain interruption
 	}
@@ -104,19 +104,19 @@ func (t *conv) Truncate(maxWidth any, reservedChars ...any) *conv {
 		// Ensure rCI does not exceed mWI
 		if rCI > mWI {
 			rCI = mWI
-		} // Calculate the width available for the conv itself, excluding reserved chars
+		} // Calculate the width available for the Conv itself, excluding reserved chars
 		eW := max(mWI-rCI, 0)
 		ellipsisLen := len(ellipsisStr)
 		if rCI > 0 && mWI >= ellipsisLen && eW >= ellipsisLen {
 			// Case 1: Reserved chars specified, and ellipsis fits within the effective width
 			// Need string for ellipsis methods - fallback to getString
-			conv := t.getString(buffOut)
-			t.truncateWithEllipsis(conv, eW)
+			Conv := t.getString(buffOut)
+			t.truncateWithEllipsis(Conv, eW)
 		} else if rCI == 0 && mWI >= ellipsisLen {
 			// Case 2: No reserved chars, ellipsis fits within maxWidth
 			// Need string for ellipsis methods - fallback to getString
-			conv := t.getString(buffOut)
-			t.truncateWithEllipsis(conv, mWI)
+			Conv := t.getString(buffOut)
+			t.truncateWithEllipsis(Conv, mWI)
 		} else {
 			// Case 3: Ellipsis doesn't fit or reserved chars prevent it, just truncate
 			// OPTIMIZED: Direct buffer truncation
@@ -131,7 +131,7 @@ func (t *conv) Truncate(maxWidth any, reservedChars ...any) *conv {
 
 // TruncateName truncates names and surnames in a user-friendly way for display in limited spaces
 // like chart labels. It adds abbreviation dots where appropriate. This method processes the first
-// word differently if there are more than 2 words in the conv.
+// word differently if there are more than 2 words in the Conv.
 //
 // Parameters:
 //   - maxCharsPerWord: maximum number of characters to keep per word (any numeric type)
@@ -141,7 +141,7 @@ func (t *conv) Truncate(maxWidth any, reservedChars ...any) *conv {
 //   - Convert("Jeronimo Dominguez").TruncateName(3, 15) => "Jer. Dominguez"
 //   - Convert("Ana Maria Rodriguez").TruncateName(2, 10) => "An. Mar..."
 //   - Convert("Juan").TruncateName(3, 5) => "Juan"
-func (t *conv) TruncateName(maxCharsPerWord, maxWidth any) *conv {
+func (t *Conv) TruncateName(maxCharsPerWord, maxWidth any) *Conv {
 	if t.hasContent(buffErr) {
 		return t // Error chain interruption
 	}

@@ -77,13 +77,13 @@ func TestRepeatChain(t *testing.T) {
 		name     string
 		input    string
 		want     string
-		function func(*conv) *conv
+		function func(*Conv) *Conv
 	}{
 		{
 			name:  "Repeat and convert to upper",
 			input: "hello",
 			want:  "HELLOHELLOHELLO",
-			function: func(t *conv) *conv {
+			function: func(t *Conv) *Conv {
 				return t.Repeat(3).ToUpper()
 			},
 		},
@@ -91,7 +91,7 @@ func TestRepeatChain(t *testing.T) {
 			name:  "Repeat and convert to lower",
 			input: "WORLD",
 			want:  "worldworld",
-			function: func(t *conv) *conv {
+			function: func(t *Conv) *Conv {
 				return t.Repeat(2).ToLower()
 			},
 		},
@@ -99,7 +99,7 @@ func TestRepeatChain(t *testing.T) {
 			name:  "Multiple operations with repeat",
 			input: "Test",
 			want:  "testtesttest",
-			function: func(t *conv) *conv {
+			function: func(t *Conv) *Conv {
 				return t.ToLower().Repeat(3)
 			},
 		},
@@ -107,15 +107,15 @@ func TestRepeatChain(t *testing.T) {
 			name:  "Repeat with CamelCase",
 			input: "hello world",
 			want:  "helloWorldhelloWorld",
-			function: func(t *conv) *conv {
+			function: func(t *Conv) *Conv {
 				return t.CamelLow().Repeat(2)
 			},
 		},
 		{
 			name:  "Empty after repeat zero",
-			input: "conv",
+			input: "Conv",
 			want:  "",
-			function: func(t *conv) *conv {
+			function: func(t *Conv) *Conv {
 				return t.Repeat(0).ToUpper()
 			},
 		},
@@ -123,7 +123,7 @@ func TestRepeatChain(t *testing.T) {
 			name:  "Repeat with accents and remove tildes",
 			input: "ñandú",
 			want:  "ñanduñanduñandu",
-			function: func(t *conv) *conv {
+			function: func(t *Conv) *Conv {
 				return t.Tilde().Repeat(3)
 			},
 		},
@@ -131,7 +131,7 @@ func TestRepeatChain(t *testing.T) {
 			name:  "SnakeCase and Repeat",
 			input: "Hello World Example",
 			want:  "hello_world_examplehello_world_example",
-			function: func(t *conv) *conv {
+			function: func(t *Conv) *Conv {
 				return t.SnakeLow().Repeat(2)
 			},
 		},
@@ -139,7 +139,7 @@ func TestRepeatChain(t *testing.T) {
 			name:  "Complex chaining",
 			input: "Él Múrcielago",
 			want:  "ELMURCIELAGOELMURCIELAGO",
-			function: func(t *conv) *conv {
+			function: func(t *Conv) *Conv {
 				return t.Tilde().CamelLow().ToUpper().Repeat(2)
 			},
 		},

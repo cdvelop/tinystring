@@ -5,9 +5,9 @@
 ### ✅ **COMPLETED FEATURES**
 - **[x] Convert() Variadic Refactoring** - `Convert()` or `Convert(value)` 
 - **[x] Write() Unified Method** - Universal append for all value types
-- **[x] Reset() Method** - Complete conv state reset
+- **[x] Reset() Method** - Complete Conv state reset
 - **[x] Error Chain Interruption** - Operations check `c.err` before proceeding
-- **[x] Pool Integration** - All conv objects via `getConv()`, never `&conv{}`
+- **[x] Pool Integration** - All Conv objects via `getConv()`, never `&Conv{}`
 - **[x] Translate() Translation Function** - Efficient multilingual string construction
 - **[x] Err() Function Refactoring** - Uses Translate() and pool pattern
 - **[x] Buffer-First Strategy** - `getString()` prioritizes buffer content
@@ -32,7 +32,7 @@
 ### ✅ **IMPLEMENTATION COMPLETE**
 All core string builder features have been successfully implemented and integrated. The TinyString library now features:
 - **Zero-allocation transformation chains** using buffer-first strategy
-- **Pool-based memory management** for all conv objects
+- **Pool-based memory management** for all Conv objects
 - **Thread-safe operations** with proper error chain handling
 - **Significant memory reduction** (44%+ allocation reduction in critical paths)
 - **Comprehensive test coverage** including concurrency tests
@@ -41,7 +41,7 @@ All core string builder features have been successfully implemented and integrat
 
 ## Overview
 
-This document outlines the integration of a high-performance string builder API into TinyString's existing `conv` structure, along with the creation of a new `Translate` (Translate) function to optimize memory usage in high-demand processes.
+This document outlines the integration of a high-performance string builder API into TinyString's existing `Conv` structure, along with the creation of a new `Translate` (Translate) function to optimize memory usage in high-demand processes.
 
 ## Problem Statement
 
@@ -55,7 +55,7 @@ Current memory hotspots identified in TinyString:
 
 ### 1. Builder API Integration
 
-#### Design Decision: Extend `conv` with Builder Methods
+#### Design Decision: Extend `Conv` with Builder Methods
 - **Rationale**: Reuse existing buffer (`buf []byte`) and pooling infrastructure
 - **Location**: All builder methods implemented in `memory.go`
 - **API**: Short method names for efficiency
@@ -63,14 +63,14 @@ Current memory hotspots identified in TinyString:
 #### Builder API Methods - **[x] IMPLEMENTED**
 ```go
 // REFACTORED: Convert function with variadic parameters (only accepts 0 or 1 value)
-func Convert(v ...any) *conv          // Convert() or Convert(initialValue) ✅
+func Convert(v ...any) *Conv          // Convert() or Convert(initialValue) ✅
 
 // Unified builder method - detects type automatically  
-func (c *conv) Write(v any) *conv     // Universal write method ✅
-func (c *conv) Reset() *conv          // Reset complete conv state ✅
+func (c *Conv) Write(v any) *Conv     // Universal write method ✅
+func (c *Conv) Reset() *Conv          // Reset complete Conv state ✅
 
 // Build result - reuses existing String() method  
-func (c *conv) String() string        // Already exists - auto-releases to pool ✅
+func (c *Conv) String() string        // Already exists - auto-releases to pool ✅
 
 // CLEAN API: Convert() automatically uses builder internally ✅
 // Example: Convert("hello ").Write("tiny").Write(" string").ToUpper().String()
@@ -120,7 +120,7 @@ if err != nil {
 #### ARCHITECTURAL CHANGE: Single Source of Truth + Clean API
 - **ELIMINATE `stringVal` AND `tmpStr`**: Use only `buf []byte` as string storage
 - **Unified `Write()` method**: Automatically detects and handles string, byte, rune, numbers
-- **`Reset()` method**: Reset complete conv state (all fields + buffer)
+- **`Reset()` method**: Reset complete Conv state (all fields + buffer)
 - **`Convert()` auto-builder**: Transparent internal builder usage for all operations
 - **Memory trade-off**: Slightly more memory for small texts, zero allocations for complex operations
 - **Perfect for TinyGo/WebAssembly**: Optimized for web applications with medium/large text processing
@@ -137,7 +137,7 @@ func complexOperation() string {
 }
 
 // Transparent builder usage in existing functions
-func (t *conv) ToUpper() *conv {
+func (t *Conv) ToUpper() *Conv {
     // Always work with buf, eliminate stringVal conflicts
     if len(t.buf) == 0 {
         // Initialize buf from current value
@@ -162,8 +162,8 @@ func (t *conv) ToUpper() *conv {
 2. **Unified type handling method**:
    - `type cm uint8` - Convert mode constants (mi=inicial, mb=buffer, ma=any)
    - `setVal(v any, mode cm)` - Consolidate ALL type switches (withValue, Write, any2s)
-   - `Write(v any) *conv` - Universal write method using setVal(v, mb)
-   - `Reset() *conv` - Reset complete conv state
+   - `Write(v any) *Conv` - Universal write method using setVal(v, mb)
+   - `Reset() *Conv` - Reset complete Conv state
 
 2. **Core refactoring**:
    - Eliminate `withValue()` - replace with `setVal(v, mi)` 
@@ -248,9 +248,9 @@ BenchmarkHighDemandProcesses/FormatOperations-16                  446.4 ns/op  3
 
 ### Builder Method Details
 
-#### `Convert(v ...any) *conv` - Refactored Constructor
+#### `Convert(v ...any) *Conv` - Refactored Constructor
 ```go
-func Convert(v ...any) *conv {
+func Convert(v ...any) *Conv {
     c := getConv()
     
     // Validation: Only accept 0 or 1 parameter
@@ -263,7 +263,7 @@ func Convert(v ...any) *conv {
     if len(v) == 1 {
         c.setVal(v[0], mi) // Initial mode
     }
-    // If no value provided, conv is ready for builder pattern
+    // If no value provided, Conv is ready for builder pattern
     
     return c
 }
@@ -289,9 +289,9 @@ for i := 0; i < 5; i++ {
 result := c.String() // "prefix: 0 1 2 3 4 "
 ```
 
-#### `Write(v any) *conv` - Unified Write Operation
+#### `Write(v any) *Conv` - Unified Write Operation
 ```go
-func (c *conv) Write(v any) *conv {
+func (c *Conv) Write(v any) *Conv {
     if c.err != nil {
         return c  // Error chain interruption
     }
@@ -304,10 +304,10 @@ func (c *conv) Write(v any) *conv {
 
 The Write method provides a unified interface for appending any value to the buffer. It delegates to the unified `setVal()` handler with write mode, which ensures consistent type conversion and error handling across all operations.
 
-#### `Reset() *conv` - Reset Builder
+#### `Reset() *Conv` - Reset Builder
 ```go
-func (c *conv) Reset() *conv {
-    // Reset all conv fields to default state
+func (c *Conv) Reset() *Conv {
+    // Reset all Conv fields to default state
     // ELIMINATED: c.stringVal = ""
     c.intVal = 0
     c.uintVal = 0
@@ -330,7 +330,7 @@ func (c *conv) Reset() *conv {
 
 #### Short API Names & Implementation Notes
 - **`Write()`**: Universal write method - detects type automatically using `setVal(v, mb)`
-- **`Reset()`**: Complete conv reset (all fields + buffer)
+- **`Reset()`**: Complete Conv reset (all fields + buffer)
 - **`grow()`**: Capacity management (renamed from `ensureCapacity` to avoid Go built-in conflicts)
 - **`getBuf()`**: Get buffer value - heavily used internal method (documented with //)
 - **`setVal()`**: **UNIFIED** type handling - consolidates ALL type switches into single method
@@ -351,7 +351,7 @@ func (c *conv) Reset() *conv {
 #### High-Demand Process Optimization (PRIORITY ORDER)
 **CRITICAL** (✅ Implemented):
 1. **[x] `joinSlice()` function**: Replaced makeBuf + append with builder API for zero-allocation construction
-2. **[x] `unifiedFormat()` function**: Now uses `getConv()` pool pattern instead of direct `&conv{}` instantiation  
+2. **[x] `unifiedFormat()` function**: Now uses `getConv()` pool pattern instead of direct `&Conv{}` instantiation  
 3. **[x] `changeCase()` transformation**: Optimized with buffer-first strategy and in-place UTF-8 processing
 4. **[x] Benchmark validation**: Builder pattern shows 44% reduction in allocations vs multiple allocations
 
@@ -373,7 +373,7 @@ func (c *conv) Reset() *conv {
 package tinystring
 
 // Translate creates a translated string with support for multilingual translations
-// Same functionality as Err but returns string directly instead of *conv
+// Same functionality as Err but returns string directly instead of *Conv
 // eg:
 // Translate(D.Invalid, D.Format) returns "invalid format"
 // Translate(ES, D.Invalid, D.Format) returns "formato inválido"
@@ -387,7 +387,7 @@ func Translate(values ...any) string {
 **Purpose**: Simplified error handling using Translate function
 ```go
 // Err becomes a simple wrapper around Translate function
-func Err(values ...any) *conv {
+func Err(values ...any) *Conv {
     c := getConv() // Always obtain from pool
     c.err = Translate(values...)
     c.Kind = K.Err
@@ -519,7 +519,7 @@ func TestErrorChainInterruption(t *testing.T) {
 ## Risk Mitigation
 
 ### Potential Issues
-1. **State corruption**: Builder and conv state conflicts
+1. **State corruption**: Builder and Conv state conflicts
    - **Mitigation**: Clear separation of responsibilities
    
 2. **Pool efficiency**: Builder usage affecting pool performance

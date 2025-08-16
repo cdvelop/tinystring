@@ -5,7 +5,7 @@ package tinystring
 // Can be called with varargs to specify a custom separator.
 // eg: Convert([]string{"Hello", "World"}).Join() => "Hello World"
 // eg: Convert([]string{"Hello", "World"}).Join("-") => "Hello-World"
-func (c *conv) Join(sep ...string) *conv {
+func (c *Conv) Join(sep ...string) *Conv {
 	separator := " " // default separator is space
 	if len(sep) > 0 {
 		separator = sep[0]

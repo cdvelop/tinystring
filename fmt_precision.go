@@ -10,13 +10,14 @@ package tinystring
 // - If 'down' is true, it truncates (floors) the value without rounding.
 //
 // Example:
-//   Convert("3.14159").Round(2)        // "3.14" (rounded)
-//   Convert("3.145").Round(2)          // "3.14" (rounded)
-//   Convert("3.155").Round(2)          // "3.16" (rounded)
-//   Convert("3.14159").Round(2, true)  // "3.14" (truncated)
+//
+//	Convert("3.14159").Round(2)        // "3.14" (rounded)
+//	Convert("3.145").Round(2)          // "3.14" (rounded)
+//	Convert("3.155").Round(2)          // "3.16" (rounded)
+//	Convert("3.14159").Round(2, true)  // "3.14" (truncated)
 //
 // If the value is not numeric, returns "0" with the requested number of decimals.
-func (t *conv) Round(decimals int, down ...bool) *conv {
+func (t *Conv) Round(decimals int, down ...bool) *Conv {
 	if t.hasContent(buffErr) {
 		return t
 	}
@@ -42,7 +43,7 @@ func (t *conv) Round(decimals int, down ...bool) *conv {
 
 // applyRoundingToNumber rounds the current number to specified decimal places
 // Universal method with dest-first parameter order - follows buffer API architecture
-func (t *conv) applyRoundingToNumber(dest buffDest, decimals int, roundDown bool) *conv {
+func (t *Conv) applyRoundingToNumber(dest buffDest, decimals int, roundDown bool) *Conv {
 	if t.hasContent(buffErr) {
 		return t
 	}
@@ -187,7 +188,7 @@ func (t *conv) applyRoundingToNumber(dest buffDest, decimals int, roundDown bool
 
 // wrFloatWithPrecision formats a float with specified precision and writes to buffer destination
 // Universal method with dest-first parameter order - follows buffer API architecture
-func (c *conv) wrFloatWithPrecision(dest buffDest, value float64, precision int) {
+func (c *Conv) wrFloatWithPrecision(dest buffDest, value float64, precision int) {
 	// Handle special cases
 	if value != value { // NaN
 		c.wrString(dest, "NaN")

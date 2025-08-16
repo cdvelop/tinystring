@@ -34,7 +34,7 @@ func Index(s, substr string) int {
 	return -1
 }
 
-// Count checks how many times the string 'search' is present in 'conv'.
+// Count checks how many times the string 'search' is present in 'Conv'.
 // Uses Index internally for consistency and maintainability.
 //
 // Examples:
@@ -45,13 +45,13 @@ func Index(s, substr string) int {
 //	Count("test", "xyz")            // returns 0 (not found)
 //	Count("anything", "")           // returns 0 (empty search)
 //	Count("a\x00b\x00c", "\x00")    // returns 2 (null bytes)
-func Count(conv, search string) int {
+func Count(Conv, search string) int {
 	if len(search) == 0 {
 		return 0
 	}
 
 	count := 0
-	s := conv
+	s := Conv
 	for {
 		i := Index(s, search)
 		if i == -1 {
@@ -63,7 +63,7 @@ func Count(conv, search string) int {
 	return count
 }
 
-// Contains checks if the string 'search' is present in 'conv'.
+// Contains checks if the string 'search' is present in 'Conv'.
 // Uses Index internally for efficient single-pass detection.
 //
 // Examples:
@@ -74,9 +74,9 @@ func Count(conv, search string) int {
 //	Contains("test", "")              // returns false (empty search)
 //	Contains("data\x00more", "\x00")  // returns true (null byte)
 //	Contains("Case", "case")          // returns false (case sensitive)
-func Contains(conv, search string) bool {
+func Contains(Conv, search string) bool {
 	if len(search) == 0 {
 		return false // Cadena vacía no se considera contenida
 	}
-	return Index(conv, search) != -1
+	return Index(Conv, search) != -1
 }

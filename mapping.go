@@ -59,7 +59,7 @@ func toLowerRune(r rune) rune {
 
 // Tilde removes accents and diacritics using index-based lookup
 // OPTIMIZED: Uses work buffer to eliminate temporary allocations
-func (t *conv) Tilde() *conv {
+func (t *Conv) Tilde() *Conv {
 	// Check for error chain interruption
 	if t.hasContent(buffErr) {
 		return t
@@ -89,7 +89,7 @@ func (t *conv) Tilde() *conv {
 }
 
 // isASCIIOnlyOut checks if out buffer contains only ASCII characters
-func (t *conv) isASCIIOnlyOut() bool {
+func (t *Conv) isASCIIOnlyOut() bool {
 	for i := 0; i < t.outLen; i++ {
 		if t.out[i] > 127 {
 			return false
@@ -99,7 +99,7 @@ func (t *conv) isASCIIOnlyOut() bool {
 }
 
 // tildeUnicodeOptimized processes Unicode accents using work buffer
-func (t *conv) tildeUnicodeOptimized() {
+func (t *Conv) tildeUnicodeOptimized() {
 	// Convert from out buffer to work buffer with accent processing
 	str := t.getString(buffOut)
 
