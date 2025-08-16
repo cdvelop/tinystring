@@ -191,7 +191,7 @@ func (c *Conv) parseIntBase(base ...int) int64 {
 	if len(base) > 0 {
 		baseVal = base[0]
 	}
-	isSigned := c.Kind == K.Int
+	isSigned := c.kind == K.Int
 	// Solo permitir negativos en base 10
 	if len(s) > 0 && s[0] == '-' {
 		if baseVal == 10 {

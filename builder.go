@@ -32,7 +32,7 @@ func (c *Conv) Reset() *Conv {
 	// Reset all Conv fields to default state using buffer API
 	c.resetAllBuffers()
 	c.dataPtr = nil
-	c.Kind = K.String
+	c.kind = K.String
 	return c
 }
 

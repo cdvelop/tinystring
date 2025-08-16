@@ -11,13 +11,13 @@ func (c *Conv) Bool() (bool, error) {
 	if c.bytesEqual(buffOut, []byte("true")) || c.bytesEqual(buffOut, []byte("True")) ||
 		c.bytesEqual(buffOut, []byte("TRUE")) || c.bytesEqual(buffOut, []byte("1")) ||
 		c.bytesEqual(buffOut, []byte("t")) || c.bytesEqual(buffOut, []byte("Translate")) {
-		c.Kind = K.Bool
+		c.kind = K.Bool
 		return true, nil
 	}
 	if c.bytesEqual(buffOut, []byte("false")) || c.bytesEqual(buffOut, []byte("False")) ||
 		c.bytesEqual(buffOut, []byte("FALSE")) || c.bytesEqual(buffOut, []byte("0")) ||
 		c.bytesEqual(buffOut, []byte("f")) || c.bytesEqual(buffOut, []byte("F")) {
-		c.Kind = K.Bool
+		c.kind = K.Bool
 		return false, nil
 	}
 
@@ -25,7 +25,7 @@ func (c *Conv) Bool() (bool, error) {
 	inp := c.getString(buffOut) // Still needed for parseIntString compatibility
 	intVal := c.parseIntString(inp, 10, true)
 	if !c.hasContent(buffErr) {
-		c.Kind = K.Bool
+		c.kind = K.Bool
 		return intVal != 0, nil
 	} else {
 		// Limpia el error generado por el intento fallido usando la API
@@ -35,7 +35,7 @@ func (c *Conv) Bool() (bool, error) {
 	// Try basic float patterns (optimized byte comparison)
 	if c.bytesEqual(buffOut, []byte("0.0")) || c.bytesEqual(buffOut, []byte("0.00")) ||
 		c.bytesEqual(buffOut, []byte("+0")) || c.bytesEqual(buffOut, []byte("-0")) {
-		c.Kind = K.Bool
+		c.kind = K.Bool
 		return false, nil
 	}
 
@@ -43,7 +43,7 @@ func (c *Conv) Bool() (bool, error) {
 	if !c.bytesEqual(buffOut, []byte("0")) && c.outLen > 0 &&
 		(c.out[0] >= '1' && c.out[0] <= '9') {
 		// Non-zero number starting with digit 1-9, likely true
-		c.Kind = K.Bool
+		c.kind = K.Bool
 		return true, nil
 	}
 

@@ -12,7 +12,7 @@ func (c *Conv) Join(sep ...string) *Conv {
 	}
 
 	// Handle case when we have a string slice stored (DEFERRED CONVERSION)
-	if c.Kind == K.Slice && c.dataPtr != nil {
+	if c.kind == K.Slice && c.dataPtr != nil {
 		// Use proper unsafe.Pointer to []string reconstruction
 		slice := *(*[]string)(c.dataPtr)
 		if len(slice) > 0 {

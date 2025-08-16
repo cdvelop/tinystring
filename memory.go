@@ -42,7 +42,7 @@ func getConv() *Conv {
 	c.work = c.work[:0]
 	c.err = c.err[:0]
 	c.dataPtr = nil
-	c.Kind = K.String
+	c.kind = K.String
 	return c
 }
 
@@ -57,7 +57,7 @@ func (c *Conv) putConv() {
 
 	// Reset other fields to default state - only keep dataPtr and Kind
 	c.dataPtr = nil
-	c.Kind = K.String
+	c.kind = K.String
 
 	convPool.Put(c)
 }
