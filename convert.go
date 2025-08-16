@@ -209,3 +209,8 @@ func (c *conv) String() string {
 	c.putConv()
 	return out
 }
+
+// Bytes returns the content of the conv as a byte slice
+func (c *conv) Bytes() []byte {
+	return c.getBytes(buffOut)
+}
