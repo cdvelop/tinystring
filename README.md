@@ -85,6 +85,8 @@ Replace common `strings` package functions with TinyString equivalents:
 | `strings.TrimSpace()` | `Convert(s).TrimSpace().String()` |
 | `strings.TrimPrefix()` | `Convert(s).TrimPrefix(prefix).String()` |
 | `strings.TrimSuffix()` | `Convert(s).TrimSuffix(suffix).String()` |
+| `strings.HasPrefix()` | `HasPrefix(s, prefix)` |
+| `strings.HasSuffix()` | `HasSuffix(s, suffix)` |
 
 #### Other String Transformations
 
@@ -102,6 +104,14 @@ Convert("hello world").SnakeUp().String()  // out: "HELLO_WORLD"
 pos := Index("hello world", "world")                  // out: 6 (first occurrence)
 found := Contains("hello world", "world")              // out: true
 count := Count("abracadabra", "abra")       // out: 2
+
+// Prefix / Suffix checks
+isPref := HasPrefix("hello", "he")          // out: true
+isSuf := HasSuffix("file.txt", ".txt")      // out: true
+
+// Note: this library follows the standard library semantics for prefixes/suffixes:
+// an empty prefix or suffix is considered a match (HasPrefix(s, "") == true,
+// HasSuffix(s, "") == true).
 
 // Find last occurrence (useful for file extensions)
 pos := LastIndex("image.backup.jpg", ".")             // out: 12
