@@ -87,6 +87,7 @@ Replace common `strings` package functions with TinyString equivalents:
 | `strings.TrimSuffix()` | `Convert(s).TrimSuffix(suffix).String()` |
 | `strings.HasPrefix()` | `HasPrefix(s, prefix)` |
 | `strings.HasSuffix()` | `HasSuffix(s, suffix)` |
+| `filepath.Base()` | `PathBase(path)` |
 
 #### Other String Transformations
 
@@ -124,6 +125,13 @@ if pos >= 0 {
 // Use:        Index(s, substr)            // ✅ Correct
 //             Contains(s, substr)         // ✅ Correct
 //             LastIndex(s, substr)        // ✅ Correct
+
+
+// PathBase
+PathBase("/a/b/c.txt") // -> "c.txt"
+PathBase("folder/file.txt")   // -> "file.txt"
+PathBase("")           // -> "."
+PathBase("c:\file program\app.exe") // -> "app.exe"
 
 // Replace operations
 Convert("hello world").Replace("world", "Go").String() // out: "hello Go"
