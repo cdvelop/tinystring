@@ -379,6 +379,6 @@ value, found := Convert(`json:"name" Label:"Nombre"`).TagValue("xml")   // out: 
 ---
 ## [Benchmarking](benchmark/README.md)
 ---
-## [Contributing](docs/CONTRIBUTING.md)
+## [Contributing](https://github.com/cdvelop/cdvelop/blob/main/CONTRIBUTING.md)
 ---
 ## [License](LICENSE)
