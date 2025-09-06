@@ -41,13 +41,13 @@ var (
 		[]byte("undeclared"), []byte("undefined"), []byte("fatal"),
 	}
 	warningPatterns = [][]byte{
-		[]byte("warning"), []byte("warn"),
+		[]byte("warning"), []byte("warn"), []byte("debug"),
 	}
 	successPatterns = [][]byte{
 		[]byte("success"), []byte("completed"), []byte("successful"), []byte("done"),
 	}
 	infoPatterns = [][]byte{
-		[]byte("info"), []byte(" ..."), []byte("starting"), []byte("initializing"),
+		[]byte("info"), []byte("starting"), []byte("initializing"),
 	}
 )
 
