@@ -56,7 +56,7 @@ func Sscanf(src string, format string, args ...any) (n int, err error) {
 }
 
 // applyWidthAndAlignment applies width formatting and alignment to a string
-func (c *Conv) applyWidthAndAlignment(str string, width int, leftAlign bool) string {
+func (c *Conv) applyWidthAndAlignment(str string, width int, leftAlign bool, zeroPad bool) string {
 	if width <= 0 {
 		return str
 	}
@@ -67,11 +67,15 @@ func (c *Conv) applyWidthAndAlignment(str string, width int, leftAlign bool) str
 	if leftAlign {
 		// Para alineación a la izquierda, agregar padding solo si pad > 0
 		if pad > 0 {
-			return str + spaces(pad)
+			return str + padString(pad, ' ')
 		}
 		return str
 	} else if pad > 0 {
-		return spaces(pad) + str
+		if zeroPad {
+			return padString(pad, '0') + str
+		} else {
+			return padString(pad, ' ') + str
+		}
 	} else if strLen > width {
 		// Truncar si el string es más largo que el ancho
 		return str[:width]
@@ -105,7 +109,7 @@ func (c *Conv) wrFormat(dest buffDest, format string, args ...any) {
 			i++
 
 			// Parse format specifier using shared helper
-			formatChar, param, formatSpec, width, leftAlign, newI := c.parseFormatSpecifier(format, i)
+			formatChar, param, formatSpec, width, leftAlign, zeroPad, newI := c.parseFormatSpecifier(format, i)
 			i = newI
 
 			// Handle literal %
@@ -132,7 +136,7 @@ func (c *Conv) wrFormat(dest buffDest, format string, args ...any) {
 			}
 
 			// Apply width and alignment if needed
-			str = c.applyWidthAndAlignment(str, width, leftAlign)
+			str = c.applyWidthAndAlignment(str, width, leftAlign, zeroPad)
 			argIndex++
 			c.wrBytes(dest, []byte(str))
 			continue
@@ -148,23 +152,28 @@ func (c *Conv) wrFormat(dest buffDest, format string, args ...any) {
 }
 
 // parseFormatSpecifier extracts format specifier and parameters from format string
-// Returns formatChar, param, formatSpec, width, leftAlign, and new index position
-func (c *Conv) parseFormatSpecifier(format string, i int) (formatChar rune, param int, formatSpec string, width int, leftAlign bool, newI int) {
-	// Parse flags and width
-	for i < len(format) && (format[i] == '-' || (format[i] >= '0' && format[i] <= '9')) {
+// Returns formatChar, param, formatSpec, width, leftAlign, zeroPad, and new index position
+func (c *Conv) parseFormatSpecifier(format string, i int) (formatChar rune, param int, formatSpec string, width int, leftAlign bool, zeroPad bool, newI int) {
+	// Parse flags
+	for i < len(format) {
 		if format[i] == '-' {
 			leftAlign = true
 			i++
-		}
-		// Parse width
-		w := 0
-		for i < len(format) && format[i] >= '0' && format[i] <= '9' {
-			w = w*10 + int(format[i]-'0')
+		} else if format[i] == '0' {
+			zeroPad = true
 			i++
+		} else {
+			break
 		}
-		if w > 0 {
-			width = w
-		}
+	}
+	// Parse width
+	w := 0
+	for i < len(format) && format[i] >= '0' && format[i] <= '9' {
+		w = w*10 + int(format[i]-'0')
+		i++
+	}
+	if w > 0 {
+		width = w
 	}
 	// Parse precision for floats
 	precision := -1
@@ -178,7 +187,7 @@ func (c *Conv) parseFormatSpecifier(format string, i int) (formatChar rune, para
 		precision = p
 	}
 	if i >= len(format) {
-		return 0, 0, "", 0, false, i
+		return 0, 0, "", 0, false, false, i
 	}
 
 	// Parse format character and return parameters
@@ -229,7 +238,7 @@ func (c *Conv) parseFormatSpecifier(format string, i int) (formatChar rune, para
 		formatChar, param, formatSpec = rune(format[i]), 0, ""
 	}
 
-	return formatChar, param, formatSpec, width, leftAlign, i
+	return formatChar, param, formatSpec, width, leftAlign, zeroPad, i
 }
 
 // isValidFormatChar validates format characters for both read and write operations
@@ -255,6 +264,18 @@ func spaces(n int) string {
 	b := make([]byte, n)
 	for i := range b {
 		b[i] = ' '
+	}
+	return string(b)
+}
+
+// padString returns a string with n characters of the specified byte
+func padString(n int, ch byte) string {
+	if n <= 0 {
+		return ""
+	}
+	b := make([]byte, n)
+	for i := range b {
+		b[i] = ch
 	}
 	return string(b)
 }

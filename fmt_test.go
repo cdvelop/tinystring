@@ -373,6 +373,30 @@ func TestReporterFormatting(t *testing.T) {
 			expected: "     123     4567",
 		},
 		{
+			name:     "Zero-padded integer",
+			format:   "%02d",
+			args:     []any{1},
+			expected: "01",
+		},
+		{
+			name:     "Zero-padded integer with larger width",
+			format:   "%03d",
+			args:     []any{5},
+			expected: "005",
+		},
+		{
+			name:     "Zero-padded integer already at width",
+			format:   "%02d",
+			args:     []any{12},
+			expected: "12",
+		},
+		{
+			name:     "Zero-padded integer with multiple digits",
+			format:   "%05d",
+			args:     []any{123},
+			expected: "00123",
+		},
+		{
 			name:     "Alineación y ancho de campo: mixto",
 			format:   "%-10s %8d",
 			args:     []any{"Total:", 99},
