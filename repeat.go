@@ -4,20 +4,20 @@ package tinystring
 // If n is 0 or negative, it clears the Conv content
 // eg: Convert("abc").Repeat(3) => "abcabcabc"
 func (t *Conv) Repeat(n int) *Conv {
-	if t.hasContent(buffErr) {
+	if t.hasContent(BuffErr) {
 		return t // Error chain interruption
 	}
 	if n <= 0 {
 		// Clear buffer for empty out and clear dataPtr to prevent reconstruction
-		t.rstBuffer(buffOut)
-		t.dataPtr = nil // Clear pointer to prevent getString from reconstructing
+		t.ResetBuffer(BuffOut)
+		t.dataPtr = nil // Clear pointer to prevent GetString from reconstructing
 		return t
 	}
 
 	// OPTIMIZED: Direct length check
 	if t.outLen == 0 {
 		// Clear buffer for empty out
-		t.rstBuffer(buffOut)
+		t.ResetBuffer(BuffOut)
 		return t
 	}
 

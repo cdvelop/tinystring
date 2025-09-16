@@ -55,7 +55,7 @@ echo "--------------------------------------"
 
 # Focus on string allocations specifically
 echo "Analyzing string allocations..."
-go build -gcflags="-m=3" . 2>&1 | grep -E "string.*allocation|getString.*alloc|wrString.*alloc" > "$RESULTS_DIR/string_allocations.txt" || true
+go build -gcflags="-m=3" . 2>&1 | grep -E "string.*allocation|GetString.*alloc|WrString.*alloc" > "$RESULTS_DIR/string_allocations.txt" || true
 
 if [ -s "$RESULTS_DIR/string_allocations.txt" ]; then
     echo "String allocation hotspots found:"

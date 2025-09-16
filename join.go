@@ -16,18 +16,18 @@ func (c *Conv) Join(sep ...string) *Conv {
 		// Use proper unsafe.Pointer to []string reconstruction
 		slice := *(*[]string)(c.dataPtr)
 		if len(slice) > 0 {
-			c.rstBuffer(buffOut)
+			c.ResetBuffer(BuffOut)
 			for i, s := range slice {
 				if i > 0 {
-					c.anyToBuff(buffOut, separator)
+					c.anyToBuff(BuffOut, separator)
 				}
-				c.anyToBuff(buffOut, s)
+				c.anyToBuff(BuffOut, s)
 			}
 		}
 		return c
 	}
 
-	// For other types, convert to string first using anyToBuff through getString
+	// For other types, convert to string first using anyToBuff through GetString
 	// OPTIMIZED: Check if content is ASCII for fast path
 	if c.outLen == 0 {
 		return c
@@ -66,17 +66,17 @@ func (c *Conv) Join(sep ...string) *Conv {
 
 		// Join parts with the separator using buffer operations
 		if len(parts) > 0 {
-			c.rstBuffer(buffOut) // Reset output buffer
+			c.ResetBuffer(BuffOut) // Reset output buffer
 			for i, part := range parts {
 				if i > 0 {
-					c.anyToBuff(buffOut, separator)
+					c.anyToBuff(BuffOut, separator)
 				}
-				c.wrBytes(buffOut, part)
+				c.wrBytes(BuffOut, part)
 			}
 		}
 	} else {
 		// Unicode fallback: use string processing
-		str := c.getString(buffOut)
+		str := c.GetString(BuffOut)
 		if str != "" {
 			// Split content by whitespace and rejoin with new separator
 			var parts []string
@@ -97,12 +97,12 @@ func (c *Conv) Join(sep ...string) *Conv {
 
 			// Join parts with the separator using anyToBuff only
 			if len(parts) > 0 {
-				c.rstBuffer(buffOut) // Reset output buffer
+				c.ResetBuffer(BuffOut) // Reset output buffer
 				for i, part := range parts {
 					if i > 0 {
-						c.anyToBuff(buffOut, separator)
+						c.anyToBuff(BuffOut, separator)
 					}
-					c.anyToBuff(buffOut, part)
+					c.anyToBuff(BuffOut, part)
 				}
 			}
 		}

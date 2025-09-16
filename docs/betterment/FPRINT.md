@@ -13,9 +13,9 @@ func Fprintf(w io.Writer, format string, args ...any) (n int, err error)
 ### Existing Foundation
 1. **Fmt Function** (`fmt_template.go:9-14`): Already implements printf-style formatting using the internal `wrFormat` method
 2. **Memory Management** (`memory.go`): Comprehensive buffer management system with:
-   - Object pooling via `convPool` and `getConv()/putConv()`
-   - Universal buffer methods: `wrString()`, `wrBytes()`, `wrByte()`
-   - Three buffer destinations: `buffOut`, `buffWork`, `buffErr`
+   - Object pooling via `convPool` and `GetConv()/putConv()`
+   - Universal buffer methods: `WrString()`, `wrBytes()`, `wrByte()`
+   - Three buffer destinations: `BuffOut`, `BuffWork`, `BuffErr`
 3. **Format Engine** (`wrFormat`): Complete printf implementation supporting all standard format specifiers
 4. **Type Conversion**: Rich set of `wr*` methods for different data types:
    - `wrIntBase()` for integers with base conversion
@@ -23,11 +23,11 @@ func Fprintf(w io.Writer, format string, args ...any) (n int, err error)
    - `wrBool()` for boolean values
 
 ### Key Existing Methods to Reuse
-- `getConv()`: Get pooled converter object
+- `GetConv()`: Get pooled converter object
 - `putConv()`: Return object to pool
 - `wrFormat(dest, format, args...)`: Core formatting engine
-- `getString(dest)`: Extract string from buffer
-- `hasContent(buffErr)`: Error checking
+- `GetString(dest)`: Extract string from buffer
+- `hasContent(BuffErr)`: Error checking
 
 ## Implementation Strategy
 
@@ -35,19 +35,19 @@ func Fprintf(w io.Writer, format string, args ...any) (n int, err error)
 ```go
 func Fprintf(w io.Writer, format string, args ...any) (n int, err error) {
     // Obtain converter from pool
-    c := getConv()
+    c := GetConv()
     defer c.putConv() // Ensure cleanup
     
     // Use existing wrFormat to populate buffer
-    c.wrFormat(buffOut, format, args...)
+    c.wrFormat(BuffOut, format, args...)
     
     // Check for formatting errors
-    if c.hasContent(buffErr) {
+    if c.hasContent(BuffErr) {
         return 0, c
     }
     
     // Write to io.Writer
-    data := c.getBytes(buffOut)
+    data := c.getBytes(BuffOut)
     return w.Write(data)
 }
 ```

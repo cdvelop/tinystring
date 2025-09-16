@@ -6,7 +6,7 @@ Basado en el análisis del código actual en `memory.go`, los consejos de optimi
 
 ## 🔍 Estudio de Patrones FastHTTP/ByteBufferPool
 
-### Cómo FastHTTP Maneja getString() Seguro en Concurrencia
+### Cómo FastHTTP Maneja GetString() Seguro en Concurrencia
 
 **Hallazgos Críticos del Análisis:**
 
@@ -52,22 +52,22 @@ h.SetCookie(b2s(key), value)           // ✅ Uso inmediato
 ## ❌ Problema Identificado en TinyString
 
 **El error en nuestro análisis inicial:**
-- Intentamos usar `unsafeString()` en `getString()` 
+- Intentamos usar `unsafeString()` en `GetString()` 
 - Esto causa **corrupción de memoria** porque las strings retornadas **outliven el lifecycle del objeto Conv**
 - Cuando el objeto `Conv` regresa al pool y se reutiliza, **todas las strings unsafe previas se corrompen**
 
 ## ✅ Solución Correcta Basada en FastHTTP Pattern
 
-### 1. **getString() DEBE usar conversión estándar**
+### 1. **GetString() DEBE usar conversión estándar**
 ```go
 // CORRECTO - Basado en patrón FastHTTP
-func (c *Conv) getString(dest buffDest) string {
+func (c *Conv) GetString(dest BuffDest) string {
     switch dest {
-    case buffOut:
+    case BuffOut:
         return string(c.out[:c.outLen])  // ✅ Copia segura
-    case buffWork:
+    case BuffWork:
         return string(c.work[:c.workLen]) // ✅ Copia segura  
-    case buffErr:
+    case BuffErr:
         return string(c.err[:c.errLen])   // ✅ Copia segura
     default:
         return ""
@@ -75,10 +75,10 @@ func (c *Conv) getString(dest buffDest) string {
 }
 ```
 
-### 2. **unsafeBytes() es SEGURO para wrString()**
+### 2. **unsafeBytes() es SEGURO para WrString()**
 ```go
 // SEGURO - Conversión inmediata que se copia en append()
-func (c *Conv) wrString(dest buffDest, s string) {
+func (c *Conv) WrString(dest BuffDest, s string) {
     if len(s) == 0 {
         return
     }
@@ -91,7 +91,7 @@ func (c *Conv) wrString(dest buffDest, s string) {
 
 ### Root Cause Analysis de Benchmarks Negativos
 
-**Problema Real**: No es `getString()`, es **chaining innecesario de objetos Conv**
+**Problema Real**: No es `GetString()`, es **chaining innecesario de objetos Conv**
 
 **Patrón Problemático Detectado:**
 ```go
@@ -114,21 +114,21 @@ Convert(text).ToLower().Tilde().Capitalize().String()
 **Problema:** Cada operación string crea nuevo Conv object
 **Solución:** Implementar **in-place operations** que reutilizan el mismo Conv
 
-### Prioridad 2: Mantener wrString() Optimization
+### Prioridad 2: Mantener WrString() Optimization
 
 **Status:** ✅ **IMPLEMENTADO CORRECTAMENTE**
 ```go
-func (c *Conv) wrString(dest buffDest, s string) {
+func (c *Conv) WrString(dest BuffDest, s string) {
     data := unsafeBytes(s)  // ✅ Zero-allocation conversion
     c.wrBytes(dest, data)   // ✅ Immediate copy
 }
 ```
 
-### Prioridad 3: getString() con Conversión Segura
+### Prioridad 3: GetString() con Conversión Segura
 
 **Status:** ✅ **IMPLEMENTADO CORRECTAMENTE** 
 ```go
-func (c *Conv) getString(dest buffDest) string {
+func (c *Conv) GetString(dest BuffDest) string {
     return string(c.out[:c.outLen])  // ✅ Safe copy (FastHTTP pattern)
 }
 ```
@@ -152,11 +152,11 @@ func (c *Conv) getString(dest buffDest) string {
 #### **Problema 1: Conversión Rune Masiva** (changeCase)
 ```go
 // ❌ PROBLEMA CRÍTICO en changeCase()
-str := t.getString(dest)        // 🔥 Asignación 1: string(buffer)
+str := t.GetString(dest)        // 🔥 Asignación 1: string(buffer)
 runes := []rune(str)           // 🔥 Asignación 2: []rune MASIVA  
 // ... proceso ...
 out := string(runes)           // 🔥 Asignación 3: string(runes) MASIVA
-t.wrString(dest, out)          // 🔥 Asignación 4: wrString conversion
+t.WrString(dest, out)          // 🔥 Asignación 4: WrString conversion
 ```
 
 **Impacto:** Cada `.ToLower()/.ToUpper()` = **4 asignaciones masivas** + overhead
@@ -172,9 +172,9 @@ tempBuf := make([]byte, 0, len(str)*2)  // 🔥 Nueva asignación cada vez
 #### **Problema 3: String/Buffer Round-Trip Ineficiente**
 ```go
 // ❌ PATRÓN PROBLEMÁTICO en todas las operaciones
-str := t.getString(dest)     // 🔥 []byte → string
+str := t.GetString(dest)     // 🔥 []byte → string
 // ... processing ...
-t.wrString(dest, result)     // 🔥 string → []byte
+t.WrString(dest, result)     // 🔥 string → []byte
 ```
 
 **Impacto:** Conversión innecesaria de ida y vuelta en cada operación

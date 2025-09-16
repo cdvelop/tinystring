@@ -57,14 +57,14 @@ func (c *Conv) truncateWithEllipsis(content string, maxWidth int) {
 	ellipsisLen := len(ellipsisStr)
 	if maxWidth >= ellipsisLen {
 		contentToKeep := min(max(maxWidth-ellipsisLen, 0), len(content))
-		c.rstBuffer(buffOut)                         // Clear buffer using API
-		c.wrString(buffOut, content[:contentToKeep]) // Write content using API
-		c.wrString(buffOut, ellipsisStr)             // Append ellipsis using API
+		c.ResetBuffer(BuffOut)                       // Clear buffer using API
+		c.WrString(BuffOut, content[:contentToKeep]) // Write content using API
+		c.WrString(BuffOut, ellipsisStr)             // Append ellipsis using API
 	} else {
 		// Ellipsis doesn't fit, just truncate
 		contentToKeep := min(maxWidth, len(content))
-		c.rstBuffer(buffOut)                         // Clear buffer using API
-		c.wrString(buffOut, content[:contentToKeep]) // Write using API
+		c.ResetBuffer(BuffOut)                       // Clear buffer using API
+		c.WrString(BuffOut, content[:contentToKeep]) // Write using API
 	}
 }
 
@@ -77,7 +77,7 @@ func (c *Conv) truncateWithEllipsis(content string, maxWidth int) {
 // eg: Convert("Hello, World!").Truncate(10, 3) => "Hell..."
 // eg: Convert("Hello").Truncate(10) => "Hello"
 func (t *Conv) Truncate(maxWidth any, reservedChars ...any) *Conv {
-	if t.hasContent(buffErr) {
+	if t.hasContent(BuffErr) {
 		return t // Error chain interruption
 	}
 
@@ -109,13 +109,13 @@ func (t *Conv) Truncate(maxWidth any, reservedChars ...any) *Conv {
 		ellipsisLen := len(ellipsisStr)
 		if rCI > 0 && mWI >= ellipsisLen && eW >= ellipsisLen {
 			// Case 1: Reserved chars specified, and ellipsis fits within the effective width
-			// Need string for ellipsis methods - fallback to getString
-			Conv := t.getString(buffOut)
+			// Need string for ellipsis methods - fallback to GetString
+			Conv := t.GetString(BuffOut)
 			t.truncateWithEllipsis(Conv, eW)
 		} else if rCI == 0 && mWI >= ellipsisLen {
 			// Case 2: No reserved chars, ellipsis fits within maxWidth
-			// Need string for ellipsis methods - fallback to getString
-			Conv := t.getString(buffOut)
+			// Need string for ellipsis methods - fallback to GetString
+			Conv := t.GetString(BuffOut)
 			t.truncateWithEllipsis(Conv, mWI)
 		} else {
 			// Case 3: Ellipsis doesn't fit or reserved chars prevent it, just truncate
@@ -142,7 +142,7 @@ func (t *Conv) Truncate(maxWidth any, reservedChars ...any) *Conv {
 //   - Convert("Ana Maria Rodriguez").TruncateName(2, 10) => "An. Mar..."
 //   - Convert("Juan").TruncateName(3, 5) => "Juan"
 func (t *Conv) TruncateName(maxCharsPerWord, maxWidth any) *Conv {
-	if t.hasContent(buffErr) {
+	if t.hasContent(BuffErr) {
 		return t // Error chain interruption
 	}
 
@@ -183,8 +183,8 @@ func (t *Conv) TruncateName(maxCharsPerWord, maxWidth any) *Conv {
 	} // Step 2: Check if the processed out fits within maxWidth
 	if len(res) <= mT {
 		// ✅ Update buffer using API instead of direct manipulation
-		t.rstBuffer(buffOut)     // Clear buffer using API
-		t.wrString(buffOut, res) // Write using API
+		t.ResetBuffer(BuffOut)   // Clear buffer using API
+		t.WrString(BuffOut, res) // Write using API
 		return t
 	}
 
@@ -241,7 +241,7 @@ func (t *Conv) TruncateName(maxCharsPerWord, maxWidth any) *Conv {
 	} // Add the suffix
 	out += ellipsisStr
 	// ✅ Update buffer using API instead of direct manipulation
-	t.rstBuffer(buffOut)     // Clear buffer using API
-	t.wrString(buffOut, out) // Write using API
+	t.ResetBuffer(BuffOut)   // Clear buffer using API
+	t.WrString(BuffOut, out) // Write using API
 	return t
 }

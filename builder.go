@@ -9,7 +9,7 @@ package tinystring
 //	c.Write(42).Write(" items")                 // Numbers
 //	c.Write('A').Write(" grade")                // Runes
 func (c *Conv) Write(v any) *Conv {
-	if c.hasContent(buffErr) { // Use buffer API
+	if c.hasContent(BuffErr) { // Use buffer API
 		return c // Error chain interruption
 	}
 
@@ -22,7 +22,7 @@ func (c *Conv) Write(v any) *Conv {
 	}
 
 	// Use unified anyToBuff() function to append new value
-	c.anyToBuff(buffOut, v)
+	c.anyToBuff(BuffOut, v)
 	return c
 }
 

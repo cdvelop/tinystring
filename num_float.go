@@ -8,7 +8,7 @@ package tinystring
 // Returns the converted float64 and any error that occurred during conversion.
 func (c *Conv) Float64() (float64, error) {
 	val := c.parseFloatBase()
-	if c.hasContent(buffErr) {
+	if c.hasContent(BuffErr) {
 		return 0, c
 	}
 	return val, nil
@@ -30,7 +30,7 @@ func (c *Conv) toFloat64(arg any) (float64, bool) {
 // Returns the converted float32 and any error that occurred during conversion.
 func (c *Conv) Float32() (float32, error) {
 	val := c.parseFloatBase()
-	if c.hasContent(buffErr) {
+	if c.hasContent(BuffErr) {
 		return 0, c
 	}
 	if val > 3.4028235e+38 {
@@ -42,9 +42,9 @@ func (c *Conv) Float32() (float32, error) {
 // parseFloatBase parses the buffer as a float64, similar to parseIntBase for ints.
 // It always uses the buffer output and handles errors internally.
 func (c *Conv) parseFloatBase() float64 {
-	c.rstBuffer(buffErr)
+	c.ResetBuffer(BuffErr)
 
-	s := c.getString(buffOut)
+	s := c.GetString(BuffOut)
 	if len(s) == 0 {
 		c.wrErr(D.String, D.Empty)
 		return 0
@@ -111,41 +111,41 @@ func (c *Conv) parseFloatBase() float64 {
 }
 
 // wrFloat32 writes a float32 to the buffer destination.
-func (c *Conv) wrFloat32(dest buffDest, val float32) {
+func (c *Conv) wrFloat32(dest BuffDest, val float32) {
 	c.wrFloatBase(dest, float64(val), 3.4028235e+38)
 }
 
 // wrFloat64 writes a float64 to the buffer destination.
-func (c *Conv) wrFloat64(dest buffDest, val float64) {
+func (c *Conv) wrFloat64(dest BuffDest, val float64) {
 	c.wrFloatBase(dest, float64(val), 1.7976931348623157e+308)
 }
 
 // wrFloatBase contains the shared logic for writing float values.
-func (c *Conv) wrFloatBase(dest buffDest, val float64, maxInf float64) {
+func (c *Conv) wrFloatBase(dest BuffDest, val float64, maxInf float64) {
 	// Handle special cases
 	if val != val { // NaN
-		c.wrString(dest, "NaN")
+		c.WrString(dest, "NaN")
 		return
 	}
 	if val == 0 {
-		c.wrString(dest, "0")
+		c.WrString(dest, "0")
 		return
 	}
 
 	// Handle infinity
 	if val > maxInf {
-		c.wrString(dest, "+Inf")
+		c.WrString(dest, "+Inf")
 		return
 	}
 	if val < -maxInf {
-		c.wrString(dest, "-Inf")
+		c.WrString(dest, "-Inf")
 		return
 	}
 
 	// Handle negative numbers
 	negative := val < 0
 	if negative {
-		c.wrString(dest, "-")
+		c.WrString(dest, "-")
 		val = -val
 	}
 
@@ -168,7 +168,7 @@ func (c *Conv) wrFloatBase(dest buffDest, val float64, maxInf float64) {
 
 	// Write fractional part if non-zero
 	if fracPart > 0 {
-		c.wrString(dest, ".")
+		c.WrString(dest, ".")
 
 		// Build fractional string using local array to avoid buffer conflicts
 		var digits [6]byte

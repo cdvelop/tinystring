@@ -8,7 +8,7 @@ package tinystring
 // By default (no param), uses EU style: 1.234.567,89
 // If anglo is true, uses Anglo style: 1,234,567.89
 func (t *Conv) Thousands(anglo ...bool) *Conv {
-	if t.hasContent(buffErr) {
+	if t.hasContent(BuffErr) {
 		return t
 	}
 
@@ -17,23 +17,23 @@ func (t *Conv) Thousands(anglo ...bool) *Conv {
 		useAnglo = true
 	}
 
-	if t.hasContent(buffOut) {
-		str := t.getString(buffOut)
+	if t.hasContent(BuffOut) {
+		str := t.GetString(BuffOut)
 		if t.isNumericString(str) {
 			// Store string in buffer and use parseFloatBase
-			t.rstBuffer(buffOut)
-			t.wrString(buffOut, str)
+			t.ResetBuffer(BuffOut)
+			t.WrString(BuffOut, str)
 			floatVal := t.parseFloatBase()
-			if !t.hasContent(buffErr) {
-				t.rstBuffer(buffOut)
+			if !t.hasContent(BuffErr) {
+				t.ResetBuffer(BuffOut)
 				if floatVal == float64(int64(floatVal)) {
-					t.wrIntBase(buffOut, int64(floatVal), 10, true)
+					t.wrIntBase(BuffOut, int64(floatVal), 10, true)
 				} else {
-					t.wrFloat64(buffOut, floatVal)
-					t.removeTrailingZeros(buffOut)
+					t.wrFloat64(BuffOut, floatVal)
+					t.removeTrailingZeros(BuffOut)
 				}
 			}
-			t.addThousandSeparatorsCustom(buffOut, useAnglo)
+			t.addThousandSeparatorsCustom(BuffOut, useAnglo)
 		}
 		return t
 	}
@@ -42,8 +42,8 @@ func (t *Conv) Thousands(anglo ...bool) *Conv {
 
 // addThousandSeparatorsCustom adds thousand separators to the numeric string in buffer.
 // If anglo is true: 1,234,567.89; if false: 1.234.567,89
-func (c *Conv) addThousandSeparatorsCustom(dest buffDest, anglo bool) {
-	str := c.getString(dest)
+func (c *Conv) addThousandSeparatorsCustom(dest BuffDest, anglo bool) {
+	str := c.GetString(dest)
 	if len(str) <= 3 {
 		return
 	}
@@ -75,7 +75,7 @@ func (c *Conv) addThousandSeparatorsCustom(dest buffDest, anglo bool) {
 		}
 	}
 
-	c.rstBuffer(dest)
+	c.ResetBuffer(dest)
 	start := 0
 	if intPart[0] == '-' {
 		c.wrByte(dest, '-')
@@ -110,18 +110,18 @@ func (c *Conv) addThousandSeparatorsCustom(dest buffDest, anglo bool) {
 	if decPart != "" {
 		if anglo {
 			c.wrByte(dest, '.')
-			c.wrString(dest, decPart)
+			c.WrString(dest, decPart)
 		} else {
 			c.wrByte(dest, ',')
-			c.wrString(dest, decPart)
+			c.WrString(dest, decPart)
 		}
 	}
 }
 
 // removeTrailingZeros removes trailing zeros from decimal numbers in buffer
 // Universal method with dest-first parameter order - follows buffer API architecture
-func (c *Conv) removeTrailingZeros(dest buffDest) {
-	str := c.getString(dest)
+func (c *Conv) removeTrailingZeros(dest BuffDest) {
+	str := c.GetString(dest)
 	if len(str) == 0 {
 		return
 	}
@@ -156,8 +156,8 @@ func (c *Conv) removeTrailingZeros(dest buffDest) {
 		result = str[:lastNonZero+1]
 	}
 
-	c.rstBuffer(dest)
-	c.wrString(dest, result)
+	c.ResetBuffer(dest)
+	c.WrString(dest, result)
 }
 
 // isNumericString checks if a string represents a valid number

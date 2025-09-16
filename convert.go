@@ -2,15 +2,6 @@ package tinystring
 
 import "unsafe"
 
-// Buffer destination selection for anyToBuff universal conversion function
-type buffDest int
-
-const (
-	buffOut  buffDest = iota // Primary output buffer
-	buffWork                 // Working/temporary buffer
-	buffErr                  // Error message buffer
-)
-
 type Conv struct {
 	// Buffers with initial capacity 64, grow as needed (no truncation)
 	out     []byte // Buffer principal - make([]byte, 0, 64)
@@ -30,7 +21,7 @@ type Conv struct {
 // REFACTORED: Now accepts variadic parameters - Convert() or Convert(value)
 // Phase 7: Uses object pool internally for memory optimization (transparent to user)
 func Convert(v ...any) *Conv {
-	c := getConv()
+	c := GetConv()
 	c.resetAllBuffers() // Asegurar que el objeto Conv esté completamente limpio
 	// Validation: Only accept 0 or 1 parameter
 	if len(v) > 1 {
@@ -49,8 +40,8 @@ func Convert(v ...any) *Conv {
 		}
 
 		// Use anyToBuff for ALL other conversions - eliminates all duplication
-		c.rstBuffer(buffOut)
-		c.anyToBuff(buffOut, val)
+		c.ResetBuffer(BuffOut)
+		c.anyToBuff(BuffOut, val)
 
 		// anyToBuff handles everything:
 		// - Setting c.Kind and c.dataPtr for all types
@@ -71,9 +62,9 @@ func Convert(v ...any) *Conv {
 // anyToBuff converts any supported type to buffer using existing conversion logic
 // REUSES: floatToOut, wrStringToOut, wrStringToErr
 // Supports: string, int variants, uint variants, float variants, bool, []byte, LocStr
-func (c *Conv) anyToBuff(dest buffDest, value any) {
+func (c *Conv) anyToBuff(dest BuffDest, value any) {
 	// Limpiar buffer de error antes de cualquier conversión inmediata
-	c.rstBuffer(buffErr)
+	c.ResetBuffer(BuffErr)
 
 	switch v := value.(type) {
 	// IMMEDIATE CONVERSION - Simple Types (ordered as in Kind.go)
@@ -128,12 +119,12 @@ func (c *Conv) anyToBuff(dest buffDest, value any) {
 		// Store content relationship
 		c.kind = K.Pointer            // Correctly set Kind to K.Pointer for *string
 		c.dataPtr = unsafe.Pointer(v) // Store the pointer itself for Apply()
-		c.wrString(dest, *v)
+		c.WrString(dest, *v)
 
 	// K.String
 	case string:
 		c.kind = K.String
-		c.wrString(dest, v)
+		c.WrString(dest, v)
 
 	// K.SliceStr - Special case for []string
 	case []string:
@@ -188,7 +179,7 @@ func (t *Conv) Apply() {
 	if t.kind == K.Pointer && t.dataPtr != nil {
 		// Type assert to *string for Apply() functionality using unsafe pointer
 		if strPtr := (*string)(t.dataPtr); strPtr != nil {
-			*strPtr = t.getString(buffOut)
+			*strPtr = t.GetString(BuffOut)
 		}
 	}
 	// Auto-release back to pool for memory efficiency
@@ -199,12 +190,12 @@ func (t *Conv) Apply() {
 // Phase 7: Auto-release makes pool usage completely transparent to user
 func (c *Conv) String() string {
 	// If there's an error, return empty string (error available via StringErr())
-	if c.hasContent(buffErr) {
+	if c.hasContent(BuffErr) {
 		c.putConv() // Auto-release back to pool for memory efficiency
 		return ""
 	}
 
-	out := c.getString(buffOut)
+	out := c.GetString(BuffOut)
 	// Auto-release back to pool for memory efficiency
 	c.putConv()
 	return out
@@ -212,5 +203,5 @@ func (c *Conv) String() string {
 
 // Bytes returns the content of the Conv as a byte slice
 func (c *Conv) Bytes() []byte {
-	return c.getBytes(buffOut)
+	return c.getBytes(BuffOut)
 }

@@ -9,7 +9,7 @@ func TestNullPointerProtection(t *testing.T) {
 
 	// This should not panic and should set an error
 	c := Convert(nullStrPtr)
-	if !c.hasContent(buffErr) {
+	if !c.hasContent(BuffErr) {
 		t.Error("Convert with null *string should set an error")
 	}
 
@@ -27,7 +27,7 @@ func TestValidPointerHandling(t *testing.T) {
 
 	// This should work normally
 	c := Convert(strPtr)
-	if c.hasContent(buffErr) {
+	if c.hasContent(BuffErr) {
 		t.Error("Convert with valid *string should not set an error")
 	}
 

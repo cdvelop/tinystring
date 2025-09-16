@@ -13,7 +13,7 @@ Basado en el análisis completo realizado el 23 de junio de 2025, se ha identifi
 ## 🔍 **Problemas Críticos Identificados**
 
 ### **1. Allocaciones de String (CRÍTICO)**
-- **Problema:** `getString()` crea allocaciones en heap en **CADA LLAMADA**
+- **Problema:** `GetString()` crea allocaciones en heap en **CADA LLAMADA**
 - **Evidencia:** Escape analysis confirma `string(buffer[:length])` escapa en líneas 63, 68, 112
 - **Impacto:** 70% de las allocaciones de string vienen de esta función
 
@@ -66,7 +66,7 @@ Basado en el análisis completo realizado el 23 de junio de 2025, se ha identifi
 
 ### **Criterios de Éxito:**
 - ✅ Replace < 30 allocs/op (actualmente 56)
-- ✅ Eliminación total de heap escapes en getString()
+- ✅ Eliminación total de heap escapes en GetString()
 - ✅ Todas las operaciones < 1000 B/op
 - ✅ Mantener 100% thread safety
 

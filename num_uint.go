@@ -1,9 +1,9 @@
 package tinystring
 
 // wrUintBase writes an unsigned integer in the given base to the buffer
-func (c *Conv) wrUintBase(dest buffDest, value uint64, base int) {
+func (c *Conv) wrUintBase(dest BuffDest, value uint64, base int) {
 	if base < 2 || base > 36 {
-		c.wrString(dest, "0")
+		c.WrString(dest, "0")
 		return
 	}
 	if value == 0 {
@@ -61,7 +61,7 @@ func (c *Conv) Uint(base ...int) (uint, error) {
 	if val < 0 || val > 4294967295 {
 		return 0, c.wrErr(D.Number, D.Overflow)
 	}
-	if c.hasContent(buffErr) {
+	if c.hasContent(BuffErr) {
 		return 0, c
 	}
 	return uint(val), nil
@@ -73,7 +73,7 @@ func (c *Conv) Uint32(base ...int) (uint32, error) {
 	if val < 0 || val > 4294967295 {
 		return 0, c.wrErr(D.Number, D.Overflow)
 	}
-	if c.hasContent(buffErr) {
+	if c.hasContent(BuffErr) {
 		return 0, c
 	}
 	return uint32(val), nil
@@ -82,7 +82,7 @@ func (c *Conv) Uint32(base ...int) (uint32, error) {
 // Uint64 extrae el valor del buffer de salida y lo convierte a uint64.
 func (c *Conv) Uint64(base ...int) (uint64, error) {
 	val := c.parseIntBase(base...)
-	if c.hasContent(buffErr) {
+	if c.hasContent(BuffErr) {
 		return 0, c
 	}
 	return uint64(val), nil

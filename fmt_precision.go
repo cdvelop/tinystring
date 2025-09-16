@@ -18,23 +18,23 @@ package tinystring
 //
 // If the value is not numeric, returns "0" with the requested number of decimals.
 func (t *Conv) Round(decimals int, down ...bool) *Conv {
-	if t.hasContent(buffErr) {
+	if t.hasContent(BuffErr) {
 		return t
 	}
 	roundDown := false
 	if len(down) > 0 && down[0] {
 		roundDown = true
 	}
-	t.applyRoundingToNumber(buffOut, decimals, roundDown)
+	t.applyRoundingToNumber(BuffOut, decimals, roundDown)
 	// If the result is not numeric, set to zero with correct decimals
-	str := t.getString(buffOut)
+	str := t.GetString(BuffOut)
 	if !t.isNumericString(str) || str == "" || str == "-" {
-		t.rstBuffer(buffOut)
-		t.wrString(buffOut, "0")
+		t.ResetBuffer(BuffOut)
+		t.WrString(BuffOut, "0")
 		if decimals > 0 {
-			t.wrString(buffOut, ".")
+			t.WrString(BuffOut, ".")
 			for i := 0; i < decimals; i++ {
-				t.wrString(buffOut, "0")
+				t.WrString(BuffOut, "0")
 			}
 		}
 	}
@@ -43,13 +43,13 @@ func (t *Conv) Round(decimals int, down ...bool) *Conv {
 
 // applyRoundingToNumber rounds the current number to specified decimal places
 // Universal method with dest-first parameter order - follows buffer API architecture
-func (t *Conv) applyRoundingToNumber(dest buffDest, decimals int, roundDown bool) *Conv {
-	if t.hasContent(buffErr) {
+func (t *Conv) applyRoundingToNumber(dest BuffDest, decimals int, roundDown bool) *Conv {
+	if t.hasContent(BuffErr) {
 		return t
 	}
 
 	// Get current string representation
-	currentStr := t.getString(dest)
+	currentStr := t.GetString(dest)
 
 	// Find decimal point
 	dotIndex := func() int {
@@ -64,7 +64,7 @@ func (t *Conv) applyRoundingToNumber(dest buffDest, decimals int, roundDown bool
 	// If no decimal point, add zeros if needed
 	if dotIndex == -1 {
 		if decimals > 0 {
-			t.wrString(dest, ".")
+			t.WrString(dest, ".")
 			for i := 0; i < decimals; i++ {
 				t.wrByte(dest, '0')
 			}
@@ -84,8 +84,8 @@ func (t *Conv) applyRoundingToNumber(dest buffDest, decimals int, roundDown bool
 	if len(currentStr) > targetLen {
 		if roundDown {
 			// Simple truncation for roundDown (floor behavior)
-			t.rstBuffer(dest)
-			t.wrString(dest, currentStr[:targetLen])
+			t.ResetBuffer(dest)
+			t.WrString(dest, currentStr[:targetLen])
 		} else {
 			// Implement Go's round half to even (bankers rounding)
 			var firstDiscarded byte = '0'
@@ -160,18 +160,18 @@ func (t *Conv) applyRoundingToNumber(dest buffDest, decimals int, roundDown bool
 						}
 					}
 				}
-				t.rstBuffer(dest)
+				t.ResetBuffer(dest)
 				if carry > 0 {
-					t.wrString(dest, "1")
+					t.WrString(dest, "1")
 				}
 				t.wrBytes(dest, roundedBytes)
 			} else {
 				// Truncation (no rounding up)
-				t.rstBuffer(dest)
+				t.ResetBuffer(dest)
 				if decimals == 0 {
-					t.wrString(dest, currentStr[:dotIndex])
+					t.WrString(dest, currentStr[:dotIndex])
 				} else {
-					t.wrString(dest, currentStr[:targetLen])
+					t.WrString(dest, currentStr[:targetLen])
 				}
 			}
 		}
@@ -188,39 +188,39 @@ func (t *Conv) applyRoundingToNumber(dest buffDest, decimals int, roundDown bool
 
 // wrFloatWithPrecision formats a float with specified precision and writes to buffer destination
 // Universal method with dest-first parameter order - follows buffer API architecture
-func (c *Conv) wrFloatWithPrecision(dest buffDest, value float64, precision int) {
+func (c *Conv) wrFloatWithPrecision(dest BuffDest, value float64, precision int) {
 	// Handle special cases
 	if value != value { // NaN
-		c.wrString(dest, "NaN")
+		c.WrString(dest, "NaN")
 		return
 	}
 
 	if value == 0 {
 		if precision > 0 {
-			c.wrString(dest, "0.")
+			c.WrString(dest, "0.")
 			for i := 0; i < precision; i++ {
 				c.wrByte(dest, '0')
 			}
 		} else {
-			c.wrString(dest, "0")
+			c.WrString(dest, "0")
 		}
 		return
 	}
 
 	// Handle infinity
 	if value > 1.7976931348623157e+308 {
-		c.wrString(dest, "+Inf")
+		c.WrString(dest, "+Inf")
 		return
 	}
 	if value < -1.7976931348623157e+308 {
-		c.wrString(dest, "-Inf")
+		c.WrString(dest, "-Inf")
 		return
 	}
 
 	// Handle negative numbers
 	negative := value < 0
 	if negative {
-		c.wrString(dest, "-")
+		c.WrString(dest, "-")
 		value = -value
 	}
 
@@ -246,7 +246,7 @@ func (c *Conv) wrFloatWithPrecision(dest buffDest, value float64, precision int)
 
 	// Write fractional part if precision > 0
 	if precision > 0 {
-		c.wrString(dest, ".")
+		c.WrString(dest, ".")
 
 		// Convert fractional part to string with leading zeros
 		// Build digits array in reverse order to avoid allocations

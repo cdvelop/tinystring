@@ -51,34 +51,34 @@ var (
 	}
 )
 
-// StringType returns the string from buffOut and its detected MessageType, then auto-releases the Conv
+// StringType returns the string from BuffOut and its detected MessageType, then auto-releases the Conv
 func (c *Conv) StringType() (string, MessageType) {
 	// Get string content FIRST (before detection modifies buffer)
-	out := c.getString(buffOut)
-	// Detect type from buffOut content
-	msgType := c.detectMessageTypeFromBuffer(buffOut)
+	out := c.GetString(BuffOut)
+	// Detect type from BuffOut content
+	msgType := c.detectMessageTypeFromBuffer(BuffOut)
 	// Auto-release
 	c.putConv()
 	return out, msgType
 }
 
 // detectMessageTypeFromBuffer analyzes the buffer content and returns the detected MessageType (zero allocations)
-func (c *Conv) detectMessageTypeFromBuffer(dest buffDest) MessageType {
+func (c *Conv) detectMessageTypeFromBuffer(dest BuffDest) MessageType {
 	// 1. Copy content directly to work buffer using swapBuff (zero allocations)
-	c.swapBuff(dest, buffWork)
+	c.swapBuff(dest, BuffWork)
 	// 2. Convert to lowercase in work buffer using existing method
-	c.changeCase(true, buffWork)
+	c.changeCase(true, BuffWork)
 	// 3. Direct buffer pattern matching - NO Contains() allocations
-	if c.bufferContainsPattern(buffWork, errorPatterns) {
+	if c.bufferContainsPattern(BuffWork, errorPatterns) {
 		return Msg.Error
 	}
-	if c.bufferContainsPattern(buffWork, warningPatterns) {
+	if c.bufferContainsPattern(BuffWork, warningPatterns) {
 		return Msg.Warning
 	}
-	if c.bufferContainsPattern(buffWork, successPatterns) {
+	if c.bufferContainsPattern(BuffWork, successPatterns) {
 		return Msg.Success
 	}
-	if c.bufferContainsPattern(buffWork, infoPatterns) {
+	if c.bufferContainsPattern(BuffWork, infoPatterns) {
 		return Msg.Info
 	}
 	return Msg.Normal

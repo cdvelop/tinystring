@@ -28,19 +28,19 @@
 
 | Benchmark | Time/op | Memory/op | Allocs/op | PRIMARY ISSUE |
 |-----------|---------|-----------|-----------|---------------|
-| **ToLower** | 3742 ns | 912 B | 34 allocs | String escape in `getString()` |
-| **ToUpper** | 3094 ns | 912 B | 34 allocs | String escape in `getString()` |
+| **ToLower** | 3742 ns | 912 B | 34 allocs | String escape in `GetString()` |
+| **ToUpper** | 3094 ns | 912 B | 34 allocs | String escape in `GetString()` |
 | **Replace** | 2832 ns | 1112 B | **56 allocs** | **WORST allocations** |
 | **Tilde** | 5885 ns | 1056 B | 40 allocs | Complex string operations |
 | **TrimSpace** | 1061 ns | 656 B | 32 allocs | Relatively good performance |
 | **Split** | 1714 ns | 432 B | **8 allocs** | **BEST allocations** |
 
-**CRITICAL FINDING:** `string(buffer[:length])` calls in `getString()` are the **PRIMARY** allocation source
+**CRITICAL FINDING:** `string(buffer[:length])` calls in `GetString()` are the **PRIMARY** allocation source
 
 ### **Memory Profiling Analysis (Validated):**
 
 **Root Cause Confirmed:**
-1. **getString() String Creation:** Every call to `getString()` creates new heap allocation
+1. **GetString() String Creation:** Every call to `GetString()` creates new heap allocation
 2. **Buffer Pool Overhead:** Conv struct initialization allocates 3×64B slices to heap  
 3. **Type Conversion Overhead:** `anyToBuff()` value storage causes escapes
 4. **Replace Operation:** Highest allocation count (56 allocs/op) indicates algorithmic inefficiency
@@ -54,10 +54,10 @@
 
 ### **PRIORITY 1: String Allocation Elimination** 🎯 **VALIDATED**
 
-**Problem CONFIRMED:** `getString()` creates heap allocations on **EVERY CALL** (Escape analysis lines 63, 68, 112)
+**Problem CONFIRMED:** `GetString()` creates heap allocations on **EVERY CALL** (Escape analysis lines 63, 68, 112)
 ```go
 // ❌ CURRENT - CONFIRMED ESCAPE TO HEAP (3 locations in memory.go)
-func (c *Conv) getString(dest buffDest) string {
+func (c *Conv) GetString(dest BuffDest) string {
     return string(c.out[:c.outLen])  // ⚠️ ESCAPES TO HEAP CONFIRMED
 }
 ```
@@ -72,19 +72,19 @@ type Conv struct {
     errStr  string // Cached string for err buffer
 }
 
-func (c *Conv) getString(dest buffDest) string {
+func (c *Conv) GetString(dest BuffDest) string {
     switch dest {
-    case buffOut:
+    case BuffOut:
         if c.outStr == "" && c.outLen > 0 {
             c.outStr = unsafe.String(&c.out[0], c.outLen)
         }
         return c.outStr
-    case buffWork:
+    case BuffWork:
         if c.workStr == "" && c.workLen > 0 {
             c.workStr = unsafe.String(&c.work[0], c.workLen)
         }
         return c.workStr
-    case buffErr:
+    case BuffErr:
         if c.errStr == "" && c.errLen > 0 {
             c.errStr = unsafe.String(&c.err[0], c.errLen)
         }
@@ -96,9 +96,9 @@ func (c *Conv) getString(dest buffDest) string {
 
 **Cache Invalidation:** Add to all write methods
 ```go
-func (c *Conv) wrString(dest buffDest, s string) {
+func (c *Conv) WrString(dest BuffDest, s string) {
     switch dest {
-    case buffOut:
+    case BuffOut:
         c.out = append(c.out[:c.outLen], s...)
         c.outLen = len(c.out)
         c.outStr = "" // ✅ Invalidate cache
@@ -107,7 +107,7 @@ func (c *Conv) wrString(dest buffDest, s string) {
 }
 ```
 
-**Expected Impact:** -70% string allocations (eliminates all getString() heap escapes)
+**Expected Impact:** -70% string allocations (eliminates all GetString() heap escapes)
 
 ### **PRIORITY 2: Replace Operation Optimization** 🎯 **CRITICAL**
 
@@ -118,7 +118,7 @@ func (c *Conv) wrString(dest buffDest, s string) {
 
 **Root Cause Analysis Needed:**
 1. **Buffer reallocations** during string replacement
-2. **Multiple getString() calls** in replacement algorithm  
+2. **Multiple GetString() calls** in replacement algorithm  
 3. **Inefficient search/replace pattern** causing repeated allocations
 
 **Solution:** Optimize replace algorithm with pre-allocation
@@ -134,12 +134,12 @@ func (c *Conv) optimizedReplace(old, new string) *Conv {
     count := strings.Count(s, old)
     estimatedSize := len(s) + count*(len(new)-len(old))
     
-    c.ensureCapacity(buffOut, estimatedSize)
-    c.rstBuffer(buffOut) // Reset once
+    c.ensureCapacity(BuffOut, estimatedSize)
+    c.ResetBuffer(BuffOut) // Reset once
     
     // Single-pass replacement without intermediate allocations
     result := strings.ReplaceAll(s, old, new)
-    c.wrString(buffOut, result)
+    c.WrString(BuffOut, result)
     
     return c
 }
@@ -172,17 +172,17 @@ var convPool = sync.Pool{
     },
 }
 
-func (c *Conv) ensureBufInit(dest buffDest) {
+func (c *Conv) ensureBufInit(dest BuffDest) {
     switch dest {
-    case buffOut:
+    case BuffOut:
         if c.out == nil {
             c.out = make([]byte, 0, 64)
         }
-    case buffWork:
+    case BuffWork:
         if c.work == nil {
             c.work = make([]byte, 0, 64)
         }
-    case buffErr:
+    case BuffErr:
         if c.err == nil {
             c.err = make([]byte, 0, 64)
         }
@@ -197,11 +197,11 @@ func (c *Conv) ensureBufInit(dest buffDest) {
 **Problem CONFIRMED:** `anyToBuff()` value storage causes heap escapes (convert.go multiple lines)
 ```go
 // ❌ CURRENT - CONFIRMED HEAP ESCAPES
-func (c *Conv) anyToBuff(dest buffDest, value any) {
+func (c *Conv) anyToBuff(dest BuffDest, value any) {
     switch v := value.(type) {
     case string:
         c.ptrValue = v  // ⚠️ ESCAPES TO HEAP
-        c.wrString(dest, v)
+        c.WrString(dest, v)
     case int:
         c.ptrValue = v  // ⚠️ ESCAPES TO HEAP  
         c.wrInt(dest, int64(v))
@@ -213,11 +213,11 @@ func (c *Conv) anyToBuff(dest buffDest, value any) {
 **Solution:** Minimize interface{} storage and add fast path
 ```go
 // ✅ OPTIMIZED - Fast path for common types, minimal interface storage
-func (c *Conv) anyToBuff(dest buffDest, value any) {
+func (c *Conv) anyToBuff(dest BuffDest, value any) {
     // Fast path for 90% of cases - no interface storage
     if s, ok := value.(string); ok {
         c.Kind = K.String
-        c.wrString(dest, s)
+        c.WrString(dest, s)
         return
     }
     if i, ok := value.(int); ok {
@@ -256,9 +256,9 @@ c.out = append(c.out[:c.outLen], s...)  // May cause reallocation
 **Solution:** Smart capacity prediction with cache invalidation
 ```go
 // ✅ OPTIMIZED - Pre-allocate with cache management
-func (c *Conv) ensureCapacity(dest buffDest, minSize int) {
+func (c *Conv) ensureCapacity(dest BuffDest, minSize int) {
     switch dest {
-    case buffOut:
+    case BuffOut:
         if cap(c.out) < c.outLen + minSize {
             newCap := max((cap(c.out)*2), (c.outLen + minSize + 64))
             newBuf := make([]byte, c.outLen, newCap)
@@ -270,10 +270,10 @@ func (c *Conv) ensureCapacity(dest buffDest, minSize int) {
     }
 }
 
-func (c *Conv) wrString(dest buffDest, s string) {
+func (c *Conv) WrString(dest BuffDest, s string) {
     c.ensureCapacity(dest, len(s)) // Pre-allocate before append
     switch dest {
-    case buffOut:
+    case BuffOut:
         c.out = append(c.out[:c.outLen], s...)
         c.outLen = len(c.out)
         c.outStr = "" // Cache invalidation
@@ -287,7 +287,7 @@ func (c *Conv) wrString(dest buffDest, s string) {
 
 ### **Stage 1: String Caching (Week 1)**
 - [ ] Add string cache fields to `Conv` struct
-- [ ] Implement `unsafe.String()` caching in `getString()`
+- [ ] Implement `unsafe.String()` caching in `GetString()`
 - [ ] Add cache invalidation in write methods
 - [ ] Benchmark string allocation reduction
 
@@ -418,12 +418,12 @@ cd benchmark/bench-binary-size/tinystring-lib
 
 ### **Success Criteria (Data-Driven):**
 - ✅ **Primary Target**: Replace operation < 30 allocs/op (currently 56)
-- ✅ **String Allocation**: Eliminate all `getString()` heap escapes  
+- ✅ **String Allocation**: Eliminate all `GetString()` heap escapes  
 - ✅ **Memory Consistency**: All operations < 1000 B/op
 - ✅ **Zero Regressions**: No race conditions, API breaks, or functionality loss
 
 ### **Expected Optimization Impact:**
-1. **String Caching**: -70% from getString() eliminations = **~250 alloc reductions**
+1. **String Caching**: -70% from GetString() eliminations = **~250 alloc reductions**
 2. **Replace Algorithm**: -50% from Replace optimization = **~28 alloc reduction** 
 3. **Pool Initialization**: -25% from lazy allocation = **~64B per Conv reduction**
 4. **Type Conversions**: -40% from fast path = **~12 alloc reductions**

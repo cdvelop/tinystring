@@ -5,7 +5,7 @@ package tinystring
 // OPTIMIZED: Uses work buffer efficiently to minimize allocations
 // For example: "  hello   world  " -> "  Hello   World  "
 func (t *Conv) Capitalize() *Conv {
-	if t.hasContent(buffErr) {
+	if t.hasContent(BuffErr) {
 		return t // Error chain interruption
 	}
 
@@ -26,7 +26,7 @@ func (t *Conv) Capitalize() *Conv {
 // capitalizeASCIIOptimized processes ASCII text preserving all formatting
 func (t *Conv) capitalizeASCIIOptimized() {
 	// Use work buffer for processing
-	t.rstBuffer(buffWork)
+	t.ResetBuffer(BuffWork)
 
 	inWord := false
 
@@ -58,15 +58,15 @@ func (t *Conv) capitalizeASCIIOptimized() {
 	}
 
 	// Swap processed content to output
-	t.swapBuff(buffWork, buffOut)
+	t.swapBuff(BuffWork, BuffOut)
 }
 
 // capitalizeUnicode handles full Unicode capitalization preserving formatting
 func (t *Conv) capitalizeUnicode() *Conv {
-	str := t.getString(buffOut)
+	str := t.GetString(BuffOut)
 
 	// Use internal work buffer for intermediate processing
-	t.rstBuffer(buffWork)
+	t.ResetBuffer(BuffWork)
 
 	inWord := false
 
@@ -74,24 +74,24 @@ func (t *Conv) capitalizeUnicode() *Conv {
 		// Use centralized word separator detection
 		if isWordSeparator(r) {
 			// Preserve all separator characters as-is
-			t.wrString(buffWork, string(r))
+			t.WrString(BuffWork, string(r))
 			inWord = false
 		} else {
 			if !inWord {
 				// Start of new word - capitalize first letter
-				t.wrString(buffWork, string(toUpperRune(r)))
+				t.WrString(BuffWork, string(toUpperRune(r)))
 				inWord = true
 			} else {
 				// Rest of word - lowercase other letters
-				t.wrString(buffWork, string(toLowerRune(r)))
+				t.WrString(BuffWork, string(toLowerRune(r)))
 			}
 		}
 	}
 
 	// Copy result from work buffer to output buffer
-	result := t.getString(buffWork)
-	t.rstBuffer(buffOut)
-	t.wrString(buffOut, result)
+	result := t.GetString(BuffWork)
+	t.ResetBuffer(BuffOut)
+	t.WrString(BuffOut, result)
 	return t
 }
 
@@ -107,7 +107,7 @@ func (t *Conv) ToUpper() *Conv {
 
 // changeCaseOptimized implements fast ASCII path with fallback to full Unicode
 func (t *Conv) changeCaseOptimized(toLower bool) *Conv {
-	if t.hasContent(buffErr) {
+	if t.hasContent(BuffErr) {
 		return t // Error chain interruption
 	}
 
@@ -154,16 +154,16 @@ func (t *Conv) isASCIIOnly() bool {
 
 // changeCaseUnicode handles full Unicode case conversion (legacy method)
 func (t *Conv) changeCaseUnicode(toLower bool) *Conv {
-	return t.changeCase(toLower, buffOut)
+	return t.changeCase(toLower, BuffOut)
 }
 
 // changeCase consolidates ToLower and ToUpper functionality - now accepts a destination buffer for internal reuse
-func (t *Conv) changeCase(toLower bool, dest buffDest) *Conv {
-	if t.hasContent(buffErr) {
+func (t *Conv) changeCase(toLower bool, dest BuffDest) *Conv {
+	if t.hasContent(BuffErr) {
 		return t // Error chain interruption
 	}
 
-	str := t.getString(dest)
+	str := t.GetString(dest)
 	if len(str) == 0 {
 		return t
 	}
@@ -181,8 +181,8 @@ func (t *Conv) changeCase(toLower bool, dest buffDest) *Conv {
 	}
 	// Convert back to string and store in buffer using API
 	out := string(runes)
-	t.rstBuffer(dest)     // Clear buffer using API
-	t.wrString(dest, out) // Write using API
+	t.ResetBuffer(dest)   // Clear buffer using API
+	t.WrString(dest, out) // Write using API
 
 	return t
 }
@@ -229,7 +229,7 @@ func (t *Conv) SnakeUp(sep ...string) *Conv {
 // Minimal implementation without pools or builders - optimized for minimal allocations
 // Minimal implementation - optimized for minimal allocations using mapping.go functions
 func (t *Conv) toCaseTransformMinimal(firstWordLower bool, separator string) *Conv {
-	if t.hasContent(buffErr) {
+	if t.hasContent(BuffErr) {
 		return t // Error chain interruption
 	}
 
@@ -238,7 +238,7 @@ func (t *Conv) toCaseTransformMinimal(firstWordLower bool, separator string) *Co
 	}
 
 	// Use work buffer for processing
-	t.rstBuffer(buffWork)
+	t.ResetBuffer(BuffWork)
 
 	// Process each character and determine word boundaries
 	wordIndex := 0
@@ -285,7 +285,7 @@ func (t *Conv) toCaseTransformMinimal(firstWordLower bool, separator string) *Co
 
 		// Add separator if new word (except first) - only for snake_case
 		if isNewWord && wordIndex > 0 && separator != "" {
-			t.wrString(buffWork, separator)
+			t.WrString(BuffWork, separator)
 		}
 
 		// Apply case transformation for letters only
@@ -309,7 +309,7 @@ func (t *Conv) toCaseTransformMinimal(firstWordLower bool, separator string) *Co
 			result = char
 		}
 
-		t.wrByte(buffWork, result)
+		t.wrByte(BuffWork, result)
 
 		// Update state
 		prevWasSpace = false
@@ -318,7 +318,7 @@ func (t *Conv) toCaseTransformMinimal(firstWordLower bool, separator string) *Co
 	}
 
 	// Swap result to output
-	t.swapBuff(buffWork, buffOut)
+	t.swapBuff(BuffWork, BuffOut)
 	return t
 }
 

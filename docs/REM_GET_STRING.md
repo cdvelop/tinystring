@@ -1,63 +1,63 @@
-# MEMORY OPTIMIZATION REPORT: getString() Usage Analysis
+# MEMORY OPTIMIZATION REPORT: GetString() Usage Analysis
 
 ## EXECUTIVE SUMMARY
-The tinystring library has extensive usage of `getString()` across multiple files, causing unnecessary memory allocations through `[]byte` to `string` conversions. This report identifies optimization opportunities to eliminate these allocations, following the pattern established in `capitalizeASCIIOptimized()` and the optimized `Quote()` method.
+The tinystring library has extensive usage of `GetString()` across multiple files, causing unnecessary memory allocations through `[]byte` to `string` conversions. This report identifies optimization opportunities to eliminate these allocations, following the pattern established in `capitalizeASCIIOptimized()` and the optimized `Quote()` method.
 
 ## METHODOLOGY
-- Searched for all `getString()` usages across the codebase
+- Searched for all `GetString()` usages across the codebase
 - Analyzed each usage context and optimization potential
 - Classified into optimization categories based on feasibility
 
 ## FINDINGS
-- **Total `getString()` calls found:** 33 instances across 11 files
+- **Total `GetString()` calls found:** 33 instances across 11 files
 - **Optimization candidates:** 28 high-impact cases
 
 ## FILES ANALYZED
 
 ### split.go (3 instances)
-- Line 10: `src := c.getString(buffOut)` — OPTIMIZE: Direct buffer access
-- Line 50: `out = append(out, c.getString(buffWork))` — OPTIMIZE: Use getBytes()
-- Line 97: `before = c.getString(buffWork)` — OPTIMIZE: Direct buffer access
+- Line 10: `src := c.GetString(BuffOut)` — OPTIMIZE: Direct buffer access
+- Line 50: `out = append(out, c.GetString(BuffWork))` — OPTIMIZE: Use getBytes()
+- Line 97: `before = c.GetString(BuffWork)` — OPTIMIZE: Direct buffer access
 
 ### error.go (3 instances)
-- Line 36: `out = c.getString(buffOut)` — OPTIMIZE: Direct buffer access
+- Line 36: `out = c.GetString(BuffOut)` — OPTIMIZE: Direct buffer access
 - Line 88: Debug comment — SKIP: Debug code
-- Line 96: `return c.getString(buffErr)` — KEEP: Public API return
+- Line 96: `return c.GetString(BuffErr)` — KEEP: Public API return
 
 ### fmt_template.go (7 instances)
-- Multiple lines: `str = c.getString(buffWork)` — OPTIMIZE: Direct buffer processing
+- Multiple lines: `str = c.GetString(BuffWork)` — OPTIMIZE: Direct buffer processing
 
 ### convert.go (2 instances)
-- Line 190: `*strPtr = t.getString(buffOut)` — KEEP: External pointer assignment
-- Line 206: `out := c.getString(buffOut)` — OPTIMIZE: Direct buffer access
+- Line 190: `*strPtr = t.GetString(BuffOut)` — KEEP: External pointer assignment
+- Line 206: `out := c.GetString(BuffOut)` — OPTIMIZE: Direct buffer access
 
 ### replace.go (6 instances)
-- Several lines: `str := c.getString(buffOut)` — HIGH PRIORITY: String iteration
-- Several lines: `old := c.getString(buffWork)` — OPTIMIZE: Direct buffer comparison
-- Several lines: `newStr := c.getString(buffWork)` — OPTIMIZE: Direct buffer processing
+- Several lines: `str := c.GetString(BuffOut)` — HIGH PRIORITY: String iteration
+- Several lines: `old := c.GetString(BuffWork)` — OPTIMIZE: Direct buffer comparison
+- Several lines: `newStr := c.GetString(BuffWork)` — OPTIMIZE: Direct buffer processing
 
 ### join.go (2 instances)
-- Line 31: `str := c.getString(buffOut)` — HIGH PRIORITY: String iteration
+- Line 31: `str := c.GetString(BuffOut)` — HIGH PRIORITY: String iteration
 
 ### repeat.go (2 instances)
-- Line 17: `str := t.getString(buffOut)` — HIGH PRIORITY: String iteration
+- Line 17: `str := t.GetString(BuffOut)` — HIGH PRIORITY: String iteration
 
 ### truncate.go (2 instances)
-- Line 84: `Conv := t.getString(buffOut)` — HIGH PRIORITY: String iteration
-- Line 139: `if len(t.getString(buffOut)) == 0` — OPTIMIZE: Use `c.outLen == 0`
+- Line 84: `Conv := t.GetString(BuffOut)` — HIGH PRIORITY: String iteration
+- Line 139: `if len(t.GetString(BuffOut)) == 0` — OPTIMIZE: Use `c.outLen == 0`
 
 ### capitalize.go (4 instances)
-- Line 66: `str := t.getString(buffOut)` — OPTIMIZED: Has ASCII fast path already
-- Line 92: `result := t.getString(buffWork)` — OPTIMIZE: Direct buffer swap
-- Line 166: `str := t.getString(dest)` — OPTIMIZE: Direct buffer access
-- Line 235: `str := t.getString(buffOut)` — HIGH PRIORITY: String iteration
+- Line 66: `str := t.GetString(BuffOut)` — OPTIMIZED: Has ASCII fast path already
+- Line 92: `result := t.GetString(BuffWork)` — OPTIMIZE: Direct buffer swap
+- Line 166: `str := t.GetString(dest)` — OPTIMIZE: Direct buffer access
+- Line 235: `str := t.GetString(BuffOut)` — HIGH PRIORITY: String iteration
 
 ## OPTIMIZATION STRATEGIES
 
 ### PATTERN 1: ASCII-First Optimization (Recommended for HIGH PRIORITY cases)
 ```go
 // Before:
-str := c.getString(buffOut)
+str := c.GetString(BuffOut)
 for _, char := range str { ... }
 
 // After:
@@ -70,7 +70,7 @@ for i := 0; i < c.outLen; i++ {
 ### PATTERN 2: Length Check Optimization
 ```go
 // Before:
-if len(c.getString(buffOut)) == 0
+if len(c.GetString(BuffOut)) == 0
 
 // After:
 if c.outLen == 0
@@ -79,18 +79,18 @@ if c.outLen == 0
 ### PATTERN 3: Buffer-to-Buffer Operations
 ```go
 // Before:
-result := c.getString(buffWork)
-c.rstBuffer(buffOut)
-c.wrString(buffOut, result)
+result := c.GetString(BuffWork)
+c.ResetBuffer(BuffOut)
+c.WrString(BuffOut, result)
 
 // After:
-c.swapBuff(buffWork, buffOut)
+c.swapBuff(BuffWork, BuffOut)
 ```
 
 ### PATTERN 4: Direct Byte Processing
 ```go
 // Before:
-str := c.getString(buffWork)
+str := c.GetString(BuffWork)
 // ... string processing
 
 // After:
@@ -135,4 +135,4 @@ Implementing these optimizations will eliminate the majority of unnecessary stri
 
 ---
 
-This file serves as documentation for `getString()` optimization opportunities across the tinystring library. No executable code is contained within.
+This file serves as documentation for `GetString()` optimization opportunities across the tinystring library. No executable code is contained within.

@@ -7,10 +7,10 @@
 - **[x] Write() Unified Method** - Universal append for all value types
 - **[x] Reset() Method** - Complete Conv state reset
 - **[x] Error Chain Interruption** - Operations check `c.err` before proceeding
-- **[x] Pool Integration** - All Conv objects via `getConv()`, never `&Conv{}`
+- **[x] Pool Integration** - All Conv objects via `GetConv()`, never `&Conv{}`
 - **[x] Translate() Translation Function** - Efficient multilingual string construction
 - **[x] Err() Function Refactoring** - Uses Translate() and pool pattern
-- **[x] Buffer-First Strategy** - `getString()` prioritizes buffer content
+- **[x] Buffer-First Strategy** - `GetString()` prioritizes buffer content
 - **[x] Unified Type Handling** - `setVal()` consolidates all type switches
 - **[x] Builder API Tests** - Complete test suite with validation
 
@@ -27,7 +27,7 @@
 - **[x] Performance Benchmarking** - Builder pattern validation complete
 - **[x] Concurrency Safety Review** - Fixed race conditions in complex chaining
 - **[x] Memory Analysis** - Allocation reduction validated (44%+ reduction achieved)
-- **[x] String Pointer Fixes** - Fixed getString() for string pointers and setString()
+- **[x] String Pointer Fixes** - Fixed GetString() for string pointers and setString()
 
 ### ✅ **IMPLEMENTATION COMPLETE**
 All core string builder features have been successfully implemented and integrated. The TinyString library now features:
@@ -168,7 +168,7 @@ func (t *Conv) ToUpper() *Conv {
 2. **Core refactoring**:
    - Eliminate `withValue()` - replace with `setVal(v, mi)` 
    - Rename `ensureCapacity()` to `grow()` 
-   - Replace `getString()` with `getBuf()` (get buffer value - heavily used)   - Create `val2Buf()` method for direct buffer conversion
+   - Replace `GetString()` with `getBuf()` (get buffer value - heavily used)   - Create `val2Buf()` method for direct buffer conversion
    - Unify `i2sBuf()`, `f2sBuf()` with `appendValueToBuf(v any, typ Kind)` method
    - **ELIMINATE `stringVal` AND `tmpStr` fields**: Use only `buf` as single source of truth
 
@@ -251,7 +251,7 @@ BenchmarkHighDemandProcesses/FormatOperations-16                  446.4 ns/op  3
 #### `Convert(v ...any) *Conv` - Refactored Constructor
 ```go
 func Convert(v ...any) *Conv {
-    c := getConv()
+    c := GetConv()
     
     // Validation: Only accept 0 or 1 parameter
     if len(v) > 1 {
@@ -351,7 +351,7 @@ func (c *Conv) Reset() *Conv {
 #### High-Demand Process Optimization (PRIORITY ORDER)
 **CRITICAL** (✅ Implemented):
 1. **[x] `joinSlice()` function**: Replaced makeBuf + append with builder API for zero-allocation construction
-2. **[x] `unifiedFormat()` function**: Now uses `getConv()` pool pattern instead of direct `&Conv{}` instantiation  
+2. **[x] `unifiedFormat()` function**: Now uses `GetConv()` pool pattern instead of direct `&Conv{}` instantiation  
 3. **[x] `changeCase()` transformation**: Optimized with buffer-first strategy and in-place UTF-8 processing
 4. **[x] Benchmark validation**: Builder pattern shows 44% reduction in allocations vs multiple allocations
 
@@ -388,7 +388,7 @@ func Translate(values ...any) string {
 ```go
 // Err becomes a simple wrapper around Translate function
 func Err(values ...any) *Conv {
-    c := getConv() // Always obtain from pool
+    c := GetConv() // Always obtain from pool
     c.err = Translate(values...)
     c.Kind = K.Err
     return c
@@ -554,7 +554,7 @@ The implementation maintains full backward compatibility while providing signifi
 - High-demand process optimization (joinSlice, unifiedFormat, transformations)
 - Buffer consistency across all string operations (Replace, CamelCase, Repeat, Tilde)
 - Performance validation with 44% allocation reduction
-- String pointer fixes (getString() and setString() consistency)
+- String pointer fixes (GetString() and setString() consistency)
 - Thread-safety and concurrency validation
 - Complete test suite coverage including edge cases
 

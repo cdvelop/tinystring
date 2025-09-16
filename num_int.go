@@ -5,20 +5,20 @@ func (c *Conv) parseIntString(s string, base int, signed bool) int64 {
 	for i := 0; i < len(s); i++ {
 		if s[i] == '.' {
 			// Try to parse as float, then truncate
-			// Use buffWork to avoid conflicts with buffOut
-			c.rstBuffer(buffWork)
-			c.wrString(buffWork, s)
+			// Use BuffWork to avoid conflicts with BuffOut
+			c.ResetBuffer(BuffWork)
+			c.WrString(BuffWork, s)
 
 			// Swap buffers temporarily to use parseFloatBase
-			c.swapBuff(buffOut, buffErr)  // Save current buffOut to buffErr
-			c.swapBuff(buffWork, buffOut) // Move string to buffOut for parsing
+			c.swapBuff(BuffOut, BuffErr)  // Save current BuffOut to BuffErr
+			c.swapBuff(BuffWork, BuffOut) // Move string to BuffOut for parsing
 
 			f := c.parseFloatBase()
-			hasError := c.hasContent(buffErr)
+			hasError := c.hasContent(BuffErr)
 
-			// Restore original buffOut
-			c.swapBuff(buffOut, buffWork) // Move parsed content to buffWork
-			c.swapBuff(buffErr, buffOut)  // Restore original buffOut
+			// Restore original BuffOut
+			c.swapBuff(BuffOut, BuffWork) // Move parsed content to BuffWork
+			c.swapBuff(BuffErr, BuffOut)  // Restore original BuffOut
 
 			if hasError {
 				return 0
@@ -85,7 +85,7 @@ func (c *Conv) Int(base ...int) (int, error) {
 	if val < -2147483648 || val > 2147483647 {
 		return 0, c.wrErr(D.Number, D.Overflow)
 	}
-	if c.hasContent(buffErr) {
+	if c.hasContent(BuffErr) {
 		return 0, c
 	}
 	return int(val), nil
@@ -98,7 +98,7 @@ func (c *Conv) Int32(base ...int) (int32, error) {
 	if val < -2147483648 || val > 2147483647 {
 		return 0, c.wrErr(D.Number, D.Overflow)
 	}
-	if c.hasContent(buffErr) {
+	if c.hasContent(BuffErr) {
 		return 0, c
 	}
 	return int32(val), nil
@@ -108,7 +108,7 @@ func (c *Conv) Int32(base ...int) (int32, error) {
 // Int64 extrae el valor del buffer de salida y lo convierte a int64.
 func (c *Conv) Int64(base ...int) (int64, error) {
 	val := c.parseIntBase(base...)
-	if c.hasContent(buffErr) {
+	if c.hasContent(BuffErr) {
 		return 0, c
 	}
 	return val, nil
@@ -143,13 +143,13 @@ func (c *Conv) toInt64(arg any) (int64, bool) {
 }
 
 // wrIntBase writes an integer in the given base to the buffer, with optional uppercase digits
-func (c *Conv) wrIntBase(dest buffDest, val int64, base int, signed bool, upper ...bool) {
+func (c *Conv) wrIntBase(dest BuffDest, val int64, base int, signed bool, upper ...bool) {
 	if base < 2 || base > 36 {
 		c.wrErr("Base", D.Invalid)
 		return
 	}
 	if val == 0 {
-		c.wrString(dest, "0")
+		c.WrString(dest, "0")
 		return
 	}
 	negative := signed && val < 0
@@ -186,7 +186,7 @@ func (c *Conv) wrIntBase(dest buffDest, val int64, base int, signed bool, upper 
 // It does not take a signed parameter; instead, it checks c.Kind (K.Int = signed, K.Uint = unsigned).
 func (c *Conv) parseIntBase(base ...int) int64 {
 
-	s := c.getString(buffOut)
+	s := c.GetString(BuffOut)
 	baseVal := 10
 	if len(base) > 0 {
 		baseVal = base[0]

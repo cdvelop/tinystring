@@ -15,9 +15,9 @@ package tinystring
 // Translate(D.Format, D.Invalid) returns *Conv with "invalid format"
 // Translate(ES, D.Format, D.Invalid) returns *Conv with "formato inválido"
 func Translate(values ...any) *Conv {
-	c := getConv()
+	c := GetConv()
 	// UNIFIED PROCESSING: Use shared intermediate function
-	processTranslatedMessage(c, buffOut, values...)
+	processTranslatedMessage(c, BuffOut, values...)
 	return c
 }
 
@@ -28,7 +28,7 @@ func Translate(values ...any) *Conv {
 // processTranslatedMessage procesa argumentos variádicos con traducción y escribe al buffer especificado
 // FUNCIÓN UNIFICADA: Reduce duplicación de código entre Translate() y Err()
 // Maneja detección de idioma, traducción de LocStr, y escritura al buffer destino
-func processTranslatedMessage(c *Conv, dest buffDest, values ...any) {
+func processTranslatedMessage(c *Conv, dest BuffDest, values ...any) {
 	if len(values) == 0 {
 		return
 	}
@@ -70,27 +70,27 @@ func detectLanguage(c *Conv, args []any) (lang, int) {
 // processTranslatedArgs processes arguments with language-aware translation
 // UNIFIED FUNCTION: Handles argument processing for both Translate() and wrErr()
 // Eliminates code duplication between Translate() and wrErr()
-// REFACTORED: Uses wrString instead of direct buffer access
-func processTranslatedArgs(c *Conv, dest buffDest, args []any, currentLang lang, startIndex int) {
+// REFACTORED: Uses WrString instead of direct buffer access
+func processTranslatedArgs(c *Conv, dest BuffDest, args []any, currentLang lang, startIndex int) {
 	for i := startIndex; i < len(args); i++ {
 		arg := args[i]
 		switch v := arg.(type) {
 		case LocStr:
 			c.wrTranslation(v, currentLang, dest)
 		case string:
-			c.wrString(dest, v)
+			c.WrString(dest, v)
 		default:
-			c.anyToBuff(buffWork, v)
-			if c.hasContent(buffWork) {
-				workResult := c.getString(buffWork)
-				c.wrString(dest, workResult)
-				c.rstBuffer(buffWork)
+			c.anyToBuff(BuffWork, v)
+			if c.hasContent(BuffWork) {
+				workResult := c.GetString(BuffWork)
+				c.WrString(dest, workResult)
+				c.ResetBuffer(BuffWork)
 			}
 		}
 
 		// Agregar espacio después, excepto si es el último o el siguiente es separador
 		if shouldAddSpace(args, i) {
-			c.wrString(dest, " ")
+			c.WrString(dest, " ")
 		}
 	}
 }
@@ -125,7 +125,7 @@ func shouldAddSpace(args []any, currentIndex int) bool {
 // wrTranslation extracts translation for specific language from LocStr and writes to destination buffer
 // REUSES: existing LocStr array indexing logic
 // METHOD: Now a Conv method that writes directly to buffer without returning anything
-func (c *Conv) wrTranslation(locStr LocStr, currentLang lang, dest buffDest) {
+func (c *Conv) wrTranslation(locStr LocStr, currentLang lang, dest BuffDest) {
 	// Get translation for current language with fallback
 	var translation string
 	if int(currentLang) < len(locStr) && locStr[currentLang] != "" {
@@ -136,5 +136,5 @@ func (c *Conv) wrTranslation(locStr LocStr, currentLang lang, dest buffDest) {
 	}
 
 	// Write directly to destination buffer
-	c.wrString(dest, translation)
+	c.WrString(dest, translation)
 }

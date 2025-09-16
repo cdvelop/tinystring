@@ -11,29 +11,29 @@ package tinystring
 // tinystring.Err(ES,D.Format, D.Invalid) returns "formato inválido"
 
 func Err(msgs ...any) *Conv {
-	c := getConv() // Always obtain from pool
-	// UNIFIED PROCESSING: Use same intermediate function as Translate() but write to buffErr
-	processTranslatedMessage(c, buffErr, msgs...)
+	c := GetConv() // Always obtain from pool
+	// UNIFIED PROCESSING: Use same intermediate function as Translate() but write to BuffErr
+	processTranslatedMessage(c, BuffErr, msgs...)
 	return c
 }
 
 // Errf creates a new Conv instance with error formatting similar to fmt.Errf
 // Example: tinystring.Errf("invalid value: %s", value).Error()
 func Errf(format string, args ...any) *Conv {
-	c := getConv() // Always obtain from pool
-	c.wrFormat(buffErr, format, args...)
+	c := GetConv() // Always obtain from pool
+	c.wrFormat(BuffErr, format, args...)
 	return c
 }
 
 // StringErr returns the content of the Conv along with any error and auto-releases to pool
 func (c *Conv) StringErr() (out string, err error) {
 	// If there's an error, return empty string and the error object (do NOT release to pool)
-	if c.hasContent(buffErr) {
+	if c.hasContent(BuffErr) {
 		return "", c
 	}
 
 	// Otherwise return the string content and no error (safe to release to pool)
-	out = c.getString(buffOut)
+	out = c.GetString(BuffOut)
 	c.putConv()
 	return out, nil
 }
@@ -46,21 +46,21 @@ func (c *Conv) wrErr(msgs ...any) *Conv {
 	for i, msg := range msgs {
 		if i > 0 {
 			// Add space between words
-			c.wrString(buffErr, " ")
+			c.WrString(BuffErr, " ")
 		}
 		// fmt.Printf("wrErr: Processing message part: %v\n", msg) // Depuración
 
 		switch v := msg.(type) {
 		case LocStr:
 			// Translate LocStr using default language
-			c.wrTranslation(v, getCurrentLang(), buffErr)
+			c.wrTranslation(v, getCurrentLang(), BuffErr)
 		case string:
 			// Direct string write
-			c.wrString(buffErr, v)
+			c.WrString(BuffErr, v)
 		case int:
 			// Convert int to string and write - simple conversion for errors
 			if v == 0 {
-				c.wrString(buffErr, "0")
+				c.WrString(BuffErr, "0")
 			} else {
 				// Simple int to string conversion for error messages
 				var buf [20]byte // Enough for 64-bit int
@@ -78,22 +78,22 @@ func (c *Conv) wrErr(msgs ...any) *Conv {
 					n--
 					buf[n] = '-'
 				}
-				c.wrString(buffErr, string(buf[n:]))
+				c.WrString(BuffErr, string(buf[n:]))
 			}
 		default:
 			// For other types, convert to string representation
-			c.wrString(buffErr, "<unsupported>")
+			c.WrString(BuffErr, "<unsupported>")
 		}
 	}
-	// fmt.Printf("wrErr: Final error buffer content: %q, errLen: %d\n", c.getString(buffErr), c.errLen) // Depuración
+	// fmt.Printf("wrErr: Final error buffer content: %q, errLen: %d\n", c.GetString(BuffErr), c.errLen) // Depuración
 	return c
 }
 
 func (c *Conv) getError() string {
-	if !c.hasContent(buffErr) { // ✅ Use API method instead of len(c.err)
+	if !c.hasContent(BuffErr) { // ✅ Use API method instead of len(c.err)
 		return ""
 	}
-	return c.getString(buffErr) // ✅ Use API method instead of direct string(c.err)
+	return c.GetString(BuffErr) // ✅ Use API method instead of direct string(c.err)
 }
 
 func (c *Conv) Error() string {

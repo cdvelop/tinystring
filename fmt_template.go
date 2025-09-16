@@ -10,8 +10,8 @@ import "io"
 // Example: Fmt("Hello %s", "world") returns "Hello world"
 func Fmt(format string, args ...any) string {
 	// Inline unifiedFormat logic - eliminated wrapper function
-	out := getConv() // Always obtain from pool
-	out.wrFormat(buffOut, format, args...)
+	out := GetConv() // Always obtain from pool
+	out.wrFormat(BuffOut, format, args...)
 	return out.String()
 }
 
@@ -20,19 +20,19 @@ func Fmt(format string, args ...any) string {
 // Example: Fprintf(os.Stdout, "Hello %s\n", "world")
 func Fprintf(w io.Writer, format string, args ...any) (n int, err error) {
 	// Obtain converter from pool
-	c := getConv()
+	c := GetConv()
 	defer c.putConv() // Ensure cleanup
 
 	// Use existing wrFormat to populate buffer
-	c.wrFormat(buffOut, format, args...)
+	c.wrFormat(BuffOut, format, args...)
 
 	// Check for formatting errors
-	if c.hasContent(buffErr) {
+	if c.hasContent(BuffErr) {
 		return 0, c
 	}
 
 	// Write to io.Writer
-	data := c.getBytes(buffOut)
+	data := c.getBytes(BuffOut)
 	return w.Write(data)
 }
 
@@ -41,14 +41,14 @@ func Fprintf(w io.Writer, format string, args ...any) (n int, err error) {
 // Example: Sscanf("!3F U+003F question", "!%x U+%x %s", &pos, &enc.uv, &enc.name)
 func Sscanf(src string, format string, args ...any) (n int, err error) {
 	// Obtain converter from pool
-	c := getConv()
+	c := GetConv()
 	defer c.putConv() // Ensure cleanup
 
 	// Reuse parsing logic with format pattern matching
 	n = c.scanWithFormat(src, format, args...)
 
 	// Check for parsing errors
-	if c.hasContent(buffErr) {
+	if c.hasContent(BuffErr) {
 		return n, c
 	}
 
@@ -85,7 +85,7 @@ func (c *Conv) applyWidthAndAlignment(str string, width int, leftAlign bool, zer
 
 // wrFormat applies printf-style formatting to arguments and writes to specified buffer destination.
 // Universal method with dest-first parameter order - follows buffer API architecture
-func (c *Conv) wrFormat(dest buffDest, format string, args ...any) {
+func (c *Conv) wrFormat(dest BuffDest, format string, args ...any) {
 	eSz := 0
 	for _, arg := range args {
 		switch arg.(type) {
@@ -100,7 +100,7 @@ func (c *Conv) wrFormat(dest buffDest, format string, args ...any) {
 		}
 	}
 	// Reset buffer at start BEFORE capacity estimation to avoid contamination
-	c.rstBuffer(dest)
+	c.ResetBuffer(dest)
 
 	argIndex := 0
 
@@ -131,7 +131,7 @@ func (c *Conv) wrFormat(dest buffDest, format string, args ...any) {
 			// Format value using shared helper
 			arg := args[argIndex]
 			str := c.formatValue(arg, formatChar, param, formatSpec)
-			if c.hasContent(buffErr) {
+			if c.hasContent(BuffErr) {
 				return
 			}
 
@@ -145,7 +145,7 @@ func (c *Conv) wrFormat(dest buffDest, format string, args ...any) {
 		}
 	}
 
-	if !c.hasContent(buffErr) {
+	if !c.hasContent(BuffErr) {
 		// Final output is ready in dest buffer
 		c.kind = K.String
 	}
@@ -323,8 +323,8 @@ func (c *Conv) formatValue(arg interface{}, formatChar rune, param int, formatSp
 		}
 		if ok {
 			code := int(r)
-			c.rstBuffer(buffWork)
-			c.wrIntBase(buffWork, int64(code), 16, false, true)
+			c.ResetBuffer(BuffWork)
+			c.wrIntBase(BuffWork, int64(code), 16, false, true)
 			// Pad to at least 4 digits by checking buffer length directly
 			for c.workLen < 4 {
 				// Prepend '0' by shifting existing content
@@ -337,7 +337,7 @@ func (c *Conv) formatValue(arg interface{}, formatChar rune, param int, formatSp
 				c.workLen++
 			}
 			// Build "U+" prefix + hex directly in output
-			return "U+" + c.getString(buffWork) // Only allocation when needed
+			return "U+" + c.GetString(BuffWork) // Only allocation when needed
 		} else {
 			c.wrInvalidTypeErr("%U")
 			return ""
@@ -348,10 +348,10 @@ func (c *Conv) formatValue(arg interface{}, formatChar rune, param int, formatSp
 	case 'g', 'G':
 		// Compact float formatting (manual, no stdlib)
 		if floatVal, ok := c.toFloat64(arg); ok {
-			c.rstBuffer(buffWork)
+			c.ResetBuffer(BuffWork)
 			compact := formatCompactFloat(floatVal, param, formatChar == 'G')
-			c.wrString(buffWork, compact)
-			return c.getString(buffWork) // Keep for compatibility with formatFloat usage
+			c.WrString(BuffWork, compact)
+			return c.GetString(BuffWork) // Keep for compatibility with formatFloat usage
 		} else {
 			c.wrInvalidTypeErr(formatSpec)
 			return ""
@@ -359,10 +359,10 @@ func (c *Conv) formatValue(arg interface{}, formatChar rune, param int, formatSp
 	case 'e', 'E':
 		// Scientific notation (manual, no stdlib)
 		if floatVal, ok := c.toFloat64(arg); ok {
-			c.rstBuffer(buffWork)
+			c.ResetBuffer(BuffWork)
 			sci := formatScientific(floatVal, param, formatChar == 'E')
-			c.wrString(buffWork, sci)
-			return c.getString(buffWork)
+			c.WrString(BuffWork, sci)
+			return c.GetString(BuffWork)
 		} else {
 			c.wrInvalidTypeErr(formatSpec)
 			return ""
@@ -393,37 +393,37 @@ func (c *Conv) formatValue(arg interface{}, formatChar rune, param int, formatSp
 		}
 	case 'd', 'o', 'b', 'x', 'O', 'B', 'X':
 		if intVal, ok := c.toInt64(arg); ok {
-			c.rstBuffer(buffWork)
+			c.ResetBuffer(BuffWork)
 			// Use uppercase for 'X', 'O', 'B'
 			upper := formatChar == 'X' || formatChar == 'O' || formatChar == 'B'
 			if param == 10 {
-				c.wrIntBase(buffWork, intVal, 10, true, upper)
+				c.wrIntBase(BuffWork, intVal, 10, true, upper)
 			} else {
-				c.wrIntBase(buffWork, intVal, param, true, upper)
+				c.wrIntBase(BuffWork, intVal, param, true, upper)
 			}
-			return c.getString(buffWork)
+			return c.GetString(BuffWork)
 		} else {
 			c.wrInvalidTypeErr(formatSpec)
 			return ""
 		}
 	case 'u':
 		if uintVal, ok := c.toUint64(arg); ok {
-			c.rstBuffer(buffWork)
-			c.wrUintBase(buffWork, uintVal, 10)
-			return c.getString(buffWork)
+			c.ResetBuffer(BuffWork)
+			c.wrUintBase(BuffWork, uintVal, 10)
+			return c.GetString(BuffWork)
 		} else {
 			c.wrInvalidTypeErr(formatSpec)
 			return ""
 		}
 	case 'f':
 		if floatVal, ok := c.toFloat64(arg); ok {
-			c.rstBuffer(buffWork)
+			c.ResetBuffer(BuffWork)
 			if param >= 0 {
-				c.wrFloatWithPrecision(buffWork, floatVal, param)
+				c.wrFloatWithPrecision(BuffWork, floatVal, param)
 			} else {
-				c.wrFloat64(buffWork, floatVal)
+				c.wrFloat64(BuffWork, floatVal)
 			}
-			return c.getString(buffWork)
+			return c.GetString(BuffWork)
 		} else {
 			c.wrInvalidTypeErr(formatSpec)
 			return ""
@@ -436,16 +436,16 @@ func (c *Conv) formatValue(arg interface{}, formatChar rune, param int, formatSp
 			return ""
 		}
 	case 'v':
-		c.rstBuffer(buffWork)
+		c.ResetBuffer(BuffWork)
 		if errVal, ok := arg.(error); ok {
-			c.wrString(buffWork, errVal.Error())
-			return c.getString(buffWork)
+			c.WrString(BuffWork, errVal.Error())
+			return c.GetString(BuffWork)
 		} else {
-			c.anyToBuff(buffWork, arg)
-			if c.hasContent(buffErr) {
+			c.anyToBuff(BuffWork, arg)
+			if c.hasContent(BuffErr) {
 				return ""
 			}
-			return c.getString(buffWork)
+			return c.GetString(BuffWork)
 		}
 	}
 	return ""
@@ -508,7 +508,7 @@ func (c *Conv) scanWithFormat(src string, format string, args ...any) int {
 					return parsed
 				} else {
 					// Empty valueStr suggests parsing failure, clear error for partial parsing
-					c.rstBuffer(buffErr)
+					c.ResetBuffer(BuffErr)
 					return parsed
 				}
 			}
@@ -607,36 +607,36 @@ func (c *Conv) assignParsedValue(valueStr string, formatChar rune, arg any) bool
 	switch formatChar {
 	case 'd':
 		// Use buffer-based integer conversion instead of creating new Conv
-		c.rstBuffer(buffWork)
-		c.wrString(buffWork, valueStr)
-		c.swapBuff(buffOut, buffErr)  // Save current buffOut
-		c.swapBuff(buffWork, buffOut) // Move valueStr to buffOut
+		c.ResetBuffer(BuffWork)
+		c.WrString(BuffWork, valueStr)
+		c.swapBuff(BuffOut, BuffErr)  // Save current BuffOut
+		c.swapBuff(BuffWork, BuffOut) // Move valueStr to BuffOut
 
 		switch ptr := arg.(type) {
 		case *int:
 			if val, err := c.Int(); err == nil {
 				*ptr = val
-				c.swapBuff(buffOut, buffWork) // Clear buffOut
-				c.swapBuff(buffErr, buffOut)  // Restore original buffOut
+				c.swapBuff(BuffOut, BuffWork) // Clear BuffOut
+				c.swapBuff(BuffErr, BuffOut)  // Restore original BuffOut
 				return true
 			}
 		case *int64:
 			if val, err := c.Int64(); err == nil {
 				*ptr = val
-				c.swapBuff(buffOut, buffWork) // Clear buffOut
-				c.swapBuff(buffErr, buffOut)  // Restore original buffOut
+				c.swapBuff(BuffOut, BuffWork) // Clear BuffOut
+				c.swapBuff(BuffErr, BuffOut)  // Restore original BuffOut
 				return true
 			}
 		case *int32:
 			if val, err := c.Int32(); err == nil {
 				*ptr = val
-				c.swapBuff(buffOut, buffWork) // Clear buffOut
-				c.swapBuff(buffErr, buffOut)  // Restore original buffOut
+				c.swapBuff(BuffOut, BuffWork) // Clear BuffOut
+				c.swapBuff(BuffErr, BuffOut)  // Restore original BuffOut
 				return true
 			}
 		}
-		c.swapBuff(buffOut, buffWork) // Clear buffOut
-		c.swapBuff(buffErr, buffOut)  // Restore original buffOut
+		c.swapBuff(BuffOut, BuffWork) // Clear BuffOut
+		c.swapBuff(BuffErr, BuffOut)  // Restore original BuffOut
 
 	case 'x', 'X':
 		// Reuse hexadecimal conversion logic from wrFormat
@@ -664,29 +664,29 @@ func (c *Conv) assignParsedValue(valueStr string, formatChar rune, arg any) bool
 
 	case 'f', 'g', 'e':
 		// Use buffer-based float conversion instead of creating new Conv
-		c.rstBuffer(buffWork)
-		c.wrString(buffWork, valueStr)
-		c.swapBuff(buffOut, buffErr)  // Save current buffOut
-		c.swapBuff(buffWork, buffOut) // Move valueStr to buffOut
+		c.ResetBuffer(BuffWork)
+		c.WrString(BuffWork, valueStr)
+		c.swapBuff(BuffOut, BuffErr)  // Save current BuffOut
+		c.swapBuff(BuffWork, BuffOut) // Move valueStr to BuffOut
 
 		switch ptr := arg.(type) {
 		case *float64:
 			if val, err := c.Float64(); err == nil {
 				*ptr = val
-				c.swapBuff(buffOut, buffWork) // Clear buffOut
-				c.swapBuff(buffErr, buffOut)  // Restore original buffOut
+				c.swapBuff(BuffOut, BuffWork) // Clear BuffOut
+				c.swapBuff(BuffErr, BuffOut)  // Restore original BuffOut
 				return true
 			}
 		case *float32:
 			if val, err := c.Float32(); err == nil {
 				*ptr = val
-				c.swapBuff(buffOut, buffWork) // Clear buffOut
-				c.swapBuff(buffErr, buffOut)  // Restore original buffOut
+				c.swapBuff(BuffOut, BuffWork) // Clear BuffOut
+				c.swapBuff(BuffErr, BuffOut)  // Restore original BuffOut
 				return true
 			}
 		}
-		c.swapBuff(buffOut, buffWork) // Clear buffOut
-		c.swapBuff(buffErr, buffOut)  // Restore original buffOut
+		c.swapBuff(BuffOut, BuffWork) // Clear BuffOut
+		c.swapBuff(BuffErr, BuffOut)  // Restore original BuffOut
 
 	case 's':
 		// Direct string assignment

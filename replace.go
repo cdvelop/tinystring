@@ -5,29 +5,29 @@ package tinystring
 // eg: "hello world" with old "world" and new "universe" will return "hello universe"
 // Old and new can be any type, they will be converted to string using Convert
 func (c *Conv) Replace(oldAny, newAny any, n ...int) *Conv {
-	if c.hasContent(buffErr) {
+	if c.hasContent(BuffErr) {
 		return c // Error chain interruption
 	}
 
 	if c.outLen == 0 {
-		return c // OPTIMIZED: Direct length check instead of getString
+		return c // OPTIMIZED: Direct length check instead of GetString
 	}
 
 	// Preserve original state before temporary conversions
 	originalDataPtr := c.dataPtr
 	originalKind := c.kind
 
-	// Use internal work buffer instead of getConv() for zero-allocation
-	c.rstBuffer(buffWork)                       // Clear work buffer
-	c.anyToBuff(buffWork, oldAny)               // Convert oldAny to work buffer
-	oldBytesTemp := c.getBytes(buffWork)        // Get old bytes from work buffer
+	// Use internal work buffer instead of GetConv() for zero-allocation
+	c.ResetBuffer(BuffWork)                     // Clear work buffer
+	c.anyToBuff(BuffWork, oldAny)               // Convert oldAny to work buffer
+	oldBytesTemp := c.getBytes(BuffWork)        // Get old bytes from work buffer
 	oldBytes := make([]byte, len(oldBytesTemp)) // Copy to prevent corruption
 	copy(oldBytes, oldBytesTemp)
 	old := string(oldBytes) // Only create string when needed for compatibility
 
-	c.rstBuffer(buffWork)                       // Clear work buffer for next conversion
-	c.anyToBuff(buffWork, newAny)               // Convert newAny to work buffer
-	newBytesTemp := c.getBytes(buffWork)        // Get new bytes from work buffer
+	c.ResetBuffer(BuffWork)                     // Clear work buffer for next conversion
+	c.anyToBuff(BuffWork, newAny)               // Convert newAny to work buffer
+	newBytesTemp := c.getBytes(BuffWork)        // Get new bytes from work buffer
 	newBytes := make([]byte, len(newBytesTemp)) // Copy to prevent corruption
 	copy(newBytes, newBytesTemp)
 	newStr := string(newBytes) // Only create string when needed for compatibility
@@ -97,7 +97,7 @@ func (c *Conv) Replace(oldAny, newAny any, n ...int) *Conv {
 		}
 	} else {
 		// Unicode fallback: use string processing
-		str := c.getString(buffOut)
+		str := c.GetString(BuffOut)
 		for i := 0; i < len(str); i++ {
 			// Check for occurrence of old in the string and if we haven't reached the maximum rep
 			if i+len(old) <= len(str) && str[i:i+len(old)] == old && (maxReps < 0 || rep < maxReps) {
@@ -115,15 +115,15 @@ func (c *Conv) Replace(oldAny, newAny any, n ...int) *Conv {
 	}
 
 	// ✅ Update buffer using API instead of direct manipulation
-	c.rstBuffer(buffOut)    // Clear buffer using API
-	c.wrBytes(buffOut, out) // Write using API
+	c.ResetBuffer(BuffOut)  // Clear buffer using API
+	c.wrBytes(BuffOut, out) // Write using API
 	return c
 }
 
 // TrimSuffix removes the specified suffix from the Conv content if it exists
 // eg: "hello.txt" with suffix ".txt" will return "hello"
 func (c *Conv) TrimSuffix(suffix string) *Conv {
-	if c.hasContent(buffErr) {
+	if c.hasContent(BuffErr) {
 		return c // Error chain interruption
 	}
 
@@ -157,7 +157,7 @@ func (c *Conv) TrimSuffix(suffix string) *Conv {
 // TrimPrefix removes the specified prefix from the Conv content if it exists
 // eg: "prefix-hello" with prefix "prefix-" will return "hello"
 func (c *Conv) TrimPrefix(prefix string) *Conv {
-	if c.hasContent(buffErr) {
+	if c.hasContent(BuffErr) {
 		return c // Error chain interruption
 	}
 
@@ -191,7 +191,7 @@ func (c *Conv) TrimPrefix(prefix string) *Conv {
 // TrimSpace removes spaces at the beginning and end of the Conv content
 // eg: "  hello world  " will return "hello world"
 func (c *Conv) TrimSpace() *Conv {
-	if c.hasContent(buffErr) {
+	if c.hasContent(BuffErr) {
 		return c // Error chain interruption
 	}
 

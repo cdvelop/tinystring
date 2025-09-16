@@ -7,7 +7,7 @@ package tinystring
 // Uses the Conv work buffer for memory efficiency. The global Split function is deprecated; always use Convert(...).Split(...).
 
 func (c *Conv) Split(separator ...string) []string {
-	src := c.getString(buffOut)
+	src := c.GetString(BuffOut)
 	return c.splitStr(src, separator...)
 }
 

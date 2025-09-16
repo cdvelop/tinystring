@@ -102,7 +102,7 @@ type LocStr [9]string
 // If another type is passed, nothing happens.
 // Always returns the current language code as string (e.g. "EN", "ES", etc).
 func OutLang(l ...any) string {
-	c := getConv()
+	c := GetConv()
 	if len(l) == 0 {
 		systemLang := c.getSystemLang() // Get system lang without holding lock
 		defLangMu.Lock()
@@ -171,12 +171,12 @@ func (c *Conv) langParser(langStrings ...string) lang {
 func (c *Conv) mapLangCode(strVal string) lang {
 
 	// Convert to lowercase and map to internal lang typec
-	c.rstBuffer(buffWork) // Clear work buffer before use
-	c.wrString(buffWork, strVal)
+	c.ResetBuffer(BuffWork) // Clear work buffer before use
+	c.WrString(BuffWork, strVal)
 	// use changeCase
-	c.changeCase(true, buffWork)
+	c.changeCase(true, BuffWork)
 
-	code := c.getString(buffWork) // Get lowercase string
+	code := c.GetString(BuffWork) // Get lowercase string
 
 	switch code {
 	// Group 1

@@ -20,21 +20,21 @@ package tinystring
 //   - IDorPrimaryKey("user", "idaddress") returns (true, false)
 //   - IDorPrimaryKey("user", "name") returns (false, false)
 func IDorPrimaryKey(tableName, fieldName string) (isID, isPK bool) {
-	c := getConv()
-	defer c.putConv()
+	c := GetConv()
+	defer c.PutConv()
 
 	// Convert tableName to lower in work buffer
-	c.rstBuffer(buffOut)
-	c.wrString(buffOut, tableName)
+	c.ResetBuffer(BuffOut)
+	c.WrString(BuffOut, tableName)
 	c.ToLower()
-	c.swapBuff(buffOut, buffWork)
-	tableLower := c.getString(buffWork)
+	c.swapBuff(BuffOut, BuffWork)
+	tableLower := c.GetString(BuffWork)
 
 	// Convert fieldName to lower in out buffer
-	c.rstBuffer(buffOut)
-	c.wrString(buffOut, fieldName)
+	c.ResetBuffer(BuffOut)
+	c.WrString(BuffOut, fieldName)
 	c.ToLower()
-	fieldLower := c.getString(buffOut)
+	fieldLower := c.GetString(BuffOut)
 
 	// Check if it's an ID field (starts with "id")
 	if HasPrefix(fieldLower, "id") {

@@ -27,9 +27,9 @@ message, msgType := Translate(msgs...).StringType()
 - **Detection Logic**: Keyword-based classification with case-insensitive matching
 
 ### TinyString Buffer Architecture
-- **Buffer System**: Three destinations (`buffOut`, `buffWork`, `buffErr`) with length tracking
-- **Memory Management**: Object pooling via `convPool` with `getConv()/putConv()`
-- **Universal Methods**: `wrString()`, `wrBytes()`, `getString()` with dest-first parameter order
+- **Buffer System**: Three destinations (`BuffOut`, `BuffWork`, `BuffErr`) with length tracking
+- **Memory Management**: Object pooling via `convPool` with `GetConv()/putConv()`
+- **Universal Methods**: `WrString()`, `wrBytes()`, `GetString()` with dest-first parameter order
 - **Case Conversion**: Optimized `changeCase()` method with ASCII fast-path
 - **Search Functions**: Global `Contains()`, `Index()` functions
 
@@ -55,30 +55,30 @@ type MessageType uint8
 
 ### 2. Buffer-Based Detection Implementation
 
-**Core Method**: `detectMessageTypeFromBuffer(dest buffDest) MessageType`
+**Core Method**: `detectMessageTypeFromBuffer(dest BuffDest) MessageType`
 
 **Implementation Strategy**:
 ```go
-func (c *Conv) detectMessageTypeFromBuffer(dest buffDest) MessageType {
+func (c *Conv) detectMessageTypeFromBuffer(dest BuffDest) MessageType {
     // Use internal buffer operations - NO string allocations
     
     // 1. Copy content directly to work buffer using swapBuff (zero allocations)
-    c.swapBuff(dest, buffWork) // Direct buffer copy
+    c.swapBuff(dest, BuffWork) // Direct buffer copy
     
     // 2. Convert to lowercase in work buffer using existing method
-    c.changeCase(true, buffWork) // toLower=true, existing method
+    c.changeCase(true, BuffWork) // toLower=true, existing method
     
     // 3. Direct buffer pattern matching - NO Contains() allocations
-    if c.bufferContainsPattern(buffWork, errorPatterns) {
+    if c.bufferContainsPattern(BuffWork, errorPatterns) {
         return Msg.Error
     }
-    if c.bufferContainsPattern(buffWork, warningPatterns) {
+    if c.bufferContainsPattern(BuffWork, warningPatterns) {
         return Msg.Warning  
     }
-    if c.bufferContainsPattern(buffWork, successPatterns) {
+    if c.bufferContainsPattern(BuffWork, successPatterns) {
         return Msg.Success
     }
-    if c.bufferContainsPattern(buffWork, infoPatterns) {
+    if c.bufferContainsPattern(BuffWork, infoPatterns) {
         return Msg.Info
     }
     
@@ -92,10 +92,10 @@ func (c *Conv) detectMessageTypeFromBuffer(dest buffDest) MessageType {
 ```go
 func (c *Conv) StringType() (string, MessageType) {
     // Get string content FIRST (before detection modifies buffer)
-    out := c.getString(buffOut)
+    out := c.GetString(BuffOut)
     
-    // Detect type from buffOut content 
-    msgType := c.detectMessageTypeFromBuffer(buffOut)
+    // Detect type from BuffOut content 
+    msgType := c.detectMessageTypeFromBuffer(BuffOut)
     
     // Auto-release
     c.putConv()
@@ -139,19 +139,19 @@ var (
 ### Phase 2: Buffer-Based Detection Engine
 
 #### 2.1 Case Conversion Using Existing Methods
-**Approach**: Reuse existing `changeCase(toLower bool, dest buffDest)` method
+**Approach**: Reuse existing `changeCase(toLower bool, dest BuffDest)` method
 
 **Purpose**: Direct buffer case conversion using proven implementation
 - Copy content to work buffer
-- Use existing `changeCase(true, buffWork)` for lowercase conversion
+- Use existing `changeCase(true, BuffWork)` for lowercase conversion
 - Leverage existing ASCII optimization and Unicode fallback
 
 #### 2.2 Pattern Matching Implementation
-**Method**: `bufferContainsPattern(dest buffDest, patterns [][]byte) bool`
+**Method**: `bufferContainsPattern(dest BuffDest, patterns [][]byte) bool`
 
 **Logic**:
 ```go
-func (c *Conv) bufferContainsPattern(dest buffDest, patterns [][]byte) bool {
+func (c *Conv) bufferContainsPattern(dest BuffDest, patterns [][]byte) bool {
     bufData := c.getBytes(dest)
     
     for _, pattern := range patterns {
@@ -223,7 +223,7 @@ func (c *Conv) bufferContainsPattern(dest buffDest, patterns [][]byte) bool {
 
 ### 3. Error State Priority
 
-**QUESTION**: When `buffErr` has content, should we:
+**QUESTION**: When `BuffErr` has content, should we:
 - A) Return `Msg.Error` type immediately (no detection) ✅ RECOMMENDED
 - B) Still perform detection on output buffer content
 

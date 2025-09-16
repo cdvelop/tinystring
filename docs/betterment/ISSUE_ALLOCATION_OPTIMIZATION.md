@@ -2,7 +2,7 @@
 
 ## **STATUS: 95% COMPLETE** ✅
 - ✅ **Zero-allocation buffer architecture** implemented
-- ✅ **Universal conversion**: `anyToBuff(c *Conv, dest buffDest, value any)`
+- ✅ **Universal conversion**: `anyToBuff(c *Conv, dest BuffDest, value any)`
 - ✅ **Non-recursive errors**: `wrErr()` with language support
 - ✅ **100% Buffer API compliance**: No manual buffer access
 
@@ -14,9 +14,9 @@ len(c.err) > 0            // Direct length checks
 
 
 // ✅ MANDATORY:
-c.rstBuffer(dest buffDest)
-c.hasContent(dest buffDest)
-c.wrString(dest buffDest, s)
+c.ResetBuffer(dest BuffDest)
+c.hasContent(dest BuffDest)
+c.WrString(dest BuffDest, s)
 
 ```
 
@@ -35,8 +35,8 @@ type Conv struct {
 }
 
 // Universal Conversion
-func (c *Conv) anyToBuff(dest buffDest, value any) {
-    // dest: buffOut | buffWork | buffErr
+func (c *Conv) anyToBuff(dest BuffDest, value any) {
+    // dest: BuffOut | BuffWork | BuffErr
     // Writes errors via c.wrErr(), no return values
     // NOW A *Conv METHOD (not standalone function)
 }
@@ -50,13 +50,13 @@ func (c *Conv) wrErr(msgs ...any) *Conv {
 ## **BUFFER API** 📋
 ```go
 // State Checking
-c.hasContent(buffDest) // Check out,work, err buffer
+c.hasContent(BuffDest) // Check out,work, err buffer
 // Writing
-c.wrString(buffDest, s) // Write string to specified buffer
-c.wrBytes(buffDest, data) // Write bytes to specified buffer    
-c.wrByte(buffDest,s)        
+c.WrString(BuffDest, s) // Write string to specified buffer
+c.wrBytes(BuffDest, data) // Write bytes to specified buffer    
+c.wrByte(BuffDest,s)        
 // Reading
-c.getString(buffDest)        // Read out, work, err buffer
+c.GetString(BuffDest)        // Read out, work, err buffer
 
 ```
 
@@ -70,32 +70,32 @@ c.getString(buffDest)        // Read out, work, err buffer
 
 ### **NAMING CONVENTION CHANGE**
 - All `write*` methods become `wr*`
-- All methods receive `buffDest` parameter for destination selection
+- All methods receive `BuffDest` parameter for destination selection
 - Universal methods replace destination-specific variants
 - NO backwards compatibility - complete refactoring
 
 ### **UNIVERSAL BUFFER METHODS** (SIMPLIFIED NAMING)
 ```go
 // Writing Operations (dest FIRST parameter) - SIMPLIFIED NAMES
-func (c *Conv) wrString(dest buffDest, s string)    // Replaces: wrStringToOut, wrString, wrStringToErr  
-func (c *Conv) wrByte(dest buffDest, b byte)        // Replaces: wrByte (out-only)
-func (c *Conv) wrBytes(dest buffDest, data []byte)  // Replaces: wrBytes, wrToWork, wrBytes
-func (c *Conv) wrInt(dest buffDest, val int64)      // Replaces: writeIntToDest + duplicates
-func (c *Conv) wrUint(dest buffDest, val uint64)    // Replaces: writeUintToDest + duplicates  
-func (c *Conv) wrFloat(dest buffDest, val float64)  // Replaces: writeFloatToDest + duplicates
+func (c *Conv) WrString(dest BuffDest, s string)    // Replaces: wrStringToOut, WrString, wrStringToErr  
+func (c *Conv) wrByte(dest BuffDest, b byte)        // Replaces: wrByte (out-only)
+func (c *Conv) wrBytes(dest BuffDest, data []byte)  // Replaces: wrBytes, wrToWork, wrBytes
+func (c *Conv) wrInt(dest BuffDest, val int64)      // Replaces: writeIntToDest + duplicates
+func (c *Conv) wrUint(dest BuffDest, val uint64)    // Replaces: writeUintToDest + duplicates  
+func (c *Conv) wrFloat(dest BuffDest, val float64)  // Replaces: writeFloatToDest + duplicates
 
 // Universal Conversion (NOW A METHOD)
-func (c *Conv) anyToBuff(dest buffDest, value any)  // Replaces: anyToBuff function
+func (c *Conv) anyToBuff(dest BuffDest, value any)  // Replaces: anyToBuff function
 
 // Reading Operations (dest FIRST parameter)
-func (c *Conv) getString(dest buffDest) string      // Replaces: getString, getString, getString
+func (c *Conv) GetString(dest BuffDest) string      // Replaces: GetString, GetString, GetString
 
 // Buffer Management (dest FIRST parameter)
-func (c *Conv) rstBuffer(dest buffDest)             // Replaces: rstOut, rstWork, resetErr
-func (c *Conv) ensureCapacity(dest buffDest, cap int) // Replaces: ensureOutCapacity
+func (c *Conv) ResetBuffer(dest BuffDest)             // Replaces: rstOut, rstWork, resetErr
+func (c *Conv) ensureCapacity(dest BuffDest, cap int) // Replaces: ensureOutCapacity
 
 // State Checking - Enhanced
-func (c *Conv) hasContent(dest buffDest) bool       // New: unified content checking
+func (c *Conv) hasContent(dest BuffDest) bool       // New: unified content checking
 // Keep existing: hasContent(), hasContent(), hasContent() for performance
 ```
 
@@ -124,10 +124,10 @@ c.setString()           // Used in: fmt.go, truncate.go, mapping.go
 // ✅ REQUIRED: Use only primitive buffer methods in Level 1 files
 ```
 
-### **ERROR HANDLING FOR INVALID buffDest**
+### **ERROR HANDLING FOR INVALID BuffDest**
 ```go
-// Invalid buffDest cases are IGNORED (no panic, no error)
-// Only handle: buffOut, buffWork, buffErr
+// Invalid BuffDest cases are IGNORED (no panic, no error)
+// Only handle: BuffOut, BuffWork, BuffErr
 // Default case: silent no-op (performance over safety)
 ```
 
@@ -140,17 +140,17 @@ c.setString()           // Used in: fmt.go, truncate.go, mapping.go
 // ✅ SAFE HIERARCHY:
 anyToBuff() → wrInt/wrUint/wrFloat() → memory.go buffer methods
 anyToBuff() → wrErr() → error.go buffer methods  
-anyToBuff() → wrString() → memory.go buffer methods
+anyToBuff() → WrString() → memory.go buffer methods
 
 // memory.go and error.go must use ONLY primitive buffer methods:
-//  wrString(), wrBytes(), wrByte(), wrInt(), wrUint(), wrFloat()
+//  WrString(), wrBytes(), wrByte(), wrInt(), wrUint(), wrFloat()
 ```
 
 ## **CONFIRMED DECISIONS** ✅
 1. **Parameter Order**: `dest` comes FIRST in all universal methods
 2. **setString Elimination**: Removed - `anyToBuff` centralizes all conversions  
 3. **Legacy Wrappers**: Completely eliminated to minimize code lines
-4. **Buffer Reset**: Changed from `rst*` to `rstBuffer(dest)`
+4. **Buffer Reset**: Changed from `rst*` to `ResetBuffer(dest)`
 5. **Method Scope**: All buffer operations are `*Conv` methods (no standalone functions)
 6. **Testing**: Deferred until after implementation
 7. **Simplified Naming**: `writeIntToDest` → `wrInt` (find and eliminate duplicate methods)
@@ -165,7 +165,7 @@ anyToBuff() → wrString() → memory.go buffer methods
 - [x] **PRIORITY 4**: Replace all destination-specific method calls ✅ (converted `wrBytes` to method, replaced major calls)
 - [x] **PRIORITY 5**: Convert standalone functions to `*Conv` methods ✅
 - [x] **PRIORITY 6**: **FIX INFINITE RECURSION**: Remove `anyToBuff` calls from `memory.go` and `error.go` ✅
-- [x] **PRIORITY 7**: Replace all `rst*` calls with `rstBuffer(dest)` ✅
+- [x] **PRIORITY 7**: Replace all `rst*` calls with `ResetBuffer(dest)` ✅
 - [x] **PRIORITY 8**: Eliminate temporary fields (`intVal`, `floatVal`, etc.) ✅
 - [x] **PRIORITY 9**: Review `memory.go` for compliance ✅
 - [ ] Run full test suite validation

@@ -61,7 +61,7 @@ func toLowerRune(r rune) rune {
 // OPTIMIZED: Uses work buffer to eliminate temporary allocations
 func (t *Conv) Tilde() *Conv {
 	// Check for error chain interruption
-	if t.hasContent(buffErr) {
+	if t.hasContent(BuffErr) {
 		return t
 	}
 
@@ -70,7 +70,7 @@ func (t *Conv) Tilde() *Conv {
 	}
 
 	// Use work buffer instead of temporary allocation
-	t.rstBuffer(buffWork)
+	t.ResetBuffer(BuffWork)
 
 	// Fast path: ASCII-only optimization
 	if t.isASCIIOnlyOut() {
@@ -84,7 +84,7 @@ func (t *Conv) Tilde() *Conv {
 	}
 
 	// Swap work buffer to out buffer (zero-copy swap)
-	t.swapBuff(buffWork, buffOut)
+	t.swapBuff(BuffWork, BuffOut)
 	return t
 }
 
@@ -101,7 +101,7 @@ func (t *Conv) isASCIIOnlyOut() bool {
 // tildeUnicodeOptimized processes Unicode accents using work buffer
 func (t *Conv) tildeUnicodeOptimized() {
 	// Convert from out buffer to work buffer with accent processing
-	str := t.getString(buffOut)
+	str := t.GetString(BuffOut)
 
 	for _, r := range str {
 		// Find accent and replace with base character using index lookup

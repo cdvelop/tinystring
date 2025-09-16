@@ -17,6 +17,15 @@ var convPool = sync.Pool{
 	},
 }
 
+// Buffer destination selection for anyToBuff universal conversion function
+type BuffDest int
+
+const (
+	BuffOut  BuffDest = iota // Primary output buffer
+	BuffWork                 // Working/temporary buffer
+	BuffErr                  // Error message buffer
+)
+
 // =============================================================================
 // ZERO-ALLOCATION CONVERSIONS (FastHTTP Optimizations)
 // =============================================================================
@@ -32,9 +41,9 @@ func unsafeBytes(s string) []byte {
 	return unsafe.Slice(unsafe.StringData(s), len(s))
 }
 
-// getConv gets a reusable Conv from the pool
+// GetConv gets a reusable Conv from the pool
 // FIXED: Ensures object is completely clean to prevent race conditions
-func getConv() *Conv {
+func GetConv() *Conv {
 	c := convPool.Get().(*Conv)
 	// Defensive cleanup: ensure object is completely clean
 	c.resetAllBuffers()
@@ -46,8 +55,8 @@ func getConv() *Conv {
 	return c
 }
 
-// putConv returns a Conv to the pool after resetting it
-func (c *Conv) putConv() {
+// PutConv returns a Conv to the pool after resetting it
+func (c *Conv) PutConv() {
 	// Reset all buffer positions using centralized method
 	c.resetAllBuffers()
 	// Clear buffer contents (keep capacity for reuse)
@@ -62,6 +71,11 @@ func (c *Conv) putConv() {
 	convPool.Put(c)
 }
 
+// putConv returns a Conv to the pool after resetting it (internal)
+func (c *Conv) putConv() {
+	c.PutConv()
+}
+
 // resetAllBuffers resets all buffer positions (used in putConv)
 func (c *Conv) resetAllBuffers() {
 	c.outLen = 0
@@ -73,9 +87,9 @@ func (c *Conv) resetAllBuffers() {
 // UNIVERSAL BUFFER METHODS - DEST-FIRST PARAMETER ORDER
 // =============================================================================
 
-// wrString writes string to specified buffer destination (universal method)
+// WrString writes string to specified buffer destination (universal method)
 // OPTIMIZED: Uses zero-allocation unsafe conversion for performance
-func (c *Conv) wrString(dest buffDest, s string) {
+func (c *Conv) WrString(dest BuffDest, s string) {
 	if len(s) == 0 {
 		return // No-op for empty strings
 	}
@@ -86,15 +100,15 @@ func (c *Conv) wrString(dest buffDest, s string) {
 }
 
 // wrBytes writes bytes to specified buffer destination (universal method)
-func (c *Conv) wrBytes(dest buffDest, data []byte) {
+func (c *Conv) wrBytes(dest BuffDest, data []byte) {
 	switch dest {
-	case buffOut:
+	case BuffOut:
 		c.out = append(c.out[:c.outLen], data...)
 		c.outLen = len(c.out)
-	case buffWork:
+	case BuffWork:
 		c.work = append(c.work[:c.workLen], data...)
 		c.workLen = len(c.work)
-	case buffErr:
+	case BuffErr:
 		c.err = append(c.err[:c.errLen], data...)
 		c.errLen = len(c.err)
 		// Invalid destinations are silently ignored (no-op)
@@ -102,31 +116,31 @@ func (c *Conv) wrBytes(dest buffDest, data []byte) {
 }
 
 // wrByte writes single byte to specified buffer destination
-func (c *Conv) wrByte(dest buffDest, b byte) {
+func (c *Conv) wrByte(dest BuffDest, b byte) {
 	switch dest {
-	case buffOut:
+	case BuffOut:
 		c.out = append(c.out[:c.outLen], b)
 		c.outLen = len(c.out)
-	case buffWork:
+	case BuffWork:
 		c.work = append(c.work[:c.workLen], b)
 		c.workLen = len(c.work)
-	case buffErr:
+	case BuffErr:
 		c.err = append(c.err[:c.errLen], b)
 		c.errLen = len(c.err)
 		// Invalid destinations are silently ignored (no-op)
 	}
 }
 
-// getString returns string content from specified buffer destination
+// GetString returns string content from specified buffer destination
 // SAFE: Uses standard conversion to avoid memory corruption in concurrent access
 // NOTE: unsafeString() cannot be used here because returned strings outlive Conv lifecycle
-func (c *Conv) getString(dest buffDest) string {
+func (c *Conv) GetString(dest BuffDest) string {
 	switch dest {
-	case buffOut:
+	case BuffOut:
 		return string(c.out[:c.outLen])
-	case buffWork:
+	case BuffWork:
 		return string(c.work[:c.workLen])
-	case buffErr:
+	case BuffErr:
 		return string(c.err[:c.errLen])
 	default:
 		return "" // Invalid destination returns empty string
@@ -135,30 +149,30 @@ func (c *Conv) getString(dest buffDest) string {
 
 // getBytes returns []byte content from specified buffer destination
 // OPTIMIZED: Returns slice directly without string conversion for io.Writer compatibility
-func (c *Conv) getBytes(dest buffDest) []byte {
+func (c *Conv) getBytes(dest BuffDest) []byte {
 	switch dest {
-	case buffOut:
+	case BuffOut:
 		return c.out[:c.outLen]
-	case buffWork:
+	case BuffWork:
 		return c.work[:c.workLen]
-	case buffErr:
+	case BuffErr:
 		return c.err[:c.errLen]
 	default:
 		return nil // Invalid destination returns nil slice
 	}
 }
 
-// rstBuffer resets specified buffer destination
+// ResetBuffer resets specified buffer destination
 // FIXED: Also resets slice length to prevent data contamination
-func (c *Conv) rstBuffer(dest buffDest) {
+func (c *Conv) ResetBuffer(dest BuffDest) {
 	switch dest {
-	case buffOut:
+	case BuffOut:
 		c.outLen = 0
 		c.out = c.out[:0]
-	case buffWork:
+	case BuffWork:
 		c.workLen = 0
 		c.work = c.work[:0]
-	case buffErr:
+	case BuffErr:
 		c.errLen = 0
 		c.err = c.err[:0]
 		// Invalid destinations are silently ignored (no-op)
@@ -166,13 +180,13 @@ func (c *Conv) rstBuffer(dest buffDest) {
 }
 
 // hasContent checks if specified buffer destination has content
-func (c *Conv) hasContent(dest buffDest) bool {
+func (c *Conv) hasContent(dest BuffDest) bool {
 	switch dest {
-	case buffOut:
+	case BuffOut:
 		return c.outLen > 0
-	case buffWork:
+	case BuffWork:
 		return c.workLen > 0
-	case buffErr:
+	case BuffErr:
 		return c.errLen > 0
 	default:
 		return false // Invalid destination has no content
@@ -180,24 +194,24 @@ func (c *Conv) hasContent(dest buffDest) bool {
 }
 
 // swapBuff safely copies content from source buffer to destination buffer
-func (c *Conv) swapBuff(src, dest buffDest) {
+func (c *Conv) swapBuff(src, dest BuffDest) {
 	// Get source slice directly (no string allocation)
 	var srcData []byte
 	var srcLen int
 
 	switch src {
-	case buffOut:
+	case BuffOut:
 		srcData, srcLen = c.out[:c.outLen], c.outLen
-	case buffWork:
+	case BuffWork:
 		srcData, srcLen = c.work[:c.workLen], c.workLen
-	case buffErr:
+	case BuffErr:
 		srcData, srcLen = c.err[:c.errLen], c.errLen
 	}
 
 	// Copy directly without string conversion
-	c.rstBuffer(dest)
+	c.ResetBuffer(dest)
 	c.wrBytes(dest, srcData[:srcLen])
-	c.rstBuffer(src)
+	c.ResetBuffer(src)
 }
 
 // addRuneToWork encodes rune to UTF-8 and appends to work buffer
@@ -220,17 +234,17 @@ func (c *Conv) addRuneToWork(r rune) {
 }
 
 // bytesEqual compares buffer content with given bytes slice for optimization
-// This helper eliminates getString() allocations in boolean/comparison operations
-func (c *Conv) bytesEqual(dest buffDest, target []byte) bool {
+// This helper eliminates GetString() allocations in boolean/comparison operations
+func (c *Conv) bytesEqual(dest BuffDest, target []byte) bool {
 	var bufData []byte
 	var bufLen int
 
 	switch dest {
-	case buffOut:
+	case BuffOut:
 		bufData, bufLen = c.out, c.outLen
-	case buffWork:
+	case BuffWork:
 		bufData, bufLen = c.work, c.workLen
-	case buffErr:
+	case BuffErr:
 		bufData, bufLen = c.err, c.errLen
 	default:
 		return false
@@ -251,7 +265,7 @@ func (c *Conv) bytesEqual(dest buffDest, target []byte) bool {
 }
 
 // bufferContainsPattern checks if any pattern is present in the buffer (no allocations)
-func (c *Conv) bufferContainsPattern(dest buffDest, patterns [][]byte) bool {
+func (c *Conv) bufferContainsPattern(dest BuffDest, patterns [][]byte) bool {
 	bufData := c.getBytes(dest)
 	for _, pattern := range patterns {
 		if bytesContain(bufData, pattern) {
@@ -281,4 +295,51 @@ func bytesContain(haystack, needle []byte) bool {
 		}
 	}
 	return false
+}
+
+// =============================================================================
+// STRING UTILITY FUNCTIONS - ZERO ALLOCATION
+// =============================================================================
+
+// Substring returns substring of s from start to end using buffer
+func Substring(s string, start, end int) string {
+	c := GetConv()
+	defer c.PutConv()
+	c.WrString(BuffOut, s[start:end])
+	return c.GetString(BuffOut)
+}
+
+// Repeat repeats string s count times using buffer
+func Repeat(s string, count int) string {
+	c := GetConv()
+	defer c.PutConv()
+	for i := 0; i < count; i++ {
+		c.WrString(BuffOut, s)
+	}
+	return c.GetString(BuffOut)
+}
+
+// bytesIndex finds index of needle in haystack
+func bytesIndex(haystack, needle []byte) int {
+	n := len(needle)
+	h := len(haystack)
+	if n == 0 {
+		return 0
+	}
+	if h < n {
+		return -1
+	}
+	for i := 0; i <= h-n; i++ {
+		match := true
+		for j := 0; j < n; j++ {
+			if haystack[i+j] != needle[j] {
+				match = false
+				break
+			}
+		}
+		if match {
+			return i
+		}
+	}
+	return -1
 }

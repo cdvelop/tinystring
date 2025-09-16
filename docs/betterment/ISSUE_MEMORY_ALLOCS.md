@@ -28,12 +28,12 @@
 case string:
     c.Kind = K.String
     c.ptrValue = v      // ❌ Remove this boxing
-    c.wrString(dest, v)
+    c.WrString(dest, v)
 
 // AFTER (buffer-only)
 case string:
     c.Kind = K.String
-    c.wrString(dest, v) // ✅ Buffer only
+    c.WrString(dest, v) // ✅ Buffer only
     // No ptrValue assignment
 ```
 
@@ -46,7 +46,7 @@ if c.ptrValue != nil {
 
 // AFTER (buffer-first)
 if c.outLen > 0 {
-    return c.getString(buffOut) // ✅ Use existing buffer
+    return c.GetString(BuffOut) // ✅ Use existing buffer
 }
 // Only fallback for complex types
 ```
@@ -89,9 +89,9 @@ type Conv struct {
 - **Implementation**: Convert numbers to string immediately in anyToBuff(), store only in buffers
 
 ### 5. API Refactoring Decisions
-- **getBuffString()**: Must use wrString API internally
-- **Method renaming**: `fmtIntToOut` → `wrInt` with buffDest parameter
-- **Consistency**: All write methods follow pattern: `wr{Type}(dest buffDest, value)`
+- **getBuffString()**: Must use WrString API internally
+- **Method renaming**: `fmtIntToOut` → `wrInt` with BuffDest parameter
+- **Consistency**: All write methods follow pattern: `wr{Type}(dest BuffDest, value)`
 - **File organization**: Each file handles its responsibilities (bool.go, numeric, etc.)
 
 ### 6. Apply() Method Scope
@@ -102,7 +102,7 @@ type Conv struct {
 
 ### 7. Memory Management
 - **ptrValue cleanup**: Continue setting `ptrValue = nil` in putConv() (most efficient)
-- **API Pattern**: All methods follow `wr{Type}(dest buffDest, value {type})` exactly
+- **API Pattern**: All methods follow `wr{Type}(dest BuffDest, value {type})` exactly
 
 ## Clean Code & Minimal Binary Policy
 - **No dead code**: All unused, unreachable, or obsolete code must be removed immediately after refactoring.
@@ -113,16 +113,16 @@ type Conv struct {
 
 ## Implementation Strategy
 1. **API Refactoring First**: 
-   - Rename `fmtIntToOut` → `wrInt(dest buffDest, val int64)`
-   - Create `wrBool(dest buffDest, val bool)` in bool.go
-   - Create `wrUint(dest buffDest, val uint64)` for consistency
-   - Ensure ALL wr* methods follow exact pattern: `wr{Type}(dest buffDest, value {type})`
+   - Rename `fmtIntToOut` → `wrInt(dest BuffDest, val int64)`
+   - Create `wrBool(dest BuffDest, val bool)` in bool.go
+   - Create `wrUint(dest BuffDest, val uint64)` for consistency
+   - Ensure ALL wr* methods follow exact pattern: `wr{Type}(dest BuffDest, value {type})`
 2. **Modify anyToBuff()**: 
    - Eliminate ptrValue assignment for simple types (string, int, bool, float)
    - Keep ptrValue only for: *string, []string, map
    - Convert numbers to string immediately via wr* methods
 3. **Replace getBuffString()**: 
-   - Rename to `getBuffString(dest buffDest)`
+   - Rename to `getBuffString(dest BuffDest)`
    - Remove ptrValue logic for simple types
    - Use buffer-only approach
 4. **Update putConv()**: Keep `ptrValue = nil` (most efficient cleanup)
