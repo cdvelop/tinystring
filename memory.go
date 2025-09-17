@@ -147,6 +147,18 @@ func (c *Conv) GetString(dest BuffDest) string {
 	}
 }
 
+// GetStringZeroCopy returns string content without heap allocation
+// UNSAFE: Returned string shares underlying buffer - do not modify buffer after calling
+// SAFE for: Immediate use where buffer is not modified until string is no longer needed
+func (c *Conv) GetStringZeroCopy(dest BuffDest) string {
+	data := c.getBytes(dest)
+	if len(data) == 0 {
+		return ""
+	}
+	// Create string without heap allocation using unsafe
+	return unsafe.String(&data[0], len(data))
+}
+
 // getBytes returns []byte content from specified buffer destination
 // OPTIMIZED: Returns slice directly without string conversion for io.Writer compatibility
 func (c *Conv) getBytes(dest BuffDest) []byte {
@@ -295,51 +307,4 @@ func bytesContain(haystack, needle []byte) bool {
 		}
 	}
 	return false
-}
-
-// =============================================================================
-// STRING UTILITY FUNCTIONS - ZERO ALLOCATION
-// =============================================================================
-
-// Substring returns substring of s from start to end using buffer
-func Substring(s string, start, end int) string {
-	c := GetConv()
-	defer c.PutConv()
-	c.WrString(BuffOut, s[start:end])
-	return c.GetString(BuffOut)
-}
-
-// Repeat repeats string s count times using buffer
-func Repeat(s string, count int) string {
-	c := GetConv()
-	defer c.PutConv()
-	for i := 0; i < count; i++ {
-		c.WrString(BuffOut, s)
-	}
-	return c.GetString(BuffOut)
-}
-
-// bytesIndex finds index of needle in haystack
-func bytesIndex(haystack, needle []byte) int {
-	n := len(needle)
-	h := len(haystack)
-	if n == 0 {
-		return 0
-	}
-	if h < n {
-		return -1
-	}
-	for i := 0; i <= h-n; i++ {
-		match := true
-		for j := 0; j < n; j++ {
-			if haystack[i+j] != needle[j] {
-				match = false
-				break
-			}
-		}
-		if match {
-			return i
-		}
-	}
-	return -1
 }
