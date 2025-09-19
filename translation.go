@@ -80,7 +80,7 @@ func processTranslatedArgs(c *Conv, dest BuffDest, args []any, currentLang lang,
 		case string:
 			c.WrString(dest, v)
 		default:
-			c.anyToBuff(BuffWork, v)
+			c.AnyToBuff(BuffWork, v)
 			if c.hasContent(BuffWork) {
 				workResult := c.GetString(BuffWork)
 				c.WrString(dest, workResult)

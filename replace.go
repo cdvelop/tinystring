@@ -19,14 +19,14 @@ func (c *Conv) Replace(oldAny, newAny any, n ...int) *Conv {
 
 	// Use internal work buffer instead of GetConv() for zero-allocation
 	c.ResetBuffer(BuffWork)                     // Clear work buffer
-	c.anyToBuff(BuffWork, oldAny)               // Convert oldAny to work buffer
+	c.AnyToBuff(BuffWork, oldAny)               // Convert oldAny to work buffer
 	oldBytesTemp := c.getBytes(BuffWork)        // Get old bytes from work buffer
 	oldBytes := make([]byte, len(oldBytesTemp)) // Copy to prevent corruption
 	copy(oldBytes, oldBytesTemp)
 	old := string(oldBytes) // Only create string when needed for compatibility
 
 	c.ResetBuffer(BuffWork)                     // Clear work buffer for next conversion
-	c.anyToBuff(BuffWork, newAny)               // Convert newAny to work buffer
+	c.AnyToBuff(BuffWork, newAny)               // Convert newAny to work buffer
 	newBytesTemp := c.getBytes(BuffWork)        // Get new bytes from work buffer
 	newBytes := make([]byte, len(newBytesTemp)) // Copy to prevent corruption
 	copy(newBytes, newBytesTemp)

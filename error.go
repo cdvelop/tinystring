@@ -40,7 +40,7 @@ func (c *Conv) StringErr() (out string, err error) {
 
 // wrErr writes error messages with support for int, string and LocStr
 // ENHANCED: Now supports int, string and LocStr parameters
-// Used internally by anyToBuff for type error messages
+// Used internally by AnyToBuff for type error messages
 func (c *Conv) wrErr(msgs ...any) *Conv {
 	// Write messages using default language (no detection needed)
 	for i, msg := range msgs {

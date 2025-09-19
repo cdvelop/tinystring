@@ -2,7 +2,7 @@
 
 ## **STATUS: 95% COMPLETE** ✅
 - ✅ **Zero-allocation buffer architecture** implemented
-- ✅ **Universal conversion**: `anyToBuff(c *Conv, dest BuffDest, value any)`
+- ✅ **Universal conversion**: `AnyToBuff(c *Conv, dest BuffDest, value any)`
 - ✅ **Non-recursive errors**: `wrErr()` with language support
 - ✅ **100% Buffer API compliance**: No manual buffer access
 
@@ -35,7 +35,7 @@ type Conv struct {
 }
 
 // Universal Conversion
-func (c *Conv) anyToBuff(dest BuffDest, value any) {
+func (c *Conv) AnyToBuff(dest BuffDest, value any) {
     // dest: BuffOut | BuffWork | BuffErr
     // Writes errors via c.wrErr(), no return values
     // NOW A *Conv METHOD (not standalone function)
@@ -85,7 +85,7 @@ func (c *Conv) wrUint(dest BuffDest, val uint64)    // Replaces: writeUintToDest
 func (c *Conv) wrFloat(dest BuffDest, val float64)  // Replaces: writeFloatToDest + duplicates
 
 // Universal Conversion (NOW A METHOD)
-func (c *Conv) anyToBuff(dest BuffDest, value any)  // Replaces: anyToBuff function
+func (c *Conv) AnyToBuff(dest BuffDest, value any)  // Replaces: AnyToBuff function
 
 // Reading Operations (dest FIRST parameter)
 func (c *Conv) GetString(dest BuffDest) string      // Replaces: GetString, GetString, GetString
@@ -110,17 +110,17 @@ func (c *Conv) hasContent(dest BuffDest) bool       // New: unified content chec
 ```go
 // These methods still exist but should be replaced:
 c.setString()           // Used in: fmt.go, truncate.go, mapping.go
-                       // Replace with: direct buffer management via anyToBuff
+                       // Replace with: direct buffer management via AnyToBuff
 ```
 
 ### **ARCHITECTURAL CONSTRAINT** ⚠️
 ```go
 // DEPENDENCY HIERARCHY - PREVENT INFINITE RECURSION
 // Level 1: memory.go, error.go (primitive operations only)
-// Level 2: anyToBuff() (calls Level 1)
-// Level 3: All other files (call anyToBuff)
+// Level 2: AnyToBuff() (calls Level 1)
+// Level 3: All other files (call AnyToBuff)
 
-// ❌ FORBIDDEN: memory.go and error.go calling anyToBuff
+// ❌ FORBIDDEN: memory.go and error.go calling AnyToBuff
 // ✅ REQUIRED: Use only primitive buffer methods in Level 1 files
 ```
 
@@ -134,13 +134,13 @@ c.setString()           // Used in: fmt.go, truncate.go, mapping.go
 ## **CRITICAL RESTRICTION** ⚠️
 ```go
 // ❌ FORBIDDEN - CAUSES INFINITE RECURSION:
-// memory.go and error.go CANNOT call anyToBuff
-// anyToBuff depends on these files for basic operations
+// memory.go and error.go CANNOT call AnyToBuff
+// AnyToBuff depends on these files for basic operations
 
 // ✅ SAFE HIERARCHY:
-anyToBuff() → wrInt/wrUint/wrFloat() → memory.go buffer methods
-anyToBuff() → wrErr() → error.go buffer methods  
-anyToBuff() → WrString() → memory.go buffer methods
+AnyToBuff() → wrInt/wrUint/wrFloat() → memory.go buffer methods
+AnyToBuff() → wrErr() → error.go buffer methods  
+AnyToBuff() → WrString() → memory.go buffer methods
 
 // memory.go and error.go must use ONLY primitive buffer methods:
 //  WrString(), wrBytes(), wrByte(), wrInt(), wrUint(), wrFloat()
@@ -148,23 +148,23 @@ anyToBuff() → WrString() → memory.go buffer methods
 
 ## **CONFIRMED DECISIONS** ✅
 1. **Parameter Order**: `dest` comes FIRST in all universal methods
-2. **setString Elimination**: Removed - `anyToBuff` centralizes all conversions  
+2. **setString Elimination**: Removed - `AnyToBuff` centralizes all conversions  
 3. **Legacy Wrappers**: Completely eliminated to minimize code lines
 4. **Buffer Reset**: Changed from `rst*` to `ResetBuffer(dest)`
 5. **Method Scope**: All buffer operations are `*Conv` methods (no standalone functions)
 6. **Testing**: Deferred until after implementation
 7. **Simplified Naming**: `writeIntToDest` → `wrInt` (find and eliminate duplicate methods)
 8. **Internal Work Buffer**: Methods use existing internal work buffer for operations
-9. **anyToBuff Method**: Convert to `(c *Conv) anyToBuff(dest, value)` method
+9. **AnyToBuff Method**: Convert to `(c *Conv) AnyToBuff(dest, value)` method
 10. **Progressive Implementation**: Make one change at a time with guidance
 
 ## **REMAINING TASKS** 🎯
 - [x] **PRIORITY 1**: Implement simplified universal methods (`wrInt`, `wrUint`, `wrFloat`) ✅
-- [x] **PRIORITY 2**: Convert `anyToBuff` to `*Conv` method ✅
+- [x] **PRIORITY 2**: Convert `AnyToBuff` to `*Conv` method ✅
 - [x] **PRIORITY 3**: Find and eliminate duplicate methods with simplified naming ✅
 - [x] **PRIORITY 4**: Replace all destination-specific method calls ✅ (converted `wrBytes` to method, replaced major calls)
 - [x] **PRIORITY 5**: Convert standalone functions to `*Conv` methods ✅
-- [x] **PRIORITY 6**: **FIX INFINITE RECURSION**: Remove `anyToBuff` calls from `memory.go` and `error.go` ✅
+- [x] **PRIORITY 6**: **FIX INFINITE RECURSION**: Remove `AnyToBuff` calls from `memory.go` and `error.go` ✅
 - [x] **PRIORITY 7**: Replace all `rst*` calls with `ResetBuffer(dest)` ✅
 - [x] **PRIORITY 8**: Eliminate temporary fields (`intVal`, `floatVal`, etc.) ✅
 - [x] **PRIORITY 9**: Review `memory.go` for compliance ✅

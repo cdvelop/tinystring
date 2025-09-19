@@ -17,7 +17,7 @@ var convPool = sync.Pool{
 	},
 }
 
-// Buffer destination selection for anyToBuff universal conversion function
+// Buffer destination selection for AnyToBuff universal conversion function
 type BuffDest int
 
 const (

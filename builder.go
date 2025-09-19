@@ -16,13 +16,13 @@ func (c *Conv) Write(v any) *Conv {
 	// BUILDER INTEGRATION: Only transfer initial value if buffer is empty
 	// and we have a stored value that hasn't been converted yet
 	if c.outLen == 0 && c.dataPtr != nil {
-		// Convert current value to buffer using anyToBuff() - need to reconstruct interface{}
+		// Convert current value to buffer using AnyToBuff() - need to reconstruct interface{}
 		// For now, skip this optimization until we implement proper unsafe reconstruction
 		// TODO: Implement unsafe.Pointer to interface{} reconstruction
 	}
 
-	// Use unified anyToBuff() function to append new value
-	c.anyToBuff(BuffOut, v)
+	// Use unified AnyToBuff() function to append new value
+	c.AnyToBuff(BuffOut, v)
 	return c
 }
 

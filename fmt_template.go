@@ -441,7 +441,7 @@ func (c *Conv) formatValue(arg interface{}, formatChar rune, param int, formatSp
 			c.WrString(BuffWork, errVal.Error())
 			return c.GetString(BuffWork)
 		} else {
-			c.anyToBuff(BuffWork, arg)
+			c.AnyToBuff(BuffWork, arg)
 			if c.hasContent(BuffErr) {
 				return ""
 			}

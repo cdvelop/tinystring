@@ -39,11 +39,11 @@ func Convert(v ...any) *Conv {
 			return c.wrErr(val.(error).Error())
 		}
 
-		// Use anyToBuff for ALL other conversions - eliminates all duplication
+		// Use AnyToBuff for ALL other conversions - eliminates all duplication
 		c.ResetBuffer(BuffOut)
-		c.anyToBuff(BuffOut, val)
+		c.AnyToBuff(BuffOut, val)
 
-		// anyToBuff handles everything:
+		// AnyToBuff handles everything:
 		// - Setting c.Kind and c.dataPtr for all types
 		// - String pointer handling (*string)
 		// - Complex types ([]string, map, etc.) with deferred conversion
@@ -59,10 +59,10 @@ func Convert(v ...any) *Conv {
 
 // =============================================================================
 
-// anyToBuff converts any supported type to buffer using existing conversion logic
+// AnyToBuff converts any supported type to buffer using existing conversion logic
 // REUSES: floatToOut, wrStringToOut, wrStringToErr
 // Supports: string, int variants, uint variants, float variants, bool, []byte, LocStr
-func (c *Conv) anyToBuff(dest BuffDest, value any) {
+func (c *Conv) AnyToBuff(dest BuffDest, value any) {
 	// Limpiar buffer de error antes de cualquier conversión inmediata
 	c.ResetBuffer(BuffErr)
 

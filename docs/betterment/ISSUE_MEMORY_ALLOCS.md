@@ -22,7 +22,7 @@
 - **KEEP ptrValue for**: `[]string`, `map[string]string`, `map[string]any`, `*string` (for Apply())
 - **ELIMINATE ptrValue for**: `string`, `int*`, `uint*`, `float*`, `bool`, `[]byte`
 
-### Phase 2: Optimize anyToBuff()
+### Phase 2: Optimize AnyToBuff()
 ```go
 // BEFORE (causes allocation)
 case string:
@@ -86,7 +86,7 @@ type Conv struct {
 **DECISION**: Use Opción B - Immediate string conversion (APPROVED)
 - **Rationale**: Treating all as string/bytes is simpler and more flexible
 - **Benefits**: Easier type conversion, unified buffer architecture, less memory overhead
-- **Implementation**: Convert numbers to string immediately in anyToBuff(), store only in buffers
+- **Implementation**: Convert numbers to string immediately in AnyToBuff(), store only in buffers
 
 ### 5. API Refactoring Decisions
 - **getBuffString()**: Must use WrString API internally
@@ -117,7 +117,7 @@ type Conv struct {
    - Create `wrBool(dest BuffDest, val bool)` in bool.go
    - Create `wrUint(dest BuffDest, val uint64)` for consistency
    - Ensure ALL wr* methods follow exact pattern: `wr{Type}(dest BuffDest, value {type})`
-2. **Modify anyToBuff()**: 
+2. **Modify AnyToBuff()**: 
    - Eliminate ptrValue assignment for simple types (string, int, bool, float)
    - Keep ptrValue only for: *string, []string, map
    - Convert numbers to string immediately via wr* methods

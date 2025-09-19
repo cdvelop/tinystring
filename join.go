@@ -19,15 +19,15 @@ func (c *Conv) Join(sep ...string) *Conv {
 			c.ResetBuffer(BuffOut)
 			for i, s := range slice {
 				if i > 0 {
-					c.anyToBuff(BuffOut, separator)
+					c.AnyToBuff(BuffOut, separator)
 				}
-				c.anyToBuff(BuffOut, s)
+				c.AnyToBuff(BuffOut, s)
 			}
 		}
 		return c
 	}
 
-	// For other types, convert to string first using anyToBuff through GetString
+	// For other types, convert to string first using AnyToBuff through GetString
 	// OPTIMIZED: Check if content is ASCII for fast path
 	if c.outLen == 0 {
 		return c
@@ -69,7 +69,7 @@ func (c *Conv) Join(sep ...string) *Conv {
 			c.ResetBuffer(BuffOut) // Reset output buffer
 			for i, part := range parts {
 				if i > 0 {
-					c.anyToBuff(BuffOut, separator)
+					c.AnyToBuff(BuffOut, separator)
 				}
 				c.wrBytes(BuffOut, part)
 			}
@@ -95,14 +95,14 @@ func (c *Conv) Join(sep ...string) *Conv {
 				parts = append(parts, string(runes[start:]))
 			}
 
-			// Join parts with the separator using anyToBuff only
+			// Join parts with the separator using AnyToBuff only
 			if len(parts) > 0 {
 				c.ResetBuffer(BuffOut) // Reset output buffer
 				for i, part := range parts {
 					if i > 0 {
-						c.anyToBuff(BuffOut, separator)
+						c.AnyToBuff(BuffOut, separator)
 					}
-					c.anyToBuff(BuffOut, part)
+					c.AnyToBuff(BuffOut, part)
 				}
 			}
 		}

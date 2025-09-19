@@ -21,7 +21,7 @@
 🔥 CRITICAL: string(c.err[:c.errLen]) escapes to heap   (Lines: 63, 68, 112 in memory.go)
 ⚠️ MODERATE: make([]byte, 0, 64) escapes to heap       (Lines: 9, 10, 11 in memory.go)
 ⚠️ MODERATE: &Conv{...} escapes to heap                (Line: 8 in memory.go)
-⚠️ MODERATE: anyToBuff value escapes                   (convert.go multiple lines)
+⚠️ MODERATE: AnyToBuff value escapes                   (convert.go multiple lines)
 ```
 
 **CONFIRMED PERFORMANCE BASELINE (June 23, 2025):**
@@ -42,7 +42,7 @@
 **Root Cause Confirmed:**
 1. **GetString() String Creation:** Every call to `GetString()` creates new heap allocation
 2. **Buffer Pool Overhead:** Conv struct initialization allocates 3×64B slices to heap  
-3. **Type Conversion Overhead:** `anyToBuff()` value storage causes escapes
+3. **Type Conversion Overhead:** `AnyToBuff()` value storage causes escapes
 4. **Replace Operation:** Highest allocation count (56 allocs/op) indicates algorithmic inefficiency
 
 **Performance Gap Analysis (Updated with Real Data):**
@@ -194,10 +194,10 @@ func (c *Conv) ensureBufInit(dest BuffDest) {
 
 ### **PRIORITY 4: Type Conversion Escape Prevention** 🎯 **VALIDATED**
 
-**Problem CONFIRMED:** `anyToBuff()` value storage causes heap escapes (convert.go multiple lines)
+**Problem CONFIRMED:** `AnyToBuff()` value storage causes heap escapes (convert.go multiple lines)
 ```go
 // ❌ CURRENT - CONFIRMED HEAP ESCAPES
-func (c *Conv) anyToBuff(dest BuffDest, value any) {
+func (c *Conv) AnyToBuff(dest BuffDest, value any) {
     switch v := value.(type) {
     case string:
         c.ptrValue = v  // ⚠️ ESCAPES TO HEAP
@@ -213,7 +213,7 @@ func (c *Conv) anyToBuff(dest BuffDest, value any) {
 **Solution:** Minimize interface{} storage and add fast path
 ```go
 // ✅ OPTIMIZED - Fast path for common types, minimal interface storage
-func (c *Conv) anyToBuff(dest BuffDest, value any) {
+func (c *Conv) AnyToBuff(dest BuffDest, value any) {
     // Fast path for 90% of cases - no interface storage
     if s, ok := value.(string); ok {
         c.Kind = K.String
