@@ -47,7 +47,7 @@ Basado en el análisis completo realizado el 23 de junio de 2025, se ha identifi
 
 **🔧 PRIORIDAD 4: Type Conversion Fast Path**
 - Fast path para tipos comunes (string, int)
-- Minimizar interface{} storage
+- Minimizar any storage
 - **Target:** -40% overhead de conversión
 
 **📈 PRIORIDAD 5: Buffer Growth Management**

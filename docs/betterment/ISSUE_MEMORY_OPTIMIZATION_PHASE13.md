@@ -210,7 +210,7 @@ func (c *Conv) AnyToBuff(dest BuffDest, value any) {
 }
 ```
 
-**Solution:** Minimize interface{} storage and add fast path
+**Solution:** Minimize any storage and add fast path
 ```go
 // ✅ OPTIMIZED - Fast path for common types, minimal interface storage
 func (c *Conv) AnyToBuff(dest BuffDest, value any) {

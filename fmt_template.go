@@ -286,7 +286,7 @@ func (c *Conv) wrInvalidTypeErr(formatSpec string) {
 }
 
 // formatValue formats a single value according to format character
-func (c *Conv) formatValue(arg interface{}, formatChar rune, param int, formatSpec string) string {
+func (c *Conv) formatValue(arg any, formatChar rune, param int, formatSpec string) string {
 	switch formatChar {
 	case 'c':
 		// Character formatting: accept rune, byte, int

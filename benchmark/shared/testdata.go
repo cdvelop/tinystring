@@ -26,7 +26,7 @@ var TestNumbers = []float64{
 }
 
 // TestMixedData contains mixed data types for complex benchmarking scenarios
-var TestMixedData = map[string]interface{}{
+var TestMixedData = map[string]any{
 	"Número": 12345.67,
 	"Texto":  "Información IMPORTANTE",
 	"Valor":  98765.43,
