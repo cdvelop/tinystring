@@ -1,10 +1,12 @@
-*.wasm
+
 #ISSUE*.md
 *.exe
 *.test.exe
 # Benchmark binaries (generated files, should not be tracked)
 benchmark/bench-binary-size/standard-lib/standard
+benchmark/bench-binary-size/standard-lib/*.wasm
 benchmark/bench-binary-size/tinystring-lib/tinystring
+benchmark/bench-binary-size/tinystring-lib/*.wasm
 benchmark/benchmark_results.md
 *.prof
 example/pwa/theme
