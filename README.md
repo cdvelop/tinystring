@@ -399,6 +399,8 @@ value, found := Convert(`json:"name" Label:"Nombre"`).TagValue("Label") // out: 
 value, found := Convert(`json:"name" Label:"Nombre"`).TagValue("xml")   // out: "", false
 ```
 ---
+## [WebAssembly Html Example Code](example/pwa/main.wasm.go)
+---
 ## [Benchmarking](benchmark/README.md)
 ---
 ## [Contributing](https://github.com/cdvelop/cdvelop/blob/main/CONTRIBUTING.md)

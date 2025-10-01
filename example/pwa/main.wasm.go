@@ -14,7 +14,16 @@ func main() {
 
 	// Crear el elemento div
 	dom := js.Global().Get("document").Call("createElement", "div")
-	dom.Set("innerHTML", "Hello, WebAssembly! 0")
+
+	buf := Convert().
+		Write("<h1>Hello, TinyString</h1>").
+		Write("<ul>").
+		Write("<li>First item</li>").
+		Write("<li>Second item</li>").
+		Write("<li>Third item</li>").
+		Write("</ul>")
+
+	dom.Set("innerHTML", buf.String())
 
 	// Obtener el body del documento y agregar el elemento
 	body := js.Global().Get("document").Get("body")
