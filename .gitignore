@@ -7,3 +7,7 @@ benchmark/bench-binary-size/standard-lib/standard
 benchmark/bench-binary-size/tinystring-lib/tinystring
 benchmark/benchmark_results.md
 *.prof
+example/pwa/theme
+example/pwa/main.server
+example/*.log
+.vscode
