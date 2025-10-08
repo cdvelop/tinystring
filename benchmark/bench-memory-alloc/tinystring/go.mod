@@ -1,6 +1,6 @@
 module memory-bench-tinystring
 
-go 1.22.0
+go 1.25.2
 
 require (
 	benchmark/shared v0.0.0
