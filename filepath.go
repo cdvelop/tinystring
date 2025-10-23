@@ -1,5 +1,50 @@
 package tinystring
 
+// Join joins path elements using the appropriate separator.
+// Detects Windows paths (backslash) or Unix paths (forward slash).
+// Empty elements are ignored. Returns empty string if no valid elements.
+//
+// Examples:
+//
+//	Join("a", "b", "c")           // -> "a/b/c"
+//	Join("/root", "sub", "file")   // -> "/root/sub/file"
+//	Join("C:\\dir", "file")        // -> "C:\dir\file"
+//	Join("a", "", "b")            // -> "a/b"
+func PathJoin(elem ...string) string {
+	c := GetConv()
+	sep := "/"
+
+	// detect separator from first element with a separator
+	for _, e := range elem {
+		if Index(e, "\\") != -1 {
+			sep = "\\"
+			break
+		}
+	}
+
+	for i, e := range elem {
+		if e == "" {
+			continue
+		}
+
+		curr := c.GetString(BuffOut)
+
+		// trim leading separators only if not the first element
+		if i > 0 && len(curr) > 0 {
+			for len(e) > 0 && (e[0] == '/' || e[0] == '\\') {
+				e = e[1:]
+			}
+		}
+
+		// add separator if needed
+		if len(curr) > 0 && !HasSuffix(curr, sep) && e != "" {
+			c.Write(sep)
+		}
+		c.Write(e)
+	}
+	return c.String()
+}
+
 // PathBase returns the last element of path, similar to
 // filepath.Base from the Go standard library. It treats
 // trailing slashes specially ("/a/b/" -> "b") and preserves

@@ -109,6 +109,7 @@ Replace common `strings` package functions with TinyString equivalents:
 | `strings.HasPrefix()` | `HasPrefix(s, prefix)` |
 | `strings.HasSuffix()` | `HasSuffix(s, suffix)` |
 | `filepath.Base()` | `PathBase(path)` |
+| `filepath.Join()` | `PathJoin(elem ...string)` — cross-platform join; detects separator ("/" or "\\") and avoids duplicated separators |
 
 #### Other String Transformations
 
@@ -152,7 +153,13 @@ if pos >= 0 {
 PathBase("/a/b/c.txt") // -> "c.txt"
 PathBase("folder/file.txt")   // -> "file.txt"
 PathBase("")           // -> "."
-PathBase("c:\file program\app.exe") // -> "app.exe"
+PathBase("c:\\file program\\app.exe") // -> "app.exe"
+
+// Path joining (cross-platform)
+PathJoin("a", "b", "c")            // -> "a/b/c"
+PathJoin("/root", "sub", "file")   // -> "/root/sub/file"
+PathJoin(`C:\\dir`, "file")          // -> `C:\dir\\file`
+PathJoin(`\\\\server`, "share", "file") // -> `\\server\\share\\file`
 
 // Replace operations
 Convert("hello world").Replace("world", "Go").String() // out: "hello Go"
