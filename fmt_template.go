@@ -429,12 +429,19 @@ func (c *Conv) formatValue(arg any, formatChar rune, param int, formatSpec strin
 			return ""
 		}
 	case 's':
+		// String formatting - handle both string and types with String() method
 		if strVal, ok := arg.(string); ok {
 			return strVal
-		} else {
+		}
+		// Handle custom types with String() method using AnyToBuff
+		c.ResetBuffer(BuffWork)
+		c.AnyToBuff(BuffWork, arg)
+		if c.hasContent(BuffErr) {
+			// If AnyToBuff fails, reset error and return empty with proper error
 			c.wrInvalidTypeErr(formatSpec)
 			return ""
 		}
+		return c.GetString(BuffWork)
 	case 'v':
 		c.ResetBuffer(BuffWork)
 		if errVal, ok := arg.(error); ok {
