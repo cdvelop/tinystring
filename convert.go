@@ -164,8 +164,16 @@ func (c *Conv) AnyToBuff(dest BuffDest, value any) {
 		c.wrErr(v.Error())
 
 	default:
-		// Try to extract underlying value for custom types (e.g., type customInt int)
-		// This allows %d to work with custom numeric types
+		// FIRST: Check if type implements String() method (fmt.Stringer interface)
+		// This takes priority over reflection to honor custom formatting
+		if stringer, ok := value.(interface{ String() string }); ok {
+			c.kind = K.String
+			c.WrString(dest, stringer.String())
+			return
+		}
+
+		// SECOND: Try to extract underlying value for custom types (e.g., type customInt int)
+		// This allows %d to work with custom numeric types that don't have String()
 		rv := reflect.ValueOf(value)
 		switch rv.Kind() {
 		case reflect.Int, reflect.Int8, reflect.Int16, reflect.Int32, reflect.Int64:
@@ -183,13 +191,6 @@ func (c *Conv) AnyToBuff(dest BuffDest, value any) {
 		case reflect.String:
 			// Custom type based on string - extract underlying value and recurse
 			c.AnyToBuff(dest, rv.String())
-			return
-		}
-
-		// Check if type implements String() method (fmt.Stringer interface)
-		if stringer, ok := value.(interface{ String() string }); ok {
-			c.kind = K.String
-			c.WrString(dest, stringer.String())
 			return
 		}
 
