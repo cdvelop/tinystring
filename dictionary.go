@@ -18,6 +18,7 @@ var D = struct {
 	// B
 	BackingUp LocStr // "backing up"
 	Be        LocStr // "be"
+	Begin     LocStr // "begin"
 	Binary    LocStr // "binary"
 
 	// C
@@ -27,6 +28,8 @@ var D = struct {
 	Cancel        LocStr // "cancel"
 	Changed       LocStr // "changed"
 	Character     LocStr // "character"
+	Chars         LocStr // "chars"
+	Checker       LocStr // "checker"
 	Coding        LocStr // "coding"
 	Compilation   LocStr // "compilation"
 	Configuration LocStr // "configuration"
@@ -35,22 +38,27 @@ var D = struct {
 	Create        LocStr // "create"
 
 	// D
-	Debugging LocStr // "debugging"
-	Decimal   LocStr // "decimal"
-	Delimiter LocStr // "delimiter"
-	Digit     LocStr // "digit"
-	Down      LocStr // "down"
+	Date       LocStr // "date"
+	Debugging  LocStr // "debugging"
+	Decimal    LocStr // "decimal"
+	Delimiter  LocStr // "delimiter"
+	Dictionary LocStr // "dictionary"
+	Digit      LocStr // "digit"
+	Down       LocStr // "down"
 
 	// E
 	Edit    LocStr // "edit"
 	Element LocStr // "element"
+	Email   LocStr // "email"
 	Empty   LocStr // "empty"
 	End     LocStr // "end"
+	Example LocStr // "example"
 	Exceeds LocStr // "exceeds"
 	Execute LocStr // "execute"
 
 	// F
 	Failed LocStr // "failed"
+	Female LocStr // "female
 	Field  LocStr // "field"
 	Fields LocStr // "fields"
 	Files  LocStr // "files"
@@ -59,6 +67,8 @@ var D = struct {
 
 	// H
 	Handler LocStr // "handler"
+	Hyphen  LocStr // "hyphen"
+	Hour    LocStr // "hour"
 
 	// I
 	Icons        LocStr // "icons"
@@ -78,9 +88,11 @@ var D = struct {
 
 	// L
 	Language LocStr // "language"
+	Letters  LocStr // "letters"
 	Line     LocStr // "line"
 
-	// Msg
+	// M
+	Male     LocStr // "male"
 	Maximum  LocStr // "maximum"
 	Method   LocStr // "method"
 	Missing  LocStr // "missing"
@@ -160,6 +172,10 @@ var D = struct {
 	Value      LocStr // "value"
 	Visible    LocStr // "visible"
 
+	// W
+	Warning LocStr // "warning"
+	With    LocStr // "with"
+
 	// Z
 	Zero LocStr // "zero"
 }{
@@ -174,6 +190,7 @@ var D = struct {
 	// B
 	LocStr{"Backing up", "Respaldando", "备份", "बैकअप", "نسخ احتياطي", "Fazendo backup", "Sauvegarde", "Sicherung", "Резервное копирование"},
 	LocStr{"be", "ser", "是", "होना", "كون", "ser", "être", "sein", "быть"},
+	LocStr{"Begin", "Comenzar", "开始", "शुरू", "ابدأ", "Começar", "Commencer", "Beginnen", "Начать"},
 	LocStr{"Binary", "Binario", "二进制", "二进制", "ثنائي", "Binário", "Binaire", "Binär", "Двоичный"},
 
 	// C
@@ -183,6 +200,8 @@ var D = struct {
 	LocStr{"Cancel", "Cancelar", "取消", "रद्द करें", "إلغاء", "Cancelar", "Annuler", "Abbrechen", "Отменить"},
 	LocStr{"Changed", "Cambiado", "更改", "परिवर्तित", "تم التغيير", "Alterado", "Changé", "Geändert", "Изменено"},
 	LocStr{"Character", "Caracter", "字符", "वर्ण", "حرف", "Caractere", "Caractère", "Zeichen", "Символ"},
+	LocStr{"Chars", "Caracteres", "字符", "अक्षर", "حروف", "Caracteres", "Caractères", "Zeichen", "Символы"},
+	LocStr{"Checker", "Verificador", "检查器", "चेककर", "مدقق", "Verificador", "Vérificateur", "Prüfer", "Проверяющий"},
 	LocStr{"Coding", "Codificación", "编码", "कोडिंग", "ترميز", "Codificação", "Codage", "Kodierung", "Кодирование"},
 	LocStr{"Compilation", "Compilación", "编译", "संकलन", "تجميع", "Compilação", "Compilation", "Kompilierung", "Компиляция"},
 	LocStr{"Configuration", "Configuración", "配置", "कॉन्फ़िगरेशन", "تكوين", "Configuração", "Configuration", "Konfiguration", "Конфигурация"},
@@ -191,22 +210,27 @@ var D = struct {
 	LocStr{"Create", "Crear", "创建", "बनाएँ", "إنشاء", "Criar", "Créer", "Erstellen", "Создать"},
 
 	// D
+	LocStr{"Date", "Fecha", "日期", "तारीख", "تاريخ", "Data", "Date", "Datum", "Дата"},
 	LocStr{"Debugging", "Depuración", "调试", "डिबगिंग", "تصحيح", "Depuração", "Débogage", "Debuggen", "Отладка"},
 	LocStr{"Decimal", "Decimal", "十进制", "दशमलव", "عشري", "Decimal", "Décimal", "Dezimal", "Десятичная"},
 	LocStr{"Delimiter", "Delimitador", "分隔符", "सीमांकक", "محدد", "Delimitador", "Délimiteur", "Trennzeichen", "Разделитель"},
+	LocStr{"Dictionary", "Diccionario", "字典", "शब्दकोश", "قاموس", "Dicionário", "Dictionnaire", "Wörterbuch", "Словарь"},
 	LocStr{"Digit", "Dígito", "数字", "अंक", "رقم", "Dígito", "Chiffre", "Ziffer", "Цифра"},
 	LocStr{"Down", "Abajo", "下", "नीचे", "أسفل", "Baixo", "Bas", "Unten", "Вниз"},
 
 	// E
 	LocStr{"Edit", "Editar", "编辑", "संपादित करें", "تحرير", "Editar", "Éditer", "Bearbeiten", "Редактировать"},
 	LocStr{"Element", "Elemento", "元素", "एलिमेंट", "عنصر", "Elemento", "Élément", "Element", "Элемент"},
+	LocStr{"Email", "Correo electrónico", "电子邮件", "ईमेल", "البريد الإلكتروني", "Email", "Email", "E-Mail", "Электронная почта"},
 	LocStr{"Empty", "Vacío", "空", "खाली", "فارغ", "Vazio", "Vide", "Leer", "Пустой"},
 	LocStr{"End", "Fin", "结束", "अंत", "نهاية", "Fim", "Fin", "Ende", "Конец"},
+	LocStr{"Example", "Ejemplo", "例子", "उदाहरण", "مثال", "Exemplo", "Exemple", "Beispiel", "Пример"},
 	LocStr{"Exceeds", "Excede", "超过", "अधिक", "يتجاوز", "Excede", "Dépasse", "Überschreitet", "Превышает"},
 	LocStr{"Execute", "Ejecutar", "执行", "निष्पादित करें", "تنفيذ", "Executar", "Exécuter", "Ausführen", "Выполнить"},
 
 	// F
 	LocStr{"Failed", "Falló", "失败", "असफल", "فشل", "Falhou", "Échoué", "Fehlgeschlagen", "Не удалось"},
+	LocStr{"Female", "Femenino", "女性", "महिला", "أنثى", "Feminino", "Féminin", "Weiblich", "Женский"},
 	LocStr{"Field", "Campo", "字段", "फील्ड", "حقل", "Campo", "Champ", "Feld", "Поле"},
 	LocStr{"Fields", "Campos", "字段集", "फील्ड्स", "حقول", "Campos", "Champs", "Felder", "Поля"},
 	LocStr{"Files", "Archivos", "文件", "फ़ाइलें", "ملفات", "Arquivos", "Fichiers", "Dateien", "Файлы"},
@@ -215,6 +239,8 @@ var D = struct {
 
 	// H
 	LocStr{"Handler", "Manejador", "处理程序", "हैंडलर", "معالج", "Manipulador", "Gestionnaire", "Handler", "Обработчик"},
+	LocStr{"Hyphen", "Guion", "连字符", "हाइफ़न", "شرطة", "Hífen", "Trait d'union", "Bindestrich", "Дефис"},
+	LocStr{"Hour", "Hora", "小时", "घंटा", "ساعة", "Hora", "Heure", "Stunde", "Час"},
 
 	// I
 	LocStr{"Icons", "Iconos", "图标", "आइकन", "أيقونات", "Ícones", "Icônes", "Symbole", "Значки"},
@@ -234,9 +260,11 @@ var D = struct {
 
 	// L
 	LocStr{"Language", "Idioma", "语言", "भाषा", "لغة", "Idioma", "Langue", "Sprache", "Язык"},
+	LocStr{"Letters", "Letras", "字母", "अक्षर", "حروف", "Letras", "Lettres", "Buchstaben", "Буквы"},
 	LocStr{"Line", "Línea", "行", "लाइन", "خط", "Linha", "Ligne", "Zeile", "Строка"},
 
-	// Msg
+	// M
+	LocStr{"Male", "Masculino", "男性", "पुरुष", "ذكر", "Masculino", "Masculin", "Männlich", "Мужской"},
 	LocStr{"Maximum", "Máximo", "最大", "अधिकतम", "الحد الأقصى", "Máximo", "Maximum", "Maximum", "Максимум"},
 	LocStr{"Method", "Método", "方法", "विधि", "طريقة", "Método", "Méthode", "Methode", "Метод"},
 	LocStr{"Missing", "Falta", "缺少", "गुम", "مفقود", "Ausente", "Manquant", "Fehlend", "Отсутствует"},
@@ -294,7 +322,7 @@ var D = struct {
 	LocStr{"Sync", "Sincronización", "同步", "सिंक", "مزامنة", "Sincronização", "Synchronisation", "Synchronisierung", "Синхронизация"},
 	LocStr{"System", "Sistema", "系统", "सिस्टम", "نظام", "Sistema", "Système", "System", "Система"},
 
-	// Translate
+	// T
 	LocStr{"Tab", "Pestaña", "标签页", "टैब", "علامة تبويب", "Aba", "Onglet", "Registerkarte", "Вкладка"},
 	LocStr{"Test", "Prueba", "测试", "परीक्षण", "اختبار", "Teste", "Test", "Test", "Тест"},
 	LocStr{"Testing", "Probando", "测试中", "परीक्षण", "اختبارات", "Testando", "Test", "Testen", "Тестирование"},
@@ -315,6 +343,10 @@ var D = struct {
 	LocStr{"Validating", "Validando", "验证中", "सत्यापन हो रहा है", "التحقق من", "Validando", "Validation", "Validieren", "Проверка"},
 	LocStr{"Value", "Valor", "值", "मूल्य", "قيمة", "Valor", "Valeur", "Wert", "Значение"},
 	LocStr{"Visible", "Visible", "可见", "दृश्य", "مرئي", "Visível", "Visible", "Sichtbar", "Видимый"},
+
+	// W
+	LocStr{"Warning", "Advertencia", "警告", "चेतावनी", "تحذير", "Aviso", "Avertissement", "Warnung", "Предупреждение"},
+	LocStr{"With", "Con", "与", "के साथ", "مع", "Com", "Avec", "Mit", "С"},
 
 	// Z
 	LocStr{"Zero", "Cero", "零", "शून्य", "صفر", "Zero", "Zéro", "Null", "Ноль"},
