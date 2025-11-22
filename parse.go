@@ -1,9 +1,9 @@
 package tinystring
 
-// KV extracts the value after the first delimiter. If not found, returns an error.
-// Usage: Convert("key:value").KV(":") => "value", nil
+// ExtractValue extracts the value after the first delimiter. If not found, returns an error.
+// Usage: Convert("key:value").ExtractValue(":") => "value", nil
 // If no delimiter is provided, uses ":" by default.
-func (c *Conv) KV(delimiters ...string) (string, error) {
+func (c *Conv) ExtractValue(delimiters ...string) (string, error) {
 	src := c.String()
 	d := ":"
 	if len(delimiters) > 0 && delimiters[0] != "" {

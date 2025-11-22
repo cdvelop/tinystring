@@ -94,9 +94,9 @@ func TestConcurrentUtilityFunctions(t *testing.T) {
 			expected: "banana",
 		},
 		{
-			name: "KV",
+			name: "ExtractValue",
 			function: func() (string, error) {
-				return Convert("user:admin").KV(":")
+				return Convert("user:admin").ExtractValue(":")
 			},
 			expected: "admin",
 		},
