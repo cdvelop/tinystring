@@ -13,3 +13,5 @@ example/pwa/theme
 example/pwa/main.server
 example/*.log
 .vscode
+*.code-workspace
+server
