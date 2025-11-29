@@ -19,6 +19,14 @@ package tinystring
 // The returned *Conv object is pooled.
 // - Calling .String() or .Apply() automatically returns it to the pool.
 // - If you use .Bytes() or other methods, you MUST call .PutConv() manually to avoid memory leaks.
+//
+// PERFORMANCE OPTIMIZATION:
+// For zero-allocation performance, pass pointers to LocStr instead of values:
+//
+//	Translate(D.Format)     // 1 alloc/op  (LocStr boxing)
+//	Translate(&D.Format)    // 0 allocs/op (pointer fits in interface)
+//
+// This is useful in hot paths where allocation-free operation is critical.
 func Translate(values ...any) *Conv {
 	c := GetConv()
 	// UNIFIED PROCESSING: Use shared intermediate function

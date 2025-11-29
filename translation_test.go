@@ -108,3 +108,25 @@ func BenchmarkTranslate(b *testing.B) {
 		}
 	})
 }
+
+func BenchmarkTranslatePointer(b *testing.B) {
+	b.ReportAllocs()
+	b.Run("SimplePtr", func(b *testing.B) {
+		for i := 0; i < b.N; i++ {
+			c := Translate(&D.Format)
+			c.PutConv()
+		}
+	})
+	b.Run("WithLangPtr", func(b *testing.B) {
+		for i := 0; i < b.N; i++ {
+			c := Translate(ES, &D.Format)
+			c.PutConv()
+		}
+	})
+	b.Run("ComplexPtr", func(b *testing.B) {
+		for i := 0; i < b.N; i++ {
+			c := Translate(ES, &D.Format, ":", &D.Invalid)
+			c.PutConv()
+		}
+	})
+}

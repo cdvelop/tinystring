@@ -87,6 +87,24 @@ bytes := c.Bytes()
 c.PutConv() // Don't forget this!
 ```
 
+### 🚀 Zero-Allocation Performance
+
+For hot paths requiring zero allocations, pass **pointers** to `LocStr`:
+
+```go
+// Standard usage (1 alloc/op)
+msg := Translate(D.Format, D.Invalid).String()
+
+// Zero-allocation usage (0 allocs/op)
+msg := Translate(&D.Format, &D.Invalid).String()
+```
+
+**Benchmark Results:**
+- `Translate(D.Format)`: 1 alloc/op, 144 B/op
+- `Translate(&D.Format)`: **0 allocs/op**, 0 B/op
+
+This optimization is useful when allocation-free operation is critical.
+
 ---
 
 
