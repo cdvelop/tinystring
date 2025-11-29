@@ -86,3 +86,25 @@ func TestTranslationFormatting(t *testing.T) {
 		}
 	})
 }
+
+func BenchmarkTranslate(b *testing.B) {
+	b.ReportAllocs()
+	b.Run("Simple", func(b *testing.B) {
+		for i := 0; i < b.N; i++ {
+			c := Translate(D.Format)
+			c.PutConv()
+		}
+	})
+	b.Run("WithLang", func(b *testing.B) {
+		for i := 0; i < b.N; i++ {
+			c := Translate(ES, D.Format)
+			c.PutConv()
+		}
+	})
+	b.Run("Complex", func(b *testing.B) {
+		for i := 0; i < b.N; i++ {
+			c := Translate(ES, D.Format, ":", D.Invalid)
+			c.PutConv()
+		}
+	})
+}

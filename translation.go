@@ -14,6 +14,11 @@ package tinystring
 // Usage examples:
 // Translate(D.Format, D.Invalid) returns *Conv with "invalid format"
 // Translate(ES, D.Format, D.Invalid) returns *Conv with "formato inválido"
+//
+// MEMORY MANAGEMENT:
+// The returned *Conv object is pooled.
+// - Calling .String() or .Apply() automatically returns it to the pool.
+// - If you use .Bytes() or other methods, you MUST call .PutConv() manually to avoid memory leaks.
 func Translate(values ...any) *Conv {
 	c := GetConv()
 	// UNIFIED PROCESSING: Use shared intermediate function

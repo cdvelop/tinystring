@@ -66,7 +66,29 @@ err = Err(D.Cannot, D.Round, D.Value, D.NonNumeric)
 // → "no se puede redondear valor no numérico"
 ```
 
+
 ---
+
+## ⚡ Memory Management
+
+`Translate` returns a pooled `*Conv` object for high performance.
+
+- **Automatic Release**: Calling `.String()` or `.Apply()` automatically returns the object to the pool.
+- **Manual Release**: If you use `.Bytes()` or keep the object, you **MUST** call `.PutConv()` manually.
+
+```go
+// ✅ Automatic release (Recommended)
+msg := Translate(D.Format).String()
+
+// ⚠️ Manual release required
+c := Translate(D.Format)
+bytes := c.Bytes()
+// ... use bytes ...
+c.PutConv() // Don't forget this!
+```
+
+---
+
 
 
 ## 🌐 Minimal HTTP API Example
