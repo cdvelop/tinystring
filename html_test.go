@@ -14,6 +14,11 @@ func TestHtml(t *testing.T) {
 			expected: "divspan",
 		},
 		{
+			name:     "Concatenate number and text",
+			args:     []any{123, "abc"},
+			expected: "123abc",
+		},
+		{
 			name:     "2-letter tag regression",
 			args:     []any{"hr", "br"},
 			expected: "hrbr",
