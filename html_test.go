@@ -1,8 +1,179 @@
 package tinystring
 
-import (
-	"testing"
-)
+import "testing"
+
+func TestHtml(t *testing.T) {
+	tests := []struct {
+		name     string
+		args     []any
+		expected string
+	}{
+		{
+			name:     "Concatenation simple",
+			args:     []any{"div", "span"},
+			expected: "divspan",
+		},
+		{
+			name:     "2-letter tag regression",
+			args:     []any{"hr", "br"},
+			expected: "hrbr",
+		},
+		{
+			name:     "Concatenation with LocStr",
+			args:     []any{"<div>", LocStr{EN: "Hello", ES: "Hola"}, "</div>"},
+			expected: "<div>Hello</div>",
+		},
+		{
+			name:     "Format string",
+			args:     []any{"<div class='%s'>", "my-class"},
+			expected: "<div class='my-class'>",
+		},
+		{
+			name:     "Format string with multiple args",
+			args:     []any{"<a href='%s'>%s</a>", "/home", "Home"},
+			expected: "<a href='/home'>Home</a>",
+		},
+		{
+			name:     "Format string with %L",
+			args:     []any{"<span>%L</span>", LocStr{EN: "User", ES: "Usuario"}},
+			expected: "<span>User</span>",
+		},
+		{
+			name:     "Mixed strings without format",
+			args:     []any{"<p>", "Content", "</p>"},
+			expected: "<p>Content</p>",
+		},
+		{
+			name:     "Empty args",
+			args:     []any{},
+			expected: "",
+		},
+		{
+			name:     "String with % but not format",
+			args:     []any{"Width: 100%"},
+			expected: "Width: 100%",
+		},
+		{
+			name:     "String with %% (literal percent)",
+			args:     []any{"Success: 100%%"}, // Fmt treats %% as literal %
+			expected: "Success: 100%",
+		},
+		{
+			name:     "Language ES explicit",
+			args:     []any{ES, "<div>", LocStr{EN: "Hello", ES: "Hola"}, "</div>"},
+			expected: "<div>Hola</div>",
+		},
+		{
+			name:     "Language EN explicit",
+			args:     []any{EN, "<div>", LocStr{EN: "Hello", ES: "Hola"}, "</div>"},
+			expected: "<div>Hello</div>",
+		},
+		{
+			name:     "Language ES with format",
+			args:     []any{ES, "<span>%L</span>", LocStr{EN: "User", ES: "Usuario"}},
+			expected: "<span>Usuario</span>",
+		},
+		{
+			name: "Multiline component with format",
+			args: []any{
+				`<div class='container'>
+	<h1>%L</h1>
+	<p>%v</p>
+</div>`,
+				LocStr{EN: "Hello User", ES: "Hola Usuario"},
+				42,
+			},
+			expected: `<div class='container'>
+	<h1>Hello User</h1>
+	<p>42</p>
+</div>`,
+		},
+		{
+			name: "Multiline component with format ES",
+			args: []any{
+				ES,
+				`<div class='container'>
+	<h1>%L</h1>
+	<p>%v</p>
+</div>`,
+				LocStr{EN: "Hello User", ES: "Hola Usuario"},
+				42,
+			},
+			expected: `<div class='container'>
+	<h1>Hola Usuario</h1>
+	<p>42</p>
+</div>`,
+		},
+	}
+
+	// Test default language (EN)
+	OutLang(EN)
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			got := Html(tt.args...).String()
+			if got != tt.expected {
+				t.Errorf("Html() = %q, want %q", got, tt.expected)
+			}
+		})
+	}
+
+	// Test with Spanish
+	t.Run("Spanish LocStr", func(t *testing.T) {
+		OutLang(ES)
+		defer OutLang(EN) // Restore
+
+		got := Html("<div>", LocStr{EN: "Hello", ES: "Hola"}, "</div>").String()
+		want := "<div>Hola</div>"
+		if got != want {
+			t.Errorf("Html() ES = %q, want %q", got, want)
+		}
+	})
+}
+
+func BenchmarkHtml(b *testing.B) {
+	b.ReportAllocs()
+	b.Run("Simple", func(b *testing.B) {
+		for i := 0; i < b.N; i++ {
+			_ = Html("<div>", "content", "</div>").String()
+		}
+	})
+	b.Run("WithLang", func(b *testing.B) {
+		for i := 0; i < b.N; i++ {
+			_ = Html(ES, "<div>", "content", "</div>").String()
+		}
+	})
+	b.Run("WithLocStr", func(b *testing.B) {
+		for i := 0; i < b.N; i++ {
+			_ = Html("<span>", D.Format, "</span>").String()
+		}
+	})
+	b.Run("WithLangAndLocStr", func(b *testing.B) {
+		for i := 0; i < b.N; i++ {
+			_ = Html(ES, "<span>", D.Format, "</span>").String()
+		}
+	})
+	b.Run("WithFormat", func(b *testing.B) {
+		for i := 0; i < b.N; i++ {
+			_ = Html("<div class='%s'>", "my-class").String()
+		}
+	})
+	b.Run("WithFormatAndLang", func(b *testing.B) {
+		for i := 0; i < b.N; i++ {
+			_ = Html(ES, "<span>%L</span>", D.Format).String()
+		}
+	})
+	b.Run("WithLocStrPtr", func(b *testing.B) {
+		for i := 0; i < b.N; i++ {
+			_ = Html("<span>", &D.Format, "</span>").String()
+		}
+	})
+	b.Run("WithLangAndLocStrPtr", func(b *testing.B) {
+		for i := 0; i < b.N; i++ {
+			_ = Html(ES, "<span>", &D.Format, "</span>").String()
+		}
+	})
+}
 
 func TestEscapeAttr(t *testing.T) {
 	tests := []struct {

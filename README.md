@@ -69,7 +69,7 @@ out, err := builder.StringErr() // OR finalize with error handling
 - [Errors Package Equivalents](docs/API_ERRORS.md) - Replace errors package functions
 - [Filepath Package Equivalents](docs/API_FILEPATH.md) - Replace filepath package functions
 - [Fmt Package Equivalents](docs/API_FMT.md) - Replace fmt package functions
-- [HTML Escaping](docs/HTML_ESCAPING.md) - HTML attribute and content escaping
+- [HTML Generation & Escaping](docs/API_HTML.md) - HTML generation and escaping utilities
 - [ID and Primary Key Detection](docs/ID_PRIMARY_KEY.md) - Field naming conventions
 - [Key-Value Parsing](docs/API_PARSING.md) - Parse key-value strings
 - [Message Types](docs/MESSAGE_TYPES.md) - Message classification system

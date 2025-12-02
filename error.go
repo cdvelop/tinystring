@@ -11,18 +11,14 @@ package tinystring
 // tinystring.Err(ES,D.Format, D.Invalid) returns "formato inválido"
 
 func Err(msgs ...any) *Conv {
-	c := GetConv() // Always obtain from pool
 	// UNIFIED PROCESSING: Use same intermediate function as Translate() but write to BuffErr
-	processTranslatedMessage(c, BuffErr, msgs...)
-	return c
+	return GetConv().SmartArgs(BuffErr, " ", true, false, msgs...)
 }
 
 // Errf creates a new Conv instance with error formatting similar to fmt.Errf
 // Example: tinystring.Errf("invalid value: %s", value).Error()
 func Errf(format string, args ...any) *Conv {
-	c := GetConv() // Always obtain from pool
-	c.wrFormat(BuffErr, format, args...)
-	return c
+	return GetConv().wrFormat(BuffErr, getCurrentLang(), format, args...)
 }
 
 // StringErr returns the content of the Conv along with any error and auto-releases to pool

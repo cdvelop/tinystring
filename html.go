@@ -54,3 +54,17 @@ func (c *Conv) EscapeHTML() string {
 		Replace("'", "&#39;").
 		String()
 }
+
+// Html creates a string for HTML content, similar to Translate but without automatic spacing.
+// It supports two modes:
+// 1. Format mode: If the first argument is a string containing '%', it behaves like Fmt.
+// 2. Concatenation mode: Otherwise, it concatenates arguments (translating LocStr) without spaces.
+//
+// Usage:
+// Html("div", "span").String() -> "divspan"
+// Html("<div class='%s'>", "foo").String() -> "<div class='foo'>"
+func Html(values ...any) *Conv {
+	// Use unified smart processing
+	// separator="", allowStringCode=false (to support 2-letter tags), detectFormat=true
+	return GetConv().SmartArgs(BuffOut, "", false, true, values...)
+}

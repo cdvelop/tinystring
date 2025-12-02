@@ -28,29 +28,52 @@ package tinystring
 //
 // This is useful in hot paths where allocation-free operation is critical.
 func Translate(values ...any) *Conv {
-	c := GetConv()
 	// UNIFIED PROCESSING: Use shared intermediate function
-	processTranslatedMessage(c, BuffOut, values...)
-	return c
+	return GetConv().SmartArgs(BuffOut, " ", true, false, values...)
 }
 
-// =============================================================================
-// FUNCIÓN INTERMEDIA UNIFICADA - REUTILIZADA POR Translate() Y ERR()
-// =============================================================================
-
-// processTranslatedMessage procesa argumentos variádicos con traducción y escribe al buffer especificado
-// FUNCIÓN UNIFICADA: Reduce duplicación de código entre Translate() y Err()
-// Maneja detección de idioma, traducción de LocStr, y escritura al buffer destino
-func processTranslatedMessage(c *Conv, dest BuffDest, values ...any) {
+// SmartArgs handles language detection, format string detection, and argument processing
+// This unifies logic between Html (detectFormat=true, allowStringCode=false) and Translate (detectFormat=false, allowStringCode=true)
+func (c *Conv) SmartArgs(dest BuffDest, separator string, allowStringCode bool, detectFormat bool, values ...any) *Conv {
 	if len(values) == 0 {
-		return
+		return c
 	}
 
-	// PASO 1: Detección unificada de idioma
-	currentLang, startIdx := detectLanguage(c, values)
+	// PASO 1: Detección de idioma
+	currentLang, startIdx := detectLanguage(c, values, allowStringCode)
 
-	// PASO 2: Procesamiento unificado de argumentos
-	processTranslatedArgs(c, dest, values, currentLang, startIdx)
+	// Adjust values based on startIdx
+	args := values[startIdx:]
+	if len(args) == 0 {
+		return c
+	}
+
+	// PASO 2: Detección de formato (Opcional, usado por Html)
+	if detectFormat {
+		if format, ok := args[0].(string); ok {
+			// Simple check for % to detect format string
+			hasFormat := false
+			for i := 0; i < len(format)-1; i++ {
+				if format[i] == '%' {
+					if c.isValidWriteFormatChar(rune(format[i+1])) {
+						hasFormat = true
+						break
+					}
+				}
+			}
+
+			if hasFormat {
+				// Use Fmt logic
+				fmtArgs := args[1:]
+				c.wrFormat(dest, currentLang, format, fmtArgs...)
+				return c
+			}
+		}
+	}
+
+	// PASO 3: Procesamiento de argumentos traducidos
+	c.processTranslatedArgs(dest, args, currentLang, 0, separator)
+	return c
 }
 
 // =============================================================================
@@ -60,7 +83,7 @@ func processTranslatedMessage(c *Conv, dest BuffDest, values ...any) {
 // detectLanguage determines the current language and start index from variadic arguments
 // UNIFIED FUNCTION: Handles language detection for both Translate() and wrErr()
 // Returns: (language, startIndex) where startIndex skips the language argument if present
-func detectLanguage(c *Conv, args []any) (lang, int) {
+func detectLanguage(c *Conv, args []any, allowStringCode bool) (lang, int) {
 	if len(args) == 0 {
 		return getCurrentLang(), 0
 	}
@@ -71,9 +94,11 @@ func detectLanguage(c *Conv, args []any) (lang, int) {
 	}
 
 	// If first argument is a string of length 2, treat as language code
-	if strVal, ok := args[0].(string); ok && len(strVal) == 2 {
+	if allowStringCode {
+		if strVal, ok := args[0].(string); ok && len(strVal) == 2 {
 
-		return c.mapLangCode(strVal), 1 // Skip the language argument in processing
+			return c.mapLangCode(strVal), 1 // Skip the language argument in processing
+		}
 	}
 
 	// No language specified, use default
@@ -84,7 +109,7 @@ func detectLanguage(c *Conv, args []any) (lang, int) {
 // UNIFIED FUNCTION: Handles argument processing for both Translate() and wrErr()
 // Eliminates code duplication between Translate() and wrErr()
 // REFACTORED: Uses WrString instead of direct buffer access
-func processTranslatedArgs(c *Conv, dest BuffDest, args []any, currentLang lang, startIndex int) {
+func (c *Conv) processTranslatedArgs(dest BuffDest, args []any, currentLang lang, startIndex int, separator string) {
 	for i := startIndex; i < len(args); i++ {
 		arg := args[i]
 		switch v := arg.(type) {
@@ -101,9 +126,15 @@ func processTranslatedArgs(c *Conv, dest BuffDest, args []any, currentLang lang,
 			}
 		}
 
-		// Agregar espacio después, excepto si es el último o el siguiente es separador
-		if shouldAddSpace(args, i) {
-			c.WrString(dest, " ")
+		// Agregar separador después, excepto si es el último o el siguiente es separador
+		if i < len(args)-1 {
+			if separator == " " {
+				if shouldAddSpace(args, i) {
+					c.WrString(dest, separator)
+				}
+			} else {
+				c.WrString(dest, separator)
+			}
 		}
 	}
 }

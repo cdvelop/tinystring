@@ -43,4 +43,12 @@ var code, unicode int
 var word string
 n, err := Sscanf("!3F U+003F question", "!%x U+%x %s", &code, &unicode, &word)
 // n = 3, code = 63, unicode = 63, word = "question", err = nil
+
+// Localized string formatting
+// Uses the current global language or default (EN)
+Fmt("Error: %L", D.Invalid)
+// out (EN): "Error: invalid"
+// out (ES): "Error: inválido"
 ```
+
+For more details on translation and `LocStr` usage, see [TRANSLATE.md](TRANSLATE.md).

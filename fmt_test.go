@@ -461,3 +461,39 @@ func TestReporterFormatting(t *testing.T) {
 		}
 	})
 }
+
+func TestFormatLocStr(t *testing.T) {
+	// Define a test LocStr
+	testLoc := LocStr{
+		EN: "Hello",
+		ES: "Hola",
+	}
+
+	// Save original language to restore later
+	origLang := OutLang()
+	defer OutLang(origLang)
+
+	// Test default language (EN)
+	OutLang(EN)
+	if got := Fmt("%L", testLoc); got != "Hello" {
+		t.Errorf("Fmt(%%L) EN = %q, want %q", got, "Hello")
+	}
+
+	// Test Spanish
+	OutLang(ES)
+	if got := Fmt("%L", testLoc); got != "Hola" {
+		t.Errorf("Fmt(%%L) ES = %q, want %q", got, "Hola")
+	}
+
+	// Test pointer to LocStr
+	OutLang(EN)
+	if got := Fmt("%L", &testLoc); got != "Hello" {
+		t.Errorf("Fmt(%%L) *LocStr = %q, want %q", got, "Hello")
+	}
+
+	// Test mixed
+	OutLang(EN)
+	if got := Fmt("Say %L world", testLoc); got != "Say Hello world" {
+		t.Errorf("Fmt mixed = %q, want %q", got, "Say Hello world")
+	}
+}

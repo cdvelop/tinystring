@@ -10,9 +10,7 @@ import "io"
 // Example: Fmt("Hello %s", "world") returns "Hello world"
 func Fmt(format string, args ...any) string {
 	// Inline unifiedFormat logic - eliminated wrapper function
-	out := GetConv() // Always obtain from pool
-	out.wrFormat(BuffOut, format, args...)
-	return out.String()
+	return GetConv().wrFormat(BuffOut, getCurrentLang(), format, args...).String()
 }
 
 // Fprintf formats according to a format specifier and writes to w.
@@ -24,7 +22,7 @@ func Fprintf(w io.Writer, format string, args ...any) (n int, err error) {
 	defer c.putConv() // Ensure cleanup
 
 	// Use existing wrFormat to populate buffer
-	c.wrFormat(BuffOut, format, args...)
+	c.wrFormat(BuffOut, getCurrentLang(), format, args...)
 
 	// Check for formatting errors
 	if c.hasContent(BuffErr) {
@@ -85,7 +83,7 @@ func (c *Conv) applyWidthAndAlignment(str string, width int, leftAlign bool, zer
 
 // wrFormat applies printf-style formatting to arguments and writes to specified buffer destination.
 // Universal method with dest-first parameter order - follows buffer API architecture
-func (c *Conv) wrFormat(dest BuffDest, format string, args ...any) {
+func (c *Conv) wrFormat(dest BuffDest, currentLang lang, format string, args ...any) *Conv {
 	eSz := 0
 	for _, arg := range args {
 		switch arg.(type) {
@@ -121,18 +119,18 @@ func (c *Conv) wrFormat(dest BuffDest, format string, args ...any) {
 			// Validate format specifier using shared validation
 			if !c.isValidWriteFormatChar(formatChar) {
 				c.wrErr(D.Format, D.Provided, D.Not, D.Supported, byte(formatChar))
-				return
+				return c
 			}
 			if argIndex >= len(args) {
 				c.wrErr(D.Argument, D.Missing, formatSpec)
-				return
+				return c
 			}
 
 			// Format value using shared helper
 			arg := args[argIndex]
-			str := c.formatValue(arg, formatChar, param, formatSpec)
+			str := c.formatValue(arg, formatChar, param, formatSpec, currentLang)
 			if c.hasContent(BuffErr) {
-				return
+				return c
 			}
 
 			// Apply width and alignment if needed
@@ -149,6 +147,7 @@ func (c *Conv) wrFormat(dest BuffDest, format string, args ...any) {
 		// Final output is ready in dest buffer
 		c.kind = K.String
 	}
+	return c
 }
 
 // parseFormatSpecifier extracts format specifier and parameters from format string
@@ -234,6 +233,8 @@ func (c *Conv) parseFormatSpecifier(format string, i int) (formatChar rune, para
 		formatChar, param, formatSpec = 's', 0, "%s"
 	case '%':
 		formatChar, param, formatSpec = '%', 0, "%%"
+	case 'L':
+		formatChar, param, formatSpec = 'L', 0, "%L"
 	default:
 		formatChar, param, formatSpec = rune(format[i]), 0, ""
 	}
@@ -244,7 +245,7 @@ func (c *Conv) parseFormatSpecifier(format string, i int) (formatChar rune, para
 // isValidFormatChar validates format characters for both read and write operations
 func (c *Conv) isValidFormatChar(ch rune) bool {
 	switch ch {
-	case 'c', 'U', 'd', 'u', 'f', 'e', 'E', 'g', 'G', 'o', 'O', 'b', 'B', 'x', 'X', 'p', 't', 'v', 'q', 's', '%':
+	case 'c', 'U', 'd', 'u', 'f', 'e', 'E', 'g', 'G', 'o', 'O', 'b', 'B', 'x', 'X', 'p', 't', 'v', 'q', 's', '%', 'L':
 		return true
 	default:
 		return false
@@ -286,7 +287,7 @@ func (c *Conv) wrInvalidTypeErr(formatSpec string) {
 }
 
 // formatValue formats a single value according to format character
-func (c *Conv) formatValue(arg any, formatChar rune, param int, formatSpec string) string {
+func (c *Conv) formatValue(arg any, formatChar rune, param int, formatSpec string, currentLang lang) string {
 	switch formatChar {
 	case 'c':
 		// Character formatting: accept rune, byte, int
@@ -453,6 +454,26 @@ func (c *Conv) formatValue(arg any, formatChar rune, param int, formatSpec strin
 				return ""
 			}
 			return c.GetString(BuffWork)
+		}
+	case 'L':
+		// Localized string formatting
+		var loc LocStr
+		var ok bool
+		switch v := arg.(type) {
+		case LocStr:
+			loc = v
+			ok = true
+		case *LocStr:
+			loc = *v
+			ok = true
+		}
+		if ok {
+			c.ResetBuffer(BuffWork)
+			c.wrTranslation(loc, currentLang, BuffWork)
+			return c.GetString(BuffWork)
+		} else {
+			c.wrInvalidTypeErr(formatSpec)
+			return ""
 		}
 	}
 	return ""
