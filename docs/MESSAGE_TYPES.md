@@ -26,11 +26,18 @@ if msgType.IsError() {
 }
 
 // Available message types:
-// Msg.Normal  - Default type for general content
-// Msg.Info    - Information messages
-// Msg.Error   - Error messages and failures
-// Msg.Warning - Warning and caution messages
-// Msg.Success - Success and completion messages
+// Msg.Normal    - Default type for general content
+// Msg.Info      - Information messages
+// Msg.Error     - Error messages and failures
+// Msg.Warning   - Warning and caution messages
+// Msg.Success   - Success and completion messages
+//
+// Network/SSE specific:
+// Msg.Connect   - Connection error
+// Msg.Auth      - Authentication error
+// Msg.Parse     - Parse/decode error
+// Msg.Timeout   - Timeout error
+// Msg.Broadcast - Broadcast/send error
 
 // Zero allocations - reuses existing conversion buffers
 // Perfect for logging, UI status messages, and error handling

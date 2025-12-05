@@ -4,13 +4,21 @@ package tinystring
 type MessageType uint8
 
 // Msg exposes the MessageType constants for external use, following TinyString naming convention.
+// Msg exposes the MessageType constants for external use, following TinyString naming convention.
 var Msg = struct {
 	Normal  MessageType
 	Info    MessageType
 	Error   MessageType
 	Warning MessageType
 	Success MessageType
-}{0, 1, 2, 3, 4}
+
+	// Network/SSE specific (new)
+	Connect   MessageType // Connection error
+	Auth      MessageType // Authentication error
+	Parse     MessageType // Parse/decode error
+	Timeout   MessageType // Timeout error
+	Broadcast MessageType // Broadcast/send error
+}{0, 1, 2, 3, 4, 5, 6, 7, 8, 9}
 
 // Helper methods for MessageType
 func (t MessageType) IsNormal() bool  { return t == Msg.Normal }
@@ -18,6 +26,18 @@ func (t MessageType) IsInfo() bool    { return t == Msg.Info }
 func (t MessageType) IsError() bool   { return t == Msg.Error }
 func (t MessageType) IsWarning() bool { return t == Msg.Warning }
 func (t MessageType) IsSuccess() bool { return t == Msg.Success }
+
+// Network/SSE helper methods
+func (t MessageType) IsConnect() bool   { return t == Msg.Connect }
+func (t MessageType) IsAuth() bool      { return t == Msg.Auth }
+func (t MessageType) IsParse() bool     { return t == Msg.Parse }
+func (t MessageType) IsTimeout() bool   { return t == Msg.Timeout }
+func (t MessageType) IsBroadcast() bool { return t == Msg.Broadcast }
+
+// IsNetworkError returns true for any network-related error type
+func (t MessageType) IsNetworkError() bool {
+	return t == Msg.Connect || t == Msg.Auth || t == Msg.Timeout || t == Msg.Broadcast
+}
 
 func (t MessageType) String() string {
 	switch t {
@@ -29,6 +49,16 @@ func (t MessageType) String() string {
 		return "Warning"
 	case Msg.Success:
 		return "Success"
+	case Msg.Connect:
+		return "Connect"
+	case Msg.Auth:
+		return "Auth"
+	case Msg.Parse:
+		return "Parse"
+	case Msg.Timeout:
+		return "Timeout"
+	case Msg.Broadcast:
+		return "Broadcast"
 	default:
 		return "Normal"
 	}
