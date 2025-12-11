@@ -1,4 +1,4 @@
-# TinyString Binary Size Optimization
+# fmt Binary Size Optimization
 
 ## Objective
 Achieve >90% WebAssembly binary size reduction vs Go standard library.

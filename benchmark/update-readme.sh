@@ -19,7 +19,7 @@ get_analyzer_name() {
 
 ANALYZER_BINARY=$(get_analyzer_name)
 
-echo "📚 Updating TinyString Benchmark Documentation"
+echo "📚 Updating fmt Benchmark Documentation"
 echo "=============================================="
 
 # Check if analyzer exists

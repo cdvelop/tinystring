@@ -307,10 +307,10 @@ func TestReporterFormatting(t *testing.T) {
 			expected: "| 📝 **String Processing** | 📊 Standard | `1.2 KB` | `48` | `3.4μs` | - | - | - |\n",
 		},
 		{
-			name:     "TinyString performance row",
-			format:   "| | 🚀 TinyString | `%s` | `%d` | `%s` | %s **%s** | %s **%s** | %s |\n",
+			name:     "fmt performance row",
+			format:   "| | 🚀 fmt | `%s` | `%d` | `%s` | %s **%s** | %s **%s** | %s |\n",
 			args:     []any{"2.8 KB", 119, "13.7μs", "❌", "140.3% more", "❌", "147.9% more", "❌ **Poor**"},
-			expected: "| | 🚀 TinyString | `2.8 KB` | `119` | `13.7μs` | ❌ **140.3% more** | ❌ **147.9% more** | ❌ **Poor** |\n",
+			expected: "| | 🚀 fmt | `2.8 KB` | `119` | `13.7μs` | ❌ **140.3% more** | ❌ **147.9% more** | ❌ **Poor** |\n",
 		},
 		{
 			name:     "Binary size table row",

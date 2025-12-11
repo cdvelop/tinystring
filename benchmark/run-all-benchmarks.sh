@@ -1,6 +1,6 @@
 #!/bin/bash
 
-# run-all-benchmarks.sh - Run all TinyString benchmarks and generate reports
+# run-all-benchmarks.sh - Run all fmt benchmarks and generate reports
 # This script runs both binary size analysis and memory allocation benchmarks
 
 set -e
@@ -19,7 +19,7 @@ get_analyzer_name() {
 
 ANALYZER_BINARY=$(get_analyzer_name)
 
-echo "🚀 Starting TinyString Benchmark Suite"
+echo "🚀 Starting fmt Benchmark Suite"
 echo "======================================="
 
 # Build the analyzer tool

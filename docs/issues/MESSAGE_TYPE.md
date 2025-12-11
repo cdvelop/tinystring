@@ -1,4 +1,4 @@
-# MessageType Integration Plan - TinyString Buffer-Based Implementation
+# MessageType Integration Plan - fmt Buffer-Based Implementation
 
 ## EXECUTIVE SUMMARY
 
@@ -26,7 +26,7 @@ message, msgType := Translate(msgs...).StringType()
 - **Dependencies**: Uses `tinystring.Convert().ToLower().String()` and `tinystring.Contains()`
 - **Detection Logic**: Keyword-based classification with case-insensitive matching
 
-### TinyString Buffer Architecture
+### fmt Buffer Architecture
 - **Buffer System**: Three destinations (`BuffOut`, `BuffWork`, `BuffErr`) with length tracking
 - **Memory Management**: Object pooling via `convPool` with `GetConv()/putConv()`
 - **Universal Methods**: `WrString()`, `wrBytes()`, `GetString()` with dest-first parameter order
@@ -37,7 +37,7 @@ message, msgType := Translate(msgs...).StringType()
 
 ### 1. Type Definition Strategy
 
-**DECISION POINT**: How should MessageType be exposed in TinyString API?
+**DECISION POINT**: How should MessageType be exposed in fmt API?
 
 **Option A: Direct Integration** ✅ RECOMMENDED
 ```go
@@ -193,7 +193,7 @@ func (c *Conv) bufferContainsPattern(dest BuffDest, patterns [][]byte) bool {
 
 #### 4.3 Integration Tests
 **Validation**:
-- Compatibility with existing TinyString operations
+- Compatibility with existing fmt operations
 - Chain operation behavior: `Convert(x).ToUpper().StringType()`
 - Error chain interruption: errors → `Msg.Error` type
 
@@ -294,12 +294,12 @@ func (c *Conv) bufferContainsPattern(dest BuffDest, patterns [][]byte) bool {
 - **Efficiency**: 100% buffer reuse, no pool leaks
 
 ### API Quality  
-- **Consistency**: Follows existing TinyString patterns and conventions
+- **Consistency**: Follows existing fmt patterns and conventions
 - **Usability**: Single-call API replaces multi-step external dependency
 - **Reliability**: 100% test coverage, handles all edge cases
 
 ### Integration Quality
-- **Compatibility**: No breaking changes to existing TinyString API
+- **Compatibility**: No breaking changes to existing fmt API
 - **Maintainability**: Clean, well-documented code following project standards  
 - **Extensibility**: Foundation for future message processing features
 
@@ -314,7 +314,7 @@ func (c *Conv) bufferContainsPattern(dest BuffDest, patterns [][]byte) bool {
 
 **ESTIMATED TIMELINE**: 2-3 weeks for complete implementation and testing
 
-**DEPENDENCIES**: None - leverages existing TinyString infrastructure
+**DEPENDENCIES**: None - leverages existing fmt infrastructure
 
 ---
 

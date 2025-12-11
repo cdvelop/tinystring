@@ -23,8 +23,8 @@ echo "📊 Running standard library benchmarks..."
 cd "$MEMORY_BENCH_DIR/standard"
 STANDARD_RESULTS=$(go test -bench=. -benchmem | grep -E '^Benchmark')
 
-# Run TinyString benchmarks
-echo "📊 Running TinyString benchmarks..."
+# Run fmt benchmarks
+echo "📊 Running fmt benchmarks..."
 cd "$MEMORY_BENCH_DIR/tinystring"
 TINYSTRING_RESULTS=$(go test -bench=. -benchmem | grep -E '^Benchmark')
 
@@ -38,14 +38,14 @@ cat > "$TEMP_RESULTS" << EOF
 
 ## Memory Allocation Benchmarks
 
-### Standard Library vs TinyString Performance
+### Standard Library vs fmt Performance
 
 #### String Processing Benchmarks
 \`\`\`
 Standard Library:
 $STANDARD_RESULTS
 
-TinyString:
+fmt:
 $TINYSTRING_RESULTS
 \`\`\`
 
@@ -53,11 +53,11 @@ $TINYSTRING_RESULTS
 
 The benchmarks show memory allocation differences between:
 - **Standard Library**: Traditional Go string operations using \`strings\`, \`fmt\`, \`strconv\` packages
-- **TinyString**: Custom implementations optimized for minimal allocations
-- **TinyString Pointers**: Zero-allocation operations using string pointer modifications
+- **fmt**: Custom implementations optimized for minimal allocations
+- **fmt Pointers**: Zero-allocation operations using string pointer modifications
 
 **Key Benefits:**
-- 🔥 **Reduced Allocations**: TinyString minimizes memory allocations through efficient implementations
+- 🔥 **Reduced Allocations**: fmt minimizes memory allocations through efficient implementations
 - ⚡ **Pointer Optimization**: Using \`Apply()\` method with string pointers eliminates temporary allocations
 - 📦 **Memory Efficiency**: Lower memory footprint especially important for embedded systems and WebAssembly
 

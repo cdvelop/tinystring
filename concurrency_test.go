@@ -834,7 +834,7 @@ func TestConcurrentStringInterning(t *testing.T) {
 			"Cache test",
 			"Race condition",
 			"Memory optimization",
-			"TinyString",
+			"fmt",
 		}
 
 		done := make(chan struct{})

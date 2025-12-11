@@ -2,7 +2,7 @@
 
 Replace `errors` package functions for error handling with multilingual support:
 
-| Go Standard | TinyString Equivalent |
+| Go Standard | fmt Equivalent |
 |-------------|----------------------|
 | `errors.New()` | `Err(message)` |
 | `fmt.Errorf()` | `Errf(format, args...)` |

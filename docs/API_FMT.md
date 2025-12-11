@@ -2,7 +2,7 @@
 
 Replace `fmt` package functions for formatting:
 
-| Go Standard | TinyString Equivalent |
+| Go Standard | fmt Equivalent |
 |-------------|----------------------|
 | `fmt.Sprintf()` | `Fmt(format, args...)` |
 | `fmt.Sprint()` | `Convert(v).String()` |

@@ -1,6 +1,6 @@
 # Key-Value Parsing
 
-TinyString provides key-value parsing functionality to extract values from strings with separators.
+fmt provides key-value parsing functionality to extract values from strings with separators.
 
 ## Usage
 

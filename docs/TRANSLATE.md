@@ -1,6 +1,6 @@
-# 🌍 TinyString: Multilingual Message System
+# 🌍 fmt: Multilingual Message System
 
-**TinyString** is a lightweight, dependency-free multilingual dictionary for generating composable error and validation messages. It supports 9 major languages:
+**fmt** is a lightweight, dependency-free multilingual dictionary for generating composable error and validation messages. It supports 9 major languages:
 
 **Supported Languages:**
 

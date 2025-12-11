@@ -1,6 +1,6 @@
 # HTML Generation & Escaping
 
-TinyString provides utilities for generating and escaping HTML content safely and efficiently.
+fmt provides utilities for generating and escaping HTML content safely and efficiently.
 
 ## HTML Generation
 
@@ -62,7 +62,7 @@ Html(ES, `<div class='container'>
 
 ## HTML Escaping
 
-TinyString provides two convenience helpers to escape text for HTML:
+fmt provides two convenience helpers to escape text for HTML:
 
 - `Convert(...).EscapeAttr()` — escape a value for safe inclusion inside an HTML attribute value.
 - `Convert(...).EscapeHTML()` — escape a value for safe inclusion inside HTML content.

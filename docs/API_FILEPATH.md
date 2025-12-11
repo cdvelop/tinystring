@@ -1,8 +1,8 @@
 # Filepath Package Equivalents
 
-Replace common `filepath` package functions with TinyString equivalents:
+Replace common `filepath` package functions with fmt equivalents:
 
-| Go Standard | TinyString Equivalent |
+| Go Standard | fmt Equivalent |
 |-------------|----------------------|
 | `filepath.Base()` | `Convert(path).PathBase().String()` |
 | `filepath.Join()` | `PathJoin("a", "b", "c").String()` — variadic function, zero heap allocation for ≤8 elements |

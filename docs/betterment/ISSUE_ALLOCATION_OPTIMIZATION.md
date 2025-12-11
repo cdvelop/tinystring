@@ -1,4 +1,4 @@
-# TinyString - Unified Buffer Architecture 🎯
+# fmt - Unified Buffer Architecture 🎯
 
 ## **STATUS: 95% COMPLETE** ✅
 - ✅ **Zero-allocation buffer architecture** implemented

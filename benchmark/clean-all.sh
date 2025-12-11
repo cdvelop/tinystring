@@ -8,7 +8,7 @@ set -e
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 cd "$SCRIPT_DIR"
 
-echo "🧹 Cleaning TinyString Benchmark Artifacts"
+echo "🧹 Cleaning fmt Benchmark Artifacts"
 echo "==========================================="
 
 # Function to clean binary artifacts

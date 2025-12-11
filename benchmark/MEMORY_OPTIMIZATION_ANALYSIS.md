@@ -1,4 +1,4 @@
-# Análisis de Optimización de Memoria para TinyString
+# Análisis de Optimización de Memoria para fmt
 
 ## Resumen Ejecutivo
 
@@ -49,7 +49,7 @@ h.SetCookie(b2s(key), value)           // ✅ Uso inmediato
 - ✅ **unsafe conversions**: Solo para operaciones **internas e inmediatas**
 - ❌ **Standard conversions**: Para todos los **resultados que salen del objeto**
 
-## ❌ Problema Identificado en TinyString
+## ❌ Problema Identificado en fmt
 
 **El error en nuestro análisis inicial:**
 - Intentamos usar `unsafeString()` en `GetString()` 
@@ -145,7 +145,7 @@ func (c *Conv) GetString(dest BuffDest) string {
 
 **Comparación con Standard Library:**
 - String Processing: **32 allocs/op, 808 B/op** (stdlib)
-- TinyString: **41 allocs/op, 1296 B/op** (**28% MÁS asignaciones!**)
+- fmt: **41 allocs/op, 1296 B/op** (**28% MÁS asignaciones!**)
 
 ### 🚨 Root Cause Analysis - Problemas Críticos Identificados
 

@@ -1,4 +1,4 @@
-# TinyString Builder Integration - Technical Design Document
+# fmt Builder Integration - Technical Design Document
 
 ## Implementation Status Overview
 
@@ -30,7 +30,7 @@
 - **[x] String Pointer Fixes** - Fixed GetString() for string pointers and setString()
 
 ### ✅ **IMPLEMENTATION COMPLETE**
-All core string builder features have been successfully implemented and integrated. The TinyString library now features:
+All core string builder features have been successfully implemented and integrated. The fmt library now features:
 - **Zero-allocation transformation chains** using buffer-first strategy
 - **Pool-based memory management** for all Conv objects
 - **Thread-safe operations** with proper error chain handling
@@ -41,11 +41,11 @@ All core string builder features have been successfully implemented and integrat
 
 ## Overview
 
-This document outlines the integration of a high-performance string builder API into TinyString's existing `Conv` structure, along with the creation of a new `Translate` (Translate) function to optimize memory usage in high-demand processes.
+This document outlines the integration of a high-performance string builder API into fmt's existing `Conv` structure, along with the creation of a new `Translate` (Translate) function to optimize memory usage in high-demand processes.
 
 ## Problem Statement
 
-Current memory hotspots identified in TinyString:
+Current memory hotspots identified in fmt:
 - **Error message construction** (`Err` function) with dictionary translations
 - **Format operations** (`Fmt` function) with multiple concatenations  
 - **String transformation chains** (ToLower, CamelCase, etc.)
@@ -537,7 +537,7 @@ func TestErrorChainInterruption(t *testing.T) {
 
 ## Conclusion
 
-This design leverages TinyString's existing memory optimization infrastructure while adding a high-performance string builder API. The `Translate` function provides efficient translation functionality, and the builder methods enable zero-allocation string construction for high-demand processes.
+This design leverages fmt's existing memory optimization infrastructure while adding a high-performance string builder API. The `Translate` function provides efficient translation functionality, and the builder methods enable zero-allocation string construction for high-demand processes.
 
 The implementation maintains full backward compatibility while providing significant performance improvements for memory-intensive operations.
 
@@ -568,7 +568,7 @@ The implementation maintains full backward compatibility while providing signifi
   - ErrorConstruction: 131 ns/op, 144 B/op, 2 allocs/op
 
 **📋 PROJECT STATUS: ✅ COMPLETE**
-All string builder integration objectives achieved. The TinyString library now features a high-performance, memory-efficient string builder API with comprehensive buffer-first strategy implementation.
+All string builder integration objectives achieved. The fmt library now features a high-performance, memory-efficient string builder API with comprehensive buffer-first strategy implementation.
 - Concurrency safety fixes for complex operation chaining
 
 **🎯 PERFORMANCE ACHIEVEMENTS**:
@@ -577,4 +577,4 @@ All string builder integration objectives achieved. The TinyString library now f
 - **Zero race conditions**: All concurrency tests passing
 - **Backward compatibility**: No breaking changes to existing APIs
 
-The TinyString builder API is now ready for production use with optimal performance characteristics for both single-threaded and concurrent environments.
+The fmt builder API is now ready for production use with optimal performance characteristics for both single-threaded and concurrent environments.

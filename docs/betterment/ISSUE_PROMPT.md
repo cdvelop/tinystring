@@ -1,4 +1,4 @@
-# TinyString Code Reduction and Refactoring Prompt
+# fmt Code Reduction and Refactoring Prompt
 
 ## Objective
 Reduce code lines and eliminate unnecessary code while maximizing reusability through small functions. Priority is code reduction and architecture improvement for better maintainability.

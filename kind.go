@@ -1,7 +1,7 @@
 package fmt
 
 // Kind represents the specific Kind of type that a Type represents (private)
-// Unified with convert.go Kind, using K prefix for TinyString naming convention.
+// Unified with convert.go Kind, using K prefix for fmt naming convention.
 //
 // IMPORTANT: The order and values of Kind must NOT be changed.
 // These values are used in tinyreflect, a minimal version of reflectlite from the Go standard library.

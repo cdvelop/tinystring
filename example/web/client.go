@@ -18,7 +18,7 @@ func main() {
 	items := []string{"  ÁPPLE  ", "  banána  ", "  piñata  ", "  ÑANDÚ  "}
 
 	buf := Convert().
-		Write("<h1>TinyString Conversion Processes</h1>").
+		Write("<h1>fmt Conversion Processes</h1>").
 		Write("<h2>Original Items:</h2>").
 		Write("<ul>")
 

@@ -2,7 +2,7 @@
 
 Replace `strconv` package functions for type conversions:
 
-| Go Standard | TinyString Equivalent |
+| Go Standard | fmt Equivalent |
 |-------------|----------------------|
 | `strconv.Itoa()` | `Convert(i).String()` |
 | `strconv.Atoi()` | `Convert(s).Int()` |

@@ -1,4 +1,4 @@
-## Why TinyString?
+## Why fmt?
 
 **Go's WebAssembly potential is incredible**, but traditional applications face a critical challenge: **massive binary sizes** that make web deployment impractical.
 
@@ -10,7 +10,7 @@ Every Go project needs string manipulation, type conversion, and error handling 
 - 🚀 **Distribution efficiency** - Large binaries for simple operations
 
 ### The Solution
-TinyString replaces multiple standard library packages with **lightweight, manual implementations** that deliver:
+fmt replaces multiple standard library packages with **lightweight, manual implementations** that deliver:
 
 - 🏆 **ToUpper to smaller binaries** - Dramatic size reduction for WebAssembly
 - ✅ **Full TinyGo compatibility** - No compilation issues or warnings

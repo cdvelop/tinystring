@@ -1,6 +1,6 @@
 # Struct Tag Extraction
 
-TinyString allows extracting values from struct field tags, useful for parsing metadata like JSON tags or custom labels.
+fmt allows extracting values from struct field tags, useful for parsing metadata like JSON tags or custom labels.
 
 ## Usage
 

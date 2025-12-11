@@ -1,8 +1,8 @@
 # Memory Reduction Techniques for TinyGo WebAssembly
 
-## TinyString as Standard Library Replacement
+## fmt as Standard Library Replacement
 
-**TinyString is designed to completely replace Go's standard libraries** (`fmt`, `strings`, `strconv`) for string and numeric manipulation in TinyGo WebAssembly applications. Since **string and number processing are the most common programming tasks**, this document serves as a **comprehensive guide for best practices** when transitioning from standard libraries to TinyString's optimized implementations.
+**fmt is designed to completely replace Go's standard libraries** (`fmt`, `strings`, `strconv`) for string and numeric manipulation in TinyGo WebAssembly applications. Since **string and number processing are the most common programming tasks**, this document serves as a **comprehensive guide for best practices** when transitioning from standard libraries to fmt's optimized implementations.
 
 ### Why Replace Standard Libraries?
 
@@ -13,7 +13,7 @@ String and numeric operations are fundamental to most applications, but Go's sta
 - **Performance penalties**: Reflection and parsing overhead
 - **WebAssembly inefficiency**: Poor optimization for WASM targets
 
-**TinyString eliminates these issues** by providing manual implementations that are specifically optimized for TinyGo and WebAssembly environments.
+**fmt eliminates these issues** by providing manual implementations that are specifically optimized for TinyGo and WebAssembly environments.
 
 ## TinyGo Memory Model
 
@@ -26,53 +26,53 @@ TinyGo configures WebAssembly **linear memory** with minimal initial size (2 pag
 
 ## Operations That Cause Allocations
 
-**Common Standard Library Problems vs TinyString Solutions:**
+**Common Standard Library Problems vs fmt Solutions:**
 
-| **Standard Library** | **Issue** | **TinyString Solution** |
+| **Standard Library** | **Issue** | **fmt Solution** |
 |---------------------|-----------|-------------------------|
 | `fmt.Sprintf("Value: %d", num)` | Parsing + reflection overhead | `tinystring.Fmt("Value: %d", num)` - Direct implementation |
 | `strings.Builder` concatenation | Still uses standard library internally | `tinystring.Convert().Join()` - Manual implementation |
 | `strconv.Itoa(num)` | Standard library dependency | `tinystring.Convert(num).String()` - Zero dependencies |
 | `string(bytes)` / `[]byte(string)` | Duplicates data | Use `unsafe.String()` / `unsafe.SliceData()` |
-| String concatenation (`s1 + s2`) | Creates new string | Use TinyString chaining methods |
+| String concatenation (`s1 + s2`) | Creates new string | Use fmt chaining methods |
 
-## TinyString Best Practices for Standard Library Replacement
+## fmt Best Practices for Standard Library Replacement
 
-### 1. Replace `fmt.Sprintf` with TinyString.Fmt
+### 1. Replace `fmt.Sprintf` with fmt.Fmt
 ```go
 // ❌ Standard Library (bloated, slow)
 result := fmt.Sprintf("User: %s, Age: %d", name, age)
 
-// ✅ TinyString (optimized, zero dependencies)
+// ✅ fmt (optimized, zero dependencies)
 result := tinystring.Fmt("User: %s, Age: %d", name, age)
 ```
 
-### 2. Replace `strconv` with TinyString Conversion
+### 2. Replace `strconv` with fmt Conversion
 ```go
 // ❌ Standard Library
 numStr := strconv.Itoa(42)
 floatStr := strconv.FormatFloat(3.14, 'f', 2, 64)
 
-// ✅ TinyString  
+// ✅ fmt  
 numStr := tinystring.Convert(42).String()
 floatStr := tinystring.Convert(3.14).Round(2).String()
 ```
 
-### 3. Replace `strings` Operations with TinyString Chaining
+### 3. Replace `strings` Operations with fmt Chaining
 ```go
 // ❌ Standard Library (multiple allocations)
 result := strings.ToUpper(strings.TrimSpace(input))
 parts := strings.Split(input, ",")
 joined := strings.Join(parts, "|")
 
-// ✅ TinyString (single chain, fewer allocations)
+// ✅ fmt (single chain, fewer allocations)
 result := tinystring.Convert(input).TrimSpace().ToUpper().String()
 joined := tinystring.Convert(input).Split(",").Join("|")
 ```
 
-### 4. In-Place String Modification (Unique to TinyString)
+### 4. In-Place String Modification (Unique to fmt)
 ```go
-// ✅ TinyString exclusive feature - modify original string
+// ✅ fmt exclusive feature - modify original string
 text := "hello world"
 tinystring.Convert(&text).ToUpper().Tilde().Apply()
 // text is now modified directly: "HELLO WORLD"
@@ -80,7 +80,7 @@ tinystring.Convert(&text).ToUpper().Tilde().Apply()
 
 ## TinyGo `unsafe.Pointer` for WebAssembly
 
-For WebAssembly (WASM) targets, especially when aiming for minimal binary size and high performance, TinyString leverages TinyGo's `unsafe.Pointer` capabilities.
+For WebAssembly (WASM) targets, especially when aiming for minimal binary size and high performance, fmt leverages TinyGo's `unsafe.Pointer` capabilities.
 
 **`unsafe.Pointer` Support**: TinyGo 0.37.0 (compatible with Go 1.24) fully supports `unsafe.Pointer`, `unsafe.String()`, and `unsafe.SliceData()`. These are standard Go features (added in Go 1.20) and are recommended for conversions between pointers and slices/strings without data copying, replacing older methods like direct manipulation of `reflect.StringHeader` or `reflect.SliceHeader`.
 
@@ -130,13 +130,13 @@ tinygo test -print-allocs=.
 go test -benchmem -bench=.
 ```
 
-## Key Recommendations for TinyString Migration
+## Key Recommendations for fmt Migration
 
 1. **Replace `fmt.Sprintf`** with `tinystring.Fmt()` for all string formatting
 2. **Replace `strconv` conversions** with `tinystring.Convert()` methods
-3. **Replace `strings` operations** with TinyString's chainable methods
+3. **Replace `strings` operations** with fmt's chainable methods
 4. **Use pointer modification** with `Apply()` to avoid allocations entirely
-5. **Leverage TinyString's numeric handling** for formatting and rounding
+5. **Leverage fmt's numeric handling** for formatting and rounding
 6. **Use `-gc=leaking`** for short-lived WebAssembly modules
 7. **Always use `-no-debug`** in production to reduce binary size
 8. **Combine operations in single chains** to minimize intermediate allocations

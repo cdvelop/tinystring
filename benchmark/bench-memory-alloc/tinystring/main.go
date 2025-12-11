@@ -4,7 +4,7 @@ import (
 	. "github.com/tinywasm/fmt"
 )
 
-// processTextWithTinyString simulates text processing using TinyString (equivalent to standard lib)
+// processTextWithTinyString simulates text processing using fmt (equivalent to standard lib)
 func processTextWithTinyString(texts []string) []string {
 	results := make([]string, len(texts))
 	for i, text := range texts {
@@ -33,5 +33,5 @@ func processNumbersWithTinyString(numbers []float64) []string {
 }
 
 func main() {
-	println("TinyString benchmark main function - used for testing only")
+	println("fmt benchmark main function - used for testing only")
 }

@@ -1,12 +1,12 @@
-# TinyString Dictionary Integration - Technical Design Document
+# fmt Dictionary Integration - Technical Design Document
 
 ## Executive Summary
 
-This document outlines the integration of multilingual error message support into the TinyString library, maintaining its core philosophy of minimal binary size while providing optional translation capabilities. The implementation follows a hybrid approach with zero dependencies and full TinyGo/WebAssembly compatibility.
+This document outlines the integration of multilingual error message support into the fmt library, maintaining its core philosophy of minimal binary size while providing optional translation capabilities. The implementation follows a hybrid approach with zero dependencies and full TinyGo/WebAssembly compatibility.
 
 ## Problem Statement
 
-Modern applications require internationalized error messages from the beginning of development. Currently, TinyString provides excellent error handling but only in English. Users need:
+Modern applications require internationalized error messages from the beginning of development. Currently, fmt provides excellent error handling but only in English. Users need:
 
 1. Multilingual error messages for better user experience
 2. Minimal impact on binary size (critical for WebAssembly)
@@ -62,7 +62,7 @@ func (o LocStr) get(l lang) string {
 
 ### Dictionary Structure
 
-Based on analysis of current TinyString error messages, the dictionary contains reusable words in alphabetical order that can be combined to form any error message:
+Based on analysis of current fmt error messages, the dictionary contains reusable words in alphabetical order that can be combined to form any error message:
 
 ```go
 type dictionary struct {
@@ -783,7 +783,7 @@ type Conv struct {
 
 ## Conclusion
 
-This design provides a robust, efficient, and user-friendly internationalization system for TinyString while maintaining its core principles of minimal size and zero dependencies. The hybrid approach allows users to opt into translation features without impacting those who don't need them.
+This design provides a robust, efficient, and user-friendly internationalization system for fmt while maintaining its core principles of minimal size and zero dependencies. The hybrid approach allows users to opt into translation features without impacting those who don't need them.
 
 The implementation preserves 100% backward compatibility while providing powerful new capabilities for multilingual applications. The fixed-array approach ensures predictable performance and minimal memory overhead, making it suitable for resource-constrained environments including WebAssembly and embedded systems.
 
@@ -791,7 +791,7 @@ The implementation preserves 100% backward compatibility while providing powerfu
 
 **Document Version**: 1.0  
 **Date**: June 17, 2025  
-**Author**: TinyString Development Team  
+**Author**: fmt Development Team  
 **Status**: Implementation Ready
 
 ## Technical Specifications

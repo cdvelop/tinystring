@@ -1,4 +1,4 @@
-# Fprintf Implementation Plan for TinyString
+# Fprintf Implementation Plan for fmt
 
 ## Overview
 Implement `Fprintf` functionality to provide `fmt.Fprintf`-compatible formatting that writes directly to an `io.Writer` interface. This will extend the existing `Fmt` function to support output streaming instead of returning strings.
@@ -113,7 +113,7 @@ import (
 ### README.md Updates
 Add to the "fmt Package" equivalents section:
 ```markdown
-| Go Standard | TinyString Equivalent |
+| Go Standard | fmt Equivalent |
 |-------------|----------------------|
 | `fmt.Fprintf()` | `Fprintf(w, format, args...)` |
 ```

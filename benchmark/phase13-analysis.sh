@@ -1,11 +1,11 @@
 #!/bin/bash
 
-# TinyString Phase 13 Memory Analysis Script
+# fmt Phase 13 Memory Analysis Script
 # Automated analysis for allocation optimization progress
 
 set -e
 
-echo "🎯 TinyString Phase 13 - Performance Recovery Analysis"
+echo "🎯 fmt Phase 13 - Performance Recovery Analysis"
 echo "=================================================="
 
 WORKSPACE_DIR="/c/Users/Cesar/Packages/Internal/tinystring"

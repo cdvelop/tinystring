@@ -1,6 +1,6 @@
-# TinyString - Library Context for LLM Maintenance
+# fmt - Library Context for LLM Maintenance
 
-## What is TinyString?
+## What is fmt?
 
 Lightweight Go library for string manipulation with fluid API, specifically designed for small devices and web applications using TinyGo compiler.
 

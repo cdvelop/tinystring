@@ -7,7 +7,7 @@ require (
 	github.com/tinywasm/fmt v0.0.0
 )
 
-// Use local TinyString module
+// Use local fmt module
 replace github.com/tinywasm/fmt => ../../..
 
 // Use local shared module

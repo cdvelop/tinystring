@@ -24,9 +24,9 @@ type BenchmarkResult struct {
 
 // MemoryComparison stores comparison data between implementations
 type MemoryComparison struct {
-	Standard   BenchmarkResult
-	TinyString BenchmarkResult
-	Category   string
+	Standard BenchmarkResult
+	fmt      BenchmarkResult
+	Category string
 }
 
 func main() {
@@ -148,7 +148,7 @@ func displayOptimizationTable(binaries []BinaryInfo) {
 	for _, opt := range optimizations {
 		println("")
 		println(Fmt("%s Optimization (%s):", opt.Name, opt.Description))
-		println(Fmt("%-15s %-15s %-15s %-15s", "", "Standard", "TinyString", "Improvement"))
+		println(Fmt("%-15s %-15s %-15s %-15s", "", "Standard", "fmt", "Improvement"))
 		println(Convert("-").Repeat(65).String())
 
 		// Find matching binaries for this optimization level
@@ -245,8 +245,8 @@ func runMemoryBenchmarks() []MemoryComparison {
 	LogInfo("Running standard library memory benchmarks...")
 	standardResults := runBenchmarks("standard")
 
-	// Run TinyString benchmarks
-	LogInfo("Running TinyString memory benchmarks...")
+	// Run fmt benchmarks
+	LogInfo("Running fmt memory benchmarks...")
 	tinystringResults := runBenchmarks("tinystring")
 
 	// Create comparisons
@@ -268,7 +268,7 @@ func runMemoryBenchmarks() []MemoryComparison {
 		findBenchmark(tinystringResults, "BenchmarkMixedOperations"),
 	))
 
-	// Check for pointer optimization benchmark (TinyString only)
+	// Check for pointer optimization benchmark (fmt only)
 	pointerBench := findBenchmark(tinystringResults, "BenchmarkStringProcessingWithPointers")
 	if pointerBench.Name != "" {
 		standardEquivalent := findBenchmark(standardResults, "BenchmarkStringProcessing")
@@ -338,9 +338,9 @@ func parseBenchmarkOutput(output, library string) []BenchmarkResult {
 // createComparison creates a memory comparison between two benchmark results
 func createComparison(category string, standard, tinystring BenchmarkResult) MemoryComparison {
 	return MemoryComparison{
-		Standard:   standard,
-		TinyString: tinystring,
-		Category:   category,
+		Standard: standard,
+		fmt:      tinystring,
+		Category: category,
 	}
 }
 
@@ -371,19 +371,19 @@ func displayMemoryResults(comparisons []MemoryComparison) {
 				formatNanoTime(comparison.Standard.NsPerOp)))
 		}
 
-		if comparison.TinyString.Name != "" {
+		if comparison.fmt.Name != "" {
 			println(Fmt("%-35s %-12s %-15s %-15d %-15s",
 				"", "tinystring",
-				FormatSize(comparison.TinyString.BytesPerOp),
-				comparison.TinyString.AllocsPerOp,
-				formatNanoTime(comparison.TinyString.NsPerOp)))
+				FormatSize(comparison.fmt.BytesPerOp),
+				comparison.fmt.AllocsPerOp,
+				formatNanoTime(comparison.fmt.NsPerOp)))
 
 			// Show improvement
-			if comparison.Standard.Name != "" && comparison.TinyString.Name != "" {
+			if comparison.Standard.Name != "" && comparison.fmt.Name != "" {
 				memImprovement := calculateMemoryImprovement(
-					comparison.Standard.BytesPerOp, comparison.TinyString.BytesPerOp)
+					comparison.Standard.BytesPerOp, comparison.fmt.BytesPerOp)
 				allocImprovement := calculateMemoryImprovement(
-					comparison.Standard.AllocsPerOp, comparison.TinyString.AllocsPerOp)
+					comparison.Standard.AllocsPerOp, comparison.fmt.AllocsPerOp)
 
 				println(Fmt("%-35s %-12s %-15s %-15s %-15s",
 					"  → Improvement", "", memImprovement, allocImprovement, ""))

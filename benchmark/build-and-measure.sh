@@ -93,8 +93,8 @@ else
     echo "⚠️  Standard: only Go binary created"
 fi
 
-# Build TinyString example
-echo "📦 Building TinyString example with multiple optimizations..."
+# Build fmt example
+echo "📦 Building fmt example with multiple optimizations..."
 cd "$BINARY_SIZE_DIR/tinystring-lib"
 go mod tidy
 
@@ -131,9 +131,9 @@ if [ "$TINYGO_AVAILABLE" = true ]; then
             tinygo build $flags -o "tinystring${suffix}.wasm" -target wasm main.go
         fi
     done
-    echo "✅ TinyString: Go binary and WebAssembly variants created"
+    echo "✅ fmt: Go binary and WebAssembly variants created"
 else
-    echo "⚠️  TinyString: only Go binary created"
+    echo "⚠️  fmt: only Go binary created"
 fi
 
 # Run analysis and update

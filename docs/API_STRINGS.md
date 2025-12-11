@@ -1,8 +1,8 @@
 # Strings Package Equivalents
 
-Replace common `strings` package functions with TinyString equivalents:
+Replace common `strings` package functions with fmt equivalents:
 
-| Go Standard | TinyString Equivalent |
+| Go Standard | fmt Equivalent |
 |-------------|----------------------|
 | `strings.Builder` | `c:= Convert() c.Write(a) c.Write(b) c.String()` |
 | `strings.Contains()` | `Contains(s, substr)` |

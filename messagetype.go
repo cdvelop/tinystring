@@ -3,8 +3,8 @@ package fmt
 // MessageType represents the classification of message types in the system.
 type MessageType uint8
 
-// Msg exposes the MessageType constants for external use, following TinyString naming convention.
-// Msg exposes the MessageType constants for external use, following TinyString naming convention.
+// Msg exposes the MessageType constants for external use, following fmt naming convention.
+// Msg exposes the MessageType constants for external use, following fmt naming convention.
 var Msg = struct {
 	Normal  MessageType
 	Info    MessageType

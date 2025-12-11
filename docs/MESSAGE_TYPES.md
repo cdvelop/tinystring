@@ -1,6 +1,6 @@
 # Message Type Detection
 
-TinyString provides automatic message type classification to help identify the nature of text content. The system detects common message types like errors, warnings, success messages, and information using zero-allocation buffer-based pattern matching.
+fmt provides automatic message type classification to help identify the nature of text content. The system detects common message types like errors, warnings, success messages, and information using zero-allocation buffer-based pattern matching.
 
 ```go
 // Before: messagetype library usage

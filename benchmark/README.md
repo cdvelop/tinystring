@@ -1,17 +1,17 @@
-# TinyString Benchmark Suite
+# fmt Benchmark Suite
 
-Automated benchmark tools to measure and compare performance between standard Go libraries and TinyString implementations.
+Automated benchmark tools to measure and compare performance between standard Go libraries and fmt implementations.
 
 
 
 ## Binary Size Comparison
 
-[Standard Library Example](bench-binary-size/standard-lib/main.go) | [TinyString Example](bench-binary-size/tinystring-lib/main.go)
+[Standard Library Example](bench-binary-size/standard-lib/main.go) | [fmt Example](bench-binary-size/tinystring-lib/main.go)
 
 <!-- This table is automatically generated from build-and-measure.sh -->
 *Last updated: 2025-11-22 16:23:16*
 
-| Build Type | Parameters | Standard Library<br/>`go build` | TinyString<br/>`tinygo build` | Size Reduction | Performance |
+| Build Type | Parameters | Standard Library<br/>`go build` | fmt<br/>`tinygo build` | Size Reduction | Performance |
 |------------|------------|------------------|------------|----------------|-------------|
 | 🖥️ **Default Native** | `-ldflags="-s -w"` | 1.4 MB | 1.3 MB | **-136.0 KB** | ➖ **9.2%** |
 | 🌐 **Default WASM** | `(default -opt=z)` | 606.9 KB | 269.7 KB | **-337.2 KB** | ✅ **55.6%** |
@@ -35,21 +35,21 @@ Automated benchmark tools to measure and compare performance between standard Go
 
 ## Memory Usage Comparison
 
-[Standard Library Example](bench-memory-alloc/standard) | [TinyString Example](bench-memory-alloc/tinystring)
+[Standard Library Example](bench-memory-alloc/standard) | [fmt Example](bench-memory-alloc/tinystring)
 
 <!-- This table is automatically generated from memory-benchmark.sh -->
 *Last updated: 2025-11-22 16:23:31*
 
-Performance benchmarks comparing memory allocation patterns between standard Go library and TinyString:
+Performance benchmarks comparing memory allocation patterns between standard Go library and fmt:
 
 | 🧪 **Benchmark Category** | 📚 **Library** | 💾 **Memory/Op** | 🔢 **Allocs/Op** | ⏱️ **Time/Op** | 📈 **Memory Trend** | 🎯 **Alloc Trend** | 🏆 **Performance** |
 |----------------------------|----------------|-------------------|-------------------|-----------------|---------------------|---------------------|--------------------|
 | 📝 **String Processing** | 📊 Standard | `808 B / 576.716 OP` | `32` | `2.1μs` | - | - | - |
-| | 🚀 TinyString | `464 B / 216.565 OP` | `17` | `5.4μs` | 🏆 **42.6% less** | 🏆 **46.9% less** | 🏆 **Excellent** |
+| | 🚀 fmt | `464 B / 216.565 OP` | `17` | `5.4μs` | 🏆 **42.6% less** | 🏆 **46.9% less** | 🏆 **Excellent** |
 | 🔢 **Number Processing** | 📊 Standard | `720 B / 505.012 OP` | `34` | `2.2μs` | - | - | - |
-| | 🚀 TinyString | `320 B / 578.715 OP` | `17` | `2.1μs` | 🏆 **55.6% less** | 🏆 **50.0% less** | 🏆 **Excellent** |
+| | 🚀 fmt | `320 B / 578.715 OP` | `17` | `2.1μs` | 🏆 **55.6% less** | 🏆 **50.0% less** | 🏆 **Excellent** |
 | 🔄 **Mixed Operations** | 📊 Standard | `368 B / 725.944 OP` | `20` | `1.4μs` | - | - | - |
-| | 🚀 TinyString | `192 B / 424.407 OP` | `12` | `2.8μs` | 🏆 **47.8% less** | 🏆 **40.0% less** | 🏆 **Excellent** |
+| | 🚀 fmt | `192 B / 424.407 OP` | `12` | `2.8μs` | 🏆 **47.8% less** | 🏆 **40.0% less** | 🏆 **Excellent** |
 
 ### 🎯 Performance Summary
 
@@ -77,9 +77,9 @@ The benchmarks reveal important trade-offs between **binary size** and **runtime
 #### 🎯 **Optimization Recommendations**
 | 🎯 **Use Case** | 💡 **Recommendation** | 🔧 **Best For** |
 |-----------------|------------------------|------------------|
-| 🌐 WebAssembly Apps | ✅ **TinyString** | Size-critical web deployment |
-| 📱 Embedded Systems | ✅ **TinyString** | Resource-constrained devices |
-| ☁️ Edge Computing | ✅ **TinyString** | Fast startup and deployment |
+| 🌐 WebAssembly Apps | ✅ **fmt** | Size-critical web deployment |
+| 📱 Embedded Systems | ✅ **fmt** | Resource-constrained devices |
+| ☁️ Edge Computing | ✅ **fmt** | Fast startup and deployment |
 | 🏢 Memory-Intensive Server | ⚠️ **Standard Library** | High-throughput applications |
 | 🔄 High-Frequency Processing | ⚠️ **Standard Library** | Performance-critical workloads |
 
@@ -111,8 +111,8 @@ The benchmarks reveal important trade-offs between **binary size** and **runtime
 
 ## What Gets Measured 📊
 
-1.  **Binary Size Comparison**: Native + WebAssembly builds with multiple optimization levels. This compares the compiled output size of projects using the standard Go library versus TinyString.
-2.  **Memory Allocation**: Measures Bytes/op, Allocations/op, and execution time (ns/op) for benchmark categories. This helps in understanding the memory efficiency of TinyString compared to standard library operations.
+1.  **Binary Size Comparison**: Native + WebAssembly builds with multiple optimization levels. This compares the compiled output size of projects using the standard Go library versus fmt.
+2.  **Memory Allocation**: Measures Bytes/op, Allocations/op, and execution time (ns/op) for benchmark categories. This helps in understanding the memory efficiency of fmt compared to standard library operations.
     *   **String Processing**: Benchmarks operations like case conversion, text manipulation, etc.
     *   **Number Processing**: Benchmarks numeric formatting, conversion operations, etc.
     *   **Mixed Operations**: Benchmarks scenarios involving a combination of string and numeric operations.
@@ -122,10 +122,10 @@ The benchmarks reveal important trade-offs between **binary size** and **runtime
 **Target**: Achieve memory usage close to standard library while maintaining binary size benefits.
 
 **Latest Results** (Run `./build-and-measure.sh` to update):
-- ✅ **Binary Size**: TinyString is 20-50% smaller than stdlib for WebAssembly.
+- ✅ **Binary Size**: fmt is 20-50% smaller than stdlib for WebAssembly.
 - ⚠️ **Memory Usage**: Number Processing uses 1000% more memory (needs optimization).
 
-📋 **Memory Optimization Guide**: See [`MEMORY_REDUCTION.md`](./MEMORY_REDUCTION.md) for comprehensive techniques and best practices to replace Go standard libraries with TinyString's optimized implementations. Essential reading for efficient string and numeric processing in TinyGo WebAssembly applications.
+📋 **Memory Optimization Guide**: See [`MEMORY_REDUCTION.md`](./MEMORY_REDUCTION.md) for comprehensive techniques and best practices to replace Go standard libraries with fmt's optimized implementations. Essential reading for efficient string and numeric processing in TinyGo WebAssembly applications.
 
 ## Requirements
 
@@ -149,7 +149,7 @@ chmod +x *.sh
 
 **Build Failures:**
 - Ensure you're in the `benchmark/` directory
-- Verify TinyString library is available in the parent directory
+- Verify fmt library is available in the parent directory
 
 
 

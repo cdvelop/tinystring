@@ -7,7 +7,7 @@
 - **TinyGo compatible**: Limited reflection
 
 ## Current Problem
-- **TinyString has 189 allocs/op vs Standard Library 48 allocs/op**
+- **fmt has 189 allocs/op vs Standard Library 48 allocs/op**
 - **4050 B/op vs 1200 B/op** - 3.3x more memory usage
 - **25945 ns/op vs 6597 ns/op** - 3.9x slower
 

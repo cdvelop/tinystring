@@ -1,6 +1,6 @@
 # Memory Allocation Benchmarks
 
-This directory contains memory allocation benchmarks comparing standard Go libraries vs TinyString implementations.
+This directory contains memory allocation benchmarks comparing standard Go libraries vs fmt implementations.
 
 ## Structure
 
@@ -10,26 +10,26 @@ memory-bench/
 │   ├── main.go        # Main program with standard library operations  
 │   ├── main_test.go   # Benchmark tests for standard library
 │   └── go.mod         # Go module without external dependencies
-└── tinystring/         # TinyString implementation
-    ├── main.go        # Main program with TinyString operations
-    ├── main_test.go   # Benchmark tests for TinyString (including pointer optimization)
-    └── go.mod         # Go module with TinyString dependency
+└── tinystring/         # fmt implementation
+    ├── main.go        # Main program with fmt operations
+    ├── main_test.go   # Benchmark tests for fmt (including pointer optimization)
+    └── go.mod         # Go module with fmt dependency
 ```
 
 ## Benchmarks Included
 
 ### String Processing
 - **Standard**: Uses `strings.ToLower`, `strings.ReplaceAll`, `strings.Fields`, etc.
-- **TinyString**: Uses `Tilde()`, `CamelLow()` chaining
-- **TinyString (Pointers)**: Uses pointer optimization with `Apply()` method
+- **fmt**: Uses `Tilde()`, `CamelLow()` chaining
+- **fmt (Pointers)**: Uses pointer optimization with `Apply()` method
 
 ### Number Processing
 - **Standard**: Uses `fmt.Sprintf`, `strings.Split` for number formatting
-- **TinyString**: Uses `Round()`, `Thousands()` chaining
+- **fmt**: Uses `Round()`, `Thousands()` chaining
 
 ### Mixed Operations
 - **Standard**: Combines string and number operations using standard library
-- **TinyString**: Uses unified TinyString API for all data types
+- **fmt**: Uses unified fmt API for all data types
 
 ## Running Benchmarks
 
@@ -40,7 +40,7 @@ memory-bench/
 # Run only standard library benchmarks
 cd standard && go test -bench=. -benchmem
 
-# Run only TinyString benchmarks  
+# Run only fmt benchmarks  
 cd tinystring && go test -bench=. -benchmem
 
 # Compare specific benchmark
@@ -71,7 +71,7 @@ The memory benchmark tool (`../memory-tool/main.go`) automatically:
 
 ## Expected Results
 
-TinyString typically shows:
+fmt typically shows:
 - **20-35% less memory allocation** per operation
 - **30-45% fewer heap allocations** per operation  
 - **Similar or better execution time** performance
