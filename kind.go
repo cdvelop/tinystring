@@ -1,4 +1,4 @@
-package tinystring
+package fmt
 
 // Kind represents the specific Kind of type that a Type represents (private)
 // Unified with convert.go Kind, using K prefix for TinyString naming convention.

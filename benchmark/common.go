@@ -4,7 +4,7 @@ import (
 	"os"
 	"path/filepath"
 
-	. "github.com/cdvelop/tinystring"
+	. "github.com/tinywasm/fmt"
 )
 
 // BinaryInfo represents information about a compiled binary file

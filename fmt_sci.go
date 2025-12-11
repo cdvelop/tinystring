@@ -1,4 +1,4 @@
-package tinystring
+package fmt
 
 // formatScientific formats a float64 in scientific notation (e.g., 1.234000e+03)
 // precision: number of digits after decimal point, -1 for default (6)

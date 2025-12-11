@@ -1,4 +1,4 @@
-package tinystring
+package fmt
 
 // Using shared constants from mapping.go for consistency
 

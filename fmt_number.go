@@ -1,4 +1,4 @@
-package tinystring
+package fmt
 
 // =============================================================================
 // FORMAT NUMBER OPERATIONS - Number formatting with separators and display

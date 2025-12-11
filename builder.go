@@ -1,4 +1,4 @@
-package tinystring
+package fmt
 
 // Write appends any value to the buffer using unified type handling
 // This is the core builder method that enables fluent chaining

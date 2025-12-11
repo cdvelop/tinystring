@@ -1,4 +1,4 @@
-package tinystring
+package fmt
 
 // Join concatenates the elements of a string slice to create a single string.
 // If no separator is provided, it uses a space as default.

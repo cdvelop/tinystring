@@ -46,7 +46,7 @@ var Msg = struct {
 
 ```go
 // tinysse/error.go
-import . "github.com/cdvelop/tinystring"
+import . "github.com/tinywasm/fmt"
 
 type SSEError struct {
     Type    MessageType  // Reuse tinystring.MessageType

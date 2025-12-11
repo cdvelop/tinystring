@@ -1,4 +1,4 @@
-package tinystring
+package fmt
 
 // PathJoin joins path elements using the appropriate separator.
 // Accepts variadic string arguments and returns a Conv instance for method chaining.

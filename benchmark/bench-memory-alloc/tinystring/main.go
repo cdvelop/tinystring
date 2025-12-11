@@ -1,7 +1,7 @@
 package main
 
 import (
-	. "github.com/cdvelop/tinystring"
+	. "github.com/tinywasm/fmt"
 )
 
 // processTextWithTinyString simulates text processing using TinyString (equivalent to standard lib)

@@ -1,4 +1,4 @@
-package tinystring
+package fmt
 
 // Capitalize transforms the first letter of each word to uppercase and the rest to lowercase.
 // Preserves all whitespace formatting (spaces, tabs, newlines) without normalization.

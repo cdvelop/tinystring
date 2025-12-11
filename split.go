@@ -1,4 +1,4 @@
-package tinystring
+package fmt
 
 // Split divides a string by a separator and returns a slice of substrings.
 // Usage: Convert("Hello World").Split() => []string{"Hello", "World"}

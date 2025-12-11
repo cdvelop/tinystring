@@ -1,4 +1,4 @@
-package tinystring
+package fmt
 
 // wrUintBase writes an unsigned integer in the given base to the buffer
 func (c *Conv) wrUintBase(dest BuffDest, value uint64, base int) {

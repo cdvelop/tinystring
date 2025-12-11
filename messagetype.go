@@ -1,4 +1,4 @@
-package tinystring
+package fmt
 
 // MessageType represents the classification of message types in the system.
 type MessageType uint8

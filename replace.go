@@ -1,4 +1,4 @@
-package tinystring
+package fmt
 
 // Replace replaces up to n occurrences of old with new in the Conv content
 // If n < 0, there is no limit on the number of replacements

@@ -1,6 +1,6 @@
 //go:build !wasm
 
-package tinystring
+package fmt
 
 import (
 	"os"

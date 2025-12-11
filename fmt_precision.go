@@ -1,4 +1,4 @@
-package tinystring
+package fmt
 
 // =============================================================================
 // FORMAT PRECISION OPERATIONS - Decimal rounding and precision control

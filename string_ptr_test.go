@@ -1,7 +1,7 @@
-package tinystring
+package fmt
 
 import (
-	"fmt"
+	std_fmt "fmt"
 	"testing"
 )
 
@@ -71,7 +71,7 @@ func Example_stringPointerBasic() {
 	Convert(&myText).Tilde().ToLower().Apply()
 
 	// La variable original ha sido modificada
-	fmt.Println(myText)
+	std_fmt.Println(myText)
 	// Output: hello world
 }
 
@@ -83,7 +83,7 @@ func Example_stringPointerCamelCase() {
 	// usando el método Apply() para actualizar el puntero
 	Convert(&originalText).Tilde().CamelLow().Apply()
 
-	fmt.Println(originalText)
+	std_fmt.Println(originalText)
 	// Output: elMurcielagoRapido
 }
 
@@ -93,12 +93,12 @@ func Example_stringPointerEfficiency() {
 	// Método tradicional (crea nuevas asignaciones de memoria)
 	traditionalText := "Texto con ACENTOS"
 	processedText := Convert(traditionalText).Tilde().ToLower().String()
-	fmt.Println(processedText)
+	std_fmt.Println(processedText)
 
 	// Método con punteros (modifica directamente la variable original)
 	directText := "Otro TEXTO con ACENTOS"
 	Convert(&directText).Tilde().ToLower().Apply()
-	fmt.Println(directText)
+	std_fmt.Println(directText)
 
 	// Output:
 	// texto con acentos

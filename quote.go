@@ -1,4 +1,4 @@
-package tinystring
+package fmt
 
 // Quote wraps a string in double quotes and escapes any special characters
 // Example: Quote("hello \"world\"") returns "\"hello \\\"world\\\"\""

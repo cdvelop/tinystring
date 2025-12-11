@@ -1,4 +1,4 @@
-package tinystring
+package fmt
 
 // IDorPrimaryKey determines if a field is an ID field and/or a primary key field.
 // This function analyzes field names to identify ID fields and primary keys based on naming conventions.

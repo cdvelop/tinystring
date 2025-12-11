@@ -1,4 +1,4 @@
-package tinystring
+package fmt
 
 // EscapeAttr returns a string safe to place inside an HTML attribute value.
 //

@@ -1,4 +1,4 @@
-package tinystring
+package fmt
 
 // Shared constants for maximum code reuse and minimal binary size
 const (

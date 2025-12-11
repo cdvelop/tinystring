@@ -1,4 +1,4 @@
-package tinystring
+package fmt
 
 // Bool converts the Conv content to a boolean value using internal implementations
 // Returns the boolean value and any error that occurred

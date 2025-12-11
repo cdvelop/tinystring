@@ -115,7 +115,7 @@ This optimization is useful when allocation-free operation is critical.
 import (
     "encoding/json"
     "net/http"
-    . "github.com/cdvelop/tinystring"
+    . "github.com/tinywasm/fmt"
 )
 
 func handler(w http.ResponseWriter, r *http.Request) {

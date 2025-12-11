@@ -1,9 +1,9 @@
-package tinystring_test
+package fmt_test
 
 import (
 	"testing"
 
-	. "github.com/cdvelop/tinystring"
+	. "github.com/tinywasm/fmt"
 )
 
 func TestParseKeyValue(t *testing.T) {

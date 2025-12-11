@@ -1,4 +1,4 @@
-package tinystring
+package fmt
 
 // ExtractValue extracts the value after the first delimiter. If not found, returns an error.
 // Usage: Convert("key:value").ExtractValue(":") => "value", nil

@@ -6,7 +6,7 @@ import (
 	"strings" // Only for section finding in README
 	"time"
 
-	. "github.com/cdvelop/tinystring"
+	. "github.com/tinywasm/fmt"
 )
 
 // ReportGenerator handles README and documentation generation

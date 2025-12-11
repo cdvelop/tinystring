@@ -1,4 +1,4 @@
-package tinystring
+package fmt
 
 // formatCompactFloat mimics Go's %g/%G: uses %f for normal range, %e/%E for very small/large, trims trailing zeros.
 func formatCompactFloat(f float64, precision int, upper bool) string {

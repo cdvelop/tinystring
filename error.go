@@ -1,4 +1,4 @@
-package tinystring
+package fmt
 
 // Custom error messages to avoid importing standard library packages like "errors" or "fmt"
 // This keeps the binary size minimal for embedded systems and WebAssembly
@@ -6,9 +6,9 @@ package tinystring
 // Err creates a new error message with support for multilingual translations
 // Supports LocStr types for translations and lang types for language specification
 // eg:
-// tinystring.Err("invalid format") returns "invalid format"
-// tinystring.Err(D.Format, D.Invalid) returns "invalid format"
-// tinystring.Err(ES,D.Format, D.Invalid) returns "formato inválido"
+// fmt.Err("invalid format") returns "invalid format"
+// fmt.Err(D.Format, D.Invalid) returns "invalid format"
+// fmt.Err(ES,D.Format, D.Invalid) returns "formato inválido"
 
 func Err(msgs ...any) *Conv {
 	// UNIFIED PROCESSING: Use same intermediate function as Translate() but write to BuffErr
@@ -16,7 +16,7 @@ func Err(msgs ...any) *Conv {
 }
 
 // Errf creates a new Conv instance with error formatting similar to fmt.Errf
-// Example: tinystring.Errf("invalid value: %s", value).Error()
+// Example: fmt.Errf("invalid value: %s", value).Error()
 func Errf(format string, args ...any) *Conv {
 	return GetConv().wrFormat(BuffErr, getCurrentLang(), format, args...)
 }

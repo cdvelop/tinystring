@@ -1,4 +1,4 @@
-package tinystring
+package fmt
 
 // Repeat repeats the Conv content n times
 // If n is 0 or negative, it clears the Conv content

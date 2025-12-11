@@ -1,4 +1,4 @@
-package tinystring
+package fmt
 
 // Translate creates a translated string with support for multilingual translations
 // Same functionality as Err but returns string directly instead of *Conv

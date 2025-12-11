@@ -1,4 +1,4 @@
-package tinystring
+package fmt
 
 // Global dictionary instance - populated with all translations using horizontal format
 // Language order: EN, ES, ZH, HI, AR, PT, FR, DE, RU

@@ -1,4 +1,4 @@
-package tinystring
+package fmt
 
 // Index finds the first occurrence of substr in s, returns -1 if not found.
 // This is the base primitive that other functions will reuse.

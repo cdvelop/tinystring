@@ -5,7 +5,7 @@ package main
 import (
 	"syscall/js"
 
-	. "github.com/cdvelop/tinystring"
+	. "github.com/tinywasm/fmt"
 )
 
 func main() {

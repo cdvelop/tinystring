@@ -1,4 +1,4 @@
-package tinystring
+package fmt
 
 import "sync"
 
